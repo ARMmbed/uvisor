@@ -4,8 +4,8 @@
 #include <stdint.h>
 #include <string.h>
 
-/* Cortex M3 specific includes */
-#include <cm3/ARMCM3.h>
+/* EFM32 definitions */
+#include <em_device.h>
 
 /* IOT-OS specific includes */
 #include <isr.h>
