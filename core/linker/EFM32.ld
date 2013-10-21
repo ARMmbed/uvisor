@@ -8,17 +8,19 @@ SECTIONS
 		*(.text*)
 		*(.rodata*)
 		. = ALIGN(4);
-		__data_size__ = .;
-		LONG(SIZEOF(.data))
+		__etext = .;
 	} > FLASH
 
-	__etext = .;
-
-	.isr :
+	.bss :
 	{
 		. = ALIGN(128);
 		*(.isr_vector*)
 		. = ALIGN(4);
+		__bss_start__ = .;
+		*(.bss)
+		*(.bss.*)
+		. = ALIGN(4);
+		__bss_end__ = .;
 	} > RAM
 
 	.data : AT (__etext)
@@ -32,16 +34,6 @@ SECTIONS
 		. = ALIGN(4);
 		/* All data end */
 		__data_end__ = .;
-	} > RAM
-
-	.bss :
-	{
-		. = ALIGN(4);
-		__bss_start__ = .;
-		*(.bss)
-		*(.bss.*)
-		. = ALIGN(4);
-		__bss_end__ = .;
 	} > RAM
 
 	.heap :
@@ -63,6 +55,4 @@ SECTIONS
 		. = ALIGN(4);
 		__stack_end__ = .;
 	} > RAM
-
-	PROVIDE(__data_size__ = SIZEOF(.data));
 }
