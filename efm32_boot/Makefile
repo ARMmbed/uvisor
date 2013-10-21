@@ -2,6 +2,10 @@ PROJECT:=efm32_boot
 ARCH:=EFM32GG
 CPU:=$(ARCH)990F1024
 
+APP_CFLAGS:=-Isrc -Isrc/helper
+APP_SRC:=src/main.c \
+         src/helper/usart.c
+
 #APP_SRC:=src/autobaud.c \
 #         src/boot.c \
 #         src/crc.c \

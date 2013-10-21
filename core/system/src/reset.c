@@ -16,6 +16,9 @@ void __attribute__ ((noreturn)) reset_handler(void)
     while(dst<&__bss_end__)
         *dst++ = 0;
 
+    /* initialize system if needed */
+    SystemInit();
+
     main();
     while(1){};
 }

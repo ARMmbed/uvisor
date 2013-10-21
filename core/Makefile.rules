@@ -6,8 +6,10 @@ OBJDUMP:=$(PREFIX)objdump
 CORE:=../core
 
 SYSTEM:=$(CORE)/system
+DEVICE:=$(CORE)/arch/$(ARCH)
 SOURCES:=$(SYSTEM)/src/isr.c \
          $(SYSTEM)/src/reset.c \
+         $(DEVICE)/src/system.c \
          $(APP_SRC)
 
 OPT:=-Os
@@ -27,7 +29,11 @@ CFLAGS:=$(OPT) $(DEBUG) $(FLAGS_CM3) \
         -ffunction-sections \
         -fdata-sections \
         -fno-common \
-        -I$(CORE) -I$(SYSTEM)/inc -Iconfig
+        -D$(CPU) \
+        -I$(CORE)/cmsis/inc \
+        -I$(CORE) -I$(SYSTEM)/inc -Iconfig \
+        -I$(DEVICE)/inc \
+        $(APP_CFLAGS)
 
 OBJS:=$(SOURCES:.c=.o)
 
