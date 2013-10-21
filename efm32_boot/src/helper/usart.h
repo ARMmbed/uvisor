@@ -36,14 +36,10 @@
 #ifndef _UART_H
 #define _UART_H
 
-#include <stdint.h>
-#include "em_device.h"
-#include "compiler.h"
-
-__ramfunc void USART_printHex(uint32_t integer);
-__ramfunc int USART_txByte(uint8_t data);
-__ramfunc uint8_t USART_rxByte(void);
-__ramfunc void USART_printString(uint8_t *string);
+void USART_printHex(uint32_t integer);
+int USART_txByte(uint8_t data);
+uint8_t USART_rxByte(void);
+void USART_printString(uint8_t *string);
 void USART_init(uint32_t clkdiv);
 
 #endif

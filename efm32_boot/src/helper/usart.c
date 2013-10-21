@@ -33,9 +33,8 @@
  *
  *****************************************************************************/
 
-#include "em_device.h"
+#include <iot-os.h>
 #include "usart.h"
-#include "config.h"
 
 /***************************************************************************//**
  * @brief
@@ -44,7 +43,7 @@
  * @param integer
  *   The integer to be printed.
  ******************************************************************************/
-__ramfunc void USART_printHex(uint32_t integer)
+void USART_printHex(uint32_t integer)
 {
   uint8_t c;
   int     i, digit;
@@ -66,7 +65,7 @@ __ramfunc void USART_printHex(uint32_t integer)
 /**************************************************************************//**
  * @brief Transmit single byte to BOOTLOADER_USART
  *****************************************************************************/
-__ramfunc uint8_t USART_rxByte(void)
+uint8_t USART_rxByte(void)
 {
   uint32_t timer = 1000000;
   while (!(BOOTLOADER_USART->STATUS & USART_STATUS_RXDATAV) && --timer ) ;
@@ -84,7 +83,7 @@ __ramfunc uint8_t USART_rxByte(void)
 /**************************************************************************//**
  * @brief Transmit single byte to BOOTLOADER_USART
  *****************************************************************************/
-__ramfunc int USART_txByte(uint8_t data)
+int USART_txByte(uint8_t data)
 {
   /* Check that transmit buffer is empty */
   while (!(BOOTLOADER_USART->STATUS & USART_STATUS_TXBL)) ;
@@ -96,7 +95,7 @@ __ramfunc int USART_txByte(uint8_t data)
 /**************************************************************************//**
  * @brief Transmit null-terminated string to BOOTLOADER_USART
  *****************************************************************************/
-__ramfunc void USART_printString(uint8_t *string)
+void USART_printString(uint8_t *string)
 {
   while (*string != 0)
   {
