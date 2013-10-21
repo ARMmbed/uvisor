@@ -1,6 +1,21 @@
 #include <iot-os.h>
 
-void reset_handler(void)
+void __attribute__ ((noreturn)) reset_handler(void)
 {
-    __builtin_memcpy(&__data_start__, &__data_start_src__, __data_size__);
+    uint32_t t, *dst;
+    const uint32_t* src;
+
+    /* initialize data RAM from flash*/
+    src = &__data_start_src__;
+    dst = &__data_start__;
+    while(dst<&__data_end__)
+        *dst++ = *src++;
+
+    /* set bss to zero */
+    dst = &__bss_start__;
+    while(dst<&__bss_end__)
+        *dst++ = 0;
+
+    main();
+    while(1){};
 }

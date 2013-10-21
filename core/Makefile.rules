@@ -1,6 +1,7 @@
 PREFIX:=arm-none-eabi-
 CC:=$(PREFIX)gcc
 OBJCOPY:=$(PREFIX)objcopy
+OBJDUMP:=$(PREFIX)objdump
 
 CORE:=../core
 
@@ -34,10 +35,11 @@ all: $(PROJECT).bin
 
 $(PROJECT).elf: $(OBJS)
 	$(CC) $(LDFLAGS) -o $@ $^
+	$(OBJDUMP) -S $@ > $(PROJECT).asm
 
 $(PROJECT).bin: $(PROJECT).elf
 	$(OBJCOPY) $< -O binary $@
 
 clean:
-	rm -f $(PROJECT).map $(PROJECT).elf $(PROJECT).bin
+	rm -f $(PROJECT).map $(PROJECT).elf $(PROJECT).bin $(PROJECT).asm
 	find . $(CORE) -iname '*.o' -exec rm -f \{\} \;
