@@ -36,10 +36,10 @@
 #ifndef _UART_H
 #define _UART_H
 
-void USART_printHex(uint32_t integer);
-int USART_txByte(uint8_t data);
-uint8_t USART_rxByte(void);
-void USART_printString(uint8_t *string);
-void USART_init(uint32_t clkdiv);
+extern void USART_printHex(uint32_t integer);
+extern void USART_txByte(uint8_t data);
+extern uint8_t USART_rxByte(void);
+extern void USART_printString(uint8_t *string);
+extern void USART_init(uint32_t clkdiv);
 
 #endif
