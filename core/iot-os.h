@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <printf.h>
+
+/* per-project-configuration */
+#include <config.h>
 
 /* EFM32 definitions */
 #include <em_device.h>
