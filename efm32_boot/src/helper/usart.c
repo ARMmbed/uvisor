@@ -36,6 +36,9 @@
 #include <iot-os.h>
 #include "usart.h"
 
+/* point USART_txByte to default_putc of printf */
+void default_putc (uint8_t data) ALIAS(USART_txByte);
+
 /***************************************************************************//**
  * @brief
  *   Prints an int in hex.
@@ -83,13 +86,12 @@ uint8_t USART_rxByte(void)
 /**************************************************************************//**
  * @brief Transmit single byte to BOOTLOADER_USART
  *****************************************************************************/
-int USART_txByte(uint8_t data)
+void USART_txByte(uint8_t data)
 {
   /* Check that transmit buffer is empty */
   while (!(BOOTLOADER_USART->STATUS & USART_STATUS_TXBL)) ;
 
   BOOTLOADER_USART->TXDATA = (uint32_t) data;
-  return (int) data;
 }
 
 /**************************************************************************//**
