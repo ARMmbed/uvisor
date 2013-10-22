@@ -108,14 +108,13 @@ regs Kusti, 23.10.2004
 
 #include <stdarg.h>
 
-void init_printf(void* putp,void (*putf) (void*,char));
+/* declare default global putchar */
+extern void default_putc (uint8_t data);
 
-void tfp_printf(char *fmt, ...);
+typedef void (*tfp_putcf) (void*,char);
+
 void tfp_sprintf(char* s,char *fmt, ...);
-
-void tfp_format(void* putp,void (*putf) (void*,char),char *fmt, va_list va);
-
-#define printf tfp_printf
-#define sprintf tfp_sprintf
+void tfp_printf (const char *fmt, ...);
+void tfp_format(void* putp,tfp_putcf putf,const char *fmt, va_list va);
 
 #endif
