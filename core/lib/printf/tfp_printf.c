@@ -29,12 +29,8 @@
  * OF SUCH DAMAGE.
  */
 
-#include "printf.h"
-
-typedef void (*putcf) (void*,char);
-static putcf stdout_putf;
-static void* stdout_putp;
-
+#include <iot-os.h>
+#include "tfp_printf.h"
 
 #ifdef PRINTF_LONG_SUPPORT
 
@@ -105,9 +101,9 @@ static int a2d(char ch)
 	else return -1;
 	}
 
-static char a2i(char ch, char** src,int base,int* nump)
+static char a2i(char ch, const char** src,int base,int* nump)
 	{
-	char* p= *src;
+	const char* p= *src;
 	int num=0;
 	int digit;
 	while ((digit=a2d(ch))>=0) {
@@ -120,7 +116,7 @@ static char a2i(char ch, char** src,int base,int* nump)
 	return ch;
 	}
 
-static void putchw(void* putp,putcf putf,int n, char z, char* bf)
+static void putchw(void* putp,tfp_putcf putf,int n, char z, char* bf)
 	{
 	char fc=z? '0' : ' ';
 	char ch;
@@ -133,7 +129,7 @@ static void putchw(void* putp,putcf putf,int n, char z, char* bf)
 		putf(putp,ch);
 	}
 
-void tfp_format(void* putp,putcf putf,char *fmt, va_list va)
+void tfp_format(void* putp,tfp_putcf putf,const char *fmt, va_list va)
 	{
 	char bf[12];
     
@@ -211,21 +207,6 @@ void tfp_format(void* putp,putcf putf,char *fmt, va_list va)
 	abort:;
 	}
 
-
-void init_printf(void* putp,void (*putf) (void*,char))
-	{
-	stdout_putf=putf;
-	stdout_putp=putp;
-	}
-
-void tfp_printf(char *fmt, ...)
-	{
-	va_list va;
-	va_start(va,fmt);
-	tfp_format(stdout_putp,stdout_putf,fmt,va);
-	va_end(va);
-	}
-
 static void putcp(void* p,char c)
 	{
 	*(*((char**)p))++ = c;
@@ -240,4 +221,16 @@ void tfp_sprintf(char* s,char *fmt, ...)
 	va_end(va);
 	}
 
+static void tfp_printf_putcp(void* p,char c)
+{
+	(void) p;
+	default_putc(c);
+}
 
+void tfp_printf (const char *fmt, ...)
+{
+	va_list va;
+	va_start (va, fmt);
+	tfp_format (NULL, tfp_printf_putcp, fmt, va);
+	va_end (va);
+}

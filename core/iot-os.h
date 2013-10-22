@@ -3,7 +3,14 @@
 
 #include <stdint.h>
 #include <string.h>
-#include <printf.h>
+
+#include <tfp_printf.h>
+#define printf tfp_printf
+
+#define PACKED __attribute__((packed))
+#define WEAK __attribute__ ((weak))
+#define ALIAS(f) __attribute__ ((weak, alias (#f)))
+
 
 /* per-project-configuration */
 #include <config.h>
