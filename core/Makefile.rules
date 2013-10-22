@@ -6,9 +6,11 @@ OBJDUMP:=$(PREFIX)objdump
 CORE:=../core
 
 SYSTEM:=$(CORE)/system
+LIB:=$(CORE)/lib
 DEVICE:=$(CORE)/arch/$(ARCH)
 SOURCES:=$(SYSTEM)/src/isr.c \
          $(SYSTEM)/src/reset.c \
+         $(LIB)/printf/printf.c \
          $(DEVICE)/src/system.c \
          $(APP_SRC)
 
@@ -33,6 +35,7 @@ CFLAGS:=$(OPT) $(DEBUG) $(FLAGS_CM3) \
         -I$(CORE)/cmsis/inc \
         -I$(CORE) -I$(SYSTEM)/inc -Iconfig \
         -I$(DEVICE)/inc \
+        -I$(LIB)/printf \
         $(APP_CFLAGS)
 
 OBJS:=$(SOURCES:.c=.o)
