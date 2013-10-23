@@ -21,7 +21,6 @@
 
 /* IOT-OS specific includes */
 #include <isr.h>
-#include <reset.h>
 #include <linker.h>
 
 #endif/*__IOT_OS_H__*/

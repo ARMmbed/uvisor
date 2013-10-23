@@ -9,7 +9,6 @@ SYSTEM:=$(CORE)/system
 LIB:=$(CORE)/lib
 DEVICE:=$(CORE)/arch/$(ARCH)
 SOURCES:=$(SYSTEM)/src/isr.c \
-         $(SYSTEM)/src/reset.c \
          $(LIB)/printf/tfp_printf.c \
          $(DEVICE)/src/system.c \
          $(APP_SRC)
