@@ -97,7 +97,7 @@ void USART_txByte(uint8_t data)
 /**************************************************************************//**
  * @brief Transmit null-terminated string to BOOTLOADER_USART
  *****************************************************************************/
-void USART_printString(uint8_t *string)
+void USART_printString(const uint8_t *string)
 {
   while (*string != 0)
   {

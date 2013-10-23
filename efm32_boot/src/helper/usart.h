@@ -39,7 +39,7 @@
 extern void USART_printHex(uint32_t integer);
 extern void USART_txByte(uint8_t data);
 extern uint8_t USART_rxByte(void);
-extern void USART_printString(uint8_t *string);
+extern void USART_printString(const uint8_t *string);
 extern void USART_init(uint32_t clkdiv);
 
 #endif
