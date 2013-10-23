@@ -36,9 +36,6 @@
 #ifndef _XMODEM_H
 #define _XMODEM_H
 
-#include <stdint.h>
-#include "compiler.h"
-
 #define XMODEM_SOH                1
 #define XMODEM_EOT                4
 #define XMODEM_ACK                6
@@ -68,6 +65,6 @@ typedef struct
   uint8_t crcLow;
 } XMODEM_packet;
 
-__ramfunc int XMODEM_download(uint32_t baseAddress, uint32_t endAddress);
+extern int XMODEM_download(uint32_t baseAddress, uint32_t endAddress);
 
 #endif

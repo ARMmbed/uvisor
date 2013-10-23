@@ -49,36 +49,6 @@
 /** Version string, used when the user connects */
 #define BOOTLOADER_VERSION_STRING "1.63 "
 
-/* Vector table in RAM. We construct a new vector table to conserve space in
- * flash as it is sparsly populated. */
-#if defined (__ICCARM__)
-#pragma location=0x20000000
-__no_init uint32_t vectorTable[47];
-#elif defined (__CC_ARM)
-uint32_t vectorTable[47] __attribute__((at(0x20000000)));
-#elif defined (__GNUC__)
-uint32_t vectorTable[47] __attribute__((aligned(512)));
-#else
-#error Undefined toolkit, need to define alignment
-#endif
-
-
-/*
- * This variable holds the computed CRC-16 of the bootloader and is used during
- * production testing to ensure the correct programming of the bootloader.
- * This can safely be omitted if you are rolling your own bootloader.
- */
-#if defined ( __ICCARM__ )
-#pragma location=0x200000bc
-__no_init uint16_t bootloaderCRC;
-#elif defined (__CC_ARM)
-uint16_t bootloaderCRC __attribute__((at(0x200000bc)));
-#elif defined (__GNUC__)
-uint16_t bootloaderCRC __attribute__((at(0x200000bc)));
-#else
-#error Undefined toolkit, need to define alignment
-#endif
-
 /* If this flag is set the bootloader will be reset when the RTC expires.
  * This is used when autobaud is started. If there has been no synchronization
  * until the RTC expires the entire bootloader is reset.
@@ -211,7 +181,7 @@ void waitForBootOrUSART(void)
  * @param end
  *   The end of the block. This byte is not included in the checksum.
  *****************************************************************************/
-__ramfunc void verify(uint32_t start, uint32_t end)
+static void verify(uint32_t start, uint32_t end)
 {
   USART_printString(crcString);
   USART_printHex(CRC_calc((void *) start, (void *) end));
@@ -222,10 +192,10 @@ __ramfunc void verify(uint32_t start, uint32_t end)
  * @brief
  *   The main command line loop. Placed in Ram so that it can still run after
  *   a destructive write operation.
- *   NOTE: __ramfunc is a IAR specific instruction to put code into RAM.
+ *   NOTE: static is a IAR specific instruction to put code into RAM.
  *   This allows the bootloader to survive a destructive upload.
  *****************************************************************************/
-__ramfunc void commandlineLoop(void)
+static void commandlineLoop(void)
 {
   uint32_t flashSize;
   uint8_t  c;
@@ -344,14 +314,14 @@ __ramfunc void commandlineLoop(void)
  * @brief  Create a new vector table in RAM.
  *         We generate it here to conserve space in flash.
  *****************************************************************************/
-void generateVectorTable(void)
+static void generateVectorTable(void)
 {
-  vectorTable[AUTOBAUD_TIMER_IRQn + 16] = (uint32_t) TIMER_IRQHandler;
-  vectorTable[RTC_IRQn + 16]            = (uint32_t) RTC_IRQHandler;
+  g_isr_vector[AUTOBAUD_TIMER_IRQn + 16] = TIMER_IRQHandler;
+  g_isr_vector[RTC_IRQn + 16]            = RTC_IRQHandler;
 #ifdef USART_OVERLAPS_WITH_BOOTLOADER
-  vectorTable[GPIO_EVEN_IRQn + 16]      = (uint32_t) GPIO_IRQHandler;
+  g_isr_vector[GPIO_EVEN_IRQn + 16]      = GPIO_IRQHandler;
 #endif
-  SCB->VTOR                             = (uint32_t) vectorTable;
+  SCB->VTOR                              = (uint32_t) &g_isr_vector;
 }
 
 /**************************************************************************//**
@@ -369,13 +339,6 @@ void main(void)
 
   /* Generate a new vector table and place it in RAM */
   generateVectorTable();
-
-  /* Calculate CRC16 for the bootloader itself and the Device Information page. */
-  /* This is used for production testing and can safely be omitted in */
-  /* your own code. */
-  bootloaderCRC  = CRC_calc((void *) 0x0, (void *) BOOTLOADER_SIZE);
-  bootloaderCRC |= CRC_calc((void *) 0x0FE081B2, (void *) 0x0FE08200) << 16;
-  /* End safe to omit. */
 
   /* Enable clocks for peripherals. */
   CMU->HFPERCLKDIV = CMU_HFPERCLKDIV_HFPERCLKEN;

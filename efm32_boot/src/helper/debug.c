@@ -35,10 +35,8 @@
  * arising from your use of this Software.
  *
  *****************************************************************************/
-#include <stdint.h>
-#include "em_device.h"
+#include <iot-os.h>
 #include "debug.h"
-#include "config.h"
 
 #ifndef NDEBUG
 /**************************************************************************//**

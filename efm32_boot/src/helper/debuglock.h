@@ -36,12 +36,9 @@
 #ifndef _DEBUGLOCK_H
 #define _DEBUGLOCK_H
 
-#include "compiler.h"
-
 #define DEBUG_LOCK_WORD    (0x0FE04000 + (127 * 4))
 
-#include <stdint.h>
-__ramfunc void DEBUGLOCK_startDebugInterface(void);
-__ramfunc bool DEBUGLOCK_lock(void);
+extern void DEBUGLOCK_startDebugInterface(void);
+extern bool DEBUGLOCK_lock(void);
 
 #endif

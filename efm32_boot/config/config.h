@@ -63,6 +63,19 @@
 #define AUTOBAUD_TIMER_IRQn        TIMER1_IRQn
 #define AUTOBAUD_TIMER_CLOCK       CMU_HFPERCLKEN0_TIMER1
 
+/** USART used for debugging. */
+#define DEBUG_USART                UART1
+#define DEBUG_USART_CLOCK          CMU_HFPERCLKEN0_UART1
+#define DEBUG_USART_LOCATION       UART_ROUTE_LOCATION_LOC2
+
+/** This function sets up the GPIO setting for the debug output. */
+static __INLINE void CONFIG_DebugGpioSetup(void)
+{
+  /* Avoid false start by setting output as high */
+  GPIO->P[1].DOUT = (1 << 9);
+  GPIO->P[1].MODEH = GPIO_P_MODEH_MODE9_PUSHPULL | GPIO_P_MODEH_MODE10_INPUT;
+}
+
 /** This function sets up GPIO for the USART used in the bootloader. */
 static __INLINE void CONFIG_UsartGpioSetup(void)
 {

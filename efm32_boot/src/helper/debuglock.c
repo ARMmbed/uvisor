@@ -32,14 +32,9 @@
  * arising from your use of this Software.
  *
  *****************************************************************************/
-#include <stdio.h>
-#include <stdbool.h>
-
+#include <iot-os.h>
 #include "debuglock.h"
-#include "em_device.h"
-
 #include "flash.h"
-#include "config.h"
 
 /*************************************************************************//**
  * This is the SWD debug sequence.
@@ -59,7 +54,7 @@ uint8_t _DEBUGLOCK_swData[] = {
  *   This functions drives a bit on the SW debug interface by bit-banging
  *   the GPIO->ROUTE register and using the external pull-ups.
  ****************************************************************************/
-__ramfunc __INLINE void _DEBUGLOCK_driveBit(int bit)
+__INLINE void _DEBUGLOCK_driveBit(int bit)
 {
   int i;
   if (bit)
@@ -88,7 +83,7 @@ __ramfunc __INLINE void _DEBUGLOCK_driveBit(int bit)
  *   This functions enables the debug interface by bit-banging a SWD init
  *   sequence on the debug interface.
  ****************************************************************************/
-__ramfunc void DEBUGLOCK_startDebugInterface(void)
+void DEBUGLOCK_startDebugInterface(void)
 {
   int bit, byte;
 #ifdef USART_OVERLAPS_WITH_BOOTLOADER
@@ -118,7 +113,7 @@ __ramfunc void DEBUGLOCK_startDebugInterface(void)
  * @return
  *   Returns true if the DLW has been sucessfully set, false otherwise.
  ****************************************************************************/
-__ramfunc bool DEBUGLOCK_lock(void)
+bool DEBUGLOCK_lock(void)
 {
   /* Start debug interface. */
   DEBUGLOCK_startDebugInterface();

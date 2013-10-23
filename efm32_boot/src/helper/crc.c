@@ -32,8 +32,8 @@
  * arising from your use of this Software.
  *
  *****************************************************************************/
+#include <iot-os.h>
 #include "crc.h"
-#include "em_device.h"
 
 /**************************************************************************//**
  * @brief
@@ -57,7 +57,7 @@
  * @return
  *   The computed CRC value.
  *****************************************************************************/
-__ramfunc uint16_t CRC_calc(uint8_t *start, uint8_t *end)
+uint16_t CRC_calc(uint8_t *start, uint8_t *end)
 {
   uint16_t crc = 0x0;
   uint8_t  *data;

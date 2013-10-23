@@ -39,8 +39,8 @@
 #ifndef _DEBUG_H
 #define _DEBUG_H
 
-void DEBUG_init(void);
-int DEBUG_TxByte(uint8_t data);
-int DEBUG_TxBuf(uint8_t *buffer, int nbytes);
+extern void DEBUG_init(void);
+extern int DEBUG_TxByte(uint8_t data);
+extern int DEBUG_TxBuf(uint8_t *buffer, int nbytes);
 
 #endif

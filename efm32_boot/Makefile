@@ -2,17 +2,16 @@ PROJECT:=efm32_boot
 ARCH:=EFM32GG
 CPU:=$(ARCH)990F1024
 
-APP_CFLAGS:=-Isrc -Isrc/helper
-APP_SRC:=src/main.c \
-         src/helper/usart.c
-
-#APP_SRC:=src/autobaud.c \
-#         src/boot.c \
-#         src/crc.c \
-#         src/debug.c \
-#         src/debuglock.c \
-#         src/flash.c \
-#         src/usart.c \
-#         src/xmodem.c
+APP_CFLAGS:=-Isrc -Isrc/helper -DNDEBUG
+APP_SRC:=\
+	src/main.c \
+	src/helper/autobaud.c \
+	src/helper/boot.c \
+	src/helper/crc.c \
+	src/helper/debug.c \
+	src/helper/debuglock.c \
+	src/helper/flash.c \
+	src/helper/usart.c \
+	src/helper/xmodem.c
 
 include ../core/Makefile.rules
