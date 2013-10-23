@@ -32,13 +32,8 @@
  * arising from your use of this Software.
  *
  *****************************************************************************/
-#include "em_device.h"
+#include <iot-os.h>
 #include "flash.h"
-#include "config.h"
-
-#ifndef NDEBUG
-#include <stdio.h>
-#endif
 
 /* DMA Control block. We only need 1 block for transfers. */
 /* This control block needs to be aligned to 256 byte boundaries. */
@@ -78,7 +73,7 @@ void FLASH_CalcPageSize(void)
   }
 
 #ifndef NDEBUG
-  printf( "Flash page size is %ld bytes.\r\n", flashPageSize );
+  dprintf( "Flash page size is %ld bytes.\r\n", flashPageSize );
 #endif
 }
 
@@ -116,7 +111,7 @@ void FLASH_init(void)
  *
  * This function will not return until the data has been programmed.
  *****************************************************************************/
-__ramfunc void FLASH_writeWord(uint32_t adr, uint32_t data)
+void FLASH_writeWord(uint32_t adr, uint32_t data)
 {
   /* Check for an active transfer. If a transfer is in progress,
    * we have to delay. Normally, the USART transfer takes more time
@@ -165,7 +160,7 @@ __ramfunc void FLASH_writeWord(uint32_t adr, uint32_t data)
  * byte count must both be multiples of four.  It is up to the caller to
  * verify the programmed contents, if such verification is required.
  *****************************************************************************/
-__ramfunc void FLASH_writeBlock(void *block_start,
+void FLASH_writeBlock(void *block_start,
                                 uint32_t offset_into_block,
                                 uint32_t count,
                                 uint8_t const *buffer)
@@ -226,7 +221,7 @@ __ramfunc void FLASH_writeBlock(void *block_start,
  *
  * This function will not return until the block has been erased.
  *****************************************************************************/
-__ramfunc void FLASH_eraseOneBlock(uint32_t blockStart)
+void FLASH_eraseOneBlock(uint32_t blockStart)
 {
   uint32_t acc = 0xFFFFFFFF;
   uint32_t *ptr;

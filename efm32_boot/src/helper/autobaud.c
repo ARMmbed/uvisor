@@ -32,13 +32,9 @@
  * arising from your use of this Software.
  *
  *****************************************************************************/
-#include "autobaud.h"
-#include "em_device.h"
-#include "config.h"
 
-#ifndef NDEBUG
-#include <stdio.h>
-#endif
+#include <iot-os.h>
+#include "autobaud.h"
 
 #define SAMPLE_MAX    5
 

@@ -36,10 +36,8 @@
 #ifndef _AUTOBAUD_H
 #define _AUTOBAUD_H
 
-#include <stdint.h>
-
-void TIMER_IRQHandler(void);
-void GPIO_IRQHandler(void);
-int AUTOBAUD_sync(void);
+extern void TIMER_IRQHandler(void);
+extern void GPIO_IRQHandler(void);
+extern int AUTOBAUD_sync(void);
 
 #endif

@@ -32,14 +32,9 @@
  * arising from your use of this Software.
  *
  *****************************************************************************/
-#include <stdio.h>
-#include <stdbool.h>
-
+#include <iot-os.h>
 #include "xmodem.h"
-#include "em_device.h"
 #include "boot.h"
-#include "compiler.h"
-#include "config.h"
 
 #ifndef NDEBUG
 bool printedPC = false;
@@ -57,7 +52,7 @@ bool BOOT_checkFirmwareIsValid(void)
   if (!printedPC)
   {
     printedPC = true;
-    printf("Application Reset vector = 0x%x \r\n", pc);
+    dprintf("Application Reset vector = 0x%x \r\n", pc);
   }
 #endif
   if (pc < MAX_SIZE_OF_FLASH)
@@ -79,7 +74,7 @@ __asm void BOOT_jump(uint32_t sp, uint32_t pc)
   mov pc, r1
 }
 #else
-__ramfunc void BOOT_jump(uint32_t sp, uint32_t pc)
+void BOOT_jump(uint32_t sp, uint32_t pc)
 {
   (void) sp;
   (void) pc;
@@ -95,7 +90,7 @@ __ramfunc void BOOT_jump(uint32_t sp, uint32_t pc)
 /**************************************************************************//**
  * @brief Boots the application
  *****************************************************************************/
-__ramfunc void BOOT_boot(void)
+void BOOT_boot(void)
 {
   uint32_t pc, sp;
 

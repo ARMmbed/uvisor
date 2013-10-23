@@ -36,9 +36,6 @@
 #ifndef _CRC_H
 #define _CRC_H
 
-#include <stdint.h>
-#include "compiler.h"
-
-__ramfunc uint16_t CRC_calc(uint8_t *start, uint8_t *end);
+extern uint16_t CRC_calc(uint8_t *start, uint8_t *end);
 
 #endif

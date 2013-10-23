@@ -36,12 +36,7 @@
 #ifndef _BOOT_H
 #define _BOOT_H
 
-#include <stdint.h>
-#include <stdbool.h>
-
-#include "compiler.h"
-
-__ramfunc void BOOT_boot(void);
-bool BOOT_checkFirmwareIsValid(void);
+extern void BOOT_boot(void);
+extern bool BOOT_checkFirmwareIsValid(void);
 
 #endif

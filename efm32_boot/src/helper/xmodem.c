@@ -32,14 +32,11 @@
  * arising from your use of this Software.
  *
  *****************************************************************************/
-#include <stdio.h>
-#include "em_device.h"
-
+#include <iot-os.h>
 #include "xmodem.h"
 #include "usart.h"
 #include "flash.h"
 #include "crc.h"
-#include "config.h"
 
 #define ALIGNMENT(base,align) (((base)+((align)-1))&(~((align)-1)))
 
@@ -61,7 +58,7 @@ uint8_t rawPacket[2][ALIGNMENT(sizeof(XMODEM_packet),4)] __attribute__ ((aligned
  * @param sequenceNumber The current sequence number.
  * @returns -1 on packet error, 0 otherwise
  *****************************************************************************/
-__ramfunc __INLINE int XMODEM_verifyPacketChecksum(XMODEM_packet *pkt, int sequenceNumber)
+__INLINE int XMODEM_verifyPacketChecksum(XMODEM_packet *pkt, int sequenceNumber)
 {
   uint16_t packetCRC;
   uint16_t calculatedCRC;
@@ -98,7 +95,7 @@ __ramfunc __INLINE int XMODEM_verifyPacketChecksum(XMODEM_packet *pkt, int seque
  * @param endAddress
  *   The last address. This is only used for clearing the flash
  *****************************************************************************/
-__ramfunc int XMODEM_download(uint32_t baseAddress, uint32_t endAddress)
+int XMODEM_download(uint32_t baseAddress, uint32_t endAddress)
 {
   XMODEM_packet *pkt;
   uint32_t      i;

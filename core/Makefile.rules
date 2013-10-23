@@ -23,6 +23,7 @@ LDFLAGS:=$(FLAGS_CM3) \
         -L$(CORE)/linker \
         -T$(CPU).ld \
         -nostartfiles \
+        -nostdlib \
         -Xlinker --gc-sections \
         -Xlinker -M \
         -Xlinker -Map=$(PROJECT).map

@@ -2,10 +2,11 @@
 #define __IOT_OS_H__
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 
 #include <tfp_printf.h>
-#define printf tfp_printf
+#define dprintf tfp_printf
 
 #define PACKED __attribute__((packed))
 #define WEAK __attribute__ ((weak))
