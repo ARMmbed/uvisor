@@ -39,18 +39,7 @@
 #include "crc.h"
 
 #define ALIGNMENT(base,align) (((base)+((align)-1))&(~((align)-1)))
-
-/* Packet storage. Double buffered version. */
-#if defined (__ICCARM__)
-#pragma data_alignment=4
-uint8_t rawPacket[2][ALIGNMENT(sizeof(XMODEM_packet),4)];
-#elif defined (__CC_ARM)
 uint8_t rawPacket[2][ALIGNMENT(sizeof(XMODEM_packet),4)] __attribute__ ((aligned(4)));
-#elif defined (__GNUC__)
-uint8_t rawPacket[2][ALIGNMENT(sizeof(XMODEM_packet),4)] __attribute__ ((aligned(4)));
-#else
-#error Undefined toolkit, need to define alignment
-#endif
 
 /**************************************************************************//**
  * @brief Verifies checksum, packet numbering and

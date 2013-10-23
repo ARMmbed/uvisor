@@ -84,7 +84,7 @@ void TIMER_IRQHandler(void)
 #else
 #error Invalid timer channel.
 #endif
-  
+
   /* Store CC1 timer value in samples array */
   if (currentSample < SAMPLE_MAX)
   {
@@ -189,7 +189,7 @@ int AUTOBAUD_sync(void)
 #else
 #error Invalid timer channel.
 #endif
-                  
+
   /* Enable interrupts */
 #if (AUTOBAUD_TIMER_IRQn < 32) && (GPIO_EVEN_IRQn < 32)
   NVIC->ISER[0] = (1 << AUTOBAUD_TIMER_IRQn) | (1 << GPIO_EVEN_IRQn);
@@ -198,7 +198,7 @@ int AUTOBAUD_sync(void)
 #ifdef USART_OVERLAPS_WITH_BOOTLOADER
   NVIC_EnableIRQ(GPIO_EVEN_IRQn);
 #endif
-#endif  
+#endif
 
   /* Enable interrupt on channel capture */
 #if AUTOBAUD_TIMER_CHANNEL == 0
@@ -245,7 +245,7 @@ int AUTOBAUD_sync(void)
 #ifdef USART_OVERLAPS_WITH_BOOTLOADER
   while (gpioEvent) ;
 #endif
-    
+
   /* Use the collected samples to estimate the number of clock cycles per
    * bit in transfer */
   return AUTOBAUD_estimatePeriod();

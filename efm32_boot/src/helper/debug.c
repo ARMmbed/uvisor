@@ -56,7 +56,7 @@ void DEBUG_init(void)
                   | DEBUG_USART_LOCATION;
 
   CONFIG_DebugGpioSetup();
-  
+
   /* Clear RX/TX buffers */
   DEBUG_USART->CMD = USART_CMD_CLEARRX | USART_CMD_CLEARTX;
   /* Enable RX/TX */
