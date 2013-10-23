@@ -60,12 +60,12 @@ bool resetEFM32onRTCTimeout = false;
 /**************************************************************************//**
  * Strings.
  *****************************************************************************/
-uint8_t crcString[]     = "\r\nCRC: ";
-uint8_t newLineString[] = "\r\n";
-uint8_t readyString[]   = "\r\nReady\r\n";
-uint8_t okString[]      = "\r\nOK\r\n";
-uint8_t failString[]    = "\r\nFail\r\n";
-uint8_t unknownString[] = "\r\n?\r\n";
+const uint8_t crcString[]     = "\r\nCRC: ";
+const uint8_t newLineString[] = "\r\n";
+const uint8_t readyString[]   = "\r\nReady\r\n";
+const uint8_t okString[]      = "\r\nOK\r\n";
+const uint8_t failString[]    = "\r\nFail\r\n";
+const uint8_t unknownString[] = "\r\n?\r\n";
 
 /**************************************************************************//**
  * @brief RTC IRQ Handler
@@ -199,7 +199,7 @@ static void commandlineLoop(void)
 {
   uint32_t flashSize;
   uint8_t  c;
-  uint8_t *returnString;
+  const uint8_t *returnString;
 
   /* Find the size of the flash. DEVINFO->MSIZE is the
    * size in KB so left shift by 10. */
