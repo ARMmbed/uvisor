@@ -2,6 +2,7 @@ PREFIX:=arm-none-eabi-
 CC:=$(PREFIX)gcc
 OBJCOPY:=$(PREFIX)objcopy
 OBJDUMP:=$(PREFIX)objdump
+GDB:=$(PREFIX)gdb
 
 CORE:=../core
 
@@ -13,6 +14,7 @@ SOURCES:=$(SYSTEM)/src/isr.c \
          $(DEVICE)/src/system.c \
          $(APP_SRC)
 
+DEBUG_HOST:=localhost
 OPT:=-Os
 DEBUG:=-g
 
@@ -40,15 +42,37 @@ CFLAGS:=$(OPT) $(DEBUG) $(FLAGS_CM3) \
 
 OBJS:=$(SOURCES:.c=.o)
 
+.PHONY: debug gdb gdbtui
+
 all: $(PROJECT).bin
 
 $(PROJECT).elf: $(OBJS)
 	$(CC) $(LDFLAGS) -o $@ $^
-	$(OBJDUMP) -d $@ > $(PROJECT).asm
+	$(OBJDUMP) -S $@ > $(PROJECT).asm
 
 $(PROJECT).bin: $(PROJECT).elf
 	$(OBJCOPY) $< -O binary $@
 
+gdb: gdb.scri
+	$(GDB) -x $<
+
+gdbtui: gdb.script
+	$(GDB)tui -x $<
+
+gdb.script: $(PROJECT).elf
+	echo -e "\
+target remote $(DEBUG_HOST)\n\
+monitor endian little\n\
+monitor halt\n\
+monitor speed 1000\n\
+monitor flash device = $(CPU)\n\
+load $<\n\
+file $<\n\
+monitor reset\n\
+b main\n\
+b default_handler\n\
+" > $@
+
 clean:
-	rm -f $(PROJECT).map $(PROJECT).elf $(PROJECT).bin $(PROJECT).asm
+	rm -f $(PROJECT).map $(PROJECT).elf $(PROJECT).bin $(PROJECT).asm gdb.script
 	find . $(CORE) -iname '*.o' -exec rm -f \{\} \;
