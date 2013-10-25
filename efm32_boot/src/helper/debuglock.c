@@ -42,7 +42,7 @@
  * last sets the powerup request bit, which enables debug mode.
  * By enabling debug mode, we can write to the Debug lock word.
  ****************************************************************************/
-uint8_t _DEBUGLOCK_swData[] = {
+const uint8_t _DEBUGLOCK_swData[] = {
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
   0x00, 0x00,
   0xa5, 0x00, 0x00, 0x00, 0x00, 0x00, /* read DP-ID - init sequence ends after this */

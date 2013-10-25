@@ -7,52 +7,37 @@ SECTIONS
 		KEEP(*(.isr_vector_tmp))
 		*(.text*)
 		*(.rodata*)
-		. = ALIGN(4);
-		__etext = .;
+		PROVIDE(__data_start_src__ = LOADADDR(.data));
+		PROVIDE(__stack_end__ = ORIGIN(RAM) + LENGTH(RAM));
 	} > FLASH
 
-	.bss :
+	.isr (NOLOAD):
 	{
 		. = ALIGN(128);
-		*(.isr_vector*)
+		*(.isr_vector)
+	} > RAM
+
+	.data :
+	{
+		. = ALIGN(4);
+		__data_start__ = .;
+		*(.ramfunc)
+		*(.ramfunc.*)
+		*(.data)
+		*(.data.*)
+		. = ALIGN(4);
+		/* All data end */
+		__data_end__ = .;
+	} > RAM AT>FLASH
+
+	.bss (NOLOAD):
+	{
 		. = ALIGN(4);
 		__bss_start__ = .;
 		*(.bss)
 		*(.bss.*)
 		. = ALIGN(4);
 		__bss_end__ = .;
-	} > RAM
-
-	.data : AT (__etext)
-	{
-		. = ALIGN(4);
-		__data_start__ = .;
-		__data_start_src__ = __etext;
-		*(.ramfunc)
-		*(.data)
-		*(.data.*)
-		. = ALIGN(4);
-		/* All data end */
-		__data_end__ = .;
-	} > RAM
-
-	.heap :
-	{
-		. = ALIGN(4);
 		__heap_start__ = .;
-		*(.heap)
-		*(.heap.*)
-		. = ALIGN(4);
-		__heap_end__ = .;
-	} > RAM
-
-	.stack :
-	{
-		. = ALIGN(4);
-		__stack_start__ = .;
-		*(.stack)
-		*(.stack.*)
-		. = ALIGN(4);
-		__stack_end__ = .;
 	} > RAM
 }
