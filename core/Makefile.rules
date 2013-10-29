@@ -53,7 +53,7 @@ $(PROJECT).elf: $(OBJS)
 $(PROJECT).bin: $(PROJECT).elf
 	$(OBJCOPY) $< -O binary $@
 
-gdb: gdb.scri
+gdb: gdb.script
 	$(GDB) -x $<
 
 gdbtui: gdb.script
