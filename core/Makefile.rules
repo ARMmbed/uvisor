@@ -42,7 +42,7 @@ CFLAGS:=$(OPT) $(DEBUG) $(FLAGS_CM3) \
 
 OBJS:=$(SOURCES:.c=.o)
 
-.PHONY: debug gdb gdbtui
+.PHONY: debug gdb gdbtui flash
 
 all: $(PROJECT).bin
 
@@ -73,6 +73,21 @@ b main\n\
 b default_handler\n\
 " > $@
 
+flash: gdb.flash
+	$(GDB) -x $<
+
+gdb.flash: $(PROJECT).elf
+	echo -e "\
+target remote $(DEBUG_HOST)\n\
+monitor endian little\n\
+monitor halt\n\
+monitor speed 1000\n\
+monitor flash device = $(CPU)\n\
+load $<\n\
+monitor reset\n\
+quit\n\
+" > $@
+
 clean:
-	rm -f $(PROJECT).map $(PROJECT).elf $(PROJECT).bin $(PROJECT).asm gdb.script
+	rm -f $(PROJECT).map $(PROJECT).elf $(PROJECT).bin $(PROJECT).asm gdb.script gdb.flash
 	find . $(CORE) -iname '*.o' -exec rm -f \{\} \;
