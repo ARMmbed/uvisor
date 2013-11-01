@@ -36,9 +36,6 @@
 #include <iot-os.h>
 #include "usart.h"
 
-/* point USART_txByte to default_putc of printf */
-void default_putc (uint8_t data) ALIAS(USART_txByte);
-
 /***************************************************************************//**
  * @brief
  *   Prints an int in hex.

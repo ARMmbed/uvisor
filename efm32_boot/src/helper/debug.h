@@ -40,7 +40,7 @@
 #define _DEBUG_H
 
 extern void DEBUG_init(void);
-extern int DEBUG_TxByte(uint8_t data);
+extern void DEBUG_TxByte(uint8_t data);
 extern int DEBUG_TxBuf(uint8_t *buffer, int nbytes);
 
 #endif

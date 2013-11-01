@@ -73,7 +73,7 @@ void FLASH_CalcPageSize(void)
   }
 
 #ifndef NDEBUG
-  dprintf( "Flash page size is %ld bytes.\r\n", flashPageSize );
+  dprintf( "Flash page size is %u bytes.\r\n", flashPageSize );
 #endif
 }
 

@@ -39,6 +39,10 @@
 #include "debug.h"
 
 #ifndef NDEBUG
+
+/* point USART_txByte to default_putc of printf */
+void default_putc (uint8_t data) ALIAS(DEBUG_TxByte);
+
 /**************************************************************************//**
  * @brief Initialize DEBUG_USART@115200 for use for debugging purposes.
  *****************************************************************************/
@@ -67,13 +71,12 @@ void DEBUG_init(void)
  * @brief Transmit a single byte on usart1
  * @param data Character to transmit.
  *****************************************************************************/
-int DEBUG_TxByte(uint8_t data)
+void DEBUG_TxByte(uint8_t data)
 {
   /* Check that transmit buffer is empty */
   while (!(DEBUG_USART->STATUS & USART_STATUS_TXBL)) ;
 
   DEBUG_USART->TXDATA = (uint32_t) data;
-  return (int) data;
 }
 
 /**************************************************************************//**
