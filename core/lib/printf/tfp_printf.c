@@ -172,6 +172,7 @@ void tfp_format(void* putp,tfp_putcf putf,const char *fmt, va_list va)
 					putchw(putp,putf,w,lz,bf);
 					break;
 					}
+				case 'i' :
 				case 'd' :  {
 #ifdef 	PRINTF_LONG_SUPPORT
 					if (lng)
