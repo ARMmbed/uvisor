@@ -126,11 +126,11 @@ void waitForBootOrUSART(void)
   {
     /* The SWDCLK signal is used to determine if the application
      * Should be booted or if the bootloader should be started
-     * SWDCLK (F0) has an internal pull-down and should be pulled high
+     * SWDCLK (B0) has an internal pull-down and should be pulled high
      *             to enter bootloader mode.
      */
     /* Check input pins */
-    SWDpins = GPIO->P[5].DIN & 0x1;
+    SWDpins = GPIO->P[1].DIN & 0x1;
 
 #ifndef NDEBUG
     if (oldPins != SWDpins)
@@ -152,7 +152,8 @@ void waitForBootOrUSART(void)
 
     /* SWDCLK (F0) is pulled high and SWDIO (F1) is pulled low */
     /* Enter bootloader mode */
-    if (SWDpins == 0x1)
+//    if (SWDpins == 0x1) FIXME!
+    if (SWDpins == 0x0)
     {
       /* Increase timeout to 30 seconds */
       RTC->COMP0 = AUTOBAUD_TIMEOUT * LFRCO_FREQ;
@@ -394,7 +395,7 @@ void main(void)
   periodTime24_8 = AUTOBAUD_sync();
 #ifndef NDEBUG
   dprintf("Autobaud complete.\r\n");
-  dprintf("Measured periodtime (24.8): %d.%d\r\n", periodTime24_8 >> 8, periodTime24_8 & 0xFF);
+  dprintf("Measured periodtime (24.8): %u.%u\r\n", periodTime24_8 >> 8, periodTime24_8 & 0xFF);
 #endif
 
   /* When autobaud has completed, we can be fairly certain that
@@ -421,7 +422,7 @@ void main(void)
   }
 #endif
 #ifndef NDEBUG
-  dprintf("BOOTLOADER_USART clkdiv = %d\r\n", clkdiv);
+  dprintf("BOOTLOADER_USART clkdiv = %u\r\n", clkdiv);
 #endif
 
   /* Initialize the UART */
