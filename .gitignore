@@ -2,4 +2,6 @@
 *.elf
 *.map
 *.asm
+*.bin
 gdb.script
+gdb.flash
