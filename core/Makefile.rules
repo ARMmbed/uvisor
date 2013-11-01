@@ -16,7 +16,7 @@ SOURCES:=$(SYSTEM)/src/isr.c \
 
 DEBUG_HOST:=localhost
 OPT:=-Os
-DEBUG:=-g
+DEBUG:=-g -DNDEBUG
 
 FLAGS_CM3:=-mcpu=cortex-m3 -mthumb
 
