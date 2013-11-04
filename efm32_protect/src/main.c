@@ -1,7 +1,7 @@
 #include <iot-os.h>
 #include "debug.h"
 
-static void hardware_init(void)
+static inline void hardware_init(void)
 {
     /* Enable clocks for peripherals */
     CMU->HFPERCLKDIV = CMU_HFPERCLKDIV_HFPERCLKEN;
