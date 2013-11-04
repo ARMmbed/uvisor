@@ -3,7 +3,7 @@
 
 static void hardware_init(void)
 {
-    /* Enable clocks for peripherals. */
+    /* Enable clocks for peripherals */
     CMU->HFPERCLKDIV = CMU_HFPERCLKDIV_HFPERCLKEN;
     CMU->HFPERCLKEN0 = CMU_HFPERCLKEN0_GPIO;
 
