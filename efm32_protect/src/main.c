@@ -13,6 +13,9 @@ static inline void hardware_init(void)
         >> _DEVINFO_AUXHFRCOCAL1_BAND28_SHIFT);
     while(!(CMU->STATUS & CMU_STATUS_HFRCORDY));
 
+    /* register SVC call interface */
+    svc_init();
+
     /* Enable output */
     DEBUG_init();
 }

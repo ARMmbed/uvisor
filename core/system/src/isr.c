@@ -25,6 +25,7 @@ void __attribute__ ((noreturn)) reset_handler(void)
     dst = (uint32_t*)&g_isr_vector;
     while(dst<((uint32_t*)&g_isr_vector[MAX_ISR_VECTORS]))
         *dst++ = (uint32_t)&default_handler;
+    SCB->VTOR = (uint32_t)&g_isr_vector;
 
     /* set bss to zero */
     dst = &__bss_start__;
