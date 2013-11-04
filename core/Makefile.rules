@@ -48,7 +48,7 @@ all: $(PROJECT).bin
 
 $(PROJECT).elf: $(OBJS)
 	$(CC) $(LDFLAGS) -o $@ $^
-	$(OBJDUMP) -S $@ > $(PROJECT).asm
+	$(OBJDUMP) -d $@ > $(PROJECT).asm
 
 $(PROJECT).bin: $(PROJECT).elf
 	$(OBJCOPY) $< -O binary $@
