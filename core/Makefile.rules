@@ -31,23 +31,26 @@ LDFLAGS:=$(FLAGS_CM3) \
         -Xlinker -M \
         -Xlinker -Map=$(PROJECT).map
 
-CFLAGS:=$(OPT) $(DEBUG) $(FLAGS_CM3) \
-        -ffunction-sections \
-        -fdata-sections \
-        -fno-common \
+CFLAGS_PRE:=\
+        $(OPT) \
+        $(DEBUG) \
         -D$(ARCH) \
         -D$(CPU) \
-        -Iconfig \
+        $(APP_CFLAGS) \
         -I$(CORE) \
         -I$(CORE)/cmsis/inc \
         -I$(SYSTEM)/inc \
         -I$(DEVICE)/inc \
         -I$(LIB)/printf \
-        $(APP_CFLAGS)
+        -ffunction-sections \
+        -fdata-sections \
+        -fno-common
+
+CFLAGS:=$(FLAGS_CM3) $(CFLAGS_PRE)
 
 OBJS:=$(SOURCES:.c=.o)
 
-.PHONY: debug gdb gdbtui flash ctags
+.PHONY: debug gdb gdbtui flash ctags source.c.tags
 
 all: $(PROJECT).bin
 
@@ -67,11 +70,7 @@ gdbtui: gdb.script
 ctags: source.c.tags
 
 source.c.tags: $(SOURCES)
-ifeq ($(FLAGS_CM3),)
-	geany -g $@ $(SOURCES)
-else
-	make -f $(firstword $(MAKEFILE_LIST)) FLAGS_CM3='' $@
-endif
+	CFLAGS="$(CFLAGS_PRE)" geany -g $@ $^
 
 gdb.script: $(PROJECT).elf
 	echo -e "\
