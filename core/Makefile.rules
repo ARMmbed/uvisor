@@ -16,7 +16,7 @@ SOURCES:=$(SYSTEM)/src/isr.c \
 
 DEBUG_HOST:=localhost
 OPT:=-Os
-DEBUG:=-g -DNDEBUG
+DEBUG:=-g3 -DNDEBUG
 CPU_LOWER:=$(shell tr '[:upper:]' '[:lower:]' <<< $(CPU))
 ARCH_LOWER:=$(shell tr '[:upper:]' '[:lower:]' <<< $(ARCH))
 
