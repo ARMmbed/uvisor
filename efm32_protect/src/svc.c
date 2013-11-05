@@ -23,4 +23,5 @@ void svc_init(void)
 {
     /* register SVC call interface */
     ISR_SET(SVCall_IRQn, &__svc_irq);
+    ISR_SET(PendSV_IRQn, &__svc_irq);
 }
