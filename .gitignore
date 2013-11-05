@@ -6,3 +6,4 @@
 gdb.script
 gdb.flash
 *.c.tags
+.geanyprj
