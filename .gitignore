@@ -5,3 +5,4 @@
 *.bin
 gdb.script
 gdb.flash
+*.c.tags
