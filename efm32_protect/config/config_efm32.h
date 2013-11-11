@@ -36,8 +36,6 @@
 #ifndef CONFIGURATION_H
 #define CONFIGURATION_H
 
-#include "em_device.h"
-
 /** Frequency of the LF clock */
 #define LFRCO_FREQ           (32768)
 
