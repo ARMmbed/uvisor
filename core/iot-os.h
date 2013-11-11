@@ -12,12 +12,18 @@
 #define WEAK __attribute__ ((weak))
 #define ALIAS(f) __attribute__ ((weak, alias (#f)))
 
+/* EFM32 definitions */
+#include <em_device.h>
 
 /* per-project-configuration */
 #include <config.h>
 
-/* EFM32 definitions */
-#include <em_device.h>
+/* MPU definitions */
+#ifdef  EFM32GG
+#if (__MPU_PRESENT == 1)
+#define MPU_REGIONS 8
+#endif
+#endif/*EFM32GG*/
 
 /* IOT-OS specific includes */
 #include <isr.h>

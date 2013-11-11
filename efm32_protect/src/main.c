@@ -1,4 +1,6 @@
 #include <iot-os.h>
+#include "mpu.h"
+#include "svc.h"
 #include "debug.h"
 
 static inline void hardware_init(void)
@@ -13,11 +15,14 @@ static inline void hardware_init(void)
         >> _DEVINFO_AUXHFRCOCAL1_BAND28_SHIFT);
     while(!(CMU->STATUS & CMU_STATUS_HFRCORDY));
 
+    /* Enable output */
+    DEBUG_init();
+
     /* register SVC call interface */
     svc_init();
 
-    /* Enable output */
-    DEBUG_init();
+    /* setup MPU */
+    mpu_init();
 }
 
 void main(void)
