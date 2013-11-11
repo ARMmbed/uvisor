@@ -43,6 +43,10 @@ void __attribute__ ((noreturn)) reset_handler(void)
 __attribute__ ((section(".isr_vector_tmp")))
 const TIsrVector g_isr_vector_tmp[] =
 {
+#ifndef STACK_POINTER
     (TIsrVector)&__stack_end__,        /* Initial Stack Pointer */
+#else /*STACK_POINTER*/
+    (TIsrVector)STACK_POINTER,        /* Override Stack pointer if needed */
+#endif/*STACK_POINTER*/
     reset_handler,                    /* Reset Handler */
 };
