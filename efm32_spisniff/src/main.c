@@ -1,10 +1,6 @@
 #include <iot-os.h>
 #include "debug.h"
 
-void default_handler(void)
-{
-}
-
 static inline void hardware_init(void)
 {
     /* Enable clocks for peripherals */
