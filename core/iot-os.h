@@ -18,6 +18,9 @@
 /* per-project-configuration */
 #include <config.h>
 
+/* system wide error codes  */
+#include <iot-error.h>
+
 /* MPU definitions */
 #ifdef  EFM32GG
 #if (__MPU_PRESENT == 1)
