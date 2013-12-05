@@ -3,6 +3,11 @@
 #include "svc.h"
 #include "debug.h"
 
+void default_handler(void)
+{
+//    dprintf("IPSR=0x%03X\r\n",__get_IPSR());
+}
+
 static inline void hardware_init(void)
 {
     /* Enable clocks for peripherals */
@@ -32,7 +37,22 @@ void main(void)
     /* initialize hardware */
     hardware_init();
 
+    /* configure MPU */
+    mpu_set(7, (void*)RAM_MEM_BASE, SRAM_SIZE, 3<<MPU_RASR_AP_Pos);
+    mpu_set(6, (void*)FLASH_MEM_BASE, FLASH_SIZE, 2<<MPU_RASR_AP_Pos);
+    mpu_set(5, DEBUG_USART, 1024, 3<<MPU_RASR_AP_Pos);
+    MPU->CTRL = MPU_CTRL_ENABLE_Msk|MPU_CTRL_PRIVDEFENA_Msk;
+    mpu_debug();
+
+    /* switch to unprivileged */
+    __set_CONTROL(__get_CONTROL()|1);
+    __ISB();
+    __DSB();
+
+    SVC(2);
+    SVC(1);
+
     i=0;
     while(true)
-        dprintf("Hello World %06d\r\n",i++);
+        dprintf("Hello World 12345 %06d\r\n",i++);
 }
