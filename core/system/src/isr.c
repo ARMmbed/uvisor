@@ -5,7 +5,7 @@
 __attribute__ ((section(".isr_vector")))
 TIsrVector g_isr_vector[MAX_ISR_VECTORS];
 
-static void __attribute__ ((noreturn)) default_handler(void)
+void __attribute__ ((weak, noreturn)) default_handler(void)
 {
     while(1);
 }
