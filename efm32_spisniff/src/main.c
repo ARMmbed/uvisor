@@ -7,7 +7,7 @@ static inline void hardware_init(void)
     CMU->HFPERCLKDIV = CMU_HFPERCLKDIV_HFPERCLKEN;
     CMU->HFPERCLKEN0 = CMU_HFPERCLKEN0_GPIO;
 
-    /* Set calibration for 28MHz crystal */
+    /* Set calibration for 28MHz band crystal */
     CMU->HFRCOCTRL = CMU_HFRCOCTRL_BAND_28MHZ |
         ((DEVINFO->HFRCOCAL1 & _DEVINFO_HFRCOCAL1_BAND28_MASK)
         >> _DEVINFO_AUXHFRCOCAL1_BAND28_SHIFT);
