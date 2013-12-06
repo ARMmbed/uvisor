@@ -8,7 +8,7 @@
         DMA_CTRL_SRC_SIZE_BYTE|\
         DMA_CTRL_SRC_PROT_NON_PRIVILEGED|\
         DMA_CTRL_R_POWER_1|\
-        DMA_CTRL_CYCLE_CTRL_BASIC|\
+        DMA_CTRL_CYCLE_CTRL_PINGPONG|\
         ((DMA_BUFFER_SIZE-1)<<_DMA_CTRL_N_MINUS_1_SHIFT);
 
 typedef struct {
@@ -19,6 +19,15 @@ typedef struct {
 static TDMActrl g_dma_ctrl;
 static uint8_t g_buffer_pri[DMA_BUFFER_SIZE];
 static uint8_t g_buffer_alt[DMA_BUFFER_SIZE];
+
+static void sniff_dma(void)
+{
+    uint32_t reason = DMA->IF;
+
+    dprintf("DMA->IFC = 0x%08X\r\n", DMA->IFC);
+
+    DMA->IFC = reason;
+}
 
 static inline void sniff_init(void)
 {
@@ -36,33 +45,32 @@ static inline void sniff_init(void)
         USART_ROUTE_CLKPEN|
         USART_ROUTE_LOCATION_LOC1;
 
-    /* start USART1 & DMA */
-    CMU->HFCORECLKEN0 |= CMU_HFCORECLKEN0_DMA;
+    /* start USART1 */
     CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_USART1;
 
     /* setup DMA */
-    DMA->CTRLBASE = (uint32_t)&g_dma_ctrl;
     DMA->CH[SPI_SNIFF_DMA_CH].CTRL =
         DMA_CH_CTRL_SOURCESEL_USART1|
         DMA_CH_CTRL_SIGSEL_USART1RXDATAV;
 
-    /* setup DMA channel SPI_SNIFF_DMA_CH */
+    /* setup primary DMA channel SPI_SNIFF_DMA_CH */
     ch = &g_dma_ctrl.pri[SPI_SNIFF_DMA_CH];
     ch->SRCEND = (void*)&USART1->RXDATA;
     ch->DSTEND = &g_buffer_pri[DMA_BUFFER_SIZE-1];
     ch->CTRL = DMA_SNIFF_CTRL;
 
+    /* setup alternate DMA channel SPI_SNIFF_DMA_CH */
     ch = &g_dma_ctrl.alt[SPI_SNIFF_DMA_CH];
     ch->SRCEND = (void*)&USART1->RXDATA;
     ch->DSTEND = &g_buffer_alt[DMA_BUFFER_SIZE-1];
     ch->CTRL = DMA_SNIFF_CTRL;
 
     /* start DMA */
-    DMA->CONFIG = DMA_CONFIG_EN;
     DMA->CHUSEBURSTS = 1<<SPI_SNIFF_DMA_CH;
     DMA->CHREQMASKC = 1<<SPI_SNIFF_DMA_CH;
     DMA->CHALTC = 1<<SPI_SNIFF_DMA_CH;
     DMA->CHENS = 1<<SPI_SNIFF_DMA_CH;
+    DMA->IEN |= 1<<SPI_SNIFF_DMA_CH;
 }
 
 static inline void hardware_init(void)
@@ -83,8 +91,17 @@ static inline void hardware_init(void)
     /* Enable output */
     DEBUG_init();
 
+    /* start DMA */
+    CMU->HFCORECLKEN0 |= CMU_HFCORECLKEN0_DMA;
+    DMA->CTRLBASE = (uint32_t)&g_dma_ctrl;
+    /* enable DMA irq */
+    ISR_SET(DMA_IRQn, &sniff_dma);
+
     /* Enable sniffer */
     sniff_init();
+
+    /* start DMA */
+    DMA->CONFIG = DMA_CONFIG_EN;
 }
 
 void main(void)
