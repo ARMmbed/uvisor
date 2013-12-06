@@ -49,12 +49,12 @@ static inline void sniff_init(void)
     /* setup DMA channel SPI_SNIFF_DMA_CH */
     ch = &g_dma_ctrl.pri[SPI_SNIFF_DMA_CH];
     ch->SRCEND = (void*)&USART1->RXDATA;
-    ch->DSTEND = &g_buffer_pri;
+    ch->DSTEND = &g_buffer_pri[DMA_BUFFER_SIZE-1];
     ch->CTRL = DMA_SNIFF_CTRL;
 
     ch = &g_dma_ctrl.alt[SPI_SNIFF_DMA_CH];
     ch->SRCEND = (void*)&USART1->RXDATA;
-    ch->DSTEND = &g_buffer_alt;
+    ch->DSTEND = &g_buffer_alt[DMA_BUFFER_SIZE-1];
     ch->CTRL = DMA_SNIFF_CTRL;
 
     /* start DMA */
