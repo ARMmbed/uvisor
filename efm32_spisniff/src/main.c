@@ -61,6 +61,10 @@ static inline void sniff_init(void)
 
     /* start DMA */
     DMA->CONFIG = DMA_CONFIG_EN;
+    DMA->CHUSEBURSTS = 1<<SPI_SNIFF_DMA_CH;
+    DMA->CHREQMASKC = 1<<SPI_SNIFF_DMA_CH;
+    DMA->CHALTC = 1<<SPI_SNIFF_DMA_CH;
+    DMA->CHENS = 1<<SPI_SNIFF_DMA_CH;
 }
 
 static inline void hardware_init(void)
