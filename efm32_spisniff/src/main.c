@@ -1,7 +1,6 @@
 #include <iot-os.h>
 #include "debug.h"
 
-#define ALIGNx100  __attribute__((aligned(0x100)))
 #define DMA_SNIFF_CTRL DMA_CTRL_DST_INC_BYTE|\
         DMA_CTRL_DST_SIZE_BYTE|\
         DMA_CTRL_DST_PROT_NON_PRIVILEGED|\
@@ -12,12 +11,10 @@
         DMA_CTRL_CYCLE_CTRL_BASIC|\
         ((DMA_BUFFER_SIZE-1)<<_DMA_CTRL_N_MINUS_1_SHIFT);
 
-typedef DMA_DESCRIPTOR_TypeDef TDMAmap[DMA_CHAN_COUNT];
-
 typedef struct {
-    TDMAmap pri ALIGNx100;
-    TDMAmap alt ALIGNx100;
-} TDMActrl ALIGNx100;
+    DMA_DESCRIPTOR_TypeDef pri[16];
+    DMA_DESCRIPTOR_TypeDef alt[DMA_CHAN_COUNT];
+} TDMActrl  __attribute__((aligned(0x100)));
 
 static TDMActrl g_dma_ctrl;
 static uint8_t g_buffer_pri[DMA_BUFFER_SIZE];
@@ -40,7 +37,8 @@ static inline void sniff_init(void)
         USART_ROUTE_LOCATION_LOC1;
 
     /* start USART1 & DMA */
-    CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_USART1|CMU_HFCORECLKEN0_DMA;
+    CMU->HFCORECLKEN0 |= CMU_HFCORECLKEN0_DMA;
+    CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_USART1;
 
     /* setup DMA */
     DMA->CTRLBASE = (uint32_t)&g_dma_ctrl;
@@ -72,6 +70,9 @@ static inline void hardware_init(void)
     /* Enable clocks for peripherals */
     CMU->HFPERCLKDIV = CMU_HFPERCLKDIV_HFPERCLKEN;
     CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_GPIO;
+
+    /* DIV4 clock for frequencies above 48MHz */
+    CMU->HFCORECLKDIV = CMU_HFCORECLKDIV_HFCORECLKLEDIV;
 
     /* Set calibration for 28MHz band crystal */
     CMU->HFRCOCTRL = CMU_HFRCOCTRL_BAND_28MHZ |
