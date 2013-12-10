@@ -1,0 +1,44 @@
+[Version]
+Signature="$WINDOWS NT$"
+Class=Ports
+ClassGUID={4D36E978-E325-11CE-BFC1-08002BE10318}
+Provider=%EMAS%
+DriverVer=06/21/2006,6.1.7601.17514
+
+[Manufacturer]
+%EMAS%=DeviceList, NT, NTAMD64, NTIA64
+
+;------------------------------------------------------------------------------
+
+[DeviceList]
+%CDCDEVICE%=DriverInstall,USB\VID_2544&PID_0003
+
+[DeviceList.NT]
+%CDCDEVICE%=DriverInstall,USB\VID_2544&PID_0003
+
+[DeviceList.NTAMD64]
+%CDCDEVICE%=DriverInstall,USB\VID_2544&PID_0003
+
+[DeviceList.NTIA64]
+%CDCDEVICE%=DriverInstall,USB\VID_2544&PID_0003
+
+;------------------------------------------------------------------------------
+
+[DriverInstall]
+Include=mdmcpq.inf
+CopyFiles=FakeModemCopyFileSection
+AddReg=LowerFilterAddReg,SerialPropPageAddReg
+
+[DriverInstall.Services]
+Include=mdmcpq.inf
+AddService = usbser, 0x00000002, LowerFilter_Service_Inst
+
+[SerialPropPageAddReg]
+HKR,,EnumPropPages32,,"MsPorts.dll,SerialPortPropPageProvider"
+
+;------------------------------------------------------------------------------
+
+[Strings]
+EMAS      = "Energy Micro AS"
+CDCDEVICE = "EFM32 USB CDC Serial port"
+SERVICE   = "USB CDC Serial Port Driver"

@@ -73,6 +73,22 @@ static inline void sniff_init(void)
     DMA->IEN |= 1<<SPI_SNIFF_DMA_CH;
 }
 
+#if 0
+static inline void vga_init(void)
+{
+    /* enable time clock */
+    CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_TIMER0|CMU_HFPERCLKEN0_TIMER1;
+
+    TIMER0->ROUTE = TIMER_ROUTE_LOCATION_LOC0
+    TIMER0->TOP = SCREEN_HTOTAL;
+    TIMER0->CTRL =
+
+    TIMER1->TOP = SCREEN_VTOTAL;
+    TIMER1->
+
+}
+#endif
+
 static inline void hardware_init(void)
 {
     /* Enable clocks for peripherals */
