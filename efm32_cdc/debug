@@ -1,0 +1,3 @@
+#!/bin/bash
+
+make clean OPT= DEBUG_HOST=e103851-vm.emea.arm.com:2331 gdbtui
