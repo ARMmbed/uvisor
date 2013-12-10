@@ -2,7 +2,7 @@ PROJECT:=efm32_cdc
 ARCH:=EFM32GG
 CPU:=$(ARCH)990F1024
 
-APP_CFLAGS:=-Iconfig -Isrc -Ilib/emlib/inc -Isrc/helper -Isrc/usb/inc -Ilib/bsp
+APP_CFLAGS:=-DUSER_PUTCHAR=default_putc -DDEBUG_USB_API -Iconfig -Isrc -Ilib/emlib/inc -Isrc/helper -Isrc/usb/inc -Ilib/bsp
 APP_SRC:=\
 	lib/bsp/bsp_bcc.c \
 	lib/bsp/bsp_dk_leds.c \

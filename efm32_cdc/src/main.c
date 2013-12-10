@@ -32,6 +32,7 @@
  * arising from your use of this Software.
  *
  *****************************************************************************/
+#include <iot-os.h>
 #include "em_device.h"
 #include "em_cmu.h"
 #include "em_dma.h"
@@ -680,7 +681,6 @@ static void DmaSetup(void)
  *****************************************************************************/
 static void SerialPortInit(void)
 {
-  USART_TypeDef           *uart = UART1;
   USART_InitAsync_TypeDef init  = USART_INITASYNC_DEFAULT;
 
   /* Configure GPIO pins */
@@ -698,13 +698,21 @@ static void SerialPortInit(void)
 
   /* Configure UART for basic async operation */
   init.enable = usartDisable;
-  USART_InitAsync(uart, &init);
+  USART_InitAsync(DEBUG_USART, &init);
 
   /* Enable pins at UART1 location #2 */
-  uart->ROUTE = UART_ROUTE_RXPEN | UART_ROUTE_TXPEN | UART_ROUTE_LOCATION_LOC2;
+  DEBUG_USART->ROUTE = UART_ROUTE_RXPEN | UART_ROUTE_TXPEN | UART_ROUTE_LOCATION_LOC2;
 
   /* Finally enable it */
-  USART_Enable(uart, usartEnable);
+  USART_Enable(DEBUG_USART, usartEnable);
+}
+
+void default_putc(uint8_t data)
+{
+    /* Check that transmit buffer is empty */
+    while (!(DEBUG_USART->STATUS & USART_STATUS_TXBL)) ;
+
+    DEBUG_USART->TXDATA = (uint32_t) data;
 }
 
 void default_handler(void)
