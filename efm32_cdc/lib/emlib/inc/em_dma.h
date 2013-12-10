@@ -37,7 +37,6 @@
 #include "em_device.h"
 #if defined( DMA_PRESENT )
 
-#include <stdio.h>
 #include <stdbool.h>
 
 #ifdef __cplusplus
