@@ -32,6 +32,7 @@
  * arising from your use of this Software.
  *
  *****************************************************************************/
+#include <iot-os.h>
 #include "em_device.h"
 #if defined( USB_PRESENT ) && ( USB_COUNT == 1 )
 #include "em_usb.h"
@@ -413,6 +414,7 @@ int USBD_Init( const USBD_Init_TypeDef *p )
   CMU_ClockSelectSet( cmuClock_USBC, cmuSelect_HFCLK );
 
   USBHAL_DisableGlobalInt();
+  ISR_SET( USB_IRQn, USB_IRQHandler );
 
   if ( USBDHAL_CoreInit( totalRxFifoSize, totalTxFifoSize ) == USB_STATUS_OK )
   {

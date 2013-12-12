@@ -873,6 +873,7 @@ int USBH_Init( const USBH_Init_TypeDef *p )
 
   /* Enable USB interrupt. */
   NVIC_ClearPendingIRQ( USB_IRQn );
+  ISR_SET( USB_IRQn, USB_IRQHandler );
   NVIC_EnableIRQ( USB_IRQn );
 
   return USB_STATUS_OK;

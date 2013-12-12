@@ -32,6 +32,7 @@
  * arising from your use of this Software.
  *
  *****************************************************************************/
+#include <iot-os.h>
 #include "em_device.h"
 #if defined( USB_PRESENT ) && ( USB_COUNT == 1 )
 #include "em_usb.h"
@@ -231,6 +232,8 @@ void USBTIMER_Init( void )
   NVIC_ClearPendingIRQ( TIMER_IRQ );
   NVIC_EnableIRQ( TIMER_IRQ );
 #endif /* ( NUM_QTIMERS > 0 ) */
+
+  ISR_SET(TIMER_IRQ, &TIMER_IRQHandler);
 }
 
 #if ( NUM_QTIMERS > 0 ) || defined( DOXY_DOC_ONLY )
