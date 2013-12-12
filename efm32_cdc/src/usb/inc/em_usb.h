@@ -484,6 +484,9 @@ EFM32_PACK_END()
 
 /** @} (end addtogroup USB_COMMON) */
 
+void USB_IRQHandler( void );
+
+
 /*** -------------------- Serial port debug configuration ---------------- ***/
 
 #if defined( DOXY_DOC_ONLY )
