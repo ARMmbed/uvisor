@@ -12,16 +12,70 @@
         DMA_CTRL_CYCLE_CTRL_PINGPONG|\
         ((DMA_BUFFER_SIZE-1)<<_DMA_CTRL_N_MINUS_1_SHIFT);
 
+#define SPISCREEN_WIDTH 128
+#define SPISCREEN_BUFSIZE (SPISCREEN_WIDTH+2)
+
 typedef struct {
     DMA_DESCRIPTOR_TypeDef pri[16];
     DMA_DESCRIPTOR_TypeDef alt[DMA_CHAN_COUNT];
 } TDMActrl  __attribute__((aligned(0x100)));
 
-
 static TDMActrl g_dma_ctrl;
 static uint8_t g_pri_alt;
+static volatile uint8_t g_screen_row, g_screen_col, g_buffer_pos;
+static uint8_t g_buffer_line[SPISCREEN_WIDTH+2];
 static uint8_t g_buffer_pri[DMA_BUFFER_SIZE];
 static uint8_t g_buffer_alt[DMA_BUFFER_SIZE];
+
+static void sniff_process_line(const uint8_t* buffer)
+{
+}
+
+static void sniff_process_buffer(const uint8_t* buffer, uint16_t size)
+{
+    uint8_t t,count;
+
+    if(g_buffer_pos)
+    {
+        /* get missing byte count */
+        t = SPISCREEN_BUFSIZE-g_buffer_pos;
+
+        /* calculate remaining bytes in transaction */
+        count = (size>t)?t:size;
+
+        /* assemble into single buffer */
+        memcpy(&g_buffer_line[g_buffer_pos], buffer, count);
+        g_buffer_pos+=count;
+
+        /* line not complete yet */
+        if(g_buffer_pos<SPISCREEN_BUFSIZE)
+            return;
+
+        /* remove data from buffer */
+        buffer+=count;
+        size-=count;
+
+        /* process finished line */
+        sniff_process_line(g_buffer_line);
+        g_buffer_pos = 0;
+    }
+
+    /* send down full lines for processing */
+    while(size>=SPISCREEN_BUFSIZE)
+    {
+        sniff_process_line(buffer);
+
+        buffer+=SPISCREEN_BUFSIZE;
+        size-=SPISCREEN_BUFSIZE;
+    }
+
+    /* remember remaining data */
+    if(size)
+    {
+        memcpy(g_buffer_line, buffer, size);
+        g_buffer_pos = size;
+    }
+}
 
 static void sniff_dma(void)
 {
@@ -33,6 +87,9 @@ static void sniff_dma(void)
         &g_dma_ctrl.alt[SPI_SNIFF_DMA_CH]:
         &g_dma_ctrl.pri[SPI_SNIFF_DMA_CH];
     g_pri_alt ^= 1;
+
+    /* process buffer */
+    sniff_process_buffer((uint8_t*)ch->USER, DMA_BUFFER_SIZE);
 
     /* re-activate channel */
     ch->CTRL = DMA_SNIFF_CTRL;
@@ -46,6 +103,7 @@ static inline void sniff_init(void)
 
     /* reset variables */
     g_pri_alt = 0;
+    g_screen_row = g_screen_col = g_buffer_pos = 0;
 
     /* Avoid false start by setting outputs as high */
     GPIO->P[3].DOUTCLR = 0xD;
@@ -79,12 +137,14 @@ static inline void sniff_init(void)
     ch->SRCEND = (void*)&USART1->RXDATA;
     ch->DSTEND = &g_buffer_pri[DMA_BUFFER_SIZE-1];
     ch->CTRL = DMA_SNIFF_CTRL;
+    ch->USER = (uint32_t)&g_buffer_pri;
 
     /* setup alternate DMA channel SPI_SNIFF_DMA_CH */
     ch = &g_dma_ctrl.alt[SPI_SNIFF_DMA_CH];
     ch->SRCEND = (void*)&USART1->RXDATA;
     ch->DSTEND = &g_buffer_alt[DMA_BUFFER_SIZE-1];
     ch->CTRL = DMA_SNIFF_CTRL;
+    ch->USER = (uint32_t)&g_buffer_alt;
 
     /* start DMA */
     DMA->CHUSEBURSTS = 1<<SPI_SNIFF_DMA_CH;
@@ -155,6 +215,6 @@ void main(void)
     while(true)
     {
         for(t=0;t<1000000;t++);
-        dprintf("CTRL.PRI=0x%08X CTRL.ALT=0x%08X (%i)\r\n",g_dma_ctrl.pri[SPI_SNIFF_DMA_CH].CTRL,g_dma_ctrl.alt[SPI_SNIFF_DMA_CH].CTRL,i++);
+        dprintf("pos=%03i (%i)\r\n",g_buffer_pos,i++);
     }
 }
