@@ -15,6 +15,8 @@
 #define SPISCREEN_WIDTH 128
 #define SPISCREEN_BUFSIZE (SPISCREEN_WIDTH+2)
 
+#define GPIO_CS_PIN (1UL<<3)
+
 typedef struct {
     DMA_DESCRIPTOR_TypeDef pri[16];
     DMA_DESCRIPTOR_TypeDef alt[DMA_CHAN_COUNT];
@@ -23,7 +25,8 @@ typedef struct {
 static TDMActrl g_dma_ctrl;
 static uint8_t g_pri_alt;
 static volatile uint8_t g_screen_row, g_screen_col, g_buffer_pos;
-static uint8_t g_buffer_line[SPISCREEN_WIDTH+2];
+static volatile uint32_t g_cs_irq;
+static uint8_t g_buffer_line[SPISCREEN_WIDTH+4];
 static uint8_t g_buffer_pri[DMA_BUFFER_SIZE];
 static uint8_t g_buffer_alt[DMA_BUFFER_SIZE];
 
@@ -77,6 +80,17 @@ static void sniff_process_buffer(const uint8_t* buffer, uint16_t size)
     }
 }
 
+static void sniff_gpio(void)
+{
+    DMA_DESCRIPTOR_TypeDef *ch;
+    uint32_t reason = GPIO->IF;
+
+    if(reason & GPIO_CS_PIN)
+        g_cs_irq++;
+
+    GPIO->IFC = reason;
+}
+
 static void sniff_dma(void)
 {
     DMA_DESCRIPTOR_TypeDef *ch;
@@ -102,6 +116,7 @@ static inline void sniff_init(void)
     DMA_DESCRIPTOR_TypeDef *ch;
 
     /* reset variables */
+    g_cs_irq = 0;
     g_pri_alt = 0;
     g_screen_row = g_screen_col = g_buffer_pos = 0;
 
@@ -153,6 +168,15 @@ static inline void sniff_init(void)
     DMA->CHENS = 1<<SPI_SNIFF_DMA_CH;
     DMA->IEN |= 1<<SPI_SNIFF_DMA_CH;
     DMA->RDS |= 1<<SPI_SNIFF_DMA_CH;
+
+    /* init GPIO */
+    GPIO->EXTIPSELL =
+        (GPIO->EXTIPSELL & (~_GPIO_EXTIPSELL_EXTIPSEL3_MASK))|
+        GPIO_EXTIPSELL_EXTIPSEL3_PORTD;
+    GPIO->IEN = GPIO_CS_PIN;
+    GPIO->EXTIFALL = GPIO_CS_PIN;
+    ISR_SET(GPIO_ODD_IRQn, &sniff_gpio);
+    NVIC_EnableIRQ(GPIO_ODD_IRQn);
 }
 
 #if 0
@@ -215,6 +239,6 @@ void main(void)
     while(true)
     {
         for(t=0;t<1000000;t++);
-        dprintf("pos=%03i (%i)\r\n",g_buffer_pos,i++);
+        dprintf("pos=%03i g_cs_irq=%04i (%i)\r\n",g_buffer_pos,g_cs_irq,i++);
     }
 }
