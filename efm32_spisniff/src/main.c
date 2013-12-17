@@ -13,112 +13,177 @@
         ((DMA_BUFFER_SIZE-1)<<_DMA_CTRL_N_MINUS_1_SHIFT);
 
 #define SPISCREEN_WIDTH 128
-#define SPISCREEN_BUFSIZE (SPISCREEN_WIDTH+2)
+#define SPISCREEN_HEIGHT 128
+#define SPISCREEN_BUFWIDTH ((SPISCREEN_WIDTH+7)/8)
+#define SPISCREEN_BUFSIZE (SPISCREEN_BUFWIDTH*SPISCREEN_HEIGHT)
+
 
 #define GPIO_CS_PIN (1UL<<3)
+
+typedef enum {
+    SNSTATE_IDLE,
+    SNSTATE_ACTIVE,
+    SNSTATE_ROW,
+    SNSTATE_DATA,
+    SNSTATE_DONE,
+    SNSTATE_ERROR
+} TSniffState;
 
 typedef struct {
     DMA_DESCRIPTOR_TypeDef pri[16];
     DMA_DESCRIPTOR_TypeDef alt[DMA_CHAN_COUNT];
 } TDMActrl  __attribute__((aligned(0x100)));
 
-static TDMActrl g_dma_ctrl;
-static uint8_t g_pri_alt;
-static volatile uint8_t g_screen_row, g_screen_col, g_buffer_pos;
-static volatile uint32_t g_cs_irq;
-static uint8_t g_buffer_line[SPISCREEN_WIDTH+4];
-static uint8_t g_buffer_pri[DMA_BUFFER_SIZE];
-static uint8_t g_buffer_alt[DMA_BUFFER_SIZE];
+static volatile TDMActrl g_dma_ctrl;
+static volatile uint8_t g_pri_alt;
+static volatile uint8_t g_screen_row, g_screen_col;
+static volatile uint32_t g_cs_irq, g_buffer_head, g_buffer_tail;
+static volatile uint32_t  g_sniff_errors;
+static volatile TSniffState g_sniff_state, g_sniff_lasterror;
+static uint8_t g_buffer[DMA_BUFFER_SIZE*2];
+static volatile uint8_t g_screen[SPISCREEN_BUFSIZE];
+static volatile uint8_t *g_screen_ptr, g_screen_x;
 
-static void sniff_process_line(const uint8_t* buffer)
+static void sniff_process(uint8_t data)
 {
+    switch(g_sniff_state)
+    {
+        /* waiting for first SPI data after CS */
+        case SNSTATE_IDLE:
+            if(data==0x80)
+                g_sniff_state = SNSTATE_ROW;
+            else
+            {
+                g_sniff_lasterror = g_sniff_state;
+                g_sniff_state = SNSTATE_ERROR;
+            }
+            break;
+
+        /* expecting row number  */
+        case SNSTATE_ROW:
+            if(data==0xFF)
+                g_sniff_state = SNSTATE_DONE;
+            else
+            {
+                if(!data || (data>SPISCREEN_WIDTH))
+                {
+                    g_sniff_lasterror = g_sniff_state;
+                    g_sniff_state = SNSTATE_ERROR;
+                }
+                else
+                {
+                    g_screen_ptr = &g_screen[(data-1)*SPISCREEN_BUFWIDTH];
+                    g_screen_x = 0;
+                    g_sniff_state = SNSTATE_DATA;
+                }
+            }
+            break;
+
+        /* expecting display data  */
+        case SNSTATE_DATA:
+            *g_screen_ptr++ = data;
+            g_screen_x++;
+            if(g_screen_x>=SPISCREEN_BUFWIDTH)
+                g_sniff_state = SNSTATE_ACTIVE;
+            break;
+
+        /* expecting next line within a CS'ed transaction  */
+        case SNSTATE_ACTIVE:
+            if(data==0xFF)
+                g_sniff_state = SNSTATE_ROW;
+            else
+            {
+                g_sniff_lasterror = g_sniff_state;
+                g_sniff_state = SNSTATE_ERROR;
+            }
+            break;
+    }
 }
 
-static void sniff_process_buffer(const uint8_t* buffer, uint16_t size)
+static void sniff_process_buffer(uint16_t head)
 {
-    uint8_t t,count;
+    uint8_t *p;
+    g_buffer_head = head;
 
-    if(g_buffer_pos)
+    p=&g_buffer[g_buffer_tail];
+    while(g_buffer_tail!=head)
     {
-        /* get missing byte count */
-        t = SPISCREEN_BUFSIZE-g_buffer_pos;
-
-        /* calculate remaining bytes in transaction */
-        count = (size>t)?t:size;
-
-        /* assemble into single buffer */
-        memcpy(&g_buffer_line[g_buffer_pos], buffer, count);
-        g_buffer_pos+=count;
-
-        /* line not complete yet */
-        if(g_buffer_pos<SPISCREEN_BUFSIZE)
-            return;
-
-        /* remove data from buffer */
-        buffer+=count;
-        size-=count;
-
-        /* process finished line */
-        sniff_process_line(g_buffer_line);
-        g_buffer_pos = 0;
-    }
-
-    /* send down full lines for processing */
-    while(size>=SPISCREEN_BUFSIZE)
-    {
-        sniff_process_line(buffer);
-
-        buffer+=SPISCREEN_BUFSIZE;
-        size-=SPISCREEN_BUFSIZE;
-    }
-
-    /* remember remaining data */
-    if(size)
-    {
-        memcpy(g_buffer_line, buffer, size);
-        g_buffer_pos = size;
+        sniff_process(*p++);
+        g_buffer_tail++;
+        if(g_buffer_tail==(DMA_BUFFER_SIZE*2))
+        {
+            p = g_buffer;
+            g_buffer_tail = 0;
+        }
     }
 }
 
 static void sniff_gpio(void)
 {
-    DMA_DESCRIPTOR_TypeDef *ch;
+    volatile DMA_DESCRIPTOR_TypeDef *ch;
     uint32_t reason = GPIO->IF;
+    uint32_t count;
 
     if(reason & GPIO_CS_PIN)
+    {
         g_cs_irq++;
 
+        /* reset sniff state */
+        if(g_sniff_state!=SNSTATE_DONE)
+            g_sniff_errors++;
+        g_sniff_state = SNSTATE_IDLE;
+
+        /* get current DMA channel */
+        ch = g_pri_alt ?
+            &g_dma_ctrl.alt[SPI_SNIFF_DMA_CH]:
+            &g_dma_ctrl.pri[SPI_SNIFF_DMA_CH];
+
+        /* calculate bytes in current DMA buffer */
+        count = ((ch->CTRL & _DMA_CTRL_N_MINUS_1_MASK) >> _DMA_CTRL_N_MINUS_1_SHIFT);
+        count = count ? ((DMA_BUFFER_SIZE-1)-count) : DMA_BUFFER_SIZE;
+
+        /* process current buffer position */
+        sniff_process_buffer((g_pri_alt*DMA_BUFFER_SIZE)+count);
+    }
+
+    /* acknowledge IRQ */
     GPIO->IFC = reason;
 }
 
 static void sniff_dma(void)
 {
-    DMA_DESCRIPTOR_TypeDef *ch;
+    volatile DMA_DESCRIPTOR_TypeDef *ch;
     uint8_t pri;
     uint32_t reason = DMA->IF;
 
+    /* get current DMA channel */
     ch = g_pri_alt ?
         &g_dma_ctrl.alt[SPI_SNIFF_DMA_CH]:
         &g_dma_ctrl.pri[SPI_SNIFF_DMA_CH];
-    g_pri_alt ^= 1;
-
-    /* process buffer */
-    sniff_process_buffer((uint8_t*)ch->USER, DMA_BUFFER_SIZE);
 
     /* re-activate channel */
     ch->CTRL = DMA_SNIFF_CTRL;
 
+    /* process buffer */
+    sniff_process_buffer(((g_pri_alt+1)*DMA_BUFFER_SIZE)-1);
+
+    /* switch to next DMA buffer */
+    g_pri_alt ^= 1;
+
+    /* acknowledge IRQ */
     DMA->IFC = reason;
 }
 
 static inline void sniff_init(void)
 {
-    DMA_DESCRIPTOR_TypeDef *ch;
+    volatile DMA_DESCRIPTOR_TypeDef *ch;
 
     /* reset variables */
     g_cs_irq = 0;
     g_pri_alt = 0;
-    g_screen_row = g_screen_col = g_buffer_pos = 0;
+    g_screen_row = g_screen_col;
+    g_buffer_head = g_buffer_tail = 0;
+    g_sniff_state = SNSTATE_IDLE;
 
     /* Avoid false start by setting outputs as high */
     GPIO->P[3].DOUTCLR = 0xD;
@@ -150,16 +215,16 @@ static inline void sniff_init(void)
     /* setup primary DMA channel SPI_SNIFF_DMA_CH */
     ch = &g_dma_ctrl.pri[SPI_SNIFF_DMA_CH];
     ch->SRCEND = (void*)&USART1->RXDATA;
-    ch->DSTEND = &g_buffer_pri[DMA_BUFFER_SIZE-1];
+    ch->DSTEND = &g_buffer[DMA_BUFFER_SIZE-1];
     ch->CTRL = DMA_SNIFF_CTRL;
-    ch->USER = (uint32_t)&g_buffer_pri;
+    ch->USER = (uint32_t)&g_buffer;
 
     /* setup alternate DMA channel SPI_SNIFF_DMA_CH */
     ch = &g_dma_ctrl.alt[SPI_SNIFF_DMA_CH];
     ch->SRCEND = (void*)&USART1->RXDATA;
-    ch->DSTEND = &g_buffer_alt[DMA_BUFFER_SIZE-1];
+    ch->DSTEND = &g_buffer[(DMA_BUFFER_SIZE*2)-1];
     ch->CTRL = DMA_SNIFF_CTRL;
-    ch->USER = (uint32_t)&g_buffer_alt;
+    ch->USER = (uint32_t)&g_buffer[DMA_BUFFER_SIZE];
 
     /* start DMA */
     DMA->CHUSEBURSTS = 1<<SPI_SNIFF_DMA_CH;
@@ -239,6 +304,6 @@ void main(void)
     while(true)
     {
         for(t=0;t<1000000;t++);
-        dprintf("pos=%03i g_cs_irq=%04i (%i)\r\n",g_buffer_pos,g_cs_irq,i++);
+        dprintf("head=%03i g_cs_irq=%04i (%i)\r\n",g_buffer_head,g_cs_irq,i++);
     }
 }
