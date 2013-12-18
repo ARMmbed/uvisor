@@ -306,10 +306,14 @@ void main(void)
     /* initialize hardware */
     hardware_init();
 
+    /* clear screen */
+    dprintf("\033[2J");
+
     i=0;
     while(true)
     {
-        dprintf("\r\n\r\n");
+//        dprintf("\r\n\r\n");
+        dprintf("\033[0;0H");
         p = g_screen;
         for(i=0;i<SPISCREEN_BUFSIZE;i++)
         {
