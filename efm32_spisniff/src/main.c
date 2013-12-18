@@ -160,8 +160,8 @@ static void sniff_gpio(void)
 static void sniff_dma(void)
 {
     volatile DMA_DESCRIPTOR_TypeDef *ch;
-    uint32_t reason = DMA->IF;
-    uint8_t alt;
+    uint32_t i, reason = DMA->IF;
+    uint8_t alt, *p;
 
     if(reason & (1<<SPI_SNIFF_DMA_CH))
     {
@@ -171,6 +171,10 @@ static void sniff_dma(void)
         ch =  g_pri_alt ?
             &g_dma_ctrl.alt[SPI_SNIFF_DMA_CH]:
             &g_dma_ctrl.pri[SPI_SNIFF_DMA_CH];
+
+        p = (uint8_t*)ch->USER;
+        for(i=0; i<DMA_BUFFER_SIZE;i++)
+            sniff_process(*p++);
 
         /* switch to next channel */
         g_pri_alt ^= 1;
@@ -251,25 +255,9 @@ static inline void sniff_init(void)
     GPIO->EXTIFALL = GPIO_CS_PIN;
     ISR_SET(GPIO_ODD_IRQn, &sniff_gpio);
 
-    NVIC_EnableIRQ(GPIO_ODD_IRQn);
-    NVIC_SetPriority(GPIO_ODD_IRQn, NVIC_EncodePriority(5, 1, 0));
+//    NVIC_EnableIRQ(GPIO_ODD_IRQn);
+//    NVIC_SetPriority(GPIO_ODD_IRQn, NVIC_EncodePriority(5, 1, 0));
 }
-
-#if 0
-static inline void vga_init(void)
-{
-    /* enable time clock */
-    CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_TIMER0|CMU_HFPERCLKEN0_TIMER1;
-
-    TIMER0->ROUTE = TIMER_ROUTE_LOCATION_LOC0
-    TIMER0->TOP = SCREEN_HTOTAL;
-    TIMER0->CTRL =
-
-    TIMER1->TOP = SCREEN_VTOTAL;
-    TIMER1->
-
-}
-#endif
 
 static inline void hardware_init(void)
 {
@@ -335,10 +323,5 @@ void main(void)
                 data>>=1;
             }
         }
-        dprintf("\r\n# head=%03i cs_irq=%04i dma_irq=%04i\r\n",g_buffer_head,g_cs_irq,g_dma_irq);
-        t = (g_dma_ctrl.pri[SPI_SNIFF_DMA_CH].CTRL & _DMA_CTRL_N_MINUS_1_MASK)>>_DMA_CTRL_N_MINUS_1_SHIFT;
-        i = (g_dma_ctrl.alt[SPI_SNIFF_DMA_CH].CTRL & _DMA_CTRL_N_MINUS_1_MASK)>>_DMA_CTRL_N_MINUS_1_SHIFT;
-        dprintf("# pri=%04i alt=%04i\r\n",g_buffer_head,g_cs_irq,g_dma_irq,t,i);
-
     }
 }
