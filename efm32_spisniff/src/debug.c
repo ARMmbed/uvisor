@@ -50,8 +50,8 @@ void DEBUG_init(void)
   CMU->HFPERCLKEN0 |= DEBUG_USART_CLOCK;
 
   /* Set clock division. We need 115200 bps, while the core is running
-   * at 28 MHz. Using equation 16.2 the CLKDIV must be set to 3634 */
-  DEBUG_USART->CLKDIV = 3634;
+   * at 48 MHz. Using equation 16.2 the CLKDIV must be set to 6411 */
+  DEBUG_USART->CLKDIV = 6411;
 
   /* Use default location 0: TX - pin C0, RX - pin C1 */
   DEBUG_USART->ROUTE = USART_ROUTE_RXPEN | USART_ROUTE_TXPEN
