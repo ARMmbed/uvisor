@@ -62,7 +62,7 @@ static void sniff_process(uint8_t data)
         /* expecting row number  */
         case SNSTATE_ROW:
             if(data==0xFF)
-                g_sniff_state = SNSTATE_DONE;
+                g_sniff_state = SNSTATE_IDLE;
             else
             {
                 if(!data || (data>SPISCREEN_WIDTH))
@@ -312,7 +312,6 @@ void main(void)
     i=0;
     while(true)
     {
-//        dprintf("\r\n\r\n");
         dprintf("\033[0;0H");
         p = g_screen;
         for(i=0;i<SPISCREEN_BUFSIZE;i++)
@@ -327,5 +326,6 @@ void main(void)
                 data>>=1;
             }
         }
+        dprintf("\r\n\r\nsniff_state=%i\r\n", g_sniff_state);
     }
 }
