@@ -17,7 +17,6 @@
 #define SPISCREEN_BUFWIDTH ((SPISCREEN_WIDTH+7)/8)
 #define SPISCREEN_BUFSIZE (SPISCREEN_BUFWIDTH*SPISCREEN_HEIGHT)
 
-
 #define GPIO_CS_PIN (1UL<<3)
 
 typedef enum {
@@ -37,7 +36,8 @@ typedef struct {
 static volatile TDMActrl g_dma_ctrl;
 static volatile uint8_t g_pri_alt;
 static volatile uint8_t g_screen_row, g_screen_col;
-static volatile uint32_t g_cs_irq, g_buffer_head, g_buffer_tail;
+static volatile uint32_t g_cs_irq, g_dma_irq;
+static volatile uint32_t g_buffer_head, g_buffer_tail;
 static volatile uint32_t  g_sniff_errors;
 static volatile TSniffState g_sniff_state, g_sniff_lasterror;
 static uint8_t g_buffer[DMA_BUFFER_SIZE*2];
@@ -50,7 +50,7 @@ static void sniff_process(uint8_t data)
     {
         /* waiting for first SPI data after CS */
         case SNSTATE_IDLE:
-            if(data==0x80)
+            if(data==0x01)
                 g_sniff_state = SNSTATE_ROW;
             else
             {
@@ -122,28 +122,35 @@ static void sniff_gpio(void)
 {
     volatile DMA_DESCRIPTOR_TypeDef *ch;
     uint32_t reason = GPIO->IF;
-    uint32_t count;
+    uint32_t count, pos;
+    uint8_t pri_alt;
 
     if(reason & GPIO_CS_PIN)
     {
         g_cs_irq++;
 
         /* reset sniff state */
-        if(g_sniff_state!=SNSTATE_DONE)
-            g_sniff_errors++;
         g_sniff_state = SNSTATE_IDLE;
 
         /* get current DMA channel */
-        ch = g_pri_alt ?
-            &g_dma_ctrl.alt[SPI_SNIFF_DMA_CH]:
-            &g_dma_ctrl.pri[SPI_SNIFF_DMA_CH];
+        pri_alt = g_pri_alt;
+        ch = pri_alt ?
+            &g_dma_ctrl.pri[SPI_SNIFF_DMA_CH]:
+            &g_dma_ctrl.alt[SPI_SNIFF_DMA_CH];
 
         /* calculate bytes in current DMA buffer */
         count = ((ch->CTRL & _DMA_CTRL_N_MINUS_1_MASK) >> _DMA_CTRL_N_MINUS_1_SHIFT);
-        count = count ? ((DMA_BUFFER_SIZE-1)-count) : DMA_BUFFER_SIZE;
+        if(count)
+        {
+            count = (DMA_BUFFER_SIZE-1)-count;
 
-        /* process current buffer position */
-        sniff_process_buffer((g_pri_alt*DMA_BUFFER_SIZE)+count);
+            /* handle wrap */
+            pos = (pri_alt*DMA_BUFFER_SIZE)+count;
+            if(pos==(DMA_BUFFER_SIZE*2))
+                pos = 0;
+            /* process current buffer position */
+            sniff_process_buffer(pos);
+        }
     }
 
     /* acknowledge IRQ */
@@ -153,22 +160,24 @@ static void sniff_gpio(void)
 static void sniff_dma(void)
 {
     volatile DMA_DESCRIPTOR_TypeDef *ch;
-    uint8_t pri;
     uint32_t reason = DMA->IF;
+    uint8_t alt;
 
-    /* get current DMA channel */
-    ch = g_pri_alt ?
-        &g_dma_ctrl.alt[SPI_SNIFF_DMA_CH]:
-        &g_dma_ctrl.pri[SPI_SNIFF_DMA_CH];
+    if(reason & (1<<SPI_SNIFF_DMA_CH))
+    {
+        g_dma_irq++;
 
-    /* re-activate channel */
-    ch->CTRL = DMA_SNIFF_CTRL;
+        /* get previous DMA channel */
+        ch =  g_pri_alt ?
+            &g_dma_ctrl.alt[SPI_SNIFF_DMA_CH]:
+            &g_dma_ctrl.pri[SPI_SNIFF_DMA_CH];
 
-    /* process buffer */
-    sniff_process_buffer(((g_pri_alt+1)*DMA_BUFFER_SIZE)-1);
+        /* switch to next channel */
+        g_pri_alt ^= 1;
 
-    /* switch to next DMA buffer */
-    g_pri_alt ^= 1;
+        /* re-activate channel */
+        ch->CTRL = DMA_SNIFF_CTRL;
+    }
 
     /* acknowledge IRQ */
     DMA->IFC = reason;
@@ -179,7 +188,7 @@ static inline void sniff_init(void)
     volatile DMA_DESCRIPTOR_TypeDef *ch;
 
     /* reset variables */
-    g_cs_irq = 0;
+    g_cs_irq = g_dma_irq = 0;
     g_pri_alt = 0;
     g_screen_row = g_screen_col;
     g_buffer_head = g_buffer_tail = 0;
@@ -241,7 +250,9 @@ static inline void sniff_init(void)
     GPIO->IEN = GPIO_CS_PIN;
     GPIO->EXTIFALL = GPIO_CS_PIN;
     ISR_SET(GPIO_ODD_IRQn, &sniff_gpio);
+
     NVIC_EnableIRQ(GPIO_ODD_IRQn);
+    NVIC_SetPriority(GPIO_ODD_IRQn, NVIC_EncodePriority(5, 1, 0));
 }
 
 #if 0
@@ -278,12 +289,16 @@ static inline void hardware_init(void)
     /* Enable output */
     DEBUG_init();
 
+    /* Set Priority Grouping */
+    NVIC_SetPriorityGrouping(IRQ_PRIORITY_GROUP);
+
     /* start DMA */
     CMU->HFCORECLKEN0 |= CMU_HFCORECLKEN0_DMA;
     DMA->CTRLBASE = (uint32_t)&g_dma_ctrl;
     /* enable DMA irq */
     ISR_SET(DMA_IRQn, &sniff_dma);
     NVIC_EnableIRQ(DMA_IRQn);
+    NVIC_SetPriority(DMA_IRQn, NVIC_EncodePriority(IRQ_PRIORITY_GROUP, 0, 0));
 
     /* Enable sniffer */
     sniff_init();
@@ -294,8 +309,9 @@ static inline void hardware_init(void)
 
 void main(void)
 {
-    uint32_t i;
-    volatile uint32_t t;
+    volatile uint8_t *p;
+    uint8_t data;
+    uint32_t t,i;
 
     /* initialize hardware */
     hardware_init();
@@ -303,7 +319,24 @@ void main(void)
     i=0;
     while(true)
     {
-        for(t=0;t<1000000;t++);
-        dprintf("head=%03i g_cs_irq=%04i (%i)\r\n",g_buffer_head,g_cs_irq,i++);
+        dprintf("\r\n\r\n");
+        p = g_screen;
+        for(i=0;i<SPISCREEN_BUFSIZE;i++)
+        {
+            if(!(i%SPISCREEN_BUFWIDTH))
+                dprintf("\r\n");
+
+            data = *p++;
+            for(t=0;t<8;t++)
+            {
+                DEBUG_TxByte((data&1)?'#':'.');
+                data>>=1;
+            }
+        }
+        dprintf("\r\n# head=%03i cs_irq=%04i dma_irq=%04i\r\n",g_buffer_head,g_cs_irq,g_dma_irq);
+        t = (g_dma_ctrl.pri[SPI_SNIFF_DMA_CH].CTRL & _DMA_CTRL_N_MINUS_1_MASK)>>_DMA_CTRL_N_MINUS_1_SHIFT;
+        i = (g_dma_ctrl.alt[SPI_SNIFF_DMA_CH].CTRL & _DMA_CTRL_N_MINUS_1_MASK)>>_DMA_CTRL_N_MINUS_1_SHIFT;
+        dprintf("# pri=%04i alt=%04i\r\n",g_buffer_head,g_cs_irq,g_dma_irq,t,i);
+
     }
 }
