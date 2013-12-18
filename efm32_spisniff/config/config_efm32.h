@@ -65,6 +65,8 @@
 #define DEBUG_USART                UART1
 #define DEBUG_USART_CLOCK          CMU_HFPERCLKEN0_UART1
 #define DEBUG_USART_LOCATION       UART_ROUTE_LOCATION_LOC2
+#define DEBUG_USART_BAUD           115200UL
+
 
 /** This function sets up the GPIO setting for the debug output. */
 static __INLINE void CONFIG_DebugGpioSetup(void)
