@@ -33,6 +33,13 @@ typedef struct {
     DMA_DESCRIPTOR_TypeDef alt[DMA_CHAN_COUNT];
 } TDMActrl  __attribute__((aligned(0x100)));
 
+/* BASE64 lookup table */
+static const uint8_t g_base64[64] =
+    "ABCDEFGHIJKLMNOP"
+    "QRSTUVWXYZabcdef"
+    "ghijklmnopqrstuv"
+    "wxyz0123456789+/";
+
 static volatile TDMActrl g_dma_ctrl;
 static volatile uint8_t g_pri_alt;
 static volatile uint8_t g_screen_row, g_screen_col;
@@ -43,6 +50,51 @@ static volatile TSniffState g_sniff_state, g_sniff_lasterror;
 static uint8_t g_buffer[DMA_BUFFER_SIZE*2];
 static volatile uint8_t g_screen[SPISCREEN_BUFSIZE];
 static volatile uint8_t *g_screen_ptr, g_screen_x;
+
+static void base64_encode(const void *data, uint32_t length)
+{
+    const uint8_t *p;
+    uint8_t a, b;
+
+    /* encode 3-byte blocks */
+    p = (const uint8_t*) data;
+    while(length>=3)
+    {
+        a = *p++;
+        DEBUG_TxByte(g_base64[a>>2]);
+
+        b = *p++;
+        DEBUG_TxByte(g_base64[((a<<4)|(b>>4)) & 0x3F]);
+
+        a = *p++;
+        DEBUG_TxByte(g_base64[((b<<2)|(a>>6)) & 0x3F]);
+        DEBUG_TxByte(g_base64[a & 0x3F]);
+
+        length-=3;
+    }
+
+    /* handle padding */
+    if(length)
+    {
+        a = *p++;
+        length--;
+        DEBUG_TxByte(g_base64[a>>2]);
+
+        if(!length)
+            b = 0;
+        else
+        {
+            b = *p++;
+        }
+        DEBUG_TxByte(g_base64[((a<<4)|(b>>4)) & 0x3F]);
+
+        if(!length)
+            DEBUG_TxByte('=');
+        else
+            DEBUG_TxByte(g_base64[(b<<2) & 0x3F]);
+        DEBUG_TxByte('=');
+    }
+}
 
 static void sniff_process(uint8_t data)
 {
@@ -299,17 +351,20 @@ static inline void hardware_init(void)
 
 void main(void)
 {
-    volatile uint8_t *p;
-    uint8_t data;
-    uint32_t t,i;
-
     /* initialize hardware */
     hardware_init();
 
+#ifdef  DEBUG_SCREEN
+
+    volatile uint8_t *p;
+    uint8_t data;
+    uint32_t t,i,frames;
+
     /* clear screen */
     dprintf("\033[2J");
+    frames=0;
 
-    i=0;
+    /* show ASCII-art screen representation using ANSI sequences */
     while(true)
     {
         dprintf("\033[0;0H");
@@ -326,6 +381,20 @@ void main(void)
                 data>>=1;
             }
         }
-        dprintf("\r\n\r\nsniff_state=%i\r\n", g_sniff_state);
+        dprintf("\r\n\r\nsniff_state=%i frame=%04i\r\n", g_sniff_state, frames++);
     }
+
+#else /*DEBUG_SCREEN*/
+
+    /* send JSON screen objects */
+    while(true)
+    {
+        dprintf("{\"x\":%i,\"y\":%i,\"img\":\"",
+            SPISCREEN_WIDTH,
+            SPISCREEN_HEIGHT);
+        base64_encode((void*)&g_screen, sizeof(g_screen));
+        dprintf("\"}\r\n");
+    }
+
+#endif/*DEBUG_SCREEN*/
 }
