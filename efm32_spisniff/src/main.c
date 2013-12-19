@@ -51,6 +51,8 @@ static uint8_t g_buffer[DMA_BUFFER_SIZE*2];
 static volatile uint8_t g_screen[SPISCREEN_BUFSIZE];
 static volatile uint8_t *g_screen_ptr, g_screen_x;
 
+#define IMG_INVERT(x) ~(x)
+
 static void base64_encode(const void *data, uint32_t length)
 {
     const uint8_t *p;
@@ -60,13 +62,13 @@ static void base64_encode(const void *data, uint32_t length)
     p = (const uint8_t*) data;
     while(length>=3)
     {
-        a = *p++;
+        a = IMG_INVERT(*p++);
         DEBUG_TxByte(g_base64[a>>2]);
 
-        b = *p++;
+        b = IMG_INVERT(*p++);
         DEBUG_TxByte(g_base64[((a<<4)|(b>>4)) & 0x3F]);
 
-        a = *p++;
+        a = IMG_INVERT(*p++);
         DEBUG_TxByte(g_base64[((b<<2)|(a>>6)) & 0x3F]);
         DEBUG_TxByte(g_base64[a & 0x3F]);
 
@@ -76,7 +78,7 @@ static void base64_encode(const void *data, uint32_t length)
     /* handle padding */
     if(length)
     {
-        a = *p++;
+        a = IMG_INVERT(*p++);
         length--;
         DEBUG_TxByte(g_base64[a>>2]);
 
@@ -84,7 +86,7 @@ static void base64_encode(const void *data, uint32_t length)
             b = 0;
         else
         {
-            b = *p++;
+            b = IMG_INVERT(*p++);
         }
         DEBUG_TxByte(g_base64[((a<<4)|(b>>4)) & 0x3F]);
 
@@ -389,7 +391,7 @@ void main(void)
     /* send JSON screen objects */
     while(true)
     {
-        dprintf("{\"x\":%i,\"y\":%i,\"img\":\"",
+        dprintf("{\"width\":%i,\"height\":%i,\"data\":\"",
             SPISCREEN_WIDTH,
             SPISCREEN_HEIGHT);
         base64_encode((void*)&g_screen, sizeof(g_screen));
