@@ -18,6 +18,7 @@ SOURCES:=$(SYSTEM)/src/isr.c \
 DEBUG_HOST:=localhost
 OPT:=-Os
 DEBUG:=-g3 -DNDEBUG
+WARNING:=-Wall -Werror
 CPU_LOWER:=$(shell tr '[:upper:]' '[:lower:]' <<< $(CPU))
 ARCH_LOWER:=$(shell tr '[:upper:]' '[:lower:]' <<< $(ARCH))
 
@@ -35,6 +36,7 @@ LDFLAGS:=$(FLAGS_CM3) \
 CFLAGS_PRE:=\
         $(OPT) \
         $(DEBUG) \
+        $(WARNING) \
         -D$(ARCH) \
         -D$(CPU) \
         $(APP_CFLAGS) \

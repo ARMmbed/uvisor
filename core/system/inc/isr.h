@@ -7,5 +7,6 @@
 
 typedef void (*TIsrVector)(void);
 extern TIsrVector g_isr_vector[MAX_ISR_VECTORS];
+extern void main_entry(void);
 
 #endif/*__ISR_H__*/
