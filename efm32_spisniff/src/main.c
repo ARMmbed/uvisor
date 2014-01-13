@@ -1,5 +1,6 @@
 #include <iot-os.h>
 #include "debug.h"
+#include "crc16.h"
 
 #define DMA_SNIFF_CTRL \
         DMA_CTRL_DST_INC_BYTE|\
@@ -25,6 +26,7 @@ typedef enum {
     SNSTATE_ROW,
     SNSTATE_DATA,
     SNSTATE_DONE,
+    SNSTATE_DEFAULTSTATE,
     SNSTATE_ERROR
 } TSniffState;
 
@@ -151,6 +153,11 @@ static void sniff_process(uint8_t data)
                 g_sniff_state = SNSTATE_ERROR;
             }
             break;
+
+        /* should never happen */
+        default:
+                g_sniff_lasterror = SNSTATE_DEFAULTSTATE;
+                g_sniff_state = SNSTATE_ERROR;
     }
 }
 
@@ -215,7 +222,7 @@ static void sniff_dma(void)
 {
     volatile DMA_DESCRIPTOR_TypeDef *ch;
     uint32_t i, reason = DMA->IF;
-    uint8_t alt, *p;
+    uint8_t *p;
 
     if(reason & (1<<SPI_SNIFF_DMA_CH))
     {
@@ -351,7 +358,7 @@ static inline void hardware_init(void)
     DMA->CONFIG = DMA_CONFIG_EN | DMA_CONFIG_CHPROT;
 }
 
-void main(void)
+void main_entry(void)
 {
     /* initialize hardware */
     hardware_init();
@@ -388,14 +395,22 @@ void main(void)
 
 #else /*DEBUG_SCREEN*/
 
+    uint16_t crc, crc_prev;
+
     /* send JSON screen objects */
+    crc_prev = 0;
     while(true)
     {
-        dprintf("{\"width\":%i,\"height\":%i,\"data\":\"",
-            SPISCREEN_WIDTH,
-            SPISCREEN_HEIGHT);
-        base64_encode((void*)&g_screen, sizeof(g_screen));
-        dprintf("\"}\r\n");
+        /* only show new screens */
+        if((crc = crc_ccitt(&g_screen, sizeof(g_screen))) != crc_prev)
+        {
+            crc_prev = crc;
+            dprintf("{\"width\":%i,\"height\":%i,\"data\":\"",
+                SPISCREEN_WIDTH,
+                SPISCREEN_HEIGHT);
+            base64_encode((void*)&g_screen, sizeof(g_screen));
+            dprintf("\"}\r\n");
+        }
     }
 
 #endif/*DEBUG_SCREEN*/

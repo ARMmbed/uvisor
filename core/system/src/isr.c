@@ -12,7 +12,7 @@ void __attribute__ ((weak, noreturn)) default_handler(void)
 
 void __attribute__ ((noreturn)) reset_handler(void)
 {
-    uint32_t t, *dst;
+    uint32_t *dst;
     const uint32_t* src;
 
     /* initialize data RAM from flash*/
@@ -35,7 +35,7 @@ void __attribute__ ((noreturn)) reset_handler(void)
     /* initialize system if needed */
     SystemInit();
 
-    main();
+    main_entry();
     while(1){};
 }
 
