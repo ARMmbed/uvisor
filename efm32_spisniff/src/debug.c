@@ -64,6 +64,7 @@ void DEBUG_init(void)
   DEBUG_USART->CMD = USART_CMD_RXEN | USART_CMD_TXEN;
 }
 
+
 /**************************************************************************//**
  * @brief Transmit a single byte on usart1
  * @param data Character to transmit.
