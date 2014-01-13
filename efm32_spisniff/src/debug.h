@@ -42,4 +42,14 @@
 extern void DEBUG_init(void);
 extern void DEBUG_TxByte(uint8_t data);
 
+static inline void led_set(uint8_t led)
+{
+    GPIO->P[DEBUG_PORT].DOUTSET = led;
+}
+
+static inline void led_clr(uint8_t led)
+{
+    GPIO->P[DEBUG_PORT].DOUTCLR = led;
+}
+
 #endif

@@ -67,6 +67,10 @@
 #define DEBUG_USART_LOCATION       UART_ROUTE_LOCATION_LOC2
 #define DEBUG_USART_BAUD           1000000UL
 
+/** LEDs used for debugging */
+#define DEBUG_PORT                 4
+#define DEBUG_LED0                 (1<<2)
+#define DEBUG_LED1                 (1<<3)
 
 /** This function sets up the GPIO setting for the debug output. */
 static __INLINE void CONFIG_DebugGpioSetup(void)
@@ -85,8 +89,15 @@ static __INLINE void CONFIG_UsartGpioSetup(void)
    * and input (RX)
    * To avoid false start, configure output as high
    */
-  GPIO->P[4].DOUT = (1 << 10);
-  GPIO->P[4].MODEH = GPIO_P_MODEH_MODE10_PUSHPULL | GPIO_P_MODEH_MODE11_INPUT;
+  GPIO->P[DEBUG_PORT].DOUT = (1 << 10) | DEBUG_LED0 | DEBUG_LED1;
+  GPIO->P[DEBUG_PORT].MODEH =
+    GPIO_P_MODEH_MODE10_PUSHPULL |
+    GPIO_P_MODEH_MODE11_INPUT;
+
+  /* configure Debug LED's */
+  GPIO->P[DEBUG_PORT].MODEL =
+    GPIO_P_MODEL_MODE2_PUSHPULL|
+    GPIO_P_MODEL_MODE3_PUSHPULL;
 }
 
 #endif
