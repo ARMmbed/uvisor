@@ -85,7 +85,7 @@ monitor flash device = $(CPU)\n\
 load $<\n\
 file $<\n\
 monitor reset\n\
-b main\n\
+b main_entry\n\
 b default_handler\n\
 " > $@
 

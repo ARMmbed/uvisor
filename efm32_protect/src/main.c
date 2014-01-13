@@ -30,7 +30,7 @@ static inline void hardware_init(void)
     mpu_init();
 }
 
-void main(void)
+void main_entry(void)
 {
     uint32_t i;
 

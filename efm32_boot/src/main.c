@@ -328,7 +328,7 @@ static void generateVectorTable(void)
 /**************************************************************************//**
  * @brief  Main function
  *****************************************************************************/
-void main(void)
+void main_entry(void)
 {
   uint32_t clkdiv;
   uint32_t periodTime24_8;

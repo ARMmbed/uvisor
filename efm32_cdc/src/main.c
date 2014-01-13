@@ -143,7 +143,7 @@ static DMA_CB_TypeDef DmaRxCallBack;
 /**************************************************************************//**
  * @brief main - the entrypoint after reset.
  *****************************************************************************/
-int main(void)
+void main_entry(void)
 {
   BSP_Init(BSP_INIT_DEFAULT);   /* Initialize DK board register access */
 
@@ -163,10 +163,6 @@ int main(void)
   USBD_Disconnect();
   USBTIMER_DelayMs(1000);
   USBD_Connect();
-
-  for (;;)
-  {
-  }
 }
 
 /**************************************************************************//**
