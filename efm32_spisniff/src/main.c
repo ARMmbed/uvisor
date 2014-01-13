@@ -109,10 +109,7 @@ static void sniff_process(uint8_t data)
             if(data==0x01)
                 g_sniff_state = SNSTATE_ROW;
             else
-            {
                 g_sniff_lasterror = g_sniff_state;
-                g_sniff_state = SNSTATE_ERROR;
-            }
             break;
 
         /* expecting row number  */
@@ -124,7 +121,7 @@ static void sniff_process(uint8_t data)
                 if(!data || (data>SPISCREEN_WIDTH))
                 {
                     g_sniff_lasterror = g_sniff_state;
-                    g_sniff_state = SNSTATE_ERROR;
+                    g_sniff_state = SNSTATE_IDLE;
                 }
                 else
                 {
@@ -158,7 +155,7 @@ static void sniff_process(uint8_t data)
 
         /* should never happen */
         default:
-                g_sniff_state = SNSTATE_ERROR;
+                g_sniff_state = SNSTATE_IDLE;
     }
 }
 
