@@ -23,10 +23,10 @@
 typedef enum {
     SNSTATE_IDLE,
     SNSTATE_ACTIVE,
+    SNSTATE_ACTIVE2,
     SNSTATE_ROW,
     SNSTATE_DATA,
     SNSTATE_DONE,
-    SNSTATE_DEFAULTSTATE,
     SNSTATE_ERROR
 } TSniffState;
 
@@ -55,7 +55,7 @@ static volatile uint8_t *g_screen_ptr, g_screen_x;
 
 #define IMG_INVERT(x) ~(x)
 
-static void base64_encode(const void *data, uint32_t length)
+void base64_encode(const void *data, uint32_t length)
 {
     const uint8_t *p;
     uint8_t a, b;
@@ -117,7 +117,7 @@ static void sniff_process(uint8_t data)
 
         /* expecting row number  */
         case SNSTATE_ROW:
-            if(data==0xFF)
+            if((data>SPISCREEN_HEIGHT)||(data==0))
                 g_sniff_state = SNSTATE_IDLE;
             else
             {
@@ -148,15 +148,16 @@ static void sniff_process(uint8_t data)
             if(data==0xFF)
                 g_sniff_state = SNSTATE_ROW;
             else
-            {
-                g_sniff_lasterror = g_sniff_state;
-                g_sniff_state = SNSTATE_ERROR;
-            }
+                g_sniff_state = SNSTATE_ACTIVE2;
+            break;
+
+        /* support trailing garbage on last line */
+        case SNSTATE_ACTIVE2:
+            g_sniff_state = SNSTATE_IDLE;
             break;
 
         /* should never happen */
         default:
-                g_sniff_lasterror = SNSTATE_DEFAULTSTATE;
                 g_sniff_state = SNSTATE_ERROR;
     }
 }
@@ -404,13 +405,22 @@ void main_entry(void)
         /* only show new screens */
         if((crc = crc_ccitt(&g_screen, sizeof(g_screen))) != crc_prev)
         {
+            /* turn on debug LED1 during UART transmit */
+            led_set(DEBUG_LED0);
+
             crc_prev = crc;
             dprintf("{\"width\":%i,\"height\":%i,\"data\":\"",
                 SPISCREEN_WIDTH,
                 SPISCREEN_HEIGHT);
             base64_encode((void*)&g_screen, sizeof(g_screen));
             dprintf("\"}\r\n");
+
+            /* turn off debug LED */
+            led_clr(DEBUG_LED0);
         }
+        else
+            if(g_sniff_state == SNSTATE_ERROR)
+                g_sniff_state = SNSTATE_IDLE;
     }
 
 #endif/*DEBUG_SCREEN*/
