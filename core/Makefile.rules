@@ -15,7 +15,7 @@ SOURCES:=$(SYSTEM)/src/isr.c \
          $(DEVICE)/src/system.c \
          $(APP_SRC)
 
-DEBUG_HOST:=localhost
+DEBUG_HOST:=localhost:2331
 OPT:=-Os
 DEBUG:=-g3 -DNDEBUG
 WARNING:=-Wall -Werror
