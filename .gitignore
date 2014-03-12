@@ -4,6 +4,7 @@
 *.asm
 *.bin
 gdb.script
-gdb.flash
+jlink.flash
+JLink.log
 *.c.tags
 .geanyprj
