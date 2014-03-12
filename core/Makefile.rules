@@ -4,6 +4,9 @@ OBJCOPY:=$(PREFIX)objcopy
 OBJDUMP:=$(PREFIX)objdump
 GDB:=$(PREFIX)gdb
 
+SEGGER:=/opt/SEGGER/JLink
+JLINK:=$(SEGGER)/JLinkExe
+
 CORE:=../core
 
 SYSTEM:=$(CORE)/system
@@ -89,21 +92,21 @@ b main_entry\n\
 b default_handler\n\
 " > $@
 
-flash: gdb.flash
-	$(GDB) -x $<
+flash: jlink.flash
+	$(JLINK) $<
 
-gdb.flash: $(PROJECT).elf
+jlink.flash: $(PROJECT).bin
 	echo -e "\
-target remote $(DEBUG_HOST)\n\
-monitor endian little\n\
-monitor halt\n\
-monitor speed 1000\n\
-monitor flash device = $(CPU)\n\
-load $<\n\
-monitor reset\n\
-quit\n\
+device $(CPU)\n\
+halt\n\
+speed 1000\n\
+erase\n\
+loadbin $< 0\n\
+r\n\
+g\n\
+q\n\
 " > $@
 
 clean:
-	rm -f $(PROJECT).map $(PROJECT).elf $(PROJECT).bin $(PROJECT).asm gdb.script gdb.flash source.c.tags
+	rm -f $(PROJECT).map $(PROJECT).elf $(PROJECT).bin $(PROJECT).asm gdb.script jlink.flash source.c.tags
 	find . $(CORE) -iname '*.o' -exec rm -f \{\} \;
