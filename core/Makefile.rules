@@ -93,7 +93,7 @@ b default_handler\n\
 " > $@
 
 flash: jlink.flash
-	$(JLINK) $<
+	-@$(JLINK) $<
 
 jlink.flash: $(PROJECT).bin
 	echo -e "\
