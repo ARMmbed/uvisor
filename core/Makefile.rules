@@ -3,9 +3,8 @@ CC:=$(PREFIX)gcc
 OBJCOPY:=$(PREFIX)objcopy
 OBJDUMP:=$(PREFIX)objdump
 GDB:=$(PREFIX)gdb
-
-SEGGER:=/opt/SEGGER/JLink
-JLINK:=$(SEGGER)/JLinkExe
+SEGGER:=/opt/SEGGER
+JLINK:=$(SEGGER)/JLink/JLinkExe
 
 CORE:=../core
 
@@ -92,21 +91,17 @@ b main_entry\n\
 b default_handler\n\
 " > $@
 
-flash: jlink.flash
-	-@$(JLINK) $<
-
-jlink.flash: $(PROJECT).bin
-	echo -e "\
+flash: $(PROJECT).bin
+	@echo -e "\
 device $(CPU)\n\
-halt\n\
-speed 1000\n\
-erase\n\
-loadbin $< 0\n\
 r\n\
+erase\n\
+sleep 1000\n\
+loadbin $^ 0\n\
 g\n\
 q\n\
-" > $@
+" | $(JLINK)
 
 clean:
-	rm -f $(PROJECT).map $(PROJECT).elf $(PROJECT).bin $(PROJECT).asm gdb.script jlink.flash source.c.tags
+	rm -f $(PROJECT).map $(PROJECT).elf $(PROJECT).bin $(PROJECT).asm gdb.script source.c.tags JLink.log
 	find . $(CORE) -iname '*.o' -exec rm -f \{\} \;
