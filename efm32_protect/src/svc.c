@@ -1,11 +1,26 @@
 #include <iot-os.h>
 #include "svc.h"
 
+/* issue SVC API aliases */
+#define SVC_SERVICE(id, func_name, param...) void func_name(param) { SVC(id); }
+#include "svc.h"
+
+void svc_cb_write_data(char *string, int length)
+{
+    dprintf("SVC: cb_write_data(string=0x%08X, length=0x%08X)\r\n", string, length);
+}
+
 static void svc_irq(uint32_t *args)
 {
+    int i;
     uint8_t svcn = ((uint8_t*)args[6])[-2];
-
-    dprintf("svcn=%i\r\n", svcn);
+    switch(svcn)
+    {
+        default:
+            dprintf("unknown svcn=%i\r\n", svcn);
+            for(i=0;i<4;i++)
+                dprintf("\tR%i=0x%08X\r\n", i ,args[i]);
+    }
 }
 
 static void svc_pend(void)

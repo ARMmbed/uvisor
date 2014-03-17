@@ -5,6 +5,8 @@
 
 void default_handler(void)
 {
+    DEBUG_TxByte('D');
+
 //    dprintf("IPSR=0x%03X\r\n",__get_IPSR());
 }
 
@@ -35,12 +37,13 @@ static inline void hardware_init(void)
     mpu_init();
 }
 
-#define GLOBAL_STACK 0x200
+#define GLOBAL_STACK 0x40
 uint32_t g_test_stack[GLOBAL_STACK];
 
 void main_entry(void)
 {
-    uint32_t i;
+    volatile register int *sp;
+    __asm__  volatile ("mov %0, sp" : "=g" (sp) : );
 
     /* initialize hardware */
     hardware_init();
@@ -52,19 +55,27 @@ void main_entry(void)
     MPU->CTRL = MPU_CTRL_ENABLE_Msk|MPU_CTRL_PRIVDEFENA_Msk;
     mpu_debug();
 
+    dprintf("PSP : 0x%08X\r\n", __get_PSP());
+    dprintf("MSP : 0x%08X\r\n", __get_MSP());
+
+    dprintf("Privileged SP   : 0x%08X\r\n", sp);
+
     /* switch to unprivileged */
+    __set_PSP((uint32_t)&g_test_stack[GLOBAL_STACK-1]);
     __set_CONTROL(__get_CONTROL()|1);
     __ISB();
     __DSB();
-    __set_PSP((uint32_t)&g_test_stack[GLOBAL_STACK-1]);
+    asm("MRS r12, PSP");
 
-//    SVC(2);
-//    SVC(1);
+    memset(&g_test_stack, 0, sizeof(g_test_stack));
 
-    for(i=0;i<16;i++)
-        DEBUG_TxByte('X');
-    DEBUG_TxByte('\r');
-    DEBUG_TxByte('\n');
+    dprintf("Unprivileged SP : 0x%08X\r\n", sp);
+
+    SVC(1);
+    SVC(2);
+    cb_write_data((char*)0xDEADEEF,0x12345678);
 
     dprintf("Hello World\r\n");
+
+    while(1);
 }
