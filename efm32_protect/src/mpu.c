@@ -37,29 +37,27 @@ int mpu_set(uint8_t region, void* base, uint32_t size, uint32_t flags)
     uint8_t bits;
     uint32_t mask;
 
+    /* enforce minimum size */
+    if(size<32)
+        size = 32;
+
     /* get region bits */
     if(!(bits = mpu_region_bits(size)))
         return E_PARAM;
 
     bits--;
 
-    /* round up mask */
-    mask = (1<<bits)-1;
-    /* extend mask if needed */
-    if(mask & size)
-    {
-        mask = (mask<<1)+1;
-        bits++;
-    }
-
     /* verify alignment */
+    size = 1UL << bits;
+    mask = size-1;
     if(((uint32_t)base) & mask)
         return E_ALIGN;
 
+    /* update MPU */
     MPU->RBAR = MPU_RBAR(region,(uint32_t)base);
     MPU->RASR =
         MPU_RASR_ENABLE_Msk |
-        (bits<<MPU_RASR_SIZE_Pos) |
+        ((bits-1)<<MPU_RASR_SIZE_Pos) |
         flags;
 
     return 0;

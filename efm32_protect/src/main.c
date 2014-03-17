@@ -29,11 +29,14 @@ static inline void hardware_init(void)
     DEBUG_init();
 
     /* register SVC call interface */
-//    svc_init();
+    svc_init();
 
     /* setup MPU */
-//    mpu_init();
+    mpu_init();
 }
+
+#define GLOBAL_STACK 0x200
+uint32_t g_test_stack[GLOBAL_STACK];
 
 void main_entry(void)
 {
@@ -42,7 +45,6 @@ void main_entry(void)
     /* initialize hardware */
     hardware_init();
 
-#if 0
     /* configure MPU */
     mpu_set(7, (void*)RAM_MEM_BASE, SRAM_SIZE, 3<<MPU_RASR_AP_Pos);
     mpu_set(6, (void*)FLASH_MEM_BASE, FLASH_SIZE, 2<<MPU_RASR_AP_Pos);
@@ -54,12 +56,15 @@ void main_entry(void)
     __set_CONTROL(__get_CONTROL()|1);
     __ISB();
     __DSB();
+    __set_PSP((uint32_t)&g_test_stack[GLOBAL_STACK-1]);
 
-    SVC(2);
-    SVC(1);
-#endif
+//    SVC(2);
+//    SVC(1);
 
-    i=0;
-    while(true)
-        dprintf("Hello World 12345 %06d\r\n",i++);
+    for(i=0;i<16;i++)
+        DEBUG_TxByte('X');
+    DEBUG_TxByte('\r');
+    DEBUG_TxByte('\n');
+
+    dprintf("Hello World\r\n");
 }

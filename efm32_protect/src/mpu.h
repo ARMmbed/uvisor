@@ -2,7 +2,7 @@
 #define __MPU_H__
 
 #define MPU_MAX_USER_REGIONS 4
-#define MPU_RBAR(region,addr) ((region)|MPU_RBAR_VALID_Msk|addr)
+#define MPU_RBAR(region,addr) (((uint32_t)(region))|MPU_RBAR_VALID_Msk|addr)
 
 extern void mpu_init(void);
 extern void mpu_debug(void);
