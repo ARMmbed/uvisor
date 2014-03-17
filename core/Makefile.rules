@@ -102,6 +102,14 @@ g\n\
 q\n\
 " | $(JLINK)
 
+erase:
+	@echo -e "\
+device $(CPU)\n\
+r\n\
+erase\n\
+q\n\
+" | $(JLINK)
+
 clean:
 	rm -f $(PROJECT).map $(PROJECT).elf $(PROJECT).bin $(PROJECT).asm gdb.script source.c.tags JLink.log
 	find . $(CORE) -iname '*.o' -exec rm -f \{\} \;
