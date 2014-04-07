@@ -37,45 +37,76 @@ static inline void hardware_init(void)
     mpu_init();
 }
 
+void debug_stack(const char* msg)
+{
+    uint32_t sp;
+    __asm__  volatile ("mov %0, sp" : "=g" (sp) : );
+
+    dprintf("\n\r%s:\n\r", msg);
+    dprintf("\tSP  : 0x%08X\r\n", sp);
+    dprintf("\tPSP : 0x%08X\r\n", __get_PSP());
+    dprintf("\tMSP : 0x%08X\r\n", __get_MSP());
+}
+
 #define GLOBAL_STACK 0x40
 uint32_t g_test_stack[GLOBAL_STACK];
 
 void main_entry(void)
 {
-    volatile register int *sp;
-    __asm__  volatile ("mov %0, sp" : "=g" (sp) : );
-
     /* initialize hardware */
     hardware_init();
 
     /* configure MPU */
-    mpu_set(7, (void*)RAM_MEM_BASE, SRAM_SIZE, 3<<MPU_RASR_AP_Pos);
-    mpu_set(6, (void*)FLASH_MEM_BASE, FLASH_SIZE, 2<<MPU_RASR_AP_Pos);
-    mpu_set(5, DEBUG_USART, 1024, 3<<MPU_RASR_AP_Pos);
+
+    mpu_set(7,
+        (void*)RAM_MEM_BASE,
+        SECURE_RAM_SIZE,
+        MPU_RASR_AP_PRW_URW|MPU_RASR_CB_WB_WRA|MPU_RASR_XN
+    );
+
+    mpu_set(6,
+        (void*)FLASH_MEM_BASE,
+        FLASH_SIZE,
+        MPU_RASR_AP_PRO_URO|MPU_RASR_CB_WT
+    );
+
+    mpu_set(5,
+        DEBUG_USART,
+        1024,
+        MPU_RASR_AP_PRW_URW
+    );
+
+    mpu_set(4,
+        (void*)RAM_MEM_BASE,
+        SRAM_SIZE,
+        MPU_RASR_AP_PRW_URW|MPU_RASR_CB_WB_WRA|MPU_RASR_XN
+    );
+
     MPU->CTRL = MPU_CTRL_ENABLE_Msk|MPU_CTRL_PRIVDEFENA_Msk;
     mpu_debug();
 
-    dprintf("PSP : 0x%08X\r\n", __get_PSP());
-    dprintf("MSP : 0x%08X\r\n", __get_MSP());
+    debug_stack("PRE_CONTROL");
 
-    dprintf("Privileged SP   : 0x%08X\r\n", sp);
+    /* switch stack to unprivileged */
+    __set_PSP(RAM_MEM_BASE+SRAM_SIZE);
 
-    /* switch to unprivileged */
-    __set_PSP((uint32_t)&g_test_stack[GLOBAL_STACK-1]);
-    __set_CONTROL(__get_CONTROL()|1);
+    debug_stack("POST_SETUP");
+
+    __set_CONTROL(__get_CONTROL()|3);
     __ISB();
     __DSB();
-    asm("MRS r12, PSP");
+
+    debug_stack("POST_CONTROL");
 
     memset(&g_test_stack, 0, sizeof(g_test_stack));
-
-    dprintf("Unprivileged SP : 0x%08X\r\n", sp);
 
     SVC(1);
     SVC(2);
     cb_write_data((char*)0xDEADEEF,0x12345678);
 
-    dprintf("Hello World\r\n");
+//    *((uint32_t*)RAM_MEM_BASE) = 0x23;
+
+    dprintf("Hello World (0x%08X)\r\n",*((uint32_t*)RAM_MEM_BASE));
 
     while(1);
 }

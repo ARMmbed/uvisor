@@ -5,37 +5,31 @@
 #define SVC_SERVICE(id, func_name, param...) void func_name(param) { SVC(id); }
 #include "svc.h"
 
-void svc_cb_write_data(char *string, int length)
-{
-    dprintf("SVC: cb_write_data(string=0x%08X, length=0x%08X)\r\n", string, length);
-}
+#define MAX_SVC_CALLS 4
 
-static void svc_irq(uint32_t *args)
-{
-    int i;
-    uint8_t svcn = ((uint8_t*)args[6])[-2];
-    switch(svcn)
-    {
-        default:
-            dprintf("unknown svcn=%i\r\n", svcn);
-            for(i=0;i<4;i++)
-                dprintf("\tR%i=0x%08X\r\n", i ,args[i]);
-    }
-}
+/*
+typedef uint32_t (*TSVC)(void);
 
-static void svc_pend(void)
+const g_svc_call_table[MAX_SVC_CALLS] = {
+}
+*/
+
+static void svc_irq(uint32_t svcn)
 {
-    dprintf("svc_pend\r\n");
+    dprintf("svcn=0x%08X\r\n", svcn);
 }
 
 static void __attribute__((naked)) __svc_irq(void)
 {
     asm volatile(
-        "TST lr, #4\n"
-        "ITE eq\n"
-        "MRSEQ r0, MSP\n"
-        "MRSNE r0, PSP\n"
-        "B %0\n"
+        "PUSH {r4-r5, lr}\n"
+        "MRS r4, PSP\n"
+        "LDRT r4, [r4, #24]\n"
+        "SUB r4, #2\n"
+        "LDRBT r4,[r4]\n"
+        "MOV r0, r4\n"
+        "BL %0\n"
+        "POP {r4-r5, pc}\n"
         ::"i"(svc_irq):"r0"
     );
 }
@@ -44,5 +38,4 @@ void svc_init(void)
 {
     /* register SVC call interface */
     ISR_SET(SVCall_IRQn, &__svc_irq);
-    ISR_SET(PendSV_IRQn, &svc_pend);
 }
