@@ -61,7 +61,7 @@ void main_entry(void)
     mpu_set(7,
         (void*)RAM_MEM_BASE,
         SECURE_RAM_SIZE,
-        MPU_RASR_AP_PRW_URW|MPU_RASR_CB_WB_WRA|MPU_RASR_XN
+        MPU_RASR_AP_PRW_UNO|MPU_RASR_CB_WB_WRA|MPU_RASR_XN
     );
 
     mpu_set(6,
@@ -92,21 +92,19 @@ void main_entry(void)
 
     debug_stack("POST_SETUP");
 
+    memset(&g_test_stack, 0, sizeof(g_test_stack));
+
     __set_CONTROL(__get_CONTROL()|3);
     __ISB();
     __DSB();
 
     debug_stack("POST_CONTROL");
 
-    memset(&g_test_stack, 0, sizeof(g_test_stack));
-
     SVC(1);
     SVC(2);
     cb_write_data((char*)0xDEADEEF,0x12345678);
 
-//    *((uint32_t*)RAM_MEM_BASE) = 0x23;
-
-    dprintf("Hello World (0x%08X)\r\n",*((uint32_t*)RAM_MEM_BASE));
+    dprintf("Hello World\r\n");
 
     while(1);
 }
