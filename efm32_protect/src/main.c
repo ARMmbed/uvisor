@@ -42,7 +42,7 @@ void debug_stack(const char* msg)
     uint32_t sp;
     __asm__  volatile ("mov %0, sp" : "=g" (sp) : );
 
-    dprintf("\n\r%s:\n\r", msg);
+    dprintf("%s:\n\r", msg);
     dprintf("\tSP  : 0x%08X\r\n", sp);
     dprintf("\tPSP : 0x%08X\r\n", __get_PSP());
     dprintf("\tMSP : 0x%08X\r\n", __get_MSP());
