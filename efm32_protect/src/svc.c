@@ -1,10 +1,6 @@
 #include <iot-os.h>
 #include "svc.h"
 
-/* issue SVC API aliases */
-#define SVC_SERVICE(id, func_name, param...) void func_name(param) { SVC(id); }
-#include "svc.h"
-
 #define CRYPTOBOX_API_MAX ((sizeof(g_svc_vector_table)/sizeof(g_svc_vector_table[0]))-1)
 
 uint32_t __attribute__ ((weak)) default_handler(void)
