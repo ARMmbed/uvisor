@@ -6,8 +6,6 @@
 void default_handler(void)
 {
     DEBUG_TxByte('D');
-
-//    dprintf("IPSR=0x%03X\r\n",__get_IPSR());
 }
 
 static inline void hardware_init(void)
@@ -35,17 +33,6 @@ static inline void hardware_init(void)
 
     /* setup MPU */
     mpu_init();
-}
-
-void debug_stack(const char* msg)
-{
-    uint32_t sp;
-    __asm__  volatile ("mov %0, sp" : "=g" (sp) : );
-
-    dprintf("%s:\n\r", msg);
-    dprintf("\tSP  : 0x%08X\r\n", sp);
-    dprintf("\tPSP : 0x%08X\r\n", __get_PSP());
-    dprintf("\tMSP : 0x%08X\r\n", __get_MSP());
 }
 
 void main_entry(void)
@@ -82,18 +69,12 @@ void main_entry(void)
     MPU->CTRL = MPU_CTRL_ENABLE_Msk|MPU_CTRL_PRIVDEFENA_Msk;
     mpu_debug();
 
-    debug_stack("PRE_CONTROL");
-
     /* switch stack to unprivileged */
     __set_PSP(RAM_MEM_BASE+SRAM_SIZE);
-
-    debug_stack("POST_SETUP");
 
     __set_CONTROL(__get_CONTROL()|3);
     __ISB();
     __DSB();
-
-    debug_stack("POST_CONTROL");
 
     __SVC0(1);
     __SVC0(2);
