@@ -102,7 +102,7 @@ void main_entry(void)
     __SVC3(5,0x11111111,0x22222222,0x33333333);
     __SVC4(6,0x11111111,0x22222222,0x33333333,0x44444444);
 
-    dprintf("Hello World 0x%08X\r\n", __SVC1(7, 0xBEEFCAFE));
+    dprintf("Hello World 0x%08X\r\n", __SVC1(3, 0xBEEFCAFE));
 
     while(1);
 }

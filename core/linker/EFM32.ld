@@ -5,6 +5,7 @@ SECTIONS
 	.text :
 	{
 		KEEP(*(.isr_vector_tmp))
+		*(.svc_vector*)
 		*(.text*)
 		*(.rodata*)
 		PROVIDE(__data_start_src__ = LOADADDR(.data));
