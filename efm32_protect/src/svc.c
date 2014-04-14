@@ -63,18 +63,24 @@ void* const g_svc_vector_table[] =
 static void __attribute__((naked)) __svc_irq(void)
 {
     asm volatile(
-        "PUSH {r4-r6, lr}\n"            /* save scratch registers      */
-        "MRS r5, PSP\n"                 /* store unprivilged SP to r5  */
-        "LDR r6, =g_svc_vector_table\n" /* get svc vector table offset */
-        "LDRT r4, [r5, #24]\n"          /* get unprivileged PC         */
-        "SUB r4, #2\n"                  /* seek back into SVC opcode   */
-        "LDRBT r4, [r4]\n"              /* read SVC# from opcode       */
-        "ADD r4, r6, r4, LSL #2\n"      /* svc table entry from SVC#   */
-        "LDR r4, [r4]\n"                /* read corresponding SVC ptr  */
-        "BLX r4\n"                      /* call SVC handler            */
-        "STRT r0, [r5]\n"               /* store R0 to return stack    */
-        "POP {r4-r6, pc}\n"             /* resture registers & return  */
-        ::"i"(cb_get_version),"i"(CRYPTOBOX_API_MAX)
+        "  PUSH {r4-r6, lr}\n"            /* save scratch registers      */
+        "  MRS r5, PSP\n"                 /* store unprivilged SP to r5  */
+        "  LDR r6, =g_svc_vector_table\n" /* get svc vector table offset */
+        "  LDRT r4, [r5, #24]\n"          /* get unprivileged PC         */
+        "  SUB r4, #2\n"                  /* seek back into SVC opcode   */
+        "  LDRBT r4, [r4]\n"              /* read SVC# from opcode       */
+        "  ADD r6, r6, r4, LSL #2\n"      /* svc table entry from SVC#   */
+        "  CMP r4, %0\n"                  /* verify maximum SVC#         */
+        "  BHI abort\n"                   /* abort if SVC# > max         */
+        "  LDR r4, [r6]\n"                /* read corresponding SVC ptr  */
+        "  BLX r4\n"                      /* call SVC handler            */
+        "return:\n"
+        "  STRT r0, [r5]\n"               /* store R0 on return stack    */
+        "  POP {r4-r6, pc}\n"             /* resture registers & return  */
+        "abort:\n"                        /* only needed if SVC# > max   */
+        "  EOR r0, r0\n"                  /* ..reset r0 result           */
+        "  B return\n"
+        ::"i"(CRYPTOBOX_API_MAX)
     );
 }
 
