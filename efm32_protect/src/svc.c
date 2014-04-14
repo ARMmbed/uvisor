@@ -63,17 +63,17 @@ void* const g_svc_vector_table[] =
 static void __attribute__((naked)) __svc_irq(void)
 {
     asm volatile(
-        "PUSH {r4-r6, lr}\n"
-        "MRS r5, PSP\n"
-        "LDR r6, =g_svc_vector_table\n"
-        "LDRT r4, [r5, #24]\n"
-        "SUB r4, #2\n"
-        "LDRBT r4, [r4]\n"
-        "ADD r4, r6, r4, LSL #2\n"
-        "LDR r4, [r4]\n"
-        "BLX r4\n"
-        "STRT r0, [r5]\n"
-        "POP {r4-r6, pc}\n"
+        "PUSH {r4-r6, lr}\n"            /* save scratch registers      */
+        "MRS r5, PSP\n"                 /* store unprivilged SP to r5  */
+        "LDR r6, =g_svc_vector_table\n" /* get svc vector table offset */
+        "LDRT r4, [r5, #24]\n"          /* get unprivileged PC         */
+        "SUB r4, #2\n"                  /* seek back into SVC opcode   */
+        "LDRBT r4, [r4]\n"              /* read SVC# from opcode       */
+        "ADD r4, r6, r4, LSL #2\n"      /* svc table entry from SVC#   */
+        "LDR r4, [r4]\n"                /* read corresponding SVC ptr  */
+        "BLX r4\n"                      /* call SVC handler            */
+        "STRT r0, [r5]\n"               /* store R0 to return stack    */
+        "POP {r4-r6, pc}\n"             /* resture registers & return  */
         ::"i"(cb_get_version),"i"(CRYPTOBOX_API_MAX)
     );
 }
