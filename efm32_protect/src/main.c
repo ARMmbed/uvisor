@@ -48,9 +48,6 @@ void debug_stack(const char* msg)
     dprintf("\tMSP : 0x%08X\r\n", __get_MSP());
 }
 
-#define GLOBAL_STACK 0x40
-uint32_t g_test_stack[GLOBAL_STACK];
-
 void main_entry(void)
 {
     /* initialize hardware */
@@ -92,19 +89,20 @@ void main_entry(void)
 
     debug_stack("POST_SETUP");
 
-    memset(&g_test_stack, 0, sizeof(g_test_stack));
-
     __set_CONTROL(__get_CONTROL()|3);
     __ISB();
     __DSB();
 
     debug_stack("POST_CONTROL");
 
-    SVC(1);
-    SVC(2);
-    cb_write_data((char*)0xDEADEEF,0x12345678);
+    __SVC0(1);
+    __SVC0(2);
+    __SVC1(3,0x11111111);
+    __SVC2(4,0x11111111,0x22222222);
+    __SVC3(5,0x11111111,0x22222222,0x33333333);
+    __SVC4(6,0x11111111,0x22222222,0x33333333,0x44444444);
 
-    dprintf("Hello World\r\n");
+    dprintf("Hello World 0x%08X\r\n", __SVC1(7, 0xBEEFCAFE));
 
     while(1);
 }

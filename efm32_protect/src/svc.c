@@ -5,32 +5,42 @@
 #define SVC_SERVICE(id, func_name, param...) void func_name(param) { SVC(id); }
 #include "svc.h"
 
-#define MAX_SVC_CALLS 4
-
-/*
-typedef uint32_t (*TSVC)(void);
-
-const g_svc_call_table[MAX_SVC_CALLS] = {
+uint32_t __attribute__ ((weak)) default_handler(void)
+{
+    return E_INVALID;
 }
-*/
 
-static void svc_irq(uint32_t svcn)
+static uint32_t cb_get_version(uint32_t svcn)
 {
     dprintf("svcn=0x%08X\r\n", svcn);
+    return 0x44221100;
 }
+
+static uint32_t cb_reset(void)
+{
+    dprintf("reset\r\n");
+    return 0;
+}
+
+const void* g_cryptobox_api[] =
+{
+    cb_get_version,
+    cb_reset
+};
 
 static void __attribute__((naked)) __svc_irq(void)
 {
     asm volatile(
         "PUSH {r4-r5, lr}\n"
-        "MRS r4, PSP\n"
-        "LDRT r4, [r4, #24]\n"
+        "MRS r5, PSP\n"
+        "LDRT r4, [r5, #24]\n"
         "SUB r4, #2\n"
         "LDRBT r4,[r4]\n"
         "MOV r0, r4\n"
         "BL %0\n"
+        "STRT r0, [r5]\n"
         "POP {r4-r5, pc}\n"
-        ::"i"(svc_irq):"r0"
+        ::"i"(cb_get_version):"r0"
     );
 }
 

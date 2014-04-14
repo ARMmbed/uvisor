@@ -30,6 +30,7 @@
 
 /* IOT-OS specific includes */
 #include <isr.h>
+#include <svc-helper.h>
 #include <linker.h>
 
 #endif/*__IOT_OS_H__*/
