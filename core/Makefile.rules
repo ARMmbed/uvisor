@@ -55,7 +55,7 @@ CFLAGS:=$(FLAGS_CM3) $(CFLAGS_PRE)
 
 OBJS:=$(SOURCES:.c=.o)
 
-.PHONY: debug gdb gdbtui flash ctags source.c.tags
+.PHONY: debug gdb gdbtui flash erase reset ctags source.c.tags
 
 all: $(PROJECT).bin
 
@@ -107,6 +107,15 @@ erase:
 device $(CPU)\n\
 r\n\
 erase\n\
+q\n\
+" | $(JLINK)
+
+reset:
+	@echo -e "\
+device $(CPU)\n\
+r\n\
+monitor reset\n\
+g\n\
 q\n\
 " | $(JLINK)
 
