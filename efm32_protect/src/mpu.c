@@ -1,6 +1,11 @@
 #include <iot-os.h>
 #include "mpu.h"
 
+#define MPU_FAULT_USAGE  0x00
+#define MPU_FAULT_MEMORY 0x01
+#define MPU_FAULT_BUS    0x02
+#define MPU_FAULT_HARD   0x03
+
 static uint32_t mpu_aligment_mask;
 
 /* calculate rounded section alignment */
@@ -63,6 +68,35 @@ int mpu_set(uint8_t region, void* base, uint32_t size, uint32_t flags)
     return 0;
 }
 
+static void mpu_fault(int reason)
+{
+    dprintf("CFSR : 0x%08X\n\r", SCB->CFSR);
+    while(1);
+}
+
+static void mpu_fault_usage(void)
+{
+    mpu_fault(MPU_FAULT_USAGE);
+}
+
+static void mpu_fault_memory_management(void)
+{
+    dprintf("MMFAR: 0x%08X\n\r", SCB->MMFAR);
+    mpu_fault(MPU_FAULT_MEMORY);
+}
+
+static void mpu_fault_bus(void)
+{
+    dprintf("BFAR : 0x%08X\n\r", SCB->BFAR);
+    mpu_fault(MPU_FAULT_BUS);
+}
+
+static void mpu_fault_hard(void)
+{
+    dprintf("HFSR : 0x%08X\n\r", SCB->HFSR);
+    mpu_fault(MPU_FAULT_HARD);
+}
+
 void mpu_init(void)
 {
     /* reset MPU */
@@ -71,6 +105,15 @@ void mpu_init(void)
     MPU->RBAR = MPU_RBAR_ADDR_Msk;
     mpu_aligment_mask = ~MPU->RBAR;
     MPU->RBAR = 0;
+
+    /* setup security "bluescreen" */
+    ISR_SET(BusFault_IRQn,         &mpu_fault_bus);
+    ISR_SET(UsageFault_IRQn,       &mpu_fault_usage);
+    ISR_SET(MemoryManagement_IRQn, &mpu_fault_memory_management);
+    ISR_SET(HardFault_IRQn,        &mpu_fault_hard);
+
+    /* enable mem, bus and usage faults */
+    SCB->SHCSR |= 0x70000;
 
 #ifdef  DEBUG
     dprintf("MPU.REGIONS=%i\r\n", (uint8_t)(MPU->TYPE >> MPU_TYPE_DREGION_Pos));

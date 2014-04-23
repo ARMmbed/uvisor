@@ -84,6 +84,7 @@ void main_entry(void)
     __SVC4(6,0x11111111,0x22222222,0x33333333,0x44444444);
 
     dprintf("Hello World 0x%08X\r\n", __SVC1(7, 0xBEEFCAFE));
+    dprintf("Break 0x%08X\r\n", *((uint32_t*)RAM_MEM_BASE));
 
     while(1);
 }
