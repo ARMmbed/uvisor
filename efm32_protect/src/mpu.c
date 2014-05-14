@@ -5,6 +5,7 @@
 #define MPU_FAULT_MEMORY 0x01
 #define MPU_FAULT_BUS    0x02
 #define MPU_FAULT_HARD   0x03
+#define MPU_FAULT_DEBUG  0x04
 
 static uint32_t mpu_aligment_mask;
 
@@ -97,6 +98,12 @@ static void mpu_fault_hard(void)
     mpu_fault(MPU_FAULT_HARD);
 }
 
+static void mpu_fault_debug(void)
+{
+    dprintf("MPU_FAULT_DEBUG\n\r");
+    mpu_fault(MPU_FAULT_DEBUG);
+}
+
 void mpu_init(void)
 {
     /* reset MPU */
@@ -111,6 +118,7 @@ void mpu_init(void)
     ISR_SET(UsageFault_IRQn,       &mpu_fault_usage);
     ISR_SET(MemoryManagement_IRQn, &mpu_fault_memory_management);
     ISR_SET(HardFault_IRQn,        &mpu_fault_hard);
+    ISR_SET(DebugMonitor_IRQn,     &mpu_fault_debug);
 
     /* enable mem, bus and usage faults */
     SCB->SHCSR |= 0x70000;
