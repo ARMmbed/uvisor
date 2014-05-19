@@ -1,6 +1,7 @@
 #ifndef  __CONFIG_H__
 #include "config_efm32.h"
 
+#define CHANNEL_DEBUG 1
 #define XTAL_FREQUENCY 48000000UL
 
 #define SECURE_RAM_SIZE_BITS 12

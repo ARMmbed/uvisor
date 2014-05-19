@@ -22,3 +22,19 @@ void *memcpy(void *dst, const void *src, size_t n)
 
     return dst;
 }
+
+#ifdef  CHANNEL_DEBUG
+void WEAK default_putc (uint8_t data)
+{
+    if(    (ITM->TCR & ITM_TCR_ITMENA_Msk) &&
+        (ITM->TER & (1<<CHANNEL_DEBUG))
+        )
+    {
+        /* FIXME power */
+        /* wait for TX */
+        while (ITM->PORT[CHANNEL_DEBUG].u32 == 0);
+        /* TX debug character */
+        ITM->PORT[CHANNEL_DEBUG].u8 = data;
+    }
+}
+#endif/*CHANNEL_DEBUG*/

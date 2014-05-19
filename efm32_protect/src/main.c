@@ -5,7 +5,8 @@
 
 void default_handler(void)
 {
-    DEBUG_TxByte('D');
+    dprintf("HALT: Spurious IRQ\n");
+    while(1);
 }
 
 static inline void hardware_init(void)
@@ -25,6 +26,24 @@ static inline void hardware_init(void)
     MSC->READCTRL = (MSC->READCTRL & ~_MSC_READCTRL_MODE_MASK)|MSC_READCTRL_MODE_WS2;
     CMU->CMD = CMU_CMD_HFCLKSEL_HFXO;
 
+    /*Initialize SWO debug settings */
+#ifdef  CHANNEL_DEBUG
+    /* Enable SWO pin */
+    GPIO->ROUTE = (GPIO->ROUTE & ~(_GPIO_ROUTE_SWLOCATION_MASK)) | GPIO_ROUTE_SWLOCATION_LOC0 | GPIO_ROUTE_SWOPEN;
+    /* enable push-pull for SWO pin F2 */
+    GPIO->P[5].MODEL &= ~(_GPIO_P_MODEL_MODE2_MASK);
+    GPIO->P[5].MODEL |= GPIO_P_MODEL_MODE2_PUSHPULL;
+
+    /* Enable debug clock AUXHFRCO */
+    CMU->OSCENCMD = CMU_OSCENCMD_AUXHFRCOEN;
+    while(!(CMU->STATUS & CMU_STATUS_AUXHFRCORDY));
+    /* reset previous channel settings */
+    ITM->LAR  = 0xC5ACCE55;
+    ITM->TCR  = ITM->TER = 0x0;
+    /* wait for debugger to connect */
+    while(!((ITM->TCR & ITM_TCR_ITMENA_Msk) && (ITM->TER & (1<<CHANNEL_DEBUG))));
+#endif/*CHANNEL_DEBUG*/
+
     /* Enable output */
     DEBUG_init();
 
@@ -41,7 +60,6 @@ void main_entry(void)
     hardware_init();
 
     /* configure MPU */
-
     mpu_set(7,
         (void*)RAM_MEM_BASE,
         SECURE_RAM_SIZE,
