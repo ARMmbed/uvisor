@@ -18,6 +18,12 @@
 /* per-project-configuration */
 #include <config.h>
 
+#ifdef  CHANNEL_DEBUG
+#if (CHANNEL_DEBUG<0) || (CHANNEL_DEBUG>31)
+#error "Debug channel needs to be from 0 "
+#endif
+#endif/*CHANNEL_DEBUG*/
+
 /* system wide error codes  */
 #include <iot-error.h>
 

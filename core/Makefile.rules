@@ -5,6 +5,9 @@ OBJDUMP:=$(PREFIX)objdump
 GDB:=$(PREFIX)gdb
 SEGGER:=/opt/SEGGER
 JLINK:=$(SEGGER)/JLink/JLinkExe
+JLINK_VIEWER:=$(SEGGER)/JLink/JLinkSWOViewer
+JLINK_VIEWER_MASK:=0x3
+AUXHFRCO_FREQ:=14000000
 
 CORE:=../core
 
@@ -55,7 +58,7 @@ CFLAGS:=$(FLAGS_CM3) $(CFLAGS_PRE)
 
 OBJS:=$(SOURCES:.c=.o)
 
-.PHONY: debug gdb gdbtui flash erase reset ctags source.c.tags
+.PHONY: debug gdb gdbtui flash erase reset ctags source.c.tags swo
 
 all: $(PROJECT).bin
 
@@ -65,6 +68,9 @@ $(PROJECT).elf: $(OBJS)
 
 $(PROJECT).bin: $(PROJECT).elf
 	$(OBJCOPY) $< -O binary $@
+
+swo:
+	$(JLINK_VIEWER) -device $(CPU) -cpufreq $(AUXHFRCO_FREQ) -itmmask $(JLINK_VIEWER_MASK)
 
 gdb: gdb.script
 	$(GDB) -x $<
