@@ -38,6 +38,9 @@
 #include <iot-os.h>
 #include "debug.h"
 
+/* point USART_txByte to default_putc of printf */
+void default_putc (uint8_t data) ALIAS(DEBUG_TxByte);
+
 /**************************************************************************//**
  * @brief Initialize DEBUG_USART@115200 for use for debugging purposes.
  *****************************************************************************/
