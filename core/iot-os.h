@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include "uvisor-config.h"
 
 #include <tfp_printf.h>
 #define dprintf tfp_printf

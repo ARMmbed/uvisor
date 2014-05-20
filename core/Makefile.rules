@@ -20,7 +20,6 @@ SOURCES:=$(SYSTEM)/src/isr.c \
          $(DEVICE)/src/system.c \
          $(APP_SRC)
 
-LINKER_SCRIPT:=linker.ld
 DEBUG_HOST:=localhost:2331
 OPT:=-Os
 DEBUG:=-g3 -DNDEBUG
@@ -31,7 +30,7 @@ ARCH_LOWER:=$(shell tr '[:upper:]' '[:lower:]' <<< $(ARCH))
 FLAGS_CM3:=-mcpu=cortex-m3 -mthumb
 
 LDFLAGS:=$(FLAGS_CM3) \
-        -T$(LINKER_SCRIPT) \
+        -T$(PROJECT).linker \
         -nostartfiles \
         -nostdlib \
         -Xlinker --gc-sections \
@@ -62,15 +61,15 @@ OBJS:=$(SOURCES:.c=.o)
 
 all: $(PROJECT).bin
 
-$(PROJECT).elf: $(OBJS) $(LINKER_SCRIPT)
+$(PROJECT).elf: $(OBJS) $(PROJECT).linker
 	$(CC) $(LDFLAGS) -o $@ $(OBJS)
 	$(OBJDUMP) -d $@ > $(PROJECT).asm
 
 $(PROJECT).bin: $(PROJECT).elf
 	$(OBJCOPY) $< -O binary $@
 
-$(LINKER_SCRIPT): $(CORE)/linker/$(CPU).h
-	$(CPP) -w -P -I$(CORE)/linker -D$(CPU) -D$(ARCH) $^ -o $@
+$(PROJECT).linker: $(CORE)/linker/$(CPU).h
+	$(CPP) -w -P -I$(CORE) -I$(CORE)/linker $(APP_CFLAGS) -D$(CPU) -D$(ARCH) $^ -o $@
 
 swo:
 	$(JLINK_VIEWER) -device $(CPU) -cpufreq $(AUXHFRCO_FREQ) -itmmask $(JLINK_VIEWER_MASK)
@@ -129,5 +128,5 @@ q\n\
 " | $(JLINK)
 
 clean:
-	rm -f $(PROJECT).map $(PROJECT).elf $(PROJECT).bin $(PROJECT).asm gdb.script source.c.tags JLink.log $(LINKER_SCRIPT)
+	rm -f $(PROJECT).map $(PROJECT).elf $(PROJECT).bin $(PROJECT).asm  $(PROJECT).linker gdb.script source.c.tags JLink.log
 	find . $(CORE) -iname '*.o' -exec rm -f \{\} \;

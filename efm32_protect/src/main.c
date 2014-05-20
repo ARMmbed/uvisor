@@ -62,7 +62,7 @@ void main_entry(void)
     /* configure MPU */
     mpu_set(7,
         (void*)RAM_MEM_BASE,
-        SECURE_RAM_SIZE,
+        UVISOR_SRAM_SIZE,
         MPU_RASR_AP_PRW_UNO|MPU_RASR_CB_WB_WRA|MPU_RASR_XN
     );
 
