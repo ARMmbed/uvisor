@@ -1,7 +1,7 @@
-MEMORY
-{
-  FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 0x100000  /*   1M */
-  RAM (rwx)  : ORIGIN = 0x20000000, LENGTH = 0x20000   /* 128k */
-}
+#define FLASH_ORIGIN 0x00000000
+#define FLASH_LENGTH 0x100000
 
-#include "EFM32.h"
+#define SRAM_ORIGIN  0x20000000
+#define SRAM_LENGTH  0x20000
+
+#include "default.h"

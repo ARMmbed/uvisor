@@ -39,6 +39,8 @@
 #ifndef _DEBUG_H
 #define _DEBUG_H
 
+#include <config_efm32.h>
+
 extern void DEBUG_init(void);
 extern void DEBUG_TxByte(uint8_t data);
 
