@@ -3,6 +3,7 @@
 *.map
 *.asm
 *.bin
+linker.ld
 gdb.script
 jlink.flash
 JLink.log
