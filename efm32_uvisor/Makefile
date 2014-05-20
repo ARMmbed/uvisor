@@ -1,4 +1,4 @@
-PROJECT:=efm32_protect
+PROJECT:=efm32_uvisor
 ARCH:=EFM32GG
 CPU:=$(ARCH)990F1024
 
