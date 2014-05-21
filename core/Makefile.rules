@@ -25,6 +25,7 @@ DEBUG:=-g3 -DNDEBUG
 WARNING:=-Wall -Werror
 CPU_LOWER:=$(shell tr '[:upper:]' '[:lower:]' <<< $(CPU))
 ARCH_LOWER:=$(shell tr '[:upper:]' '[:lower:]' <<< $(ARCH))
+FLASH_OFFSET:=0
 
 FLAGS_CM3:=-mcpu=cortex-m3 -mthumb
 
@@ -103,10 +104,8 @@ flash: $(PROJECT).bin
 	@echo -e "\
 device $(CPU)\n\
 h\n\
+loadbin $^ $(FLASH_OFFSET)\n\
 r\n\
-erase\n\
-sleep 1000\n\
-loadbin $^ 0\n\
 g\n\
 q\n\
 " | $(JLINK)
