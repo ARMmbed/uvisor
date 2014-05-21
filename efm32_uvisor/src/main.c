@@ -1,7 +1,6 @@
 #include <iot-os.h>
 #include "mpu.h"
 #include "svc.h"
-#include "debug.h"
 
 void default_handler(void)
 {
@@ -44,9 +43,6 @@ static inline void hardware_init(void)
     while(!((ITM->TCR & ITM_TCR_ITMENA_Msk) && (ITM->TER & (1<<CHANNEL_DEBUG))));
 #endif/*CHANNEL_DEBUG*/
 
-    /* Enable output */
-    DEBUG_init();
-
     /* register SVC call interface */
     svc_init();
 
@@ -73,12 +69,6 @@ void main_entry(void)
     );
 
     mpu_set(5,
-        DEBUG_USART,
-        1024,
-        MPU_RASR_AP_PRW_URW
-    );
-
-    mpu_set(4,
         (void*)RAM_MEM_BASE,
         SRAM_SIZE,
         MPU_RASR_AP_PRW_URW|MPU_RASR_CB_WB_WRA|MPU_RASR_XN
