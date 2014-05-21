@@ -6,7 +6,6 @@ APP_CFLAGS:=-Iconfig -Isrc -Isrc/helper
 APP_SRC:=\
 	src/main.c \
 	src/mpu.c \
-	src/svc.c \
-	src/debug.c
+	src/svc.c
 
 include ../core/Makefile.rules
