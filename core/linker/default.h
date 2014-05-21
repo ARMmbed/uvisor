@@ -75,5 +75,8 @@ SECTIONS
         . = ALIGN(4);
         __bss_end__ = .;
         __heap_start__ = .;
+        *(.heap)
+        *(.heap.*)
+        __stack_start__ = .;
     } > RAM
 }
