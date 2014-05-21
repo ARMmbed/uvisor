@@ -3,11 +3,6 @@
 
 #define CRYPTOBOX_API_MAX ((sizeof(g_svc_vector_table)/sizeof(g_svc_vector_table[0]))-1)
 
-uint32_t __attribute__ ((weak)) default_handler(void)
-{
-    return E_INVALID;
-}
-
 static uint32_t cb_get_version(uint32_t svcn)
 {
     dprintf("svcn=0x%08X\r\n", svcn);

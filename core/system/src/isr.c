@@ -52,10 +52,10 @@ const TIsrVector g_isr_vector_tmp[] =
 #ifdef  UVISOR_CLIENT
     (TIsrVector)&g_isr_vector_tmp,    /* Verify Relocation for uvisor client */
 #else /*UVISOR_CLIENT*/
-#ifndef STACK_POINTER
-    (TIsrVector)&__stack_end__,        /* Initial Stack Pointer */
-#else /*STACK_POINTER*/
+#ifdef STACK_POINTER
     (TIsrVector)STACK_POINTER,        /* Override Stack pointer if needed */
+#else /*STACK_POINTER*/
+    (TIsrVector)&__stack_end__,        /* Initial Stack Pointer */
 #endif/*STACK_POINTER*/
 #endif/*UVISOR_CLIENT*/
     reset_handler,                    /* Reset Handler */

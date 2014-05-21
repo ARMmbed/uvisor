@@ -90,6 +90,7 @@ target remote $(DEBUG_HOST)\n\
 monitor endian little\n\
 monitor halt\n\
 monitor speed 1000\n\
+monitor SWO EnableTarget $(AUXHFRCO_FREQ) 0 $(JLINK_VIEWER_MASK) 0\n\
 monitor flash device = $(CPU)\n\
 load $<\n\
 file $<\n\
@@ -101,6 +102,7 @@ b default_handler\n\
 flash: $(PROJECT).bin
 	@echo -e "\
 device $(CPU)\n\
+h\n\
 r\n\
 erase\n\
 sleep 1000\n\
@@ -112,16 +114,18 @@ q\n\
 erase:
 	@echo -e "\
 device $(CPU)\n\
+h\n\
 r\n\
 erase\n\
+g\n\
 q\n\
 " | $(JLINK)
 
 reset:
 	@echo -e "\
 device $(CPU)\n\
+h\n\
 r\n\
-monitor reset\n\
 g\n\
 q\n\
 " | $(JLINK)
