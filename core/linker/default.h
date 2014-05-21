@@ -77,6 +77,7 @@ SECTIONS
         __heap_start__ = .;
         *(.heap)
         *(.heap.*)
+        . = ALIGN(16);
         __stack_start__ = .;
     } > RAM
 }

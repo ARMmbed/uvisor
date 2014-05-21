@@ -58,27 +58,28 @@ static inline void hardware_init(void)
 
 static void secure_uvisor(void)
 {
-    uint32_t stack_start;
+    uint32_t t, stack_start;
 
     /* calculate stack start according to linker file */
     stack_start = ((uint32_t)&__stack_start__) - RAM_MEM_BASE;
     /* round stack start to next stack guard band size */
-    stack_start = (stack_start+(STACK_GUARD_BAND_SIZE-1)) & ~(STACK_GUARD_BAND_SIZE-1);
+    t = (stack_start+(STACK_GUARD_BAND_SIZE-1)) & ~(STACK_GUARD_BAND_SIZE-1);
+
     /* sanity check of stack size */
+    stack_start = RAM_MEM_BASE + t;
     if((stack_start>=STACK_POINTER) || ((STACK_POINTER-stack_start)<STACK_MINIMUM_SIZE))
         halt_error("Invalid Stack size");
 
     /* configure MPU */
 
-    dprintf("STACK_POINTER=0x%X stack_start=0x%X MSP=0x%X\n",STACK_POINTER,stack_start,__get_MSP());
     /* calculate guard bands */
-    //t = (1<<(stack_start/STACK_GUARD_BAND_SIZE)) | 0x80;
+    t = (1<<(t/STACK_GUARD_BAND_SIZE)) | 0x80;
     /* protect uvisor RAM, punch holes for guard bands above the stack
      * and below the stack */
     mpu_set(7,
         (void*)RAM_MEM_BASE,
         UVISOR_SRAM_SIZE,
-        MPU_RASR_AP_PRW_UNO|MPU_RASR_CB_WB_WRA|MPU_RASR_XN // |MPU_RASR_SRD(t)
+        MPU_RASR_AP_PRW_UNO|MPU_RASR_CB_WB_WRA|MPU_RASR_XN|MPU_RASR_SRD(t)
     );
 
     /* set uvisor RAM guard bands to RO & inaccessible to all code */
@@ -109,7 +110,7 @@ static void secure_uvisor(void)
         MPU_RASR_AP_PRW_URW|MPU_RASR_CB_WB_WRA
     );
 
-//    MPU->CTRL = MPU_CTRL_ENABLE_Msk|MPU_CTRL_PRIVDEFENA_Msk;
+    MPU->CTRL = MPU_CTRL_ENABLE_Msk|MPU_CTRL_PRIVDEFENA_Msk;
 
     /* dump MPU settings */
     mpu_debug();
@@ -120,14 +121,8 @@ void main_entry(void)
     /* initialize hardware */
     hardware_init();
 
-    dprintf("HALT\n");
-    while(1);
-
     /* secure uvisor memories */
     secure_uvisor();
-
-    dprintf("HALT\n");
-    while(1);
 
     /* switch stack to unprivileged */
     __set_PSP(RAM_MEM_BASE+SRAM_SIZE);
