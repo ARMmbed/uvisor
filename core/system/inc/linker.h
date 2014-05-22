@@ -12,5 +12,5 @@ extern uint32_t __data_end__;
 extern const uint32_t __data_start_src__;
 extern const uint32_t __data_size__;
 extern uint32_t __stack_start__;
-
+extern const uint32_t __code_end__;
 #endif/*__LINKER_H__*/
