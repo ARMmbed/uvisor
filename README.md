@@ -31,7 +31,13 @@ Target CPU is running @ 14000 kHz.
 Receiving SWO data @ 900 kHz.
 Showing data from stimulus port(s): 0, 1
 -----------------------------------------------
-uVisor switching[unprivileged entry!] to unprivileged mode
+uVisor s[unprivileged entry!]witching to unprivileged mode
+cb_test_param0()
+cb_test_param0()
+cb_test_param1(0x11111111)
+cb_test_param2(0x11111111,0x22222222)
+cb_test_param3(0x11111111,0x22222222,0x33333333)
+cb_test_param4(0x11111111,0x22222222,0x33333333,0x44444444)
 MMFAR: 0x400C8000
 CFSR : 0x00000082
 ```
