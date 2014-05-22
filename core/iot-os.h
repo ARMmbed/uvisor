@@ -7,7 +7,12 @@
 #include "uvisor-config.h"
 
 #include <tfp_printf.h>
+#ifndef dprintf
 #define dprintf tfp_printf
+#endif/*dprintf*/
+
+/* unprivileged box as called by privileged code */
+typedef void (*UnprivilegedBoxEntry)(void);
 
 #define PACKED __attribute__((packed))
 #define WEAK __attribute__ ((weak))

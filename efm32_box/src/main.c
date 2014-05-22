@@ -24,6 +24,8 @@ static inline void hardware_init(void)
 
 void main_entry(void)
 {
+    dprintf("[unprivileged entry!]");
+
     /* initialize hardware */
     hardware_init();
 

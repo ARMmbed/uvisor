@@ -125,7 +125,9 @@ static void secure_uvisor(void)
         halt_error("MPU configuration error");
 
     /* dump MPU settings */
+#ifdef  DEBUG
     mpu_debug();
+#endif/*DEBUG*/
 
     /* finally enable MPU */
     MPU->CTRL = MPU_CTRL_ENABLE_Msk|MPU_CTRL_PRIVDEFENA_Msk;
@@ -133,14 +135,28 @@ static void secure_uvisor(void)
 
 void main_entry(void)
 {
+    uint32_t t;
+
     /* initialize hardware */
     hardware_init();
 
     /* secure uvisor memories */
     secure_uvisor();
 
+    /* FIXME add signature verification of unprivileged uvisor box
+     * client. Use stored ACLs to set access privileges for box
+     * (allowed peripherals etc.)
+     */
+    t = *(uint32_t*)(FLASH_MEM_BASE+UVISOR_FLASH_SIZE);
+    if(t==0xFFFFFFFF)
+        halt_error("please install unprivileged firmware");
+    if(t!=(FLASH_MEM_BASE+UVISOR_FLASH_SIZE))
+        halt_error("incorrectly relocated unprivileged firmware");
+
     /* switch stack to unprivileged */
     __set_PSP(RAM_MEM_BASE+SRAM_SIZE);
+
+    dprintf("uVisor switching to unprivileged mode\n");
 
     /* switch to unprivileged mode - this is possible as uvisor code
      * is readable by unprivileged code and only the key-value database
@@ -149,7 +165,10 @@ void main_entry(void)
     __ISB();
     __DSB();
 
-    dprintf("\nHello unprivileged!\n");
+    /* run unprivileged box */
+    (*((UnprivilegedBoxEntry*)(FLASH_MEM_BASE+UVISOR_FLASH_SIZE+4)))();
 
-    while(1);
+    /* should never happen */
+    while(1)
+        __WFI();
 }
