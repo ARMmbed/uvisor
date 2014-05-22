@@ -2,6 +2,11 @@
 #include "mpu.h"
 #include "svc.h"
 
+#define UVISOR_FLASH_BAND (UVISOR_FLASH_SIZE/8)
+
+static void* g_config_start;
+uint32_t g_config_size;
+
 void halt_error(const char* msg)
 {
     dprintf("\nERROR: %s\n", msg);
@@ -89,31 +94,37 @@ static void secure_uvisor(void)
         MPU_RASR_AP_PNO_UNO|MPU_RASR_CB_WB_WRA|MPU_RASR_XN
     );
 
-    /* protect uvisor flash from unprivileged code */
-    mpu_set(5,
-        (void*)FLASH_MEM_BASE,
-        UVISOR_FLASH_SIZE,
-        MPU_RASR_AP_PRO_UNO|MPU_RASR_CB_WT
-    );
-
-    /* allow access to full flash */
-    mpu_set(4,
-        (void*)FLASH_MEM_BASE,
-        FLASH_SIZE,
-        MPU_RASR_AP_PRO_URO|MPU_RASR_CB_WT
-    );
-
     /* allow access to unprivileged user SRAM */
-    mpu_set(3,
+    mpu_set(5,
         (void*)RAM_MEM_BASE,
         SRAM_SIZE,
         MPU_RASR_AP_PRW_URW|MPU_RASR_CB_WB_WRA
     );
 
-    MPU->CTRL = MPU_CTRL_ENABLE_Msk|MPU_CTRL_PRIVDEFENA_Msk;
+    /* protect uvisor flash-data from unprivileged code,
+     * poke holes for code, only protect remaining data blocks,
+     * set XN for stored data */
+    g_config_start = (void*)((((uint32_t)&__code_end__)+(UVISOR_FLASH_BAND-1)) & ~(UVISOR_FLASH_BAND-1));
+    t = (((uint32_t)g_config_start)-FLASH_MEM_BASE)/UVISOR_FLASH_BAND;
+    g_config_size = UVISOR_FLASH_SIZE - (t*UVISOR_FLASH_BAND);
+    mpu_set(4,
+        (void*)FLASH_MEM_BASE,
+        UVISOR_FLASH_SIZE,
+        MPU_RASR_AP_PRO_UNO|MPU_RASR_CB_WB_WRA|MPU_RASR_XN|MPU_RASR_SRD((1<<t)-1)
+    );
+
+    /* allow access to full flash */
+    mpu_set(3,
+        (void*)FLASH_MEM_BASE,
+        FLASH_MEM_SIZE,
+        MPU_RASR_AP_PRO_URO|MPU_RASR_CB_WT
+    );
 
     /* dump MPU settings */
     mpu_debug();
+
+    /* finally enable MPU */
+    MPU->CTRL = MPU_CTRL_ENABLE_Msk|MPU_CTRL_PRIVDEFENA_Msk;
 }
 
 void main_entry(void)
@@ -130,6 +141,8 @@ void main_entry(void)
     __set_CONTROL(__get_CONTROL()|3);
     __ISB();
     __DSB();
+
+    dprintf("\nHello unprivileged!\n");
 
     while(1);
 }

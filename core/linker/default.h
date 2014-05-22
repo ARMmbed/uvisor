@@ -45,6 +45,8 @@ SECTIONS
         *(.rodata*)
         PROVIDE(__data_start_src__ = LOADADDR(.data));
         PROVIDE(__stack_end__ = ORIGIN(RAM) + LENGTH(RAM));
+        . = ALIGN(16);
+        __code_end__ = .;
     } > FLASH
 
     .isr (NOLOAD):
