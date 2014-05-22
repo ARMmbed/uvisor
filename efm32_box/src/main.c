@@ -26,6 +26,14 @@ void main_entry(void)
 {
     dprintf("[unprivileged entry!]");
 
+    /* SVC test calls */
+    __SVC0(1);
+    __SVC0(2);
+    __SVC1(3,0x11111111);
+    __SVC2(4,0x11111111,0x22222222);
+    __SVC3(5,0x11111111,0x22222222,0x33333333);
+    __SVC4(6,0x11111111,0x22222222,0x33333333,0x44444444);
+
     /* initialize hardware */
     hardware_init();
 
