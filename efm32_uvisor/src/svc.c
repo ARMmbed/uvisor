@@ -51,6 +51,12 @@ void* const g_svc_vector_table[] =
     cb_test_param4, /* 6 */
 };
 
+/* FIXME change SVC interface to R0-based SVC number instead of using
+ *       SVC-#imm
+ * FIXME load registers from unprivileged stack before running
+ *       SVC-handler to support tailchaining
+ */
+
 static void __attribute__((naked)) __svc_irq(void)
 {
     asm volatile(
