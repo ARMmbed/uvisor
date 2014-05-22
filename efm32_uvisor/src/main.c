@@ -63,7 +63,7 @@ static inline void hardware_init(void)
 
 static void secure_uvisor(void)
 {
-    uint32_t t, stack_start;
+    uint32_t t, stack_start, res;
 
     /* calculate stack start according to linker file */
     stack_start = ((uint32_t)&__stack_start__) - RAM_MEM_BASE;
@@ -81,21 +81,21 @@ static void secure_uvisor(void)
     t = (1<<(t/STACK_GUARD_BAND_SIZE)) | 0x80;
     /* protect uvisor RAM, punch holes for guard bands above the stack
      * and below the stack */
-    mpu_set(7,
+    res = mpu_set(7,
         (void*)RAM_MEM_BASE,
         UVISOR_SRAM_SIZE,
         MPU_RASR_AP_PRW_UNO|MPU_RASR_CB_WB_WRA|MPU_RASR_XN|MPU_RASR_SRD(t)
     );
 
     /* set uvisor RAM guard bands to RO & inaccessible to all code */
-    mpu_set(6,
+    res|= mpu_set(6,
         (void*)RAM_MEM_BASE,
         UVISOR_SRAM_SIZE,
         MPU_RASR_AP_PNO_UNO|MPU_RASR_CB_WB_WRA|MPU_RASR_XN
     );
 
     /* allow access to unprivileged user SRAM */
-    mpu_set(5,
+    res|= mpu_set(5,
         (void*)RAM_MEM_BASE,
         SRAM_SIZE,
         MPU_RASR_AP_PRW_URW|MPU_RASR_CB_WB_WRA
@@ -107,18 +107,22 @@ static void secure_uvisor(void)
     g_config_start = (void*)((((uint32_t)&__code_end__)+(UVISOR_FLASH_BAND-1)) & ~(UVISOR_FLASH_BAND-1));
     t = (((uint32_t)g_config_start)-FLASH_MEM_BASE)/UVISOR_FLASH_BAND;
     g_config_size = UVISOR_FLASH_SIZE - (t*UVISOR_FLASH_BAND);
-    mpu_set(4,
+    res|= mpu_set(4,
         (void*)FLASH_MEM_BASE,
         UVISOR_FLASH_SIZE,
         MPU_RASR_AP_PRO_UNO|MPU_RASR_CB_WB_WRA|MPU_RASR_XN|MPU_RASR_SRD((1<<t)-1)
     );
 
     /* allow access to full flash */
-    mpu_set(3,
+    res|= mpu_set(3,
         (void*)FLASH_MEM_BASE,
         FLASH_MEM_SIZE,
         MPU_RASR_AP_PRO_URO|MPU_RASR_CB_WT
     );
+
+    /* halt on MPU configuration errors */
+    if(res)
+        halt_error("MPU configuration error");
 
     /* dump MPU settings */
     mpu_debug();
@@ -138,6 +142,9 @@ void main_entry(void)
     /* switch stack to unprivileged */
     __set_PSP(RAM_MEM_BASE+SRAM_SIZE);
 
+    /* switch to unprivileged mode - this is possible as uvisor code
+     * is readable by unprivileged code and only the key-value database
+     * is protected from the unprivileged mode */
     __set_CONTROL(__get_CONTROL()|3);
     __ISB();
     __DSB();
