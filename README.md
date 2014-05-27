@@ -1,5 +1,27 @@
 # crypto.box - a Cortex-M TEE Prototype
 
+## Overview
+The code in this tree creates two independent security domains on a
+Cortex M3 micro controller (M0+ will follow). The target is to increase
+resilience against malware and to protect cryptographic secrets from leaking.
+
+### The crypto.box uVisor
+* initialized first during device reset
+* run in privileged mode
+* set up a protected environment using the cortex-M Memory Protection Unit (MPU)
+	* protect own memories and critical peripherals from unprivileged code
+	* limit unprivileged access to selected hardware periphals and memories
+* allow interaction from unprivileged code by exposing a SVC call based API
+* forward and de-privilege interrupts to unprivileged code
+	* prevent register leakage of privileged code to unprivileged code
+* force access to security-critical peripherals like DMA through the SVC api
+
+### The crypto.box Client
+* runs in unprivileged mode
+* access to privileged memories and peripherals is prevented by the uVisor
+* has direct memory access to unprivileged peripherals
+* can register for unprivileged interrupts
+
 ## Setting up the Hardware
 
 * current tree supports the EFM32™ Giant Gecko Starter Kit (EFM32GG-STK3700)
