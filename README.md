@@ -10,7 +10,7 @@ resilience against malware and to protect cryptographic secrets from leaking.
 * run in privileged mode
 * set up a protected environment using the cortex-M Memory Protection Unit (MPU)
 	* protect own memories and critical peripherals from unprivileged code
-	* limit unprivileged access to selected hardware periphals and memories
+	* limit unprivileged access to selected hardware peripherals and memories
 * allow interaction from unprivileged code by exposing a SVC call based API
 * forward and de-privilege interrupts to unprivileged code
 	* prevent register leakage of privileged code to unprivileged code
@@ -21,6 +21,16 @@ resilience against malware and to protect cryptographic secrets from leaking.
 * access to privileged memories and peripherals is prevented by the uVisor
 * has direct memory access to unprivileged peripherals
 * can register for unprivileged interrupts
+
+### Memory Layout
+crypto.box code is readable and executable by unprivileged code. The reasons for that are:
+* Easy transitions from privileged mode to unprivileged mode: de-privileging happens in crypto.box owned memory segments
+* Saves one MPU region - more regions available for dynamic allocation
+* Unprivileged code can directly call privileged helper functions without switching privilege levels: allows code-reuse to save flash memory. Helper functions can still decide to switch to privileged mode via the SVC call.
+* Unprivileged code can verify the integrity of the privileged uVisor.
+* Confidentiality of the Exception/Interrupt table is still guaranteed as it's kept in secured RAM.
+
+![cryptobox MPU memory configuration](https://github.com/ARM-RD/cryptobox/raw/images/efm32_uvisor/docs/memory-map.png "cryptobox MPU memory configuration")
 
 ## Setting up the Hardware
 
