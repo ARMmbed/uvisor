@@ -94,30 +94,30 @@ static void secure_uvisor(void)
         MPU_RASR_AP_PNO_UNO|MPU_RASR_CB_WB_WRA|MPU_RASR_XN
     );
 
-    /* allow access to unprivileged user SRAM */
-    res|= mpu_set(5,
-        (void*)RAM_MEM_BASE,
-        SRAM_SIZE,
-        MPU_RASR_AP_PRW_URW|MPU_RASR_CB_WB_WRA
-    );
-
     /* protect uvisor flash-data from unprivileged code,
      * poke holes for code, only protect remaining data blocks,
      * set XN for stored data */
     g_config_start = (void*)((((uint32_t)&__code_end__)+(UVISOR_FLASH_BAND-1)) & ~(UVISOR_FLASH_BAND-1));
     t = (((uint32_t)g_config_start)-FLASH_MEM_BASE)/UVISOR_FLASH_BAND;
     g_config_size = UVISOR_FLASH_SIZE - (t*UVISOR_FLASH_BAND);
-    res|= mpu_set(4,
+    res|= mpu_set(5,
         (void*)FLASH_MEM_BASE,
         UVISOR_FLASH_SIZE,
         MPU_RASR_AP_PRO_UNO|MPU_RASR_CB_WB_WRA|MPU_RASR_XN|MPU_RASR_SRD((1<<t)-1)
     );
 
     /* allow access to full flash */
-    res|= mpu_set(3,
+    res|= mpu_set(4,
         (void*)FLASH_MEM_BASE,
         FLASH_MEM_SIZE,
         MPU_RASR_AP_PRO_URO|MPU_RASR_CB_WT
+    );
+
+    /* allow access to unprivileged user SRAM */
+    res|= mpu_set(3,
+        (void*)RAM_MEM_BASE,
+        SRAM_SIZE,
+        MPU_RASR_AP_PRW_URW|MPU_RASR_CB_WB_WRA
     );
 
     /* halt on MPU configuration errors */
