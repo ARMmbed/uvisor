@@ -2,11 +2,6 @@
 #include "mpu.h"
 #include "svc.h"
 
-#define UVISOR_FLASH_BAND (UVISOR_FLASH_SIZE/8)
-
-static void* g_config_start;
-uint32_t g_config_size;
-
 void halt_error(const char* msg)
 {
     dprintf("\nERROR: %s\n", msg);
@@ -57,80 +52,14 @@ static inline void hardware_init(void)
     /* register SVC call interface */
     svc_init();
 
-    /* setup MPU */
-    mpu_init();
-}
-
-static void secure_uvisor(void)
-{
-    uint32_t t, stack_start, res;
-
-    /* calculate stack start according to linker file */
-    stack_start = ((uint32_t)&__stack_start__) - RAM_MEM_BASE;
-    /* round stack start to next stack guard band size */
-    t = (stack_start+(STACK_GUARD_BAND_SIZE-1)) & ~(STACK_GUARD_BAND_SIZE-1);
-
-    /* sanity check of stack size */
-    stack_start = RAM_MEM_BASE + t;
-    if((stack_start>=STACK_POINTER) || ((STACK_POINTER-stack_start)<STACK_MINIMUM_SIZE))
-        halt_error("Invalid Stack size");
-
-    /* configure MPU */
-
-    /* calculate guard bands */
-    t = (1<<(t/STACK_GUARD_BAND_SIZE)) | 0x80;
-    /* protect uvisor RAM, punch holes for guard bands above the stack
-     * and below the stack */
-    res = mpu_set(7,
-        (void*)RAM_MEM_BASE,
-        UVISOR_SRAM_SIZE,
-        MPU_RASR_AP_PRW_UNO|MPU_RASR_CB_WB_WRA|MPU_RASR_XN|MPU_RASR_SRD(t)
-    );
-
-    /* set uvisor RAM guard bands to RO & inaccessible to all code */
-    res|= mpu_set(6,
-        (void*)RAM_MEM_BASE,
-        UVISOR_SRAM_SIZE,
-        MPU_RASR_AP_PNO_UNO|MPU_RASR_CB_WB_WRA|MPU_RASR_XN
-    );
-
-    /* protect uvisor flash-data from unprivileged code,
-     * poke holes for code, only protect remaining data blocks,
-     * set XN for stored data */
-    g_config_start = (void*)((((uint32_t)&__code_end__)+(UVISOR_FLASH_BAND-1)) & ~(UVISOR_FLASH_BAND-1));
-    t = (((uint32_t)g_config_start)-FLASH_MEM_BASE)/UVISOR_FLASH_BAND;
-    g_config_size = UVISOR_FLASH_SIZE - (t*UVISOR_FLASH_BAND);
-    res|= mpu_set(5,
-        (void*)FLASH_MEM_BASE,
-        UVISOR_FLASH_SIZE,
-        MPU_RASR_AP_PRO_UNO|MPU_RASR_CB_WB_WRA|MPU_RASR_XN|MPU_RASR_SRD((1<<t)-1)
-    );
-
-    /* allow access to full flash */
-    res|= mpu_set(4,
-        (void*)FLASH_MEM_BASE,
-        FLASH_MEM_SIZE,
-        MPU_RASR_AP_PRO_URO|MPU_RASR_CB_WT
-    );
-
-    /* allow access to unprivileged user SRAM */
-    res|= mpu_set(3,
-        (void*)RAM_MEM_BASE,
-        SRAM_SIZE,
-        MPU_RASR_AP_PRW_URW|MPU_RASR_CB_WB_WRA
-    );
-
-    /* halt on MPU configuration errors */
-    if(res)
+    /* setup MPU & halt on MPU configuration errors */
+    if(mpu_init())
         halt_error("MPU configuration error");
 
     /* dump MPU settings */
 #ifdef  DEBUG
     mpu_debug();
 #endif/*DEBUG*/
-
-    /* finally enable MPU */
-    MPU->CTRL = MPU_CTRL_ENABLE_Msk|MPU_CTRL_PRIVDEFENA_Msk;
 }
 
 void main_entry(void)
@@ -139,9 +68,6 @@ void main_entry(void)
 
     /* initialize hardware */
     hardware_init();
-
-    /* secure uvisor memories */
-    secure_uvisor();
 
     /* FIXME add signature verification of unprivileged uvisor box
      * client. Use stored ACLs to set access privileges for box
