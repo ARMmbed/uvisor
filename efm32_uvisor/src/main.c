@@ -55,11 +55,27 @@ static inline void hardware_init(void)
     /* setup MPU & halt on MPU configuration errors */
     if(mpu_init())
         halt_error("MPU configuration error");
+}
 
-    /* dump MPU settings */
-#ifdef  DEBUG
-    mpu_debug();
-#endif/*DEBUG*/
+static void update_client_acl(void)
+{
+    int res;
+
+    /* allow peripheral access for selected peripherals
+     *
+     * FIXME: read dynamically from signed ACL provided along with
+     *        client box
+     */
+    res  = mpu_acl_set(CMU,    sizeof(*CMU), 0, MPU_RASR_AP_PRW_URW|MPU_RASR_XN);
+    res |= mpu_acl_set(MSC,    sizeof(*MSC), 0, MPU_RASR_AP_PRW_URW|MPU_RASR_XN);
+    res |= mpu_acl_set(UART1,sizeof(*UART1), 0, MPU_RASR_AP_PRW_URW|MPU_RASR_XN);
+    res |= mpu_acl_set(GPIO,  sizeof(*GPIO), 0, MPU_RASR_AP_PRW_URW|MPU_RASR_XN);
+
+    /* should never happen */
+    if(res)
+        halt_error("MPU client box configuration error");
+
+    mpu_acl_debug();
 }
 
 void main_entry(void)
@@ -81,6 +97,14 @@ void main_entry(void)
 
     /* switch stack to unprivileged */
     __set_PSP(RAM_MEM_BASE+SRAM_SIZE);
+
+    /* setting up peripheral access ACL for client box */
+    update_client_acl();
+
+    /* dump latest MPU settings */
+#ifdef  DEBUG
+    mpu_debug();
+#endif/*DEBUG*/
 
     dprintf("uVisor switching to unprivileged mode\n");
 
