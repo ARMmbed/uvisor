@@ -19,7 +19,7 @@
 #define MPU_RASR_CB_WB      (0x03UL<<MPU_RASR_B_Pos)
 #define MPU_RASR_SRD(x)     (((uint32_t)(x))<<MPU_RASR_SRD_Pos)
 
-extern void mpu_init(void);
+extern int mpu_init(void);
 extern void mpu_debug(void);
 extern uint8_t mpu_region_bits(uint32_t size);
 extern int mpu_set(uint8_t region, void* base, uint32_t size, uint32_t flags);
