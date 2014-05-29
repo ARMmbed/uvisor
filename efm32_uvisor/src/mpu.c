@@ -9,6 +9,23 @@
 #define MPU_FAULT_HARD   0x03
 #define MPU_FAULT_DEBUG  0x04
 
+typedef struct {
+    uint32_t rbar;
+    uint32_t rasr;
+} PACKED ACL_MPU_Setting;
+
+typedef struct {
+    uint32_t base;            /* base address of access */
+    uint32_t mask;            /* mask for determinining access range */
+    uint32_t size;            /* region size */
+    uint32_t age;            /* last access counter */
+    ACL_MPU_Setting mpu;    /* canned MPU region settings */
+    uint8_t priority;        /* region priority 0:dynamic, >=1:static */
+    uint8_t active;            /* currently assigned MPU region */
+    uint8_t size_bits;        /* currently assigned MPU region */
+} ACL_Region;
+
+static ACL_Region g_acl_regions[MPU_MAX_ACL];
 static uint32_t mpu_aligment_mask;
 static void* g_config_start;
 uint32_t g_config_size;
@@ -41,8 +58,8 @@ void mpu_debug(void)
     dprintf("\tCTRL=0x%08X\r\n", MPU->CTRL);
 }
 
-/* returns rounded MPU section alignment bit count */
-int mpu_set(uint8_t region, void* base, uint32_t size, uint32_t flags)
+/* returns RASR register setting */
+static uint32_t mpu_rasr(void* base, uint32_t size, uint32_t flags)
 {
     uint8_t bits;
     uint32_t mask;
@@ -53,7 +70,7 @@ int mpu_set(uint8_t region, void* base, uint32_t size, uint32_t flags)
 
     /* get region bits */
     if(!(bits = mpu_region_bits(size)))
-        return E_PARAM;
+        return 0;
 
     bits--;
 
@@ -61,16 +78,77 @@ int mpu_set(uint8_t region, void* base, uint32_t size, uint32_t flags)
     size = 1UL << bits;
     mask = size-1;
     if(((uint32_t)base) & mask)
-        return E_ALIGN;
+        return 0;
+
+    /* return MPU RASR register settings */
+    return MPU_RASR_ENABLE_Msk | ((bits-1)<<MPU_RASR_SIZE_Pos) | flags;
+}
+
+static ACL_Region* mpu_acl_find(void* base)
+{
+    int i;
+    ACL_Region *region = g_acl_regions;
+
+    for(i = 0; i<MPU_MAX_ACL; i++, region++)
+        if(region->base == (uint32_t)base)
+            return region;
+
+    return NULL;
+}
+
+int mpu_acl_set(void* base, uint32_t size, uint8_t priority, uint32_t flags)
+{
+    uint32_t rasr;
+    ACL_Region *region;
+
+    /* caclulate MPU RASR register */
+    if(!(rasr = mpu_rasr(base, size, flags)))
+        return E_PARAM;
+
+    /* check if MPU entry exists */
+    if((region = mpu_acl_find(base)))
+    {
+        /* allow to erase entry if size == zero */
+        if(!size)
+        {
+            memset(region, 0, sizeof(*region));
+            return E_SUCCESS;
+        }
+    }
+    else
+    {
+        /* if no entry found, allocate a new entry */
+        if(!(region = mpu_acl_find(NULL)))
+            return E_MEMORY;
+
+        region->base = (uint32_t)base;
+    }
+
+    /* update ACL entry */
+    region->priority = priority;
+    region->mpu.rbar = MPU_RBAR(0,(uint32_t)base);
+    region->mpu.rasr = rasr;
+    region->size_bits = ((rasr & MPU_RASR_SIZE_Msk) >> MPU_RASR_SIZE_Pos) + 1;
+    region->size = 1UL << region->size_bits;
+    region->mask = ~(region->size-1);
+
+    return E_SUCCESS;
+}
+
+/* returns rounded MPU section alignment bit count */
+int mpu_set(uint8_t region, void* base, uint32_t size, uint32_t flags)
+{
+    uint32_t rasr;
+
+    /* caclulate MPU RASR register */
+    if(!(rasr = mpu_rasr(base, size, flags)))
+        return E_PARAM;
 
     /* update MPU */
     MPU->RBAR = MPU_RBAR(region,(uint32_t)base);
-    MPU->RASR =
-        MPU_RASR_ENABLE_Msk |
-        ((bits-1)<<MPU_RASR_SIZE_Pos) |
-        flags;
+    MPU->RASR = rasr;
 
-    return 0;
+    return E_SUCCESS;
 }
 
 static void mpu_fault(int reason)
@@ -175,9 +253,27 @@ static int mpu_init_uvisor(void)
     return res ? E_ALIGN:E_SUCCESS;
 }
 
+void mpu_acl_debug(void)
+{
+    int i;
+    ACL_Region *region = g_acl_regions;
+
+    dprintf("MPU ACL list - maximum of %i entries:\n",MPU_MAX_ACL);
+    for(i = 0; i<MPU_MAX_ACL; i++, region++)
+        if(region->base)
+            dprintf("  %02i: @0x%08X size=0x%04X pri=%i\n",
+                i,
+                region->base,
+                region->size,
+                region->priority);
+}
+
 int mpu_init(void)
 {
     int res;
+
+    /* reset ACL region list */
+    memset(&g_acl_regions, 0, sizeof(g_acl_regions));
 
     /* reset MPU */
     MPU->CTRL = 0;
