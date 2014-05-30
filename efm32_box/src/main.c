@@ -37,8 +37,8 @@ void main_entry(void)
     /* initialize hardware */
     hardware_init();
 
+    dprintf("hardware initialized, running main loop...\n");
+
     while(1)
-    {
-        dprintf("Hello World\n");
-    }
+        DEBUG_TxByte('X');
 }

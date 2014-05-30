@@ -42,8 +42,8 @@ uint8_t mpu_region_bits(uint32_t size)
         bits++;
     }
 
-    /* smallest region is 32 bytes */
-    return (bits<=5)?5:bits;
+    /* smallest region is 256 bytes for subreagion support */
+    return (bits<=8)?8:bits;
 }
 
 void mpu_debug(void)
@@ -164,6 +164,29 @@ static void mpu_fault_usage(void)
 
 static void mpu_fault_memory_management(void)
 {
+    int i;
+    ACL_Region *region = g_acl_regions;
+    uint32_t address;
+
+    /* check if access is allowed */
+    address = SCB->MMFAR;
+    for(i = 0; i<MPU_MAX_ACL; i++, region++)
+        if((address & region->mask) == region->base)
+        {
+            dprintf("  caught access to 0x%08X (base=0x%08X) - reconfigure MPU\n\r", address, region->base);
+
+            /* update MPU */
+            MPU->RBAR = region->mpu.rbar;
+            MPU->RASR = region->mpu.rasr;
+
+            /* clear MPU fault reason */
+            SCB->CFSR = SCB->CFSR & SCB_CFSR_MEMFAULTSR_Msk;
+
+            /* allow access */
+            return;
+        }
+
+    /* bail if access is prohibited */
     dprintf("MMFAR: 0x%08X\n\r", SCB->MMFAR);
     mpu_fault(MPU_FAULT_MEMORY);
 }
