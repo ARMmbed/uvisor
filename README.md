@@ -63,13 +63,23 @@ Target CPU is running @ 14000 kHz.
 Receiving SWO data @ 900 kHz.
 Showing data from stimulus port(s): 0, 1
 -----------------------------------------------
-uVisor s[unprivileged entry!]witching to unprivileged mode
+MPU ACL list [unprivileged entry!]- maximum of 8 entries:
+  00: @0x400C8000 size=0x0080 pri=0
+  01: @0x400C0000 size=0x0080 pri=0
+  02: @0x4000E400 size=0x0080 pri=0
+  03: @0x40006000 size=0x0100 pri=0
+uVisor switching to unprivileged mode
 cb_test_param0()
 cb_test_param0()
 cb_test_param1(0x11111111)
 cb_test_param2(0x11111111,0x22222222)
 cb_test_param3(0x11111111,0x22222222,0x33333333)
 cb_test_param4(0x11111111,0x22222222,0x33333333,0x44444444)
-MMFAR: 0x400C8000
-CFSR : 0x00000082
+  caught access to hardware initialized, running main loop...
+0x400C8000 (base=0x400C8000) - reconfigure MPU
+  caught access to 0x400C0004 (base=0x400C0000) - reconfigure MPU
+  caught access to 0x400C8024 (base=0x400C8000) - reconfigure MPU
+  caught access to 0x4000E414 (base=0x4000E400) - reconfigure MPU
+  caught access to 0x40006030 (base=0x40006000) - reconfigure MPU
+  caught access to 0x4000E40C (base=0x4000E400) - reconfigure MPU
 ```
