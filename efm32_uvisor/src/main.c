@@ -67,7 +67,6 @@ static void update_client_acl(void)
      *        client box
      */
     res  = mpu_acl_set(CMU,    sizeof(*CMU), 0, MPU_RASR_AP_PRW_URW|MPU_RASR_XN);
-    res |= mpu_acl_set(MSC,    sizeof(*MSC), 0, MPU_RASR_AP_PRW_URW|MPU_RASR_XN);
     res |= mpu_acl_set(UART1,sizeof(*UART1), 0, MPU_RASR_AP_PRW_URW|MPU_RASR_XN);
     res |= mpu_acl_set(GPIO,  sizeof(*GPIO), 0, MPU_RASR_AP_PRW_URW|MPU_RASR_XN);
 
