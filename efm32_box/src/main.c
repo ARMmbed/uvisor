@@ -15,7 +15,9 @@ static inline void hardware_init(void)
         ((DEVINFO->HFRCOCAL1 & _DEVINFO_HFRCOCAL1_BAND28_MASK)
         >> _DEVINFO_AUXHFRCOCAL1_BAND28_SHIFT);
     while(!(CMU->STATUS & CMU_STATUS_HFRCORDY));
-    MSC->READCTRL = (MSC->READCTRL & ~_MSC_READCTRL_MODE_MASK)|MSC_READCTRL_MODE_WS2;
+    /* WS2 set in uVisor - MSC access prohibited due to security reasons
+     * FIXME: add system-register-level ACL's by adding SVC command */
+    /* MSC->READCTRL = (MSC->READCTRL & ~_MSC_READCTRL_MODE_MASK)|MSC_READCTRL_MODE_WS2; */
     CMU->CMD = CMU_CMD_HFCLKSEL_HFXO;
 
     /* Enable output */
