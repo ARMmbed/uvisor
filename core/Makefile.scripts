@@ -16,7 +16,7 @@ export __SCRIPT_GDB
 define __SCRIPT_FLASH
 	device $(CPU)
 	h
-	loadbin $^ $(FLASH_OFFSET)
+	loadbin $(PROJECT).bin $(FLASH_OFFSET)
 	r
 	g
 	q
