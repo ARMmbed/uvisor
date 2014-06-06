@@ -1,0 +1,43 @@
+define __SCRIPT_GDB
+	target remote $(DEBUG_HOST)
+	monitor endian little
+	monitor halt
+	monitor speed 1000
+	monitor SWO EnableTarget $(AUXHFRCO_FREQ) 0 $(JLINK_VIEWER_MASK) 0
+	monitor flash device = $(CPU)
+	load $(PROJECT).elf
+	file $(PROJECT).elf
+	monitor reset
+	b main_entry
+	b default_handler
+endef
+export __SCRIPT_GDB
+
+define __SCRIPT_FLASH
+	device $(CPU)
+	h
+	loadbin $^ $(FLASH_OFFSET)
+	r
+	g
+	q
+endef
+export __SCRIPT_FLASH
+
+define __SCRIPT_ERASE
+	device $(CPU)
+	h
+	r
+	erase
+	g
+	q
+endef
+export __SCRIPT_ERASE
+
+define __SCRIPT_RESET
+	device $(CPU)
+	h
+	r
+	g
+	q
+endef
+export __SCRIPT_RESET

@@ -59,6 +59,8 @@ OBJS:=$(SOURCES:.c=.o)
 
 .PHONY: debug gdb gdbtui flash erase reset ctags source.c.tags swo
 
+include $(CORE)/Makefile.scripts
+
 all: $(PROJECT).bin
 
 $(PROJECT).elf: $(OBJS) $(PROJECT).linker
@@ -86,48 +88,16 @@ source.c.tags: $(SOURCES)
 	CFLAGS="$(CFLAGS_PRE)" geany -g $@ $^
 
 gdb.script: $(PROJECT).elf
-	echo -e "\
-target remote $(DEBUG_HOST)\n\
-monitor endian little\n\
-monitor halt\n\
-monitor speed 1000\n\
-monitor SWO EnableTarget $(AUXHFRCO_FREQ) 0 $(JLINK_VIEWER_MASK) 0\n\
-monitor flash device = $(CPU)\n\
-load $<\n\
-file $<\n\
-monitor reset\n\
-b main_entry\n\
-b default_handler\n\
-" > $@
+	@echo "$$__SCRIPT_GDB" > $@
 
 flash: $(PROJECT).bin
-	@echo -e "\
-device $(CPU)\n\
-h\n\
-loadbin $^ $(FLASH_OFFSET)\n\
-r\n\
-g\n\
-q\n\
-" | $(JLINK)
+	@echo "$$__SCRIPT_FLASH" | $(JLINK)
 
 erase:
-	@echo -e "\
-device $(CPU)\n\
-h\n\
-r\n\
-erase\n\
-g\n\
-q\n\
-" | $(JLINK)
+	@echo "$$__SCRIPT_ERASE" | $(JLINK)
 
 reset:
-	@echo -e "\
-device $(CPU)\n\
-h\n\
-r\n\
-g\n\
-q\n\
-" | $(JLINK)
+	@echo "$$__SCRIPT_RESET" | $(JLINK)
 
 clean:
 	rm -f $(PROJECT).map $(PROJECT).elf $(PROJECT).bin $(PROJECT).asm  $(PROJECT).linker gdb.script source.c.tags JLink.log
