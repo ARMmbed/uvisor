@@ -27,6 +27,13 @@ CPU_LOWER:=$(shell tr '[:upper:]' '[:lower:]' <<< $(CPU))
 ARCH_LOWER:=$(shell tr '[:upper:]' '[:lower:]' <<< $(ARCH))
 FLASH_OFFSET:=0
 
+# read UVISOR_FLASH_SIZE from uVisor config file
+ifeq ("$(wildcard  $(CORE)/uvisor-config.h)","")
+	UVISOR_FLASH_SIZE:=0
+else
+	UVISOR_FLASH_SIZE:=$(shell grep UVISOR_FLASH_SIZE $(CORE)/uvisor-config.h | sed -E 's/^.* (0x[0-9A-Fa-f]+).*$\/\1/')
+endif
+
 FLAGS_CM3:=-mcpu=cortex-m3 -mthumb
 
 LDFLAGS:=$(FLAGS_CM3) \
