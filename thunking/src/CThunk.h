@@ -28,7 +28,7 @@ typedef void (*CThunkEntry)(void);
 
 /* template for thunk trampoline */
 #ifdef __thumb__
-#define CTHUNK_OPCODES_SIZE 8
+#define CTHUNK_OPCODES_SIZE 4
 #else
 #error "TODO: add support for non-thumb trampoline, too"
 #endif
@@ -42,19 +42,9 @@ class CThunk
         typedef void (T::*CCallbackSimple)(void);
         typedef void (T::*CCallback)(void* context);
 
-        inline CThunk(void)
+        inline CThunk(T *instance)
         {
-            /* copy ARM thumb compatible pcode preamble */
-            memcpy(
-                &m_thunk.code,
-                &g_cthunk_opcodes,
-                CTHUNK_OPCODES_SIZE
-            );
-            /* set remainder to zero */
-            memset(
-                &m_thunk.code + CTHUNK_OPCODES_SIZE,
-                0, sizeof(m_thunk.code) - CTHUNK_OPCODES_SIZE
-            );
+            init(*instance, NULL, NULL);
         }
 
         inline CThunk(T &instance)
