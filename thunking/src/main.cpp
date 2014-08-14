@@ -49,13 +49,14 @@ public:
 };
 
 CTest::CTest(void)
+	:thunk(this)
 {
 	counter = 0;
 }
 
 void CTest::callback1(void)
 {
-	dprintf("callback1 called\n");
+	dprintf("callback1 called (this=0x%0X\n", this);
 
     /* increment member variable */
 //    counter++;
