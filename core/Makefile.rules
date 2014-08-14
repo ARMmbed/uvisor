@@ -63,7 +63,7 @@ CFLAGS_PRE:=\
         -fno-common
 
 CFLAGS:=$(FLAGS_CM3) $(CFLAGS_PRE)
-CPPFLAGS:=$(CFLAGS)
+CPPFLAGS:=$(CFLAGS) -fno-exceptions
 
 OBJS:=$(SOURCES:.cpp=.o)
 OBJS:=$(OBJS:.c=.o)
