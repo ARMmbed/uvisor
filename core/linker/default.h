@@ -49,6 +49,13 @@ SECTIONS
         __code_end__ = .;
     } > FLASH
 
+    __exidx_start = .;
+    .ARM.exidx :
+    {
+        *(.ARM.exidx* .gnu.linkonce.armexidx.*)
+    } > FLASH
+    __exidx_end = .;
+
     .isr (NOLOAD):
     {
         . = ALIGN(128);
