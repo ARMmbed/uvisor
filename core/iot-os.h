@@ -1,6 +1,12 @@
 #ifndef __IOT_OS_H__
 #define __IOT_OS_H__
 
+#ifdef  __cplusplus
+#  define EXTERN extern "C"
+#else
+#  define EXTERN extern
+#endif/*__CPP__*/
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
