@@ -1,4 +1,5 @@
 #include <iot-os.h>
+#include "CThunk.h"
 
 void halt_error(const char* msg)
 {
@@ -48,12 +49,101 @@ static inline void hardware_init(void)
 #endif/*CHANNEL_DEBUG*/
 }
 
+class CTest
+{
+public:
+	CTest(void);
+	void callback1(void);
+	void callback2(void* context);
+	void callback3(void* context);
+	static void callback4(uint32_t r0, uint32_t r1);
+
+	uint32_t counter;
+
+	CThunk<CTest> thunk;
+};
+
+CTest::CTest(void)
+{
+	counter = 0;
+}
+
+void CTest::callback1(void)
+{
+	dprintf("callback1 called\n");
+
+    /* increment member variable */
+//    counter++;
+}
+
+void CTest::callback2(void* context)
+{
+	dprintf("Called with context value 0x%08X\n", context);
+
+	/* increment member variable */
+//    counter = (uint32_t)context;
+}
+
+void CTest::callback3(void* context)
+{
+	dprintf("Called by ticker object 0x%08X: \n", context);
+}
+
+void CTest::callback4(uint32_t r0, uint32_t r1)
+{
+    dprintf("callback4: r0=0x%08X r1=0x%08X\n",r0, r1);
+}
+
+void hexdump(const void* data, int length)
+{
+	int i;
+
+	dprintf("Dump %u bytes from 0x%08Xn", length, data);
+
+	for(i=0; i<length; i++)
+	{
+		if((i%16) == 0)
+			dprintf("\n");
+		else
+			if((i%8) == 0)
+				dprintf(" - ");
+		dprintf("0x%02X ", ((uint8_t*)data)[i]);
+	}
+	dprintf("\n");
+}
+
 void main_entry(void)
 {
+	CThunkEntry entry;
+	CTest test;
+
 	/* initialize hardware */
 	hardware_init();
 
-	/* should never happen */
+	/* get 32 bit entry point pointer from thunk */
+	entry = test.thunk;
+
+    /* TEST1: */
+
+	/* assign callback1 to thunk - no context needed */
+	test.thunk = (void*)0xDEADBEEF;
+	test.thunk = &CTest::callback1;
+	hexdump((const void*)entry, CTHUNK_OPCODES_SIZE+3*4);
+	/* call entry point */
+
+	dprintf("before entry\n");
+	entry();
+	dprintf("after entry\n");
+
+	/* TEST2: */
+
+	/* assign a context ... */
+	test.thunk = 0xDEADBEEF;
+	/* and switch callback to callback2 */
+	test.thunk = &CTest::callback2;
+	/* call entry point */
+	entry();
+
 	while(1)
 		__WFI();
 }
