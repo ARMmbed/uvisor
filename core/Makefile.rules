@@ -1,5 +1,6 @@
 PREFIX:=arm-none-eabi-
 CC:=$(PREFIX)gcc
+CXX:=$(PREFIX)g++
 OBJCOPY:=$(PREFIX)objcopy
 OBJDUMP:=$(PREFIX)objdump
 GDB:=$(PREFIX)gdb
@@ -12,6 +13,7 @@ CORE:=../core
 
 SYSTEM:=$(CORE)/system
 LIB:=$(CORE)/lib
+SYSLIBS:=-lgcc -lc -lnosys
 DEVICE:=$(CORE)/arch/$(ARCH)
 SOURCES:=$(SYSTEM)/src/isr.c \
          $(SYSTEM)/src/stdlib.c \
@@ -61,8 +63,10 @@ CFLAGS_PRE:=\
         -fno-common
 
 CFLAGS:=$(FLAGS_CM3) $(CFLAGS_PRE)
+CPPFLAGS:=$(CFLAGS)
 
-OBJS:=$(SOURCES:.c=.o)
+OBJS:=$(SOURCES:.cpp=.o)
+OBJS:=$(OBJS:.c=.o)
 
 .PHONY: debug gdb gdbtui flash erase reset ctags source.c.tags swo
 
@@ -71,7 +75,7 @@ include $(CORE)/Makefile.scripts
 all: $(PROJECT).bin
 
 $(PROJECT).elf: $(OBJS) $(PROJECT).linker
-	$(CC) $(LDFLAGS) -o $@ $(OBJS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(SYSLIBS)
 	$(OBJDUMP) -d $@ > $(PROJECT).asm
 
 $(PROJECT).bin: $(PROJECT).elf
