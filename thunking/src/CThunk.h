@@ -119,10 +119,10 @@ class CThunk
 
         inline void init(T &instance, CCallback callback, void* context)
         {
-#ifdef __thumb__
+#ifdef __thumb2__
             m_thunk.code = 0x8003E89F;
 #else
-#error "TODO: add support for non-thumb trampoline, too"
+#error "TODO: add support for non-cortex-m3 trampoline, too"
 #endif
             m_thunk.instance = &instance;
             m_thunk.context = context;
