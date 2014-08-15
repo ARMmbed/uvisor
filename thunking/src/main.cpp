@@ -117,9 +117,9 @@ void main_entry(void)
 	hexdump((const void*)entry, 16);
 	/* call entry point */
 
-	dprintf("before entry\n");
+	dprintf("before entry 1\n");
 	entry();
-	dprintf("after entry\n");
+	dprintf("after entry 1\n");
 
 	/* TEST2: */
 
@@ -128,7 +128,9 @@ void main_entry(void)
 	/* and switch callback to callback2 */
 	test.thunk = &CTest::callback2;
 	/* call entry point */
+	dprintf("before entry 2\n");
 	entry();
+	dprintf("after entry 2\n");
 
 	while(1)
 		__WFI();
