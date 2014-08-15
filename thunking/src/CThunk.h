@@ -26,15 +26,6 @@
 /* IRQ/Exception compatible thunk entry function */
 typedef void (*CThunkEntry)(void);
 
-/* template for thunk trampoline */
-#ifdef __thumb__
-#define CTHUNK_OPCODES_SIZE 4
-#else
-#error "TODO: add support for non-thumb trampoline, too"
-#endif
-
-extern const uint8_t g_cthunk_opcodes[CTHUNK_OPCODES_SIZE];
-
 template<class T>
 class CThunk
 {
@@ -100,25 +91,25 @@ class CThunk
         /* get thunk entry point for connecting rhunk to an IRQ table */
         inline operator CThunkEntry(void)
         {
-            return (CThunkEntry)&m_thunk.code;
+            return (CThunkEntry)&m_thunk;
         }
 
         /* get thunk entry point for connecting rhunk to an IRQ table */
         inline operator uint32_t(void)
         {
-            return (uint32_t)&m_thunk.code;
+            return (uint32_t)&m_thunk;
         }
 
         /* simple test function */
         inline void call(void)
         {
-            ((CThunkEntry)&m_thunk.code)();
+            ((CThunkEntry)&m_thunk)();
         }
 
     private:
         typedef struct
         {
-            uint8_t code[CTHUNK_OPCODES_SIZE];
+            uint32_t code;
             T* instance;
             void* context;
             CCallback callback;
@@ -128,7 +119,11 @@ class CThunk
 
         inline void init(T &instance, CCallback callback, void* context)
         {
-            memcpy(&m_thunk.code, &g_cthunk_opcodes, CTHUNK_OPCODES_SIZE);
+#ifdef __thumb__
+            m_thunk.code = 0x8003E89F;
+#else
+#error "TODO: add support for non-thumb trampoline, too"
+#endif
             m_thunk.instance = &instance;
             m_thunk.context = context;
             m_thunk.callback = callback;
