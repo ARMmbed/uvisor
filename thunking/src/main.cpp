@@ -114,7 +114,7 @@ void main_entry(void)
 	/* assign callback1 to thunk - no context needed */
 	test.thunk = (void*)0xDEADBEEF;
 	test.thunk = &CTest::callback1;
-	hexdump((const void*)entry, CTHUNK_OPCODES_SIZE+3*4);
+	hexdump((const void*)entry, 16);
 	/* call entry point */
 
 	dprintf("before entry\n");
