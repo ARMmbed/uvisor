@@ -78,21 +78,8 @@ static __INLINE void CONFIG_DebugGpioSetup(void)
   /* Avoid false start by setting output as high */
   GPIO->P[1].DOUT = (1 << 9);
   GPIO->P[1].MODEH = GPIO_P_MODEH_MODE9_PUSHPULL | GPIO_P_MODEH_MODE10_INPUT;
-}
 
-/** This function sets up GPIO for the USART used in the bootloader. */
-static __INLINE void CONFIG_UsartGpioSetup(void)
-{
-  /* Use USART0 location 0
-   * 0 : TX - Pin E10, RX - Pin E11
-   * Configure GPIO pins LOCATION 1 as push pull (TX)
-   * and input (RX)
-   * To avoid false start, configure output as high
-   */
   GPIO->P[DEBUG_PORT].DOUT = (1 << 10) | DEBUG_LED0 | DEBUG_LED1;
-  GPIO->P[DEBUG_PORT].MODEH =
-    GPIO_P_MODEH_MODE10_PUSHPULL |
-    GPIO_P_MODEH_MODE11_INPUT;
 
   /* configure Debug LED's */
   GPIO->P[DEBUG_PORT].MODEL =

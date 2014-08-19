@@ -16,9 +16,6 @@ void default_handler(void)
 static inline void hardware_init(void)
 {
 	/* Enable clocks for peripherals */
-	CMU->CTRL |= (CMU_CTRL_HFLE | CMU_CTRL_HFXOBUFCUR_BOOSTABOVE32MHZ);
-	CMU->OSCENCMD =  CMU_OSCENCMD_HFXOEN;
-	CMU->HFCORECLKDIV = CMU_HFCORECLKDIV_HFCORECLKLEDIV;
 	CMU->HFPERCLKDIV = CMU_HFPERCLKDIV_HFPERCLKEN;
 	CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_GPIO;
 
@@ -108,30 +105,35 @@ void main_entry(void)
 
 	/* get 32 bit entry point pointer from thunk */
 	entry = test.thunk;
-
     /* TEST1: */
 
 	/* assign callback1 to thunk - no context needed */
-	test.thunk = (void*)0xDEADBEEF;
-	test.thunk = &CTest::callback1;
+	test.thunk.context(0xDEADBEEF);
+	test.thunk.callback(&CTest::callback1);
 	hexdump((const void*)entry, 16);
 	/* call entry point */
 
 	dprintf("before entry 1\n");
+	led_set(DEBUG_LED0);
 	entry();
+	led_clr(DEBUG_LED0);
 	dprintf("after entry 1\n");
 
 	/* TEST2: */
 
 	/* assign a context ... */
-	test.thunk = 0xDEADBEEF;
+	test.thunk.context(0xDEADBEEF);
 	/* and switch callback to callback2 */
-	test.thunk = &CTest::callback2;
+	test.thunk.callback(&CTest::callback2);
 	/* call entry point */
 	dprintf("before entry 2\n");
+	led_set(DEBUG_LED1);
 	entry();
+	led_clr(DEBUG_LED1);
 	dprintf("after entry 2\n");
 
+	/* turn both LED's on */
+	led_set(DEBUG_LED1);
 	while(1)
 		__WFI();
 }
