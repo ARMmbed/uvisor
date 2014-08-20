@@ -5,7 +5,6 @@ CPU:=$(ARCH)990F1024
 APP_DEFINES:=
 APP_CFLAGS:=-Iconfig -Isrc $(APP_DEFINES)
 APP_SRC:=\
-	src/debug.c \
 	src/main.cpp
 
 include ../core/Makefile.rules
