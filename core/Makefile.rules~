@@ -1,0 +1,122 @@
+PREFIX:=arm-none-eabi-
+CC:=$(PREFIX)gcc
+CXX:=$(PREFIX)g++
+OBJCOPY:=$(PREFIX)objcopy
+OBJDUMP:=$(PREFIX)objdump
+GDB:=$(PREFIX)gdb
+JLINK:=$(SEGGER)JLinkExe
+JLINK_VIEWER:=$(SEGGER)JLinkSWOViewer
+JLINK_VIEWER_MASK:=0x3
+AUXHFRCO_FREQ:=14000000
+
+CORE:=../core
+
+SYSTEM:=$(CORE)/system
+LIB:=$(CORE)/lib
+SYSLIBS:=-lgcc -lc -lnosys
+DEVICE:=$(CORE)/arch/$(ARCH)
+SOURCES:=$(SYSTEM)/src/isr.c \
+         $(SYSTEM)/src/stdlib.c \
+         $(LIB)/printf/tfp_printf.c \
+         $(DEVICE)/src/system.c \
+         $(APP_SRC)
+
+DEBUG_HOST:=localhost:2331
+OPT:=-Os
+DEBUG:=-g3 -DNDEBUG
+WARNING:=-Wall -Werror
+CPU_LOWER:=$(shell tr '[:upper:]' '[:lower:]' <<< $(CPU))
+ARCH_LOWER:=$(shell tr '[:upper:]' '[:lower:]' <<< $(ARCH))
+FLASH_OFFSET:=0
+
+# read UVISOR_FLASH_SIZE from uVisor config file
+ifeq ("$(wildcard  $(CORE)/uvisor-config.h)","")
+	UVISOR_FLASH_SIZE:=0
+else
+	UVISOR_FLASH_SIZE:=$(shell grep UVISOR_FLASH_SIZE $(CORE)/uvisor-config.h | sed -E 's/^.* (0x[0-9A-Fa-f]+).*$\/\1/')
+endif
+
+# read CODE_SUBREGION_SIZE from uVisor config file
+ifeq ("$(wildcard  $(CORE)/uvisor-config.h)","")
+	CODE_SUBREGION_SIZE:=0
+else
+	CODE_SUBREGION_SIZE:=$(shell grep CODE_SUBREGION_SIZE $(CORE)/uvisor-config.h | sed -E 's/^.* (0x[0-9A-Fa-f]+).*$\/\1/')
+endif
+
+FLAGS_CM3:=-mcpu=cortex-m3 -mthumb
+
+LDFLAGS:=$(FLAGS_CM3) \
+        -T$(PROJECT).linker \
+        -nostartfiles \
+        -nostdlib \
+        -Xlinker --gc-sections \
+        -Xlinker -M \
+        -Xlinker -Map=$(PROJECT).map
+
+CFLAGS_PRE:=\
+        $(OPT) \
+        $(DEBUG) \
+        $(WARNING) \
+        -D$(ARCH) \
+        -D$(CPU) \
+        $(APP_CFLAGS) \
+        -I$(CORE) \
+        -I$(CORE)/cmsis/inc \
+        -I$(SYSTEM)/inc \
+        -I$(DEVICE)/inc \
+        -I$(LIB)/printf \
+        -ffunction-sections \
+        -fdata-sections \
+        -fno-common
+
+CFLAGS:=$(FLAGS_CM3) $(CFLAGS_PRE)
+CPPFLAGS:=$(CFLAGS) -fno-exceptions
+
+OBJS:=$(SOURCES:.cpp=.o)
+OBJS:=$(OBJS:.c=.o)
+
+.PHONY: debug gdb gdbtui flash erase reset ctags source.c.tags swo
+
+include $(CORE)/Makefile.scripts
+
+all: $(PROJECT).bin
+
+$(PROJECT).elf: $(OBJS) $(PROJECT).linker
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(SYSLIBS)
+	$(OBJDUMP) -d $@ > $(PROJECT).asm
+
+$(PROJECT).bin: $(PROJECT).elf
+	$(OBJCOPY) $< -O binary $@
+
+$(PROJECT).linker: $(CORE)/linker/$(CPU).h
+	$(CPP) -w -P -I$(CORE) -I$(CORE)/linker $(APP_CFLAGS) -D$(CPU) -D$(ARCH) $^ -o $@
+
+swo:
+	$(JLINK_VIEWER) -device $(CPU) -cpufreq $(AUXHFRCO_FREQ) -itmmask $(JLINK_VIEWER_MASK)
+
+gdb: gdb.script
+	$(GDB) -x $<
+
+gdbtui: gdb.script
+	$(GDB)tui -x $<
+
+ctags: source.c.tags
+
+source.c.tags: $(SOURCES)
+	CFLAGS="$(CFLAGS_PRE)" geany -g $@ $^
+
+gdb.script: $(PROJECT).elf
+	@echo "$$__SCRIPT_GDB" > $@
+
+flash: $(PROJECT).bin
+	@echo "$$__SCRIPT_FLASH" | $(JLINK)
+
+erase:
+	@echo "$$__SCRIPT_ERASE" | $(JLINK)
+
+reset:
+	@echo "$$__SCRIPT_RESET" | $(JLINK)
+
+clean:
+	rm -f $(PROJECT).map $(PROJECT).elf $(PROJECT).bin $(PROJECT).asm  $(PROJECT).linker gdb.script source.c.tags JLink.log
+	find . $(CORE) -iname '*.o' -exec rm -f \{\} \;

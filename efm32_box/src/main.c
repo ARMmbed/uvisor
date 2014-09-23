@@ -1,5 +1,9 @@
 #include <iot-os.h>
+#include "rsa.h"
 #include "debug.h"
+
+/* RSA start */
+volatile uint32_t * g_rsa_start = (uint32_t *) 0x20006000;
 
 static inline void hardware_init(void)
 {
@@ -35,12 +39,23 @@ void main_entry(void)
 	__SVC2(4,0x11111111,0x22222222);
 	__SVC3(5,0x11111111,0x22222222,0x33333333);
 	__SVC4(6,0x11111111,0x22222222,0x33333333,0x44444444);
-
+	
 	/* initialize hardware */
 	hardware_init();
 
 	dprintf("hardware initialized, running main loop...\n");
 
 	while(1)
+	{
+		/* RSA dummy - rsa operation */
+		if(*g_rsa_start == 4)
+		{
+			dprintf("\nStarting RSA context switch:\n\r");
+			dprintf("Returned value: 0x%x\n\r", rsa(0xfeed));
+			dprintf("Back in box!\n\n\r");
+			*g_rsa_start = 0;
+		}
+
 		DEBUG_TxByte('X');
+	}
 }

@@ -6,6 +6,7 @@ APP_DEFINES:=-DUVISOR_CLIENT
 APP_CFLAGS:=-Iconfig -Isrc $(APP_DEFINES)
 APP_SRC:=\
 	src/main.c \
+	src/rsa.c \
 	src/debug.c
 
 include ../core/Makefile.rules
