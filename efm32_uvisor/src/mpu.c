@@ -19,16 +19,21 @@ typedef struct {
     uint32_t mask;            /* mask for determinining access range */
     uint32_t size;            /* region size */
     uint32_t age;            /* last access counter */
-    ACL_MPU_Setting mpu;    /* canned MPU region settings */
+    ACL_MPU_Setting mpu;        /* canned MPU region settings */
     uint8_t priority;        /* region priority 0:dynamic, >=1:static */
     uint8_t active;            /* currently assigned MPU region */
     uint8_t size_bits;        /* currently assigned MPU region */
 } ACL_Region;
 
 static ACL_Region g_acl_regions[MPU_MAX_ACL];
+static int g_dyn_region = 0;
 static uint32_t mpu_aligment_mask;
 static void* g_config_start;
 uint32_t g_config_size;
+
+/* stack and code pointers */
+volatile uint32_t * g_sp[MPU_REGION_SPLIT];
+volatile uint32_t * g_pc[MPU_REGION_SPLIT];
 
 /* calculate rounded section alignment */
 uint8_t mpu_region_bits(uint32_t size)
@@ -42,7 +47,7 @@ uint8_t mpu_region_bits(uint32_t size)
         bits++;
     }
 
-    /* smallest region is 256 bytes for subreagion support */
+    /* smallest region is 256 bytes for subregion support */
     return (bits<=8)?8:bits;
 }
 
@@ -126,7 +131,7 @@ int mpu_acl_set(void* base, uint32_t size, uint8_t priority, uint32_t flags)
 
     /* update ACL entry */
     region->priority = priority;
-    region->mpu.rbar = MPU_RBAR(0,(uint32_t)base);
+    region->mpu.rbar = MPU_RBAR_RNR((uint32_t)base);
     region->mpu.rasr = rasr;
     region->size_bits = ((rasr & MPU_RASR_SIZE_Msk) >> MPU_RASR_SIZE_Pos) + 1;
     region->size = 1UL << region->size_bits;
@@ -153,7 +158,7 @@ int mpu_set(uint8_t region, void* base, uint32_t size, uint32_t flags)
 
 static void mpu_fault(int reason)
 {
-    dprintf("CFSR : 0x%08X\n\r", SCB->CFSR);
+    dprintf("CFSR : 0x%08X (reason 0x%02x)\n\r", SCB->CFSR, reason);
     while(1);
 }
 
@@ -170,12 +175,15 @@ static void mpu_fault_memory_management(void)
 
     /* check if access is allowed */
     address = SCB->MMFAR;
-    for(i = 0; i<MPU_MAX_ACL; i++, region++)
+    for(i = 0; i < MPU_MAX_ACL; i++, region++)
+    {
         if((address & region->mask) == region->base)
         {
-            dprintf("  caught access to 0x%08X (base=0x%08X) - reconfigure MPU\n\r", address, region->base);
-
-            /* update MPU */
+            dprintf("  caught access to 0x%08X (base=0x%08X) - MPU reprogrammed\n\r", address, region->base);
+            /* FIXME remove this */
+            if(address == 0xe000ed34) while(1);
+            /* update MPU with new region */
+            MPU->RNR  = ++g_dyn_region < MPU_DYN_REGIONS ? g_dyn_region : (g_dyn_region = 0);
             MPU->RBAR = region->mpu.rbar;
             MPU->RASR = region->mpu.rasr;
 
@@ -185,6 +193,7 @@ static void mpu_fault_memory_management(void)
             /* allow access */
             return;
         }
+    }
 
     /* bail if access is prohibited */
     dprintf("MMFAR: 0x%08X\n\r", SCB->MMFAR);
@@ -236,6 +245,7 @@ static int mpu_init_uvisor(void)
         MPU_RASR_AP_PRW_UNO|MPU_RASR_CB_WB_WRA|MPU_RASR_XN|MPU_RASR_SRD(t)
     );
 
+    /* FIXME added SUBREGION_SRAM_SIZE so that sub-region #0 (16KB) is protected */
     /* set uvisor RAM guard bands to RO & inaccessible to all code */
     res|= mpu_set(6,
         (void*)RAM_MEM_BASE,
@@ -255,19 +265,29 @@ static int mpu_init_uvisor(void)
         MPU_RASR_AP_PRO_UNO|MPU_RASR_CB_WB_WRA|MPU_RASR_XN|MPU_RASR_SRD((1<<t)-1)
     );
 
-    /* allow access to full flash */
+    /* create mask for SRD: all regions disabled except for
+     *   #0 (uvisor)
+     *   #1 (unprivileged box) */
+    t = 0xFC;
+    /* allow access to flash */
     res|= mpu_set(4,
         (void*)FLASH_MEM_BASE,
-        FLASH_MEM_SIZE,
-        MPU_RASR_AP_PRO_URO|MPU_RASR_CB_WT
+        FLASH_SIZE,
+        MPU_RASR_AP_PRO_URO|MPU_RASR_CB_WT|MPU_RASR_SRD(t)
     );
 
+    /* create mask for SRD: all regions disabled except for
+     *   #0 (uvisor)
+     *   #1 (unprivileged box) */
+    t = 0xFC;
     /* allow access to unprivileged user SRAM */
     res|= mpu_set(3,
         (void*)RAM_MEM_BASE,
         SRAM_SIZE,
-        MPU_RASR_AP_PRW_URW|MPU_RASR_CB_WB_WRA
+        MPU_RASR_AP_PRW_URW|MPU_RASR_CB_WB_WRA|MPU_RASR_SRD(t)
     );
+
+    mpu_debug();
 
     /* finally enable MPU */
     if(!res)
@@ -289,6 +309,18 @@ void mpu_acl_debug(void)
                 region->base,
                 region->size,
                 region->priority);
+}
+
+/* initilize stack pointers for the whole SRAM region */
+void mpu_init_ptrs()
+{
+    int i;
+
+    for(i = 0; i < MPU_REGION_SPLIT; i++)
+    {
+        g_sp[i] = MPU_STACK(i);
+        g_pc[i] = MPU_CODE(i);
+    }
 }
 
 int mpu_init(void)
@@ -314,6 +346,9 @@ int mpu_init(void)
 
     /* enable mem, bus and usage faults */
     SCB->SHCSR |= 0x70000;
+
+    /* initialize code and stack pointers */
+    mpu_init_ptrs();
 
     /* configure uvisor MPU configuration */
     res = mpu_init_uvisor();

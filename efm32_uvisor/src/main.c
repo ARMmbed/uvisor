@@ -1,6 +1,36 @@
 #include <iot-os.h>
 #include "mpu.h"
 #include "svc.h"
+#include "config_efm32.h"
+
+/********************************************************************
+ * LED
+ */
+#define TIMER_WAIT     500
+#define LED_PORT     4
+#define LED_PIN     2
+volatile uint16_t g_counter = 0;
+volatile uint32_t * g_blinks = (volatile uint32_t *) 0x20006000;
+
+static void __timer_irq(void)
+{
+    /* clear timer overflow bit */
+    TIMER0->IFC = 1;
+
+    /* after TIMER_WAIT */
+    if(++g_counter == TIMER_WAIT)
+    {
+        /* increase number of blinks */
+        (*g_blinks)++;
+
+        /* toggle LED */
+        GPIO->P[LED_PORT].DOUTTGL = 1 << LED_PIN;
+
+        /* restart timer */
+        TIMER0->CMD = 0x0;
+    }
+}
+/********************************************************************/
 
 void halt_error(const char* msg)
 {
@@ -52,6 +82,19 @@ static inline void hardware_init(void)
     /* register SVC call interface */
     svc_init();
 
+/********************************************************************
+ * LED
+ */
+    CMU->HFPERCLKEN0 = (1 << 13) | (1 << 5);
+    ISR_SET(TIMER0_IRQn, &__timer_irq);
+    NVIC_EnableIRQ(TIMER0_IRQn);
+    GPIO->P[LED_PORT].MODEL = 4 << 8;
+    TIMER0->TOP = TIMER_WAIT;
+    TIMER0->IEN = 1;
+    TIMER0->CMD = 0x1;
+    *g_blinks = (volatile uint32_t) 0;
+/********************************************************************/
+
     /* setup MPU & halt on MPU configuration errors */
     if(mpu_init())
         halt_error("MPU configuration error");
@@ -66,9 +109,11 @@ static void update_client_acl(void)
      * FIXME: read dynamically from signed ACL provided along with
      *        client box
      */
-    res  = mpu_acl_set(CMU,    sizeof(*CMU), 0, MPU_RASR_AP_PRW_URW|MPU_RASR_XN);
-    res |= mpu_acl_set(UART1,sizeof(*UART1), 0, MPU_RASR_AP_PRW_URW|MPU_RASR_XN);
-    res |= mpu_acl_set(GPIO,  sizeof(*GPIO), 0, MPU_RASR_AP_PRW_URW|MPU_RASR_XN);
+    res  = mpu_acl_set(CMU,     sizeof(*CMU), 0, MPU_RASR_AP_PRW_URW|MPU_RASR_XN);
+    res |= mpu_acl_set(UART1, sizeof(*UART1), 0, MPU_RASR_AP_PRW_URW|MPU_RASR_XN);
+    res |= mpu_acl_set(GPIO,   sizeof(*GPIO), 0, MPU_RASR_AP_PRW_URW|MPU_RASR_XN);
+    /* FIXME not so nice... */
+    res |= mpu_acl_set((void *) ((uint32_t) DEVINFO - (uint32_t) 0xB0), 0x100, 0, MPU_RASR_AP_PRW_URW|MPU_RASR_XN);
 
     /* should never happen */
     if(res)
@@ -88,14 +133,15 @@ void main_entry(void)
      * client. Use stored ACLs to set access privileges for box
      * (allowed peripherals etc.)
      */
-    t = *(uint32_t*)(FLASH_MEM_BASE+UVISOR_FLASH_SIZE);
-    if(t==0xFFFFFFFF)
+
+    t = *g_pc[1];
+    if(t == 0xFFFFFFFF)
         halt_error("please install unprivileged firmware");
-    if(t!=(FLASH_MEM_BASE+UVISOR_FLASH_SIZE))
+    if(t != (uint32_t) g_pc[1])
         halt_error("incorrectly relocated unprivileged firmware");
 
-    /* switch stack to unprivileged */
-    __set_PSP(RAM_MEM_BASE+SRAM_SIZE);
+    /* switch stack to unprivileged box */
+    __set_PSP((uint32_t) g_sp[1]);
 
     /* setting up peripheral access ACL for client box */
     update_client_acl();
@@ -103,7 +149,7 @@ void main_entry(void)
     /* dump latest MPU settings */
 #ifdef  DEBUG
     mpu_debug();
-#endif/*DEBUG*/
+#endif /*DEBUG*/
 
     dprintf("uVisor switching to unprivileged mode\n");
 
@@ -115,7 +161,7 @@ void main_entry(void)
     __DSB();
 
     /* run unprivileged box */
-    (*((UnprivilegedBoxEntry*)(FLASH_MEM_BASE+UVISOR_FLASH_SIZE+4)))();
+    (*((UnprivilegedBoxEntry*)((uint32_t) t + 4)))();
 
     /* should never happen */
     while(1)
