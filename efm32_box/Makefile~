@@ -12,4 +12,4 @@ APP_SRC:=\
 include ../core/Makefile.rules
 
 # override flash offset to locate firmware after uVisor
-FLASH_OFFSET:=$(UVISOR_FLASH_SIZE)
+FLASH_OFFSET:=UVISOR_FLASH_SIZE

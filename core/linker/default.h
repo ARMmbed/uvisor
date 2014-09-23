@@ -75,6 +75,12 @@ SECTIONS
         __data_end__ = .;
     } > RAM AT>FLASH
 
+
+    .rsa FLASH_ORIGIN+2*RESERVED_FLASH :
+    {
+        . = ALIGN (16);
+    } > FLASH
+
     .bss (NOLOAD):
     {
         . = ALIGN(4);
