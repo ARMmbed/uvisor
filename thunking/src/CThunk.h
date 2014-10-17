@@ -23,6 +23,13 @@
 #ifndef __CTHUNK_H__
 #define __CTHUNK_H__
 
+#if defined(__CORTEX_M3) || defined(__thumb2__)
+#  define CTHUNK_OPCODE 0x8007E89F;
+#  define CTHUNK_ADDRESS 1
+#else
+#  error "TODO: add support for non-cortex-m3 trampoline, too"
+#endif
+
 /* IRQ/Exception compatible thunk entry function */
 typedef void (*CThunkEntry)(void);
 typedef void (*CThunkCallback)(void* instance, void* context);
@@ -37,6 +44,16 @@ class CThunk
         inline CThunk(T *instance)
         {
             init(instance, NULL, NULL);
+        }
+
+        inline CThunk(T *instance, CCallback callback)
+        {
+            init(instance, callback, NULL);
+        }
+
+        inline CThunk(T *instance, CCallbackSimple callback)
+        {
+            init(instance, (CCallback)callback, NULL);
         }
 
         inline CThunk(T &instance, CCallback callback)
@@ -77,7 +94,8 @@ class CThunk
         /* get thunk entry point for connecting rhunk to an IRQ table */
         inline operator CThunkEntry(void)
         {
-            return (CThunkEntry)&m_thunk;
+            /* TODO: check thumb */
+            return (CThunkEntry)(((uint32_t)&m_thunk)|CTHUNK_ADDRESS);
         }
 
         /* get thunk entry point for connecting rhunk to an IRQ table */
@@ -89,39 +107,46 @@ class CThunk
         /* simple test function */
         inline void call(void)
         {
-            ((CThunkEntry)&m_thunk)();
+            /* TODO: check thumb */
+            ((CThunkEntry)(((uint32_t)&m_thunk)|CTHUNK_ADDRESS))();
         }
 
     private:
-        volatile T* m_instance;
+        T* m_instance;
         volatile CCallback m_callback;
+
         typedef struct
         {
-            uint32_t code;
-            uint32_t instance;
-            uint32_t context;
-            uint32_t callback;
+            volatile uint32_t code;
+            volatile uint32_t instance;
+            volatile uint32_t context;
+            volatile uint32_t callback;
+            volatile uint32_t trampoline;
         } __attribute__((packed)) CThunkTrampoline;
 
-        static void trampoline(void* instance, void* context)
+        static void trampoline(T* instance, void* context, CCallback* callback)
         {
-            dprintf("Trampoline: instance=0x%08X context=0x%08X\n", instance, context);
-//            ((CThunk*)instance)->context;
+            if(instance && *callback)
+                (static_cast<T*>(instance)->**callback)(context);
         }
 
         volatile CThunkTrampoline m_thunk;
 
         inline void init(T *instance, CCallback callback, void* context)
         {
-#ifdef __thumb2__
-            m_thunk.code = 0x8003E89F;
-#else
-#error "TODO: add support for non-cortex-m3 trampoline, too"
-#endif
-            m_thunk.context = (uint32_t)context;
-            m_thunk.callback = (uint32_t)&trampoline;
+            /* remember callback - need to add this level of redirection
+               as pointer size for member functions differs between platforms */
             m_callback = callback;
-            m_instance = instance;
+
+            /* populate thunking trampoline */
+            m_thunk.code = CTHUNK_OPCODE;
+            m_thunk.context = (uint32_t)context;
+            m_thunk.instance = (uint32_t)instance;
+            m_thunk.callback = (uint32_t)&m_callback;
+            m_thunk.trampoline = (uint32_t)&trampoline;
+
+            __ISB();
+            __DSB();
         }
 };
 
