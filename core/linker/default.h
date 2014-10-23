@@ -43,6 +43,10 @@ SECTIONS
         *(.svc_vector*)
         *(.text*)
         *(.rodata*)
+        . = ALIGN(4);
+        __lib_init_start__ = .;
+        KEEP(*(.lib_init*))
+        __lib_init_end__ = .;
         PROVIDE(__data_start_src__ = LOADADDR(.data));
         PROVIDE(__stack_end__ = ORIGIN(RAM) + LENGTH(RAM));
         . = ALIGN(16);
@@ -74,12 +78,6 @@ SECTIONS
         /* All data end */
         __data_end__ = .;
     } > RAM AT>FLASH
-
-
-    .rsa FLASH_ORIGIN+2*RESERVED_FLASH :
-    {
-        . = ALIGN (16);
-    } > FLASH
 
     .bss (NOLOAD):
     {

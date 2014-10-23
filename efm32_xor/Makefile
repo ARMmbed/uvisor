@@ -2,14 +2,12 @@ PROJECT:=efm32_box
 ARCH:=EFM32GG
 CPU:=$(ARCH)990F1024
 
-APP_DEFINES:=-DAPP_CLIENT
+APP_DEFINES:=-DLIB_CLIENT
 APP_CFLAGS:=-Iconfig -Isrc $(APP_DEFINES)
 APP_SRC:=\
-	src/main.c \
-	src/xor_wrap.c \
-	src/debug.c
+	src/main.c
 
 include ../core/Makefile.rules
 
 # override flash offset to locate firmware after uVisor
-FLASH_OFFSET:=$(UVISOR_FLASH_SIZE)
+FLASH_OFFSET:=0x40000

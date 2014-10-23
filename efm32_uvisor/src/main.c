@@ -3,35 +3,6 @@
 #include "svc.h"
 #include "config_efm32.h"
 
-/********************************************************************
- * LED
- */
-#define TIMER_WAIT     500
-#define LED_PORT     4
-#define LED_PIN     2
-volatile uint16_t g_counter = 0;
-volatile uint32_t * g_blinks = (volatile uint32_t *) 0x20006000;
-
-static void __timer_irq(void)
-{
-    /* clear timer overflow bit */
-    TIMER0->IFC = 1;
-
-    /* after TIMER_WAIT */
-    if(++g_counter == TIMER_WAIT)
-    {
-        /* increase number of blinks */
-        (*g_blinks)++;
-
-        /* toggle LED */
-        GPIO->P[LED_PORT].DOUTTGL = 1 << LED_PIN;
-
-        /* restart timer */
-        TIMER0->CMD = 0x0;
-    }
-}
-/********************************************************************/
-
 void halt_error(const char* msg)
 {
     dprintf("\nERROR: %s\n", msg);
@@ -41,6 +12,12 @@ void halt_error(const char* msg)
 void default_handler(void)
 {
     halt_error("Spurious IRQ");
+}
+
+/* thunk function for context switch */
+uint32_t thunk(uint32_t res)
+{
+    return CONTEXT_SWITCH_OUT(res);
 }
 
 static inline void hardware_init(void)
@@ -82,19 +59,6 @@ static inline void hardware_init(void)
     /* register SVC call interface */
     svc_init();
 
-/********************************************************************
- * LED
- */
-    CMU->HFPERCLKEN0 = (1 << 13) | (1 << 5);
-    ISR_SET(TIMER0_IRQn, &__timer_irq);
-    NVIC_EnableIRQ(TIMER0_IRQn);
-    GPIO->P[LED_PORT].MODEL = 4 << 8;
-    TIMER0->TOP = TIMER_WAIT;
-    TIMER0->IEN = 1;
-    TIMER0->CMD = 0x1;
-    *g_blinks = (volatile uint32_t) 0;
-/********************************************************************/
-
     /* setup MPU & halt on MPU configuration errors */
     if(mpu_init())
         halt_error("MPU configuration error");
@@ -112,7 +76,6 @@ static void update_client_acl(void)
     res  = mpu_acl_set(CMU,     sizeof(*CMU), 0, MPU_RASR_AP_PRW_URW|MPU_RASR_XN);
     res |= mpu_acl_set(UART1, sizeof(*UART1), 0, MPU_RASR_AP_PRW_URW|MPU_RASR_XN);
     res |= mpu_acl_set(GPIO,   sizeof(*GPIO), 0, MPU_RASR_AP_PRW_URW|MPU_RASR_XN);
-    /* FIXME not so nice... */
     res |= mpu_acl_set((void *) ((uint32_t) DEVINFO - (uint32_t) 0xB0), 0x100, 0, MPU_RASR_AP_PRW_URW|MPU_RASR_XN);
 
     /* should never happen */
@@ -129,19 +92,11 @@ void main_entry(void)
     /* initialize hardware */
     hardware_init();
 
-    /* FIXME add signature verification of unprivileged uvisor box
-     * client. Use stored ACLs to set access privileges for box
-     * (allowed peripherals etc.)
-     */
+    /* check correct firmware relocation */
+    mpu_check_fw_reloc(CLIENT_BOX);
 
-    t = *g_pc[1];
-    if(t == 0xFFFFFFFF)
-        halt_error("please install unprivileged firmware");
-    if(t != (uint32_t) g_pc[1])
-        halt_error("incorrectly relocated unprivileged firmware");
-
-    /* switch stack to unprivileged box */
-    __set_PSP((uint32_t) g_sp[1]);
+    /* switch stack to unprivileged client box */
+    __set_PSP((uint32_t) g_box_stack[CLIENT_BOX]);
 
     /* setting up peripheral access ACL for client box */
     update_client_acl();
@@ -153,15 +108,20 @@ void main_entry(void)
 
     dprintf("uVisor switching to unprivileged mode\n");
 
-    /* switch to unprivileged mode - this is possible as uvisor code
-     * is readable by unprivileged code and only the key-value database
-     * is protected from the unprivileged mode */
+    /* temporary var needed as BOX_ENTRY macro is not available
+     * in unprivileged code */
+    t = (uint32_t) BOX_ENTRY(CLIENT_BOX);
+
+    /* switch to unprivileged mode
+     * this is possible as uvisor code is readable by unprivileged
+     * code and only the key-value database is protected from the
+     * unprivileged mode */
     __set_CONTROL(__get_CONTROL()|3);
     __ISB();
     __DSB();
 
     /* run unprivileged box */
-    (*((UnprivilegedBoxEntry*)((uint32_t) t + 4)))();
+    (*((UnprivilegedBoxEntry*)(t)))();
 
     /* should never happen */
     while(1)

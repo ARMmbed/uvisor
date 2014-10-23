@@ -1,9 +1,20 @@
 #include <iot-os.h>
-#include "rsa.h"
+#include "xor_wrap.h"
 #include "debug.h"
 
-/* RSA start */
-volatile uint32_t * g_rsa_start = (uint32_t *) 0x20006000;
+/* main application export table */
+const ExportTable g_exports = {
+    0,
+    0,
+    0,
+    0,
+    {0x44, 0x55, 0x66, 0x77,\
+     0x44, 0x55, 0x66, 0x77,\
+     0x44, 0x55, 0x66, 0x77,\
+     0x44, 0x55, 0x66, 0x77},
+    0,
+    NULL
+};
 
 static inline void hardware_init(void)
 {
@@ -47,14 +58,13 @@ void main_entry(void)
 
     while(1)
     {
-        /* RSA dummy - rsa operation */
-        if(*g_rsa_start == 4)
-        {
-            dprintf("\nStarting RSA context switch:\n\r");
-            dprintf("Returned value: 0x%x\n\r", rsa(0xfeed));
-            dprintf("Back in box!\n\n\r");
-            *g_rsa_start = 0;
-        }
+        /* xor encryption  */
+            /* wait a bit */
+            uint32_t i = 0;
+            while(i++ < 0xFFFFFF);
+        dprintf("\nxor encryption...\n\r");
+        dprintf("ret: 0x%08X\n\r", xor_enc(0xfeed));
+        dprintf("...done.\n\n\r");
 
         DEBUG_TxByte('X');
     }
