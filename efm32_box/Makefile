@@ -2,11 +2,11 @@ PROJECT:=efm32_box
 ARCH:=EFM32GG
 CPU:=$(ARCH)990F1024
 
-APP_DEFINES:=-DUVISOR_CLIENT
+APP_DEFINES:=-DAPP_CLIENT
 APP_CFLAGS:=-Iconfig -Isrc $(APP_DEFINES)
 APP_SRC:=\
 	src/main.c \
-	src/rsa.c \
+	src/xor_wrap.c \
 	src/debug.c
 
 include ../core/Makefile.rules

@@ -9,3 +9,7 @@ jlink.flash
 JLink.log
 *.c.tags
 .geanyprj
+*.swo
+*.swp
+*.swn
+*~

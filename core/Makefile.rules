@@ -5,6 +5,7 @@ OBJCOPY:=$(PREFIX)objcopy
 OBJDUMP:=$(PREFIX)objdump
 GDB:=$(PREFIX)gdb
 JLINK:=$(SEGGER)JLinkExe
+JLINK_SERVER:=$(SEGGER)JLinkGDBServer
 JLINK_VIEWER:=$(SEGGER)JLinkSWOViewer
 JLINK_VIEWER_MASK:=0x3
 AUXHFRCO_FREQ:=14000000
@@ -88,7 +89,9 @@ swo:
 	$(JLINK_VIEWER) -device $(CPU) -cpufreq $(AUXHFRCO_FREQ) -itmmask $(JLINK_VIEWER_MASK)
 
 gdb: gdb.script
+	$(JLINK_SERVER)&
 	$(GDB) -x $<
+	killall $(JLINK_SERVER)
 
 gdbtui: gdb.script
 	$(GDB)tui -x $<
