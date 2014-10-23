@@ -20,9 +20,6 @@
 /* unprivileged box as called by privileged code */
 typedef void (*UnprivilegedBoxEntry)(void);
 
-/* RSA dummy - unprivileged function as called by privileged code */
-typedef void (*UnprivilegedFunctionEntry)(void);
-
 #define PACKED __attribute__((packed))
 #define WEAK __attribute__ ((weak))
 #define ALIAS(f) __attribute__ ((weak, alias (#f)))
@@ -53,5 +50,8 @@ typedef void (*UnprivilegedFunctionEntry)(void);
 #include <isr.h>
 #include <svc-helper.h>
 #include <linker.h>
+
+/* library context switch utilities */
+#include <exports.h>
 
 #endif/*__IOT_OS_H__*/

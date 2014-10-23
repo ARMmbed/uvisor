@@ -1,7 +1,7 @@
 #include <iot-os.h>
 #include <isr.h>
 
-#ifndef  UVISOR_CLIENT
+#ifdef UVISOR
 /* actual vector table in RAM */
 __attribute__ ((section(".isr_vector")))
 TIsrVector g_isr_vector[MAX_ISR_VECTORS];
@@ -10,9 +10,20 @@ void __attribute__ ((weak, noreturn)) default_handler(void)
 {
     while(1);
 }
-#endif/*UVISOR_CLIENT*/
+#endif/*UVISOR*/
 
-void __attribute__ ((noreturn)) reset_handler(void)
+/* load required libraries */
+#if    defined(APP_CLIENT) || defined(LIB_CLIENT)
+void load_libraries(void)
+{
+    uint32_t *lib_loader = &__lib_init_start__;
+
+    while(lib_loader < &__lib_init_end__)
+        (*((LibInitFunc)((uint32_t) *(lib_loader++))))();
+}
+#endif/*defined(APP_CLIENT) || defined(LIB_CLIENT)*/
+
+void __attribute__((noreturn)) reset_handler(void)
 {
     uint32_t *dst;
     const uint32_t* src;
@@ -23,40 +34,47 @@ void __attribute__ ((noreturn)) reset_handler(void)
     while(dst<&__data_end__)
         *dst++ = *src++;
 
-#ifndef UVISOR_CLIENT
+#ifdef  UVISOR
     /* set VTOR to default handlers */
     dst = (uint32_t*)&g_isr_vector;
     while(dst<((uint32_t*)&g_isr_vector[MAX_ISR_VECTORS]))
         *dst++ = (uint32_t)&default_handler;
     SCB->VTOR = (uint32_t)&g_isr_vector;
-#endif/*UVISOR_CLIENT*/
+#endif/*UVISOR*/
 
     /* set bss to zero */
     dst = &__bss_start__;
     while(dst<&__bss_end__)
         *dst++ = 0;
 
-#ifndef UVISOR_CLIENT
+#if    defined(APP_CLIENT) || defined(LIB_CLIENT)
+    load_libraries();
+#endif/*defined(APP_CLIENT) || defined(LIB_CLIENT)*/
+
+#ifdef  UVISOR
     /* initialize system if needed */
     SystemInit();
-#endif/*UVISOR_CLIENT*/
+#endif/*UVISOR*/
 
+#ifndef LIB_CLIENT
     main_entry();
-    while(1){};
+#endif/*LIB_CLIENT*/
+    while(1);
 }
 
 /* initial vector table - just needed for boot process */
 __attribute__ ((section(".isr_vector_tmp")))
 const TIsrVector g_isr_vector_tmp[] =
 {
-#ifdef  UVISOR_CLIENT
-    (TIsrVector)&g_isr_vector_tmp,    /* Verify Relocation for uvisor client */
-#else /*UVISOR_CLIENT*/
-#ifdef STACK_POINTER
-    (TIsrVector)STACK_POINTER,        /* Override Stack pointer if needed */
+#if      defined(APP_CLIENT) || defined(LIB_CLIENT)
+    (TIsrVector)&g_isr_vector_tmp,        /* verify relocation for uvisor client */
+    (TIsrVector)&g_exports,            /* box export table */
+#else /*defined(APP_CLIENT) || defined(LIB_CLIENT)*/
+#ifdef  STACK_POINTER
+    (TIsrVector)STACK_POINTER,        /* override Stack pointer if needed */
 #else /*STACK_POINTER*/
-    (TIsrVector)&__stack_end__,        /* Initial Stack Pointer */
+    (TIsrVector)&__stack_end__,        /* initial Stack Pointer */
 #endif/*STACK_POINTER*/
-#endif/*UVISOR_CLIENT*/
-    reset_handler,                    /* Reset Handler */
+#endif/*defined(APP_CLIENT) || defined(LIB_CLIENT)*/
+    reset_handler,                /* reset Handler */
 };

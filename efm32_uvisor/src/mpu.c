@@ -31,9 +31,14 @@ static uint32_t mpu_aligment_mask;
 static void* g_config_start;
 uint32_t g_config_size;
 
-/* stack and code pointers */
-volatile uint32_t * g_sp[MPU_REGION_SPLIT];
-volatile uint32_t * g_pc[MPU_REGION_SPLIT];
+/* box stack pointers */
+uint32_t * g_box_stack[MPU_REGION_SPLIT];
+
+/* active boxes in context switch */
+uint32_t * g_act_box;
+
+/* FIXME make globally available helper functions: thunk, halt_error */
+extern void halt_error(const char *);
 
 /* calculate rounded section alignment */
 uint8_t mpu_region_bits(uint32_t size)
@@ -180,8 +185,7 @@ static void mpu_fault_memory_management(void)
         if((address & region->mask) == region->base)
         {
             dprintf("  caught access to 0x%08X (base=0x%08X) - MPU reprogrammed\n\r", address, region->base);
-            /* FIXME remove this */
-            if(address == 0xe000ed34) while(1);
+
             /* update MPU with new region */
             MPU->RNR  = ++g_dyn_region < MPU_DYN_REGIONS ? g_dyn_region : (g_dyn_region = 0);
             MPU->RBAR = region->mpu.rbar;
@@ -237,6 +241,7 @@ static int mpu_init_uvisor(void)
 
     /* calculate guard bands */
     t = (1<<(t/STACK_GUARD_BAND_SIZE)) | 0x80;
+
     /* protect uvisor RAM, punch holes for guard bands above the stack
      * and below the stack */
     res = mpu_set(7,
@@ -245,7 +250,6 @@ static int mpu_init_uvisor(void)
         MPU_RASR_AP_PRW_UNO|MPU_RASR_CB_WB_WRA|MPU_RASR_XN|MPU_RASR_SRD(t)
     );
 
-    /* FIXME added SUBREGION_SRAM_SIZE so that sub-region #0 (16KB) is protected */
     /* set uvisor RAM guard bands to RO & inaccessible to all code */
     res|= mpu_set(6,
         (void*)RAM_MEM_BASE,
@@ -265,10 +269,11 @@ static int mpu_init_uvisor(void)
         MPU_RASR_AP_PRO_UNO|MPU_RASR_CB_WB_WRA|MPU_RASR_XN|MPU_RASR_SRD((1<<t)-1)
     );
 
-    /* create mask for SRD: all regions disabled except for
-     *   #0 (uvisor)
-     *   #1 (unprivileged box) */
+    /* create mask for subregions: all subregions disabled except for
+     *   #0 (uVisor)
+     *   #1 (unprivileged application main) */
     t = 0xFC;
+
     /* allow access to flash */
     res|= mpu_set(4,
         (void*)FLASH_MEM_BASE,
@@ -276,10 +281,6 @@ static int mpu_init_uvisor(void)
         MPU_RASR_AP_PRO_URO|MPU_RASR_CB_WT|MPU_RASR_SRD(t)
     );
 
-    /* create mask for SRD: all regions disabled except for
-     *   #0 (uvisor)
-     *   #1 (unprivileged box) */
-    t = 0xFC;
     /* allow access to unprivileged user SRAM */
     res|= mpu_set(3,
         (void*)RAM_MEM_BASE,
@@ -311,16 +312,52 @@ void mpu_acl_debug(void)
                 region->priority);
 }
 
-/* initilize stack pointers for the whole SRAM region */
+/* initilize stack pointers for all boxes */
 void mpu_init_ptrs()
 {
     int i;
 
     for(i = 0; i < MPU_REGION_SPLIT; i++)
+        g_box_stack[i] = BOX_STACK(i);
+
+    *(g_act_box = ACT_BOX_STACK_PTR - 1) = ACT_BOX_STACK_INIT;
+}
+
+/* FIXME add signature verification of unprivileged uvisor box
+ * client. Use stored ACLs to set access privileges for box
+ * (allowed peripherals etc.) */
+/* check if firmware module has been correctly relocated */
+void mpu_check_fw_reloc(int box_number)
+{
+    uint32_t *reloc_id = BOX_CHECK(box_number);
+
+    if(*reloc_id == 0xFFFFFFFF)
     {
-        g_sp[i] = MPU_STACK(i);
-        g_pc[i] = MPU_CODE(i);
+        dprintf("box %d:\n", box_number);
+        halt_error("please install unprivileged firmware");
     }
+    if(reloc_id != (uint32_t *) *reloc_id)
+    {
+        dprintf("box %d:\n", box_number);
+        halt_error("incorrectly relocated unprivileged firmware");
+    }
+}
+
+/* check if unprivileged code can access a given exception stack frame */
+void mpu_check_permissions(uint32_t *mem_ptr)
+{
+    asm volatile(
+        "LDRT    r1, [r0, #0]\n"
+        "ADD    r0, r0, %0\n"
+        "LDRT    r1, [r0, #0]\n"
+           :: "i" (-sizeof(uint32_t) * (EXC_SF_SIZE + 1))
+    );
+}
+
+/* check fort over-/underflow in stack of active boxes (still open context switches) */
+int mpu_check_act_box_stack(void)
+{
+    return (g_act_box < ACT_BOX_STACK_PTR && g_act_box > ACT_BOX_STACK_MIN);
 }
 
 int mpu_init(void)
@@ -347,7 +384,7 @@ int mpu_init(void)
     /* enable mem, bus and usage faults */
     SCB->SHCSR |= 0x70000;
 
-    /* initialize code and stack pointers */
+    /* initialize stack pointers */
     mpu_init_ptrs();
 
     /* configure uvisor MPU configuration */
