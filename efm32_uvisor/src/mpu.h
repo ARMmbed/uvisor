@@ -20,33 +20,30 @@
 /* exception frame dimension (words) */
 #define EXC_SF_SIZE    8    // no fp operations
 
-/* FIXME modules/libraries may span over more than one sub-region, hence stack ptrs and entry
- * points should be made module-relative, and not sub-region-relative */
-/* code and stack pointers
- * each sub-region has its own
- *     - stack         BOX_STACK(subregion_#)
- *     - entry point        BOX_ENTRY(subregion_#)
- *    - magic value        BOX_CHECK(subregion_#)    to check correct firmware relocation
- *    - description table    BOX_TABLE(subregion_#    except for the uVisor
- */
-#define TABLE_OFFSET    ((uint32_t) 0x4)
-#define ENTRY_OFFSET    ((uint32_t) 0x8)
-#define BOX_CHECK(x)    ((uint32_t *)      (FLASH_MEM_BASE + x * FLASH_SUBREGION_SIZE))
-#define BOX_TABLE(x)    ((ExportTable *) *((uint32_t *) (FLASH_MEM_BASE + x * FLASH_SUBREGION_SIZE + TABLE_OFFSET)))
-#define BOX_ENTRY(x)    ((uint32_t *)      (FLASH_MEM_BASE + x * FLASH_SUBREGION_SIZE + ENTRY_OFFSET))
-#define BOX_STACK(x)    ((uint32_t *)      (RAM_MEM_BASE + (x + 1) * RAM_SUBREGION_SIZE))
-
-/* box stacks are updated at runtime by the uVisor during context switches */
-extern uint32_t * g_box_stack[MPU_REGION_SPLIT];
-
 /* stack of active boxes
- * context switches can be nested and a dedicated stack is used to fetch
- * src and dst boxes */
+ * a dedicated stack is used to fetch src and dst boxes
+ * during context switch and interrupt handling */
 #define ACT_BOX_STACK_SIZE    ((uint32_t *) 0x100)
 #define ACT_BOX_STACK_PTR    ((uint32_t *) 0x20002000)
 #define ACT_BOX_STACK_MIN    ((uint32_t *) (ACT_BOX_STACK_PTR - ACT_BOX_STACK_SIZE))
-#define ACT_BOX_STACK_INIT    ((uint32_t)   0x00010001)
-extern uint32_t * g_act_box;
+#define ACT_BOX_STACK_INIT    ((uint32_t)   0x01010101)
+extern uint32_t *g_act_box;
+
+/* check for over-/underflow in stack of active boxes */
+static inline int mpu_check_act_box_stack(void)
+{
+    return (g_act_box < ACT_BOX_STACK_PTR && g_act_box > ACT_BOX_STACK_MIN);
+}
+
+/* box type */
+typedef struct box {
+    uint32_t span;
+    Guid guid;
+    uint32_t *sp;
+} Box;
+
+/* vector of boxes */
+extern Box g_boxes[MPU_REGION_SPLIT];
 
 #define MPU_RASR_AP_PNO_UNO (0x00UL<<MPU_RASR_AP_Pos)
 #define MPU_RASR_AP_PRW_UNO (0x01UL<<MPU_RASR_AP_Pos)
@@ -68,7 +65,7 @@ extern int mpu_set(uint8_t region, void* base, uint32_t size, uint32_t flags);
 extern int mpu_acl_set(void* base, uint32_t size, uint8_t priority, uint32_t flags);
 extern void mpu_acl_debug(void);
 extern void mpu_check_permissions(uint32_t *);
-extern int mpu_check_act_box_stack(void);
-extern void mpu_check_fw_reloc(int);
+extern uint32_t mpu_which_box(uint32_t);
+//extern int mpu_check_act_box_stack(void);
 
 #endif/*__MPU_H__*/

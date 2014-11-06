@@ -14,16 +14,16 @@ void __attribute__ ((weak, noreturn)) default_handler(void)
 
 /* load required libraries */
 #if    defined(APP_CLIENT) || defined(LIB_CLIENT)
-void load_libraries(void)
+void load_boxes(void)
 {
-    uint32_t *lib_loader = &__lib_init_start__;
+    uint32_t *box_loader = &__box_init_start__;
 
-    while(lib_loader < &__lib_init_end__)
-        (*((LibInitFunc)((uint32_t) *(lib_loader++))))();
+    while(box_loader < &__box_init_end__)
+        (*((BoxInitFunc)((uint32_t) *(box_loader++))))();
 }
 #endif/*defined(APP_CLIENT) || defined(LIB_CLIENT)*/
 
-void __attribute__((noreturn)) reset_handler(void)
+void reset_handler(void)
 {
     uint32_t *dst;
     const uint32_t* src;
@@ -48,7 +48,7 @@ void __attribute__((noreturn)) reset_handler(void)
         *dst++ = 0;
 
 #if    defined(APP_CLIENT) || defined(LIB_CLIENT)
-    load_libraries();
+    load_boxes();
 #endif/*defined(APP_CLIENT) || defined(LIB_CLIENT)*/
 
 #ifdef  UVISOR
@@ -56,10 +56,10 @@ void __attribute__((noreturn)) reset_handler(void)
     SystemInit();
 #endif/*UVISOR*/
 
-#ifndef LIB_CLIENT
     main_entry();
-#endif/*LIB_CLIENT*/
+#ifndef LIB_CLIENT
     while(1);
+#endif/*LIB_CLIENT*/
 }
 
 /* initial vector table - just needed for boot process */
@@ -67,8 +67,8 @@ __attribute__ ((section(".isr_vector_tmp")))
 const TIsrVector g_isr_vector_tmp[] =
 {
 #if      defined(APP_CLIENT) || defined(LIB_CLIENT)
-    (TIsrVector)&g_isr_vector_tmp,        /* verify relocation for uvisor client */
-    (TIsrVector)&g_exports,            /* box export table */
+    reset_handler,
+    //(TIsrVector)&g_isr_vector_tmp,        /* verify module relocation module */
 #else /*defined(APP_CLIENT) || defined(LIB_CLIENT)*/
 #ifdef  STACK_POINTER
     (TIsrVector)STACK_POINTER,        /* override Stack pointer if needed */
@@ -78,3 +78,4 @@ const TIsrVector g_isr_vector_tmp[] =
 #endif/*defined(APP_CLIENT) || defined(LIB_CLIENT)*/
     reset_handler,                /* reset Handler */
 };
+

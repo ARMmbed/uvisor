@@ -1,7 +1,7 @@
 #include <iot-os.h>
 
 /* xor exported functions */
-typedef enum {init = 0, enc, dec} XORFunction;
+typedef enum {init = 0, enc} XorFunction;
 
 /* xor GUID */
 static const Guid xor_guid = {
@@ -15,31 +15,18 @@ static const Guid xor_guid = {
 static uint32_t g_xor_box;
 
 /* xor library loader */
-static uint32_t xor_init(void)
+static void xor_init(void)
 {
-    if(!(g_xor_box = LIB_INIT(xor_guid)))
-    {
+    if(!(g_xor_box = get_box_num(xor_guid)))
         dprintf("Error. Box not found\n\r");
-        return -1;
-    }
-    else
-    {
-        CONTEXT_SWITCH_IN(init, g_xor_box, 0);
-        return 0;
-    }
+    return;
 }
 
 /* xor library loader (ptr) */
-uint32_t __attribute__((section(".lib_init"))) g_xor_init = (uint32_t) xor_init;
+uint32_t __attribute__((section(".box_init"))) g_xor_init = (uint32_t) xor_init;
 
 /* xor functions - encrypt */
 uint32_t xor_enc(uint32_t a0)
 {
-    return CONTEXT_SWITCH_IN(enc, g_xor_box, a0);
-}
-
-/* xor functions - decrypt */
-uint32_t xor_dec(uint32_t a0)
-{
-    return CONTEXT_SWITCH_IN(dec, g_xor_box, a0);
+    return context_switch_in(enc, g_xor_box);
 }

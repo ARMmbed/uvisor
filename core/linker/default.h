@@ -39,14 +39,15 @@ SECTIONS
 {
     .text :
     {
+        KEEP(*(.box_header))
         KEEP(*(.isr_vector_tmp))
         *(.svc_vector*)
         *(.text*)
         *(.rodata*)
         . = ALIGN(4);
-        __lib_init_start__ = .;
-        KEEP(*(.lib_init*))
-        __lib_init_end__ = .;
+        __box_init_start__ = .;
+        KEEP(*(.box_init*))
+        __box_init_end__ = .;
         PROVIDE(__data_start_src__ = LOADADDR(.data));
         PROVIDE(__stack_end__ = ORIGIN(RAM) + LENGTH(RAM));
         . = ALIGN(16);

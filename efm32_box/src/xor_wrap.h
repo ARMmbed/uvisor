@@ -3,6 +3,5 @@
 
 /* xor functions */
 uint32_t xor_enc(uint32_t);
-uint32_t xor_dec(uint32_t);
 
 #endif /*__XOR_WRAP_H__*/
