@@ -9,8 +9,8 @@ typedef void (*TIsrVector)(void);
 EXTERN TIsrVector g_isr_vector[MAX_ISR_VECTORS];
 EXTERN void main_entry(void);
 
-typedef uint32_t (*LibInitFunc)(void);
-extern uint32_t __lib_init_start__;
-extern uint32_t __lib_init_end__;
+typedef uint32_t (*BoxInitFunc)(void);
+extern uint32_t __box_init_start__;
+extern uint32_t __box_init_end__;
 
 #endif/*__ISR_H__*/

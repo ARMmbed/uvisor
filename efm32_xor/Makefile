@@ -1,11 +1,12 @@
-PROJECT:=efm32_box
+PROJECT:=efm32_xor
 ARCH:=EFM32GG
 CPU:=$(ARCH)990F1024
 
 APP_DEFINES:=-DLIB_CLIENT
 APP_CFLAGS:=-Iconfig -Isrc $(APP_DEFINES)
 APP_SRC:=\
-	src/main.c
+	src/main.c\
+	src/timer_wrap.c
 
 include ../core/Makefile.rules
 

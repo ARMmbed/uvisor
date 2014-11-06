@@ -1,20 +1,7 @@
 #include <iot-os.h>
 #include "xor_wrap.h"
+#include "timer_wrap.h"
 #include "debug.h"
-
-/* main application export table */
-const ExportTable g_exports = {
-    0,
-    0,
-    0,
-    0,
-    {0x44, 0x55, 0x66, 0x77,\
-     0x44, 0x55, 0x66, 0x77,\
-     0x44, 0x55, 0x66, 0x77,\
-     0x44, 0x55, 0x66, 0x77},
-    0,
-    NULL
-};
 
 static inline void hardware_init(void)
 {
@@ -43,14 +30,6 @@ void main_entry(void)
 {
     dprintf("[unprivileged entry!]");
 
-    /* SVC test calls */
-    __SVC0(1);
-    __SVC0(2);
-    __SVC1(3,0x11111111);
-    __SVC2(4,0x11111111,0x22222222);
-    __SVC3(5,0x11111111,0x22222222,0x33333333);
-    __SVC4(6,0x11111111,0x22222222,0x33333333,0x44444444);
-
     /* initialize hardware */
     hardware_init();
 
@@ -59,9 +38,8 @@ void main_entry(void)
     while(1)
     {
         /* xor encryption  */
-            /* wait a bit */
-            uint32_t i = 0;
-            while(i++ < 0xFFFFFF);
+        timer_start();
+        timer_stop();
         dprintf("\nxor encryption...\n\r");
         dprintf("ret: 0x%08X\n\r", xor_enc(0xfeed));
         dprintf("...done.\n\n\r");
@@ -69,3 +47,17 @@ void main_entry(void)
         DEBUG_TxByte('X');
     }
 }
+
+/* main application header table */
+const HeaderTable g_hdr_tbl = {
+    0xDEAD,                // magic value
+    0,                // version
+    0,                // length
+    0,                // # of exported fn
+    NULL,                // fn_table
+    {0x44, 0x55, 0x66, 0x77,\    // GUID
+     0x44, 0x55, 0x66, 0x77,\
+     0x44, 0x55, 0x66, 0x77,\
+     0x44, 0x55, 0x66, 0x77},
+};
+

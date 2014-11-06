@@ -1,7 +1,13 @@
 #include <iot-os.h>
 #include "mpu.h"
 
-#define UVISOR_FLASH_BAND (UVISOR_FLASH_SIZE/8)
+/* boxes */
+Box g_boxes[MPU_REGION_SPLIT];
+
+/* active boxes in context switch or interrupt handling */
+uint32_t * g_act_box;
+
+#define UVISOR_FLASH_BAND (UVISOR_FLASH_SIZE / 8)
 
 #define MPU_FAULT_USAGE  0x00
 #define MPU_FAULT_MEMORY 0x01
@@ -30,12 +36,6 @@ static int g_dyn_region = 0;
 static uint32_t mpu_aligment_mask;
 static void* g_config_start;
 uint32_t g_config_size;
-
-/* box stack pointers */
-uint32_t * g_box_stack[MPU_REGION_SPLIT];
-
-/* active boxes in context switch */
-uint32_t * g_act_box;
 
 /* FIXME make globally available helper functions: thunk, halt_error */
 extern void halt_error(const char *);
@@ -312,39 +312,8 @@ void mpu_acl_debug(void)
                 region->priority);
 }
 
-/* initilize stack pointers for all boxes */
-void mpu_init_ptrs()
-{
-    int i;
-
-    for(i = 0; i < MPU_REGION_SPLIT; i++)
-        g_box_stack[i] = BOX_STACK(i);
-
-    *(g_act_box = ACT_BOX_STACK_PTR - 1) = ACT_BOX_STACK_INIT;
-}
-
-/* FIXME add signature verification of unprivileged uvisor box
- * client. Use stored ACLs to set access privileges for box
- * (allowed peripherals etc.) */
-/* check if firmware module has been correctly relocated */
-void mpu_check_fw_reloc(int box_number)
-{
-    uint32_t *reloc_id = BOX_CHECK(box_number);
-
-    if(*reloc_id == 0xFFFFFFFF)
-    {
-        dprintf("box %d:\n", box_number);
-        halt_error("please install unprivileged firmware");
-    }
-    if(reloc_id != (uint32_t *) *reloc_id)
-    {
-        dprintf("box %d:\n", box_number);
-        halt_error("incorrectly relocated unprivileged firmware");
-    }
-}
-
 /* check if unprivileged code can access a given exception stack frame */
-void mpu_check_permissions(uint32_t *mem_ptr)
+inline void mpu_check_permissions(uint32_t *mem_ptr)
 {
     asm volatile(
         "LDRT    r1, [r0, #0]\n"
@@ -354,10 +323,10 @@ void mpu_check_permissions(uint32_t *mem_ptr)
     );
 }
 
-/* check fort over-/underflow in stack of active boxes (still open context switches) */
-int mpu_check_act_box_stack(void)
+/* FIXME add control if box number corresponds to handler */
+inline uint32_t mpu_which_box(uint32_t hdlr)
 {
-    return (g_act_box < ACT_BOX_STACK_PTR && g_act_box > ACT_BOX_STACK_MIN);
+    return  ((hdlr - FLASH_MEM_BASE) / FLASH_SUBREGION_SIZE);
 }
 
 int mpu_init(void)
@@ -383,9 +352,6 @@ int mpu_init(void)
 
     /* enable mem, bus and usage faults */
     SCB->SHCSR |= 0x70000;
-
-    /* initialize stack pointers */
-    mpu_init_ptrs();
 
     /* configure uvisor MPU configuration */
     res = mpu_init_uvisor();
