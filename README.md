@@ -81,24 +81,23 @@ MPU region dump:
 	R:4 RBAR=0x00000004 RASR=0x0602FC27
 	R:5 RBAR=0x00000005 RASR=0x15010121
 	R:6 RBAR=0x20000006 RASR=0x10010017
-	R:7 RBAR=0x20000007 RASR=0x11018217
+	R:7 RBAR=0x20000007 RASR=0x11018417
 	CTRL=0x00000000
 MPU ACL list - maximum of 8 entries:
   00: @0x400C8000 size=0x0080 pri=0
   01: @0x4000E400 size=0x0080 pri=0
   02: @0x40006000 size=0x0100 pri=0
-  03: @0x0FE08100 size=0x0100 pri=0
+  03: @0x40010400 size=0x0080 pri=0
+  04: @0x0FE08100 size=0x0100 pri=0
 uVisor switching to unprivileged mode
-cb_test_param0()
-cb_test_param0()
-cb_test_param1(0x11111111)
-cb_test_param2(0x11111111,0x22222222)
-cb_test_param3(0x11111111,0x22222222,0x33333333)
-cb_test_param4(0x11111111,0x22222222,0x33333333,0x44444444)
-  caught access to 0x400C8000 (base=0x400C8000) - MPU reprogrammed
+  caught access to 0x400C8044 (base=0x400C8000) - MPU reprogrammed
+  caught access to 0x40006094 (base=0x40006000) - MPU reprogrammed
   caught access to 0x0FE081E0 (base=0x0FE08100) - MPU reprogrammed
   caught access to 0x4000E414 (base=0x4000E400) - MPU reprogrammed
-  caught access to 0x40006030 (base=0x40006000) - MPU reprogrammed
+  caught access to 0x4001041C (base=0x40010400) - MPU reprogrammed
+  caught access to 0x400060A8 (base=0x40006000) - MPU reprogrammed
+timer initialized!
+xor initialized!
 hardware initialized, running main loop...
 
 xor encryption...
