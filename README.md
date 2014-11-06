@@ -51,8 +51,9 @@ Development should work in Linux and Mac
 ### Quickstart
 
 Currently the Client application is made of two mutually untrusted modules:
-* box - the main application
-* xor - an example library to show modules isolation and secure context switch
+* box   - the main application
+* xor   - an example library to show modules isolation and secure context switch
+* timer - an example library to show modules isolation and unprivileged interrupt handling
 
 #### Flash both uvisor and client:
 ```Bash
