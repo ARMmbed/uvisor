@@ -61,6 +61,7 @@ make -C efm32_uvisor clean all erase flash
  
 # keeping the uVisor, rebuild cryptobox guest application modules, 
 # flash them, reset CPU and start SWD terminal with debug output
+make -C efm32_timer  clean all flash 
 make -C efm32_xor    clean all flash 
 make -C efm32_box    clean all flash reset swo
 ```
