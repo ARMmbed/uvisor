@@ -2,7 +2,7 @@
 
 #include <uvisor-config.h>
 
-#define CHANNEL_DEBUG 0
+#define CHANNEL_DEBUG 2
 
 #define XTAL_FREQUENCY 48000000UL
 #define RESERVED_FLASH 2 * UVISOR_FLASH_SIZE 

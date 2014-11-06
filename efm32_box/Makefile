@@ -6,6 +6,7 @@ APP_DEFINES:=-DAPP_CLIENT
 APP_CFLAGS:=-Iconfig -Isrc $(APP_DEFINES)
 APP_SRC:=\
 	src/main.c \
+	src/timer_wrap.c \
 	src/xor_wrap.c \
 	src/debug.c
 
