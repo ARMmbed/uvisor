@@ -8,4 +8,4 @@ APP_SRC:=\
 	src/crc16.c \
 	src/debug.c
 
-include ../core/Makefile.rules
+include ../../core/Makefile.rules

@@ -9,4 +9,4 @@ APP_SRC:=\
 	src/mpu.c \
 	src/svc.c
 
-include ../core/Makefile.rules
+include ../../core/Makefile.rules
