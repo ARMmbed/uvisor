@@ -3,6 +3,8 @@
 *.map
 *.asm
 *.bin
+*.hex
+*.axf
 *.linker
 gdb.script
 jlink.flash
