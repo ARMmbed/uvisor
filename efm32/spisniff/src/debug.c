@@ -35,7 +35,7 @@
  * arising from your use of this Software.
  *
  *****************************************************************************/
-#include <iot-os.h>
+#include <uvisor.h>
 #include "debug.h"
 
 /* point USART_txByte to default_putc of printf */

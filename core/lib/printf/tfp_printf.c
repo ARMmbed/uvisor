@@ -29,7 +29,7 @@
  * OF SUCH DAMAGE.
  */
 
-#include <iot-os.h>
+#include <uvisor.h>
 #include "tfp_printf.h"
 
 #ifdef PRINTF_LONG_SUPPORT

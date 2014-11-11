@@ -1,4 +1,4 @@
-#include <iot-os.h>
+#include <uvisor.h>
 
 /* xor exported functions */
 typedef enum {init = 0, enc} XorFunction;

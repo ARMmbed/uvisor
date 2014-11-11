@@ -1,4 +1,4 @@
-#include <iot-os.h>
+#include <uvisor.h>
 
 /* timer exported functions */
 typedef enum {init = 0, start, stop} TimerFunction;
