@@ -10,7 +10,7 @@ JLINK_VIEWER:=$(SEGGER)JLinkSWOViewer
 JLINK_VIEWER_MASK:=0x7
 AUXHFRCO_FREQ:=14000000
 
-CORE:=../core
+CORE:=../../core
 
 SYSTEM:=$(CORE)/system
 LIB:=$(CORE)/lib

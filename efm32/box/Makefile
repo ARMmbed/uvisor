@@ -10,7 +10,7 @@ APP_SRC:=\
 	src/xor_wrap.c \
 	src/debug.c
 
-include ../core/Makefile.rules
+include ../../core/Makefile.rules
 
 # override flash offset to locate firmware after uVisor
 FLASH_OFFSET:=$(UVISOR_FLASH_SIZE)
