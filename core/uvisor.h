@@ -24,10 +24,8 @@ typedef void (*UnprivilegedBoxEntry)(void);
 #define WEAK __attribute__ ((weak))
 #define ALIAS(f) __attribute__ ((weak, alias (#f)))
 
-/* EFM32 definitions */
-#ifdef  EFM32GG
-#include <em_device.h>
-#endif/*EFM32GG*/
+/* device-specific definitions */
+#include "uvisor-device.h"
 
 /* per-project-configuration */
 #include <config.h>
