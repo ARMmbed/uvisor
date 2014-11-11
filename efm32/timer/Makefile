@@ -7,7 +7,7 @@ APP_CFLAGS:=-Iconfig -Isrc $(APP_DEFINES)
 APP_SRC:=\
 	src/main.c
 
-include ../core/Makefile.rules
+include ../../core/Makefile.rules
 
 # override flash offset to locate firmware after uVisor
 FLASH_OFFSET:=0x60000
