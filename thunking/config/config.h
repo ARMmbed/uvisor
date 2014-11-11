@@ -1,7 +1,0 @@
-#ifndef  __CONFIG_H__
-
-#define CHANNEL_DEBUG 1
-#define XTAL_FREQUENCY 48000000UL
-#define STACK_MINIMUM_SIZE 8192
-
-#endif /*__CONFIG_H__*/
