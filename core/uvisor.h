@@ -1,5 +1,5 @@
-#ifndef __IOT_OS_H__
-#define __IOT_OS_H__
+#ifndef __UVISOR_H__
+#define __UVISOR_H__
 
 #ifdef  __cplusplus
 #  define EXTERN extern "C"
@@ -25,7 +25,9 @@ typedef void (*UnprivilegedBoxEntry)(void);
 #define ALIAS(f) __attribute__ ((weak, alias (#f)))
 
 /* EFM32 definitions */
+#ifdef  EFM32GG
 #include <em_device.h>
+#endif/*EFM32GG*/
 
 /* per-project-configuration */
 #include <config.h>
@@ -54,4 +56,4 @@ typedef void (*UnprivilegedBoxEntry)(void);
 /* library context switch utilities */
 #include <exports.h>
 
-#endif/*__IOT_OS_H__*/
+#endif/*__UVISOR_H__*/
