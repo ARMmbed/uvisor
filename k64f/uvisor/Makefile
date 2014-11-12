@@ -7,3 +7,5 @@ APP_SRC:=\
 	src/main.c
 
 include ../../core/Makefile.rules
+
+mbed: $(PROJECT).bin
