@@ -7,6 +7,9 @@
 #  define EXTERN extern
 #endif/*__CPP__*/
 
+/* ensure  that SoC initialization is ignored */
+#define NOSYSTEM
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
