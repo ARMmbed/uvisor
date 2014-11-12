@@ -51,11 +51,6 @@ void reset_handler(void)
     load_boxes();
 #endif/*defined(APP_CLIENT) || defined(LIB_CLIENT)*/
 
-#ifdef  UVISOR
-    /* initialize system if needed */
-    SystemInit();
-#endif/*UVISOR*/
-
     main_entry();
 #ifndef LIB_CLIENT
     while(1);
