@@ -1,7 +1,7 @@
 #include <uvisor.h>
 #include <isr.h>
 
-#ifdef UVISOR
+#if defined(UVISOR) && !defined(NOSYSTEM)
 /* actual vector table in RAM */
 __attribute__ ((section(".isr_vector")))
 TIsrVector g_isr_vector[MAX_ISR_VECTORS];
@@ -10,7 +10,7 @@ void __attribute__ ((weak, noreturn)) default_handler(void)
 {
     while(1);
 }
-#endif/*UVISOR*/
+#endif/*UVISOR && !NOSYSTEM*/
 
 /* load required libraries */
 #if    defined(APP_CLIENT) || defined(LIB_CLIENT)
@@ -34,13 +34,13 @@ void reset_handler(void)
     while(dst<&__data_end__)
         *dst++ = *src++;
 
-#ifdef  UVISOR
+#if defined(UVISOR) && !defined(NOSYSTEM)
     /* set VTOR to default handlers */
     dst = (uint32_t*)&g_isr_vector;
     while(dst<((uint32_t*)&g_isr_vector[MAX_ISR_VECTORS]))
         *dst++ = (uint32_t)&default_handler;
     SCB->VTOR = (uint32_t)&g_isr_vector;
-#endif/*UVISOR*/
+#endif/*UVISOR && !NOSYSTEM*/
 
     /* set bss to zero */
     dst = &__bss_start__;
@@ -57,6 +57,7 @@ void reset_handler(void)
 #endif/*LIB_CLIENT*/
 }
 
+#ifndef NOSYSTEM
 /* initial vector table - just needed for boot process */
 __attribute__ ((section(".isr_vector_tmp")))
 const TIsrVector g_isr_vector_tmp[] =
@@ -73,4 +74,4 @@ const TIsrVector g_isr_vector_tmp[] =
 #endif/*defined(APP_CLIENT) || defined(LIB_CLIENT)*/
     reset_handler,                /* reset Handler */
 };
-
+#endif/*NOSYSTEM*/

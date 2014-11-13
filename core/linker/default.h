@@ -39,6 +39,7 @@ SECTIONS
 {
     .text :
     {
+        *(.text.reset_handler)
         KEEP(*(.box_header))
         KEEP(*(.isr_vector_tmp))
         *(.svc_vector*)
