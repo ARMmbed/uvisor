@@ -8,4 +8,10 @@ APP_SRC:=\
 
 include ../../core/Makefile.rules
 
-mbed: $(PROJECT).bin
+mbed: mbed.a
+
+mbed.a: mbed.o
+	$(AR) rcs $@ $<
+
+mbed.o: $(PROJECT).bin
+	$(AS) -o $@ mbed/uvisor.S

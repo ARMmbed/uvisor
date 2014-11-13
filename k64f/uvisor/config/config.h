@@ -2,6 +2,9 @@
 
 #include <uvisor-config.h>
 
+/* ensure  that SoC initialization is ignored */
+#define NOSYSTEM
+
 #define CHANNEL_DEBUG 1
 #define XTAL_FREQUENCY 48000000UL
 

@@ -1,4 +1,5 @@
 PREFIX:=arm-none-eabi-
+AS:=$(PREFIX)as
 CC:=$(PREFIX)gcc
 CXX:=$(PREFIX)g++
 OBJCOPY:=$(PREFIX)objcopy
