@@ -1,10 +1,11 @@
-.global uvisor_init
-
 #include "config/config.h"
 
 .section .uvisor.text
 .thumb
+.thumb_func
 .align 5
+.globl uvisor_init
+.type  uvisor_init, %function
 uvisor_init:
 .incbin "k64f_uvisor.bin"
 .align 5

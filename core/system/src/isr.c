@@ -52,7 +52,7 @@ void reset_handler(void)
 #endif/*defined(APP_CLIENT) || defined(LIB_CLIENT)*/
 
     main_entry();
-#ifndef LIB_CLIENT
+#if     !defined(LIB_CLIENT) && !defined(NOSYSTEM)
     while(1);
 #endif/*LIB_CLIENT*/
 }
