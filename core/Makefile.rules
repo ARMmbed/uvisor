@@ -53,6 +53,7 @@ CFLAGS_PRE:=\
         $(WARNING) \
         -D$(ARCH) \
         -D$(CPU) \
+        -DCPU=$(CPU) \
         $(APP_CFLAGS) \
         -I$(CORE) \
         -I$(CORE)/cmsis/inc \
