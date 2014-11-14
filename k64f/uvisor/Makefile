@@ -3,8 +3,8 @@ ARCH:=MK64F
 CPU:=$(ARCH)N1M0VLL12
 
 # mbed libray files
-TARGET_S:=mbed/uvisor-gcc.s
-TARGET_BIN:=mbed/uvisor.bin
+TARGET_S:=mbed/uvisor-GCC_ARM.s
+TARGET_BIN:=mbed/uvisor-$(CPU).bin
 TARGET_LIB:=mbed/uvisor.a
 
 APP_CLEAN:=$(TARGET_LIB) $(TARGET_S) $(TARGET_BIN) $(mbed/uvisor.a)
@@ -14,12 +14,12 @@ APP_SRC:=\
 
 include ../../core/Makefile.rules
 
-release: mbed/uvisor-input.S $(PROJECT).bin
+release: mbed/uvisor-gcc-input.S $(PROJECT).bin
 	cp $(PROJECT).bin $(TARGET_BIN)
-	$(CPP) -w -P -I$(CORE) $(APP_CFLAGS) -D$(CPU) -D$(ARCH) $< -o$(TARGET_S)
+	$(CPP) -w -P -I$(CORE) $(APP_CFLAGS) -D$(CPU) -D$(ARCH) -DTARGET_BIN=\"$(TARGET_BIN)\" $< -o$(TARGET_S)
 
-$(TARGET_LIB): mbed.o
-	$(AR) rcs $@ $<
+lib: mbed/uvisor.o
+	$(AR) rcs $(TARGET_LIB) $<
 
-mbed.o: $(PROJECT).bin
-	$(CC) $(CFLAGS) -c -o $@ mbed/uvisor.S
+mbed/uvisor.o: release $(TARGET_S)
+	$(CC) $(CFLAGS) -c -o $@ $(TARGET_S)
