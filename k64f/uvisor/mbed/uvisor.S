@@ -8,7 +8,7 @@
     .thumb
     .thumb_func
 uvisor_init:
-    .incbin "k64f_uvisor.bin"
+    .incbin "uvisor.bin"
     .align 5
 
 .section .bss.uvisor,"awM",@nobits
