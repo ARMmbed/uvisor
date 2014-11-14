@@ -1,5 +1,4 @@
 PREFIX:=arm-none-eabi-
-AS:=$(PREFIX)as
 CC:=$(PREFIX)gcc
 CXX:=$(PREFIX)g++
 OBJCOPY:=$(PREFIX)objcopy
@@ -115,5 +114,5 @@ reset:
 	@echo "$$__SCRIPT_RESET" | $(JLINK)
 
 clean:
-	rm -f $(PROJECT).map $(PROJECT).elf $(PROJECT).bin $(PROJECT).asm  $(PROJECT).linker gdb.script source.c.tags JLink.log
+	rm -f $(PROJECT).map $(PROJECT).elf $(PROJECT).bin $(PROJECT).asm  $(PROJECT).linker gdb.script source.c.tags JLink.log $(APP_CLEAN)
 	find . $(CORE) -iname '*.o' -exec rm -f \{\} \;
