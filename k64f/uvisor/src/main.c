@@ -1,4 +1,5 @@
 #include <uvisor.h>
+#include "vmpu.h"
 
 void main_entry(void)
 {
@@ -24,6 +25,9 @@ void main_entry(void)
 
         for(i = 0; i < 2000000; i++);
     }
+
+    /* init MPU */
+    vmpu_init();
 
     /* see comment above - assuming lr did not change in the
      * reset_handler */
