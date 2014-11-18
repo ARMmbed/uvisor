@@ -1,16 +1,16 @@
 #include <uvisor.h>
 #include <isr.h>
 
-#if defined(UVISOR) && !defined(NOSYSTEM)
+#ifdef  UVISOR
 /* actual vector table in RAM */
-__attribute__ ((section(".isr_vector")))
+__attribute__ ((section(".isr_vector"), aligned(128)))
 TIsrVector g_isr_vector[MAX_ISR_VECTORS];
 
 void __attribute__ ((weak, noreturn)) default_handler(void)
 {
     while(1);
 }
-#endif/*UVISOR && !NOSYSTEM*/
+#endif/*UVISOR*/
 
 /* load required libraries */
 #if    defined(APP_CLIENT) || defined(LIB_CLIENT)
@@ -34,7 +34,7 @@ void reset_handler(void)
     while(dst<&__data_end__)
         *dst++ = *src++;
 
-#if defined(UVISOR) && !defined(NOSYSTEM)
+#if defined(UVISOR)
     /* set VTOR to default handlers */
     dst = (uint32_t*)&g_isr_vector;
     while(dst<((uint32_t*)&g_isr_vector[MAX_ISR_VECTORS]))

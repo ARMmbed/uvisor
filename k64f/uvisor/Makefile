@@ -10,6 +10,7 @@ TARGET_LIB:=mbed/uvisor.a
 APP_CLEAN:=$(TARGET_LIB) $(TARGET_S) $(TARGET_BIN) $(mbed/uvisor.a)
 APP_CFLAGS:=-DUVISOR -Iconfig -Isrc
 APP_SRC:=\
+	src/vmpu.c \
 	src/main.c
 
 include ../../core/Makefile.rules
