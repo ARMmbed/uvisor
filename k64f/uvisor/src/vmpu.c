@@ -12,16 +12,17 @@ static void mpu_fault(int reason)
     uint32_t sperr,t;
 
     /* print slave port details */
+    dprintf("CESR : 0x%08X\n\r", MPU->CESR);
     sperr = (MPU->CESR >> 27);
     for(t=0; t<5; t++)
     {
         if(sperr & 0x10)
-            dprintf("Slave: @0x%08X (Detail 0x%08X)\n\r",
+            dprintf("  SLAVE_PORT[%i]: @0x%08X (Detail 0x%08X)\n\r",
+                t,
                 MPU->SP[t].EAR,
                 MPU->SP[t].EDR);
         sperr >>= 1;
     }
-    dprintf("CESR : 0x%08X\n\r", MPU->CESR);
     dprintf("CFSR : 0x%08X (reason 0x%02x)\n\r", SCB->CFSR, reason);
     while(1);
 }
@@ -64,5 +65,4 @@ void vmpu_init(void)
     ISR_SET(MemoryManagement_IRQn, &mpu_fault_memory_management);
     ISR_SET(HardFault_IRQn,        &mpu_fault_hard);
     ISR_SET(DebugMonitor_IRQn,     &mpu_fault_debug);
-
 }
