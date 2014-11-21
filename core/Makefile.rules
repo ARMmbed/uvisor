@@ -90,7 +90,7 @@ swo:
 	$(JLINK_VIEWER) -device $(CPU) -itmmask $(JLINK_VIEWER_MASK) $(JLINK_SWO_PARAM)
 
 gdbserver:
-	$(JLINK_SERVER) JLinkGDBServer -Device $(CPU_DEBUG) -if SWD
+	$(JLINK_SERVER) JLinkGDBServer -Device $(CPU) -if SWD
 
 gdb: gdb.script
 	$(GDB) -x $<
