@@ -1,7 +1,6 @@
 PROJECT:=k64f_uvisor
 ARCH:=MK64F
-CPU:=$(ARCH)N1M0VLL12
-CPU_DEBUG:=$(ARCH)N1M0XXX12
+CPU:=$(ARCH)N1M0XXX12
 
 # mbed libray files
 TARGET_S:=mbed/uvisor-GCC_ARM.s
