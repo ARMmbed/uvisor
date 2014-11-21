@@ -4,7 +4,7 @@ define __SCRIPT_GDB
 	monitor halt
 	monitor speed 1000
 	monitor SWO EnableTarget $(AUXHFRCO_FREQ) 0 $(JLINK_VIEWER_MASK) 0
-	monitor flash device = $(CPU_DEBUG)
+	monitor flash device = $(CPU)
 	load $(PROJECT).elf
 	file $(PROJECT).elf
 	monitor reset
@@ -14,7 +14,7 @@ endef
 export __SCRIPT_GDB
 
 define __SCRIPT_FLASH
-	device $(CPU_DEBUG)
+	device $(CPU)
 	h
 	loadbin $(PROJECT).bin $(FLASH_OFFSET)
 	r
@@ -24,7 +24,7 @@ endef
 export __SCRIPT_FLASH
 
 define __SCRIPT_ERASE
-	device $(CPU_DEBUG)
+	device $(CPU)
 	h
 	r
 	erase
@@ -34,7 +34,7 @@ endef
 export __SCRIPT_ERASE
 
 define __SCRIPT_RESET
-	device $(CPU_DEBUG)
+	device $(CPU)
 	h
 	r
 	g
