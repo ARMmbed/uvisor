@@ -8,7 +8,7 @@ JLINK:=$(SEGGER)JLinkExe
 JLINK_SERVER:=$(SEGGER)JLinkGDBServer
 JLINK_VIEWER:=$(SEGGER)JLinkSWOViewer
 JLINK_VIEWER_MASK:=0x7
-AUXHFRCO_FREQ:=14000000
+JLINK_SWO_PARAM:=
 
 CORE:=../../core
 
@@ -87,7 +87,7 @@ $(PROJECT).linker: $(CORE)/linker/$(CPU).h
 	$(CPP) -w -P -I$(CORE) -I$(CORE)/linker $(APP_CFLAGS) -D$(CPU) -D$(ARCH) $^ -o $@
 
 swo:
-	$(JLINK_VIEWER) -device $(CPU) -cpufreq $(AUXHFRCO_FREQ) -itmmask $(JLINK_VIEWER_MASK)
+	$(JLINK_VIEWER) -device $(CPU) -itmmask $(JLINK_VIEWER_MASK) $(JLINK_SWO_PARAM)
 
 gdbserver:
 	$(JLINK_SERVER) JLinkGDBServer -Device $(CPU_DEBUG) -if SWD
