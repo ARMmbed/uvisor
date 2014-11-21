@@ -89,10 +89,11 @@ $(PROJECT).linker: $(CORE)/linker/$(CPU).h
 swo:
 	$(JLINK_VIEWER) -device $(CPU) -cpufreq $(AUXHFRCO_FREQ) -itmmask $(JLINK_VIEWER_MASK)
 
+gdbserver:
+	$(JLINK_SERVER) JLinkGDBServer -Device $(CPU_DEBUG) -if SWD
+
 gdb: gdb.script
-	$(JLINK_SERVER)&
 	$(GDB) -x $<
-	killall $(JLINK_SERVER)
 
 gdbtui: gdb.script
 	$(GDB)tui -x $<
