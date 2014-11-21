@@ -14,7 +14,6 @@ endef
 export __SCRIPT_GDB
 
 define __SCRIPT_FLASH
-	device $(CPU)
 	h
 	loadbin $(PROJECT).bin $(FLASH_OFFSET)
 	r
@@ -24,11 +23,7 @@ endef
 export __SCRIPT_FLASH
 
 define __SCRIPT_ERASE
-	device $(CPU)
-	h
-	r
 	erase
-	g
 	q
 endef
 export __SCRIPT_ERASE
