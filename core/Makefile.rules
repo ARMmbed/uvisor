@@ -8,6 +8,8 @@ JLINK:=$(SEGGER)JLinkExe
 JLINK_SERVER:=$(SEGGER)JLinkGDBServer
 JLINK_VIEWER:=$(SEGGER)JLinkSWOViewer
 JLINK_VIEWER_MASK:=0x7
+JLINK_PARAM:=-Device $(CPU) -if SWD
+AUXHFRCO_FREQ:=0
 JLINK_SWO_PARAM:=
 
 CORE:=../../core
@@ -87,10 +89,10 @@ $(PROJECT).linker: $(CORE)/linker/$(CPU).h
 	$(CPP) -w -P -I$(CORE) -I$(CORE)/linker $(APP_CFLAGS) -D$(CPU) -D$(ARCH) $^ -o $@
 
 swo:
-	$(JLINK_VIEWER) -device $(CPU) -itmmask $(JLINK_VIEWER_MASK) $(JLINK_SWO_PARAM)
+	$(JLINK_VIEWER) $(JLINK_PARAM) $(APP_JLINK_PARAM) -itmmask $(JLINK_VIEWER_MASK) $(JLINK_SWO_PARAM)
 
 gdbserver:
-	$(JLINK_SERVER) JLinkGDBServer -Device $(CPU) -if SWD
+	$(JLINK_SERVER) JLinkGDBServer $(JLINK_PARAM) $(APP_JLINK_PARAM)
 
 gdb: gdb.script
 	$(GDB) -x $<
@@ -107,13 +109,13 @@ gdb.script: $(PROJECT).elf
 	@echo "$$__SCRIPT_GDB" > $@
 
 flash: $(PROJECT).bin
-	@echo "$$__SCRIPT_FLASH" | $(JLINK)
+	@echo "$$__SCRIPT_FLASH" | $(JLINK) $(JLINK_PARAM) $(APP_JLINK_PARAM)
 
 erase:
-	@echo "$$__SCRIPT_ERASE" | $(JLINK)
+	@echo "$$__SCRIPT_ERASE" | $(JLINK) $(JLINK_PARAM) $(APP_JLINK_PARAM)
 
 reset:
-	@echo "$$__SCRIPT_RESET" | $(JLINK)
+	@echo "$$__SCRIPT_RESET" | $(JLINK) $(JLINK_PARAM) $(APP_JLINK_PARAM)
 
 clean:
 	rm -f $(PROJECT).map $(PROJECT).elf $(PROJECT).bin $(PROJECT).asm  $(PROJECT).linker gdb.script source.c.tags JLink.log $(APP_CLEAN)
