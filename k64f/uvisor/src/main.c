@@ -35,7 +35,7 @@ void main_entry(void)
     {
         dprintf("Hello World %i!\n", t++);
 
-        for(i = 0; i < 2000000; i++);
+        for(i = 0; i < 200000; i++);
     }
 
     /* init MPU */
