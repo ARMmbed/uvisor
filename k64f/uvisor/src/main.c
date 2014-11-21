@@ -1,6 +1,24 @@
 #include <uvisor.h>
 #include "vmpu.h"
 
+#ifdef  NV_CONFIG_OFFSET
+__attribute__ ((section(".nv_config")))
+const NV_Type nv_config = {
+    /* backdoor key */
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    /* flash protection */
+    0xFF, 0xFF, 0xFF, 0xFF,
+    /* FSEC */
+    0xFF,
+    /* FOPT */
+    0xFF,
+    /* FEPROT */
+    0xFF,
+    /* FDPROT */
+    0xFF
+};
+#endif/*NV_CONFIG_OFFSET*/
+
 void main_entry(void)
 {
     int t;

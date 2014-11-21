@@ -39,9 +39,13 @@ SECTIONS
 {
     .text :
     {
-        *(.text.reset_handler)
         KEEP(*(.box_header))
         KEEP(*(.isr_vector_tmp))
+#ifdef  NV_CONFIG_OFFSET
+        . = (FLASH_ORIGIN+NV_CONFIG_OFFSET);
+        KEEP(*(.nv_config))
+#endif/*NV_CONFIG_OFFSET*/
+        *(.text.reset_handler)
         *(.svc_vector*)
         *(.text*)
         *(.rodata*)

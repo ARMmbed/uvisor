@@ -64,14 +64,13 @@ const TIsrVector g_isr_vector_tmp[] =
 {
 #if      defined(APP_CLIENT) || defined(LIB_CLIENT)
     reset_handler,
-    //(TIsrVector)&g_isr_vector_tmp,        /* verify module relocation module */
 #else /*defined(APP_CLIENT) || defined(LIB_CLIENT)*/
 #ifdef  STACK_POINTER
     (TIsrVector)STACK_POINTER,        /* override Stack pointer if needed */
 #else /*STACK_POINTER*/
     (TIsrVector)&__stack_end__,        /* initial Stack Pointer */
 #endif/*STACK_POINTER*/
-#endif/*defined(APP_CLIENT) || defined(LIB_CLIENT)*/
     reset_handler,                /* reset Handler */
+#endif/*defined(APP_CLIENT) || defined(LIB_CLIENT)*/
 };
 #endif/*NOSYSTEM*/

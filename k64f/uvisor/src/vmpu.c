@@ -65,4 +65,7 @@ void vmpu_init(void)
     ISR_SET(MemoryManagement_IRQn, &mpu_fault_memory_management);
     ISR_SET(HardFault_IRQn,        &mpu_fault_hard);
     ISR_SET(DebugMonitor_IRQn,     &mpu_fault_debug);
+
+    /* enable mem, bus and usage faults */
+    SCB->SHCSR |= 0x70000;
 }
