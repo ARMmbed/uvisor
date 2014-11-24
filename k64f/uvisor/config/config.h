@@ -15,5 +15,6 @@
 //#define RESERVED_SRAM  0x220
 
 #define STACK_MINIMUM_SIZE 2048
+#define TOTAL_SRAM_SIZE (256*1024UL)
 
 #endif /*__CONFIG_H__*/
