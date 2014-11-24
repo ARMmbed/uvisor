@@ -44,7 +44,7 @@ void main_entry(void)
     }
 
     /* switch stack to unprivileged client box */
-    __set_PSP((uint32_t)&g_unpriv_stack[STACK_SIZE-1]);
+    __set_PSP(SRAM_ORIGIN+TOTAL_SRAM_SIZE-4);
 
     dprintf("uVisor switching to unprivileged mode\n");
 

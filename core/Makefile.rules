@@ -39,6 +39,7 @@ else
 	UVISOR_FLASH_SIZE:=$(shell grep UVISOR_FLASH_SIZE $(CORE)/uvisor-config.h | sed -E 's/^.* (0x[0-9A-Fa-f]+).*$\/\1/')
 endif
 
+MEM_CONFIG:=$(CORE)/linker/$(CPU).h
 FLAGS_CM3:=-mcpu=cortex-m3 -mthumb
 
 LDFLAGS:=$(FLAGS_CM3) \
@@ -57,6 +58,7 @@ CFLAGS_PRE:=\
         -D$(CPU) \
         -DCPU=$(CPU) \
         $(APP_CFLAGS) \
+        -include $(MEM_CONFIG) \
         -I$(CORE) \
         -I$(CORE)/cmsis/inc \
         -I$(SYSTEM)/inc \
@@ -85,8 +87,8 @@ $(PROJECT).elf: $(OBJS) $(PROJECT).linker
 $(PROJECT).bin: $(PROJECT).elf
 	$(OBJCOPY) $< -O binary $@
 
-$(PROJECT).linker: $(CORE)/linker/$(CPU).h
-	$(CPP) -w -P -I$(CORE) -I$(CORE)/linker $(APP_CFLAGS) -D$(CPU) -D$(ARCH) $^ -o $@
+$(PROJECT).linker: $(MEM_CONFIG) $(CORE)/linker/default.h
+	$(CPP) -w -P -I$(CORE) $(APP_CFLAGS) -D$(CPU) -D$(ARCH) -include $^ -o $@
 
 swo:
 	$(JLINK_VIEWER) $(JLINK_PARAM) $(APP_JLINK_PARAM) -itmmask $(JLINK_VIEWER_MASK) $(JLINK_SWO_PARAM)
