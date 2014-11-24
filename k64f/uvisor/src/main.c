@@ -19,6 +19,9 @@ const NV_Type nv_config = {
 };
 #endif/*NV_CONFIG_OFFSET*/
 
+#define STACK_SIZE 256
+__attribute__ ((aligned (32))) volatile uint32_t g_unpriv_stack[STACK_SIZE];
+
 void main_entry(void)
 {
     int t;
@@ -30,16 +33,30 @@ void main_entry(void)
     /* wait for debugger to connect */
     while(!((ITM->TCR & ITM_TCR_ITMENA_Msk) && (ITM->TER & (1<<CHANNEL_DEBUG))));
 
+    /* init MPU */
+    vmpu_init();
+
     t = 0;
     while(t < 10)
     {
         dprintf("Hello World %i!\n", t++);
-
         for(i = 0; i < 200000; i++);
     }
 
-    /* init MPU */
-    vmpu_init();
+    /* switch stack to unprivileged client box */
+    __set_PSP((uint32_t)&g_unpriv_stack[STACK_SIZE-1]);
+
+    dprintf("uVisor switching to unprivileged mode\n");
+
+    /* switch to unprivileged mode.
+     * this is possible as uvisor code is readable by unprivileged.
+     * code and only the key-value database is protected from the.
+     * unprivileged mode */
+    __set_CONTROL(__get_CONTROL()|3);
+    __ISB();
+    __DSB();
+
+    dprintf("Unprivileged Done.\n");
 
     /* should never happen */
     while(1)
