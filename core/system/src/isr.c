@@ -47,12 +47,12 @@ void reset_handler(void)
     while(dst<&__bss_end__)
         *dst++ = 0;
 
-#if    defined(APP_CLIENT) || defined(LIB_CLIENT)
+#if defined(APP_CLIENT) || defined(LIB_CLIENT)
     load_boxes();
 #endif/*defined(APP_CLIENT) || defined(LIB_CLIENT)*/
 
     main_entry();
-#if     !defined(LIB_CLIENT) && !defined(NOSYSTEM)
+#if !defined(LIB_CLIENT) && !defined(NOSYSTEM)
     while(1);
 #endif/*LIB_CLIENT*/
 }
