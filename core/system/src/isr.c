@@ -29,7 +29,7 @@ void reset_handler(void)
     const uint32_t* src;
 
     /* initialize data RAM from flash*/
-    src = (uint32_t*) __data_start_src__;
+    src = &__data_start_src__;
     dst = &__data_start__;
     while(dst<&__data_end__)
         *dst++ = *src++;
