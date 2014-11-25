@@ -19,9 +19,6 @@ const NV_Type nv_config = {
 };
 #endif/*NV_CONFIG_OFFSET*/
 
-#define STACK_SIZE 256
-__attribute__ ((aligned (32))) volatile uint32_t g_priv_stack[STACK_SIZE];
-
 void uvisor_init(void)
 {
     int t;
@@ -49,7 +46,7 @@ void main_entry(void)
     /* swap stack pointers*/
     __disable_irq();
     __set_PSP(__get_MSP());
-    __set_MSP((uint32_t)&g_priv_stack[STACK_SIZE-1]);
+    __set_MSP(SRAM_ORIGIN + UVISOR_SRAM_SIZE - 4);
     __enable_irq();
 
     /* initialize uvisor */
