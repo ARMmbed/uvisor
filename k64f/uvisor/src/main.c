@@ -46,7 +46,7 @@ void main_entry(void)
     /* swap stack pointers*/
     __disable_irq();
     __set_PSP(__get_MSP());
-    __set_MSP(SRAM_ORIGIN + UVISOR_SRAM_SIZE - 4);
+    __set_MSP(__stack_end__);
     __enable_irq();
 
     /* initialize uvisor */

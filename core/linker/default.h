@@ -29,10 +29,21 @@ ENTRY(reset_handler)
 #define USE_SRAM_SIZE SRAM_MAX
 #endif/*USE_SRAM_SIZE*/
 
+#ifndef STACK_GUARD_BAND
+#define STACK_GUARD_BAND 32
+#endif/*STACK_GUARD_BAND*/
+
+#ifndef STACK_SIZE
+#define STACK_SIZE 1024
+#endif/*STACK_SIZE*/
+
+#define STACK_SECTION_SIZE ((2*STACK_GUARD_BAND)+STACK_SIZE)
+
 MEMORY
 {
   FLASH (rx) : ORIGIN = (FLASH_ORIGIN+RESERVED_FLASH), LENGTH = USE_FLASH_SIZE
-  RAM (rwx)  : ORIGIN = (SRAM_ORIGIN +RESERVED_SRAM),  LENGTH = USE_SRAM_SIZE
+  RAM   (rwx): ORIGIN = (SRAM_ORIGIN +RESERVED_SRAM),  LENGTH = USE_SRAM_SIZE-STACK_SECTION_SIZE
+  STACK (rw) : ORIGIN = (SRAM_ORIGIN +RESERVED_SRAM+USE_SRAM_SIZE-STACK_SECTION_SIZE), LENGTH = STACK_SECTION_SIZE
 }
 
 SECTIONS
@@ -54,7 +65,7 @@ SECTIONS
         KEEP(*(.box_init*))
         __box_init_end__ = .;
         PROVIDE(__data_start_src__ = LOADADDR(.data));
-        PROVIDE(__stack_end__ = ORIGIN(RAM) + LENGTH(RAM));
+        PROVIDE(__stack_end__ = ORIGIN(STACK) + LENGTH(STACK) - STACK_GUARD_BAND);
         . = ALIGN(16);
         __code_end__ = .;
     } > FLASH
@@ -96,7 +107,6 @@ SECTIONS
         __heap_start__ = .;
         *(.heap)
         *(.heap.*)
-        . = ALIGN(16);
-        __stack_start__ = .;
+        __heap_end__ = ALIGN(32);
     } > RAM
 }
