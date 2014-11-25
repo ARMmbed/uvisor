@@ -7,7 +7,7 @@
 #define MPU_FAULT_HARD   0x03
 #define MPU_FAULT_DEBUG  0x04
 
-static void mpu_fault(int reason)
+static void vmpu_fault(int reason)
 {
     uint32_t sperr,t;
 
@@ -27,44 +27,44 @@ static void mpu_fault(int reason)
     while(1);
 }
 
-static void mpu_fault_bus(void)
+static void vmpu_fault_bus(void)
 {
     dprintf("BFAR : 0x%08X\n\r", SCB->BFAR);
-    mpu_fault(MPU_FAULT_BUS);
+    vmpu_fault(MPU_FAULT_BUS);
 }
 
-static void mpu_fault_usage(void)
+static void vmpu_fault_usage(void)
 {
     dprintf("Usage Fault\n\r");
-    mpu_fault(MPU_FAULT_USAGE);
+    vmpu_fault(MPU_FAULT_USAGE);
 }
 
-static void mpu_fault_memory_management(void)
+static void vmpu_fault_memory_management(void)
 {
     dprintf("MMFAR: 0x%08X\n\r", SCB->MMFAR);
-    mpu_fault(MPU_FAULT_MEMORY);
+    vmpu_fault(MPU_FAULT_MEMORY);
 }
 
-static void mpu_fault_hard(void)
+static void vmpu_fault_hard(void)
 {
     dprintf("HFSR : 0x%08X\n\r", SCB->HFSR);
-    mpu_fault(MPU_FAULT_HARD);
+    vmpu_fault(MPU_FAULT_HARD);
 }
 
-static void mpu_fault_debug(void)
+static void vmpu_fault_debug(void)
 {
     dprintf("MPU_FAULT_DEBUG\n\r");
-    mpu_fault(MPU_FAULT_DEBUG);
+    vmpu_fault(MPU_FAULT_DEBUG);
 }
 
 void vmpu_init(void)
 {
     /* setup security "bluescreen" */
-    ISR_SET(BusFault_IRQn,         &mpu_fault_bus);
-    ISR_SET(UsageFault_IRQn,       &mpu_fault_usage);
-    ISR_SET(MemoryManagement_IRQn, &mpu_fault_memory_management);
-    ISR_SET(HardFault_IRQn,        &mpu_fault_hard);
-    ISR_SET(DebugMonitor_IRQn,     &mpu_fault_debug);
+    ISR_SET(BusFault_IRQn,         &vmpu_fault_bus);
+    ISR_SET(UsageFault_IRQn,       &vmpu_fault_usage);
+    ISR_SET(MemoryManagement_IRQn, &vmpu_fault_memory_management);
+    ISR_SET(HardFault_IRQn,        &vmpu_fault_hard);
+    ISR_SET(DebugMonitor_IRQn,     &vmpu_fault_debug);
 
     /* enable mem, bus and usage faults */
     SCB->SHCSR |= 0x70000;
