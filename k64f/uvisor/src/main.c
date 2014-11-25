@@ -22,7 +22,7 @@ const NV_Type nv_config = {
 #define STACK_SIZE 256
 __attribute__ ((aligned (32))) volatile uint32_t g_priv_stack[STACK_SIZE];
 
-void main_init(void)
+void uvisor_init(void)
 {
     int t;
     volatile int i;
@@ -47,10 +47,13 @@ void main_init(void)
 void main_entry(void)
 {
     /* swap stack pointers*/
+    __disable_irq();
     __set_PSP(__get_MSP());
     __set_MSP((uint32_t)&g_priv_stack[STACK_SIZE-1]);
+    __enable_irq();
 
-    main_init();
+    /* initialize uvisor */
+    uvisor_init();
 
     /* switch to unprivileged mode.
      * this is possible as uvisor code is readable by unprivileged.
