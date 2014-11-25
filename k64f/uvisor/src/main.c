@@ -20,9 +20,9 @@ const NV_Type nv_config = {
 #endif/*NV_CONFIG_OFFSET*/
 
 #define STACK_SIZE 256
-__attribute__ ((aligned (32))) volatile uint32_t g_unpriv_stack[STACK_SIZE];
+__attribute__ ((aligned (32))) volatile uint32_t g_priv_stack[STACK_SIZE];
 
-void main_entry(void)
+void main_init(void)
 {
     int t;
     volatile int i;
@@ -42,11 +42,15 @@ void main_entry(void)
         dprintf("Hello World %i!\n", t++);
         for(i = 0; i < 200000; i++);
     }
+}
 
-    /* switch stack to unprivileged client box */
-    __set_PSP(SRAM_ORIGIN+TOTAL_SRAM_SIZE-4);
+void main_entry(void)
+{
+    /* swap stack pointers*/
+    __set_PSP(__get_MSP());
+    __set_MSP((uint32_t)&g_priv_stack[STACK_SIZE-1]);
 
-    dprintf("uVisor switching to unprivileged mode\n");
+    main_init();
 
     /* switch to unprivileged mode.
      * this is possible as uvisor code is readable by unprivileged.
@@ -55,10 +59,4 @@ void main_entry(void)
     __set_CONTROL(__get_CONTROL()|3);
     __ISB();
     __DSB();
-
-    dprintf("Unprivileged Done.\n");
-
-    /* should never happen */
-    while(1)
-        __WFI();
 }
