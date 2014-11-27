@@ -39,12 +39,6 @@ static void vmpu_fault_usage(void)
     vmpu_fault(MPU_FAULT_USAGE);
 }
 
-static void vmpu_fault_memory_management(void)
-{
-    dprintf("MMFAR: 0x%08X\n\r", SCB->MMFAR);
-    vmpu_fault(MPU_FAULT_MEMORY);
-}
-
 static void vmpu_fault_hard(void)
 {
     dprintf("HFSR : 0x%08X\n\r", SCB->HFSR);
@@ -57,12 +51,36 @@ static void vmpu_fault_debug(void)
     vmpu_fault(MPU_FAULT_DEBUG);
 }
 
+int vmpu_acl_dev(TACL acl, uint16_t device_id)
+{
+    return 1;
+}
+
+int vmpu_acl_mem(TACL acl, uint32_t addr, uint32_t size)
+{
+    return 1;
+}
+
+int vmpu_acl_reg(TACL acl, uint32_t addr, uint32_t rmask, uint32_t wmask)
+{
+    return 1;
+}
+
+int vmpu_acl_bit(TACL acl, uint32_t addr)
+{
+    return 1;
+}
+
+extern int vmpu_box_add(const TBoxDesc *box)
+{
+    return 0;
+}
+
 void vmpu_init(void)
 {
-    /* setup security "bluescreen" */
+    /* setup security "bluescreen" exceptions */
     ISR_SET(BusFault_IRQn,         &vmpu_fault_bus);
     ISR_SET(UsageFault_IRQn,       &vmpu_fault_usage);
-    ISR_SET(MemoryManagement_IRQn, &vmpu_fault_memory_management);
     ISR_SET(HardFault_IRQn,        &vmpu_fault_hard);
     ISR_SET(DebugMonitor_IRQn,     &vmpu_fault_debug);
 

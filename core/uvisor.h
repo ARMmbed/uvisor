@@ -24,6 +24,9 @@ typedef void (*UnprivilegedBoxEntry)(void);
 #define WEAK __attribute__ ((weak))
 #define ALIAS(f) __attribute__ ((weak, alias (#f)))
 
+/* array count macro */
+#define ARRAY_COUNT(x) (sizeof(x)/sizeof(x[0]))
+
 /* device-specific definitions */
 #include "uvisor-device.h"
 

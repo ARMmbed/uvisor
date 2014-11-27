@@ -1,5 +1,6 @@
 #include <uvisor.h>
 #include "vmpu.h"
+#include "test_box.h"
 
 #ifdef  NV_CONFIG_OFFSET
 __attribute__ ((section(".nv_config")))
@@ -51,6 +52,9 @@ void main_entry(void)
 
     /* initialize uvisor */
     uvisor_init();
+
+    /* set up test box */
+    vmpu_box_add(&test_box);
 
     /* switch to unprivileged mode.
      * this is possible as uvisor code is readable by unprivileged.
