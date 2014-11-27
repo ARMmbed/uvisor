@@ -1,5 +1,6 @@
 #ifndef  __UVISOR_CONFIG_H__
 
+#define UVISOR_MAGIC      0x2FE539A6UL
 #define UVISOR_FLASH_SIZE 0x2000
 #define UVISOR_SRAM_SIZE  0x1000
 
