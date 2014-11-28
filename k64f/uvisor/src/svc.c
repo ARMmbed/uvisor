@@ -1,7 +1,7 @@
 #include <uvisor.h>
 #include "svc.h"
 
-#define SVC_HDLRS_NUM    ((sizeof(g_svc_vtor_tbl) / sizeof(g_svc_vtor_tbl[0])) - 1)
+#define SVC_HDLRS_NUM    (ARRAY_COUNT(g_svc_vtor_tbl) - 1)
 
 static void secure_switch(uint32_t addr)
 {
