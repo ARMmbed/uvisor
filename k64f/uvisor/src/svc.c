@@ -24,7 +24,7 @@ static void __attribute__((naked)) __svc_irq(void)
         "tst    r12, #1\n"            // if ADDR_CMDn
         "itt    ne\n"
         "movne    r0, r12\n"            //   pass r12 as argument
-        "bne    switch_in\n"            //   shortcut to switch_in
+        "bne    secure_switch\n"        //   shortcut to switch_in
 
         "tst    lr, #4\n"            // otherwise regular SVC:
         "itee    ne\n"                //   select sp
