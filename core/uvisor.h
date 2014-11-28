@@ -12,6 +12,15 @@
 #include <string.h>
 #include "uvisor-config.h"
 
+#ifndef TRUE
+#define TRUE 1
+#endif/*TRUE*/
+
+#ifndef FALSE
+#define FALSE 0
+#endif/*FALSE*/
+
+
 #include <tfp_printf.h>
 #ifndef dprintf
 #define dprintf tfp_printf
