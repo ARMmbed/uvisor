@@ -9,6 +9,10 @@
     .thumb_func
 uvisor_init:
     .incbin TARGET_BIN
+    .long UVISOR_MAGIC
+    .long 0 //MBED_VERSION
+    .long __descr_tbl_start
+    .long __descr_tbl_end
     .align 5
 
 .section .bss.uvisor,"awM",@nobits
