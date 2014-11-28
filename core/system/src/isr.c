@@ -34,13 +34,13 @@ void reset_handler(void)
     while(dst<&__data_end__)
         *dst++ = *src++;
 
-#if defined(UVISOR)
+#ifdef    UVISOR
     /* set VTOR to default handlers */
     dst = (uint32_t*)&g_isr_vector;
     while(dst<((uint32_t*)&g_isr_vector[MAX_ISR_VECTORS]))
         *dst++ = (uint32_t)&default_handler;
     SCB->VTOR = (uint32_t)&g_isr_vector;
-#endif/*UVISOR && !NOSYSTEM*/
+#endif/*UVISOR*/
 
     /* set bss to zero */
     dst = &__bss_start__;
@@ -54,7 +54,7 @@ void reset_handler(void)
     main_entry();
 #if !defined(LIB_CLIENT) && !defined(NOSYSTEM)
     while(1);
-#endif/*LIB_CLIENT*/
+#endif/*!defined(LIB_CLIENT) && !defined(NOSYSTEM)*/
 }
 
 #ifndef NOSYSTEM
