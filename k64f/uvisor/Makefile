@@ -8,7 +8,7 @@ TARGET_BIN:=mbed/uvisor-$(CPU).bin
 TARGET_LIB:=mbed/uvisor.a
 
 APP_CLEAN:=$(TARGET_LIB) $(TARGET_S) $(TARGET_BIN) $(mbed/uvisor.a)
-APP_CFLAGS:=-DUVISOR -DNOSYSTEM -Iconfig -Isrc
+APP_CFLAGS:=-DUVISOR -Iconfig -Isrc
 APP_SRC:=\
 	src/svc.c \
 	src/vmpu.c \
