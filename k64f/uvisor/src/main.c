@@ -1,6 +1,7 @@
 #include <uvisor.h>
 #include "vmpu.h"
 #include "test_box.h"
+#include "svc.h"
 
 #ifdef  NV_CONFIG_OFFSET
 __attribute__ ((section(".nv_config")))
@@ -34,6 +35,9 @@ void uvisor_init(void)
     /* init MPU */
     vmpu_init();
 
+    /* init SVC */
+    svc_init();
+
     t = 0;
     while(t < 10)
     {
@@ -53,8 +57,10 @@ void main_entry(void)
     /* initialize uvisor */
     uvisor_init();
 
+#ifndef NOSYSTEM
     /* set up test box */
     vmpu_box_add(&test_box);
+#endif/*NOSYSTEM*/
 
     /* switch to unprivileged mode.
      * this is possible as uvisor code is readable by unprivileged.
