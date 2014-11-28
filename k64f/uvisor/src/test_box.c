@@ -8,12 +8,12 @@ typedef struct {
     uint32_t value2;
 } TSecretData;
 
-typedef union {
+typedef struct {
     TSecretData data;
-    uint8_t padding[(sizeof(TSecretData)+31) & ~0x1FUL];
+    uint8_t padding[((sizeof(TSecretData)+31) & ~0x1FUL)-sizeof(TSecretData)];
 } TSecretDataPadded;
 
-//__attribute__ ((section ("protected"), aligned(32)))
+__attribute__ ((section ("protected"), aligned(32)))
 static const volatile TSecretDataPadded g_test_config = {{
     0xDEADEEF,
     12345678
@@ -41,7 +41,7 @@ const TACL_Entry test_acl_list[] = {
 
 const TBoxDesc test_box = {
     UVISOR_MAGIC,
-    STACK_SIZE,
+    {STACK_SIZE, 0},
 
     /* register ACL list */
     test_acl_list,

@@ -18,9 +18,14 @@ typedef struct
 
 typedef struct
 {
-    uint32_t magic;
-    uint32_t stack_size;
+    uint32_t stack;
+    uint32_t heap;
+} TBoxRegionSize;
 
+typedef struct
+{
+    uint32_t magic;
+    TBoxRegionSize size;
     const TACL_Entry* const acl_list;
     uint32_t acl_count;
 
@@ -39,5 +44,6 @@ extern int vmpu_wr(uint32_t addr, uint32_t data);
 extern int vmpu_rd(uint32_t addr);
 
 extern int vmpu_box_add(const TBoxDesc *box);
+extern int vmpu_fn_box(uint32_t addr);
 
 #endif/*__VMPU_H__*/
