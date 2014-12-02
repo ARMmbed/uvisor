@@ -32,6 +32,12 @@ CPU_LOWER:=$(shell tr '[:upper:]' '[:lower:]' <<< $(CPU))
 ARCH_LOWER:=$(shell tr '[:upper:]' '[:lower:]' <<< $(ARCH))
 FLASH_OFFSET:=0
 
+# determine repository version
+PROGRAM_VERSION:=$(shell git describe --tags --abbrev=4 --dirty 2>/dev/null | sed s/^v//)
+ifeq ("$(PROGRAM_VERSION)","")
+         PROGRAM_VERSION:='unknown'
+endif
+
 # read UVISOR_FLASH_SIZE from uVisor config file
 ifeq ("$(wildcard  $(CORE)/uvisor-config.h)","")
 	UVISOR_FLASH_SIZE:=0
@@ -56,6 +62,7 @@ CFLAGS_PRE:=\
         $(WARNING) \
         -D$(ARCH) \
         -D$(CPU) \
+        -DPROGRAM_VERSION=$(PROGRAM_VERSION) \
         -DCPU=$(CPU) \
         $(APP_CFLAGS) \
         -include $(MEM_CONFIG) \
