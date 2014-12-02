@@ -24,7 +24,7 @@ release: src/mbed/uvisor-gcc-input.S $(PROJECT).bin
 	mkdir -p $(TARGET_DIR)
 	echo "$(PROGRAM_VERSION)" > $(TARGET_VER)
 	cp $(PROJECT).bin $(TARGET_BIN)
-	$(CPP) -w -P -I$(CORE) $(APP_CFLAGS) -DP-D$(CPU) -D$(ARCH) -DTARGET_BIN=\"$(TARGET_BIN)\" $< -o$(TARGET_S)
+	$(CPP) -w -P -I$(CORE) $(APP_CFLAGS) -DP-D$(CPU) -D$(ARCH) -DTARGET_BIN=\"$(UVISOR_BIN)\" $< -o$(TARGET_S)
 
 test: release $(TARGET_S)
 	$(CC) $(CFLAGS) -c -o $@ $(TARGET_S)
