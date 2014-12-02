@@ -194,10 +194,11 @@ int vmpu_box_add(const TBoxDesc *box)
 {
     int res;
 
+    if(g_fn_box_count>=0xFF)
+        return -1;
+
     /* incrememt box_id */
     g_fn_box_count++;
-
-    if(g_fn_box_count>=0x100UL)
 
     /* add function pointers to global function table */
     if((box->fn_count) &&
@@ -228,6 +229,11 @@ int vmpu_fn_box(uint32_t addr)
     } while(count>0);
 
     return 0;
+}
+
+int vmpu_switch(uint8_t box)
+{
+    return -1;
 }
 
 void vmpu_init(void)
