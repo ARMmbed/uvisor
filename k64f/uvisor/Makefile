@@ -1,7 +1,7 @@
 PROJECT:=k64f_uvisor
 ARCH:=MK64F
 CPU:=$(ARCH)N1M0XXX12
-CONFIG:=
+CONFIG:=-DNOSYSTEM
 
 # mbed libray files
 TARGET_S:=mbed/uvisor-GCC_ARM.s
@@ -13,7 +13,6 @@ APP_CFLAGS:=-DUVISOR $(CONFIG) -Iconfig -Isrc
 APP_SRC:=\
 	src/svc.c \
 	src/vmpu.c \
-	src/test_box.c \
 	src/main.c
 
 include ../../core/Makefile.rules

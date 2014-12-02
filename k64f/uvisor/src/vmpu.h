@@ -45,5 +45,6 @@ extern int vmpu_rd(uint32_t addr);
 
 extern int vmpu_box_add(const TBoxDesc *box);
 extern int vmpu_fn_box(uint32_t addr);
+extern int vmpu_switch(uint8_t box);
 
 #endif/*__VMPU_H__*/
