@@ -20,16 +20,29 @@ const NV_Type nv_config = {
 };
 #endif/*NV_CONFIG_OFFSET*/
 
-void uvisor_init(void)
+int uvisor_init(void)
 {
     int t;
     volatile int i;
 
-    /* reset previous channel settings */
-    ITM->LAR  = 0xC5ACCE55;
-    ITM->TCR  = ITM->TER = 0x0;
-    /* wait for debugger to connect */
-    while(!((ITM->TCR & ITM_TCR_ITMENA_Msk) && (ITM->TER & (1<<CHANNEL_DEBUG))));
+    /* verify config structure */
+    if(__uvisor_config.magic!=UVISOR_MAGIC)
+        while(1)
+        {
+            dprintf("config magic mismatch: &0x%08X=0x%08X - exptected 0x%08X\n",
+                &__uvisor_config,
+                __uvisor_config.magic,
+                UVISOR_MAGIC);
+            for(i = 0; i < 200000; i++);
+        }
+
+    /* bail if uvisor was disabled */
+    if(!__uvisor_config.mode)
+        return -1;
+
+    dprintf("cfgtable: start=0x%08X end=0x%08X\n",
+        __uvisor_config.cfgtbl_start,
+        __uvisor_config.cfgtbl_end);
 
     /* init MPU */
     vmpu_init();
@@ -43,6 +56,8 @@ void uvisor_init(void)
         dprintf("Hello World %i!\n", t++);
         for(i = 0; i < 200000; i++);
     }
+
+    return 0;
 }
 
 void main_entry(void)
@@ -54,13 +69,14 @@ void main_entry(void)
     __enable_irq();
 
     /* initialize uvisor */
-    uvisor_init();
-
-    /* switch to unprivileged mode.
-     * this is possible as uvisor code is readable by unprivileged.
-     * code and only the key-value database is protected from the.
-     * unprivileged mode */
-    __set_CONTROL(__get_CONTROL()|3);
-    __ISB();
-    __DSB();
+    if(!uvisor_init())
+    {
+        /* switch to unprivileged mode.
+         * this is possible as uvisor code is readable by unprivileged.
+         * code and only the key-value database is protected from the.
+         * unprivileged mode */
+        __set_CONTROL(__get_CONTROL()|3);
+        __ISB();
+        __DSB();
+    }
 }
