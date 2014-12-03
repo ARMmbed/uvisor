@@ -10,9 +10,13 @@
 uvisor_init:
     .incbin TARGET_BIN
     .long UVISOR_MAGIC
-    .long 0 //MBED_VERSION
-    .long __descr_tbl_start
-    .long __descr_tbl_end
+    .long 0 /* MBED_VERSION */
+    .long 1 /* uvisor mode:
+               0: disabled
+               1: permissive
+               2: enabled */
+    .long __uvisor_cfgtbl_start
+    .long __uvisor_cfgtbl_end
     .align 5
 
 .section .bss.uvisor,"awM",@nobits
