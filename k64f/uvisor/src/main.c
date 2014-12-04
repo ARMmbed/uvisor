@@ -62,15 +62,15 @@ int uvisor_init(void)
 
 void main_entry(void)
 {
-    /* swap stack pointers*/
-    __disable_irq();
-    __set_PSP(__get_MSP());
-    __set_MSP((uint32_t)&__stack_end__);
-    __enable_irq();
-
     /* initialize uvisor */
     if(!uvisor_init())
     {
+        /* swap stack pointers*/
+        __disable_irq();
+        __set_PSP(__get_MSP());
+        __set_MSP((uint32_t)&__stack_end__);
+        __enable_irq();
+
         /* switch to unprivileged mode.
          * this is possible as uvisor code is readable by unprivileged.
          * code and only the key-value database is protected from the.

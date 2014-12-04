@@ -11,7 +11,7 @@ uvisor_init:
     .incbin TARGET_BIN
     .long UVISOR_MAGIC
     .long 0 /* MBED_VERSION */
-    .long 1 /* uvisor mode:
+    .long 0 /* uvisor mode:
                0: disabled
                1: permissive
                2: enabled */
