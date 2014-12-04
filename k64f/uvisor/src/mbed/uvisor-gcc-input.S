@@ -9,6 +9,10 @@
     .thumb_func
 uvisor_init:
     .incbin TARGET_BIN
+    /* uvisor expects its configuration section right
+       after itself in flash. If the configuration word is not found,
+       uvisor will intentionally freeze to avoid accidentally
+       unprotect systems */
     .long UVISOR_MAGIC
     .long 0 /* MBED_VERSION */
     .long 0 /* uvisor mode:
