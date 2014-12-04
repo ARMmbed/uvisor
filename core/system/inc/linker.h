@@ -15,7 +15,7 @@ EXTERN const uint32_t __data_start_src__;
 typedef struct {
     uint32_t magic;
     uint32_t version;
-    uint32_t mode;
+    uint32_t *mode;
     uint32_t *cfgtbl_start, *cfgtbl_end;
 } PACKED TUVisorConfig;
 
