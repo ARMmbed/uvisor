@@ -2,9 +2,6 @@
 
 #include <uvisor-config.h>
 
-/* ensure  that SoC initialization is ignored */
-//#define NOSYSTEM
-
 #ifndef NOSYSTEM
 #define NV_CONFIG_OFFSET 0x400
 #endif/*NOSYSTEM*/

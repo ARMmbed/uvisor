@@ -37,9 +37,10 @@ int uvisor_init(void)
         }
 
     /* bail if uvisor was disabled */
-    if(!__uvisor_config.mode)
+    if(!__uvisor_config.mode || (*__uvisor_config.mode==0))
         return -1;
 
+    dprintf("uvisor_mode: 0x%08X\n", *__uvisor_config.mode);
     dprintf("cfgtable: start=0x%08X end=0x%08X\n",
         __uvisor_config.cfgtbl_start,
         __uvisor_config.cfgtbl_end);
