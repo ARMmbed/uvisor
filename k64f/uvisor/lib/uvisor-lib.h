@@ -15,9 +15,11 @@
 #define UVISOR_ARRAY_COUNT(x) (sizeof(x)/sizeof(x[0]))
 #define UVISOR_ROUND32(x) (((x)+31UL) & ~0x1FUL)
 #define UVISOR_PAD32(x) (32 - (sizeof(x) & ~0x1FUL))
+#define UVISOR_STACK_BAND_SIZE 128
+#define UVISOR_STACK_SIZE_ROUND(size) (UVISOR_ROUND32(size)+(UVISOR_STACK_BAND_SIZE*2))
 
-#ifndef UVISOR_BOX_STACK
-#define UVISOR_BOX_STACK 1024
+#ifndef UVISOR_BOX_STACK_SIZE
+#define UVISOR_BOX_STACK_SIZE 1024
 #endif/*UVISOR_BOX_STACK*/
 
 #define UVISOR_SECURE(config_type) \
@@ -27,8 +29,18 @@
 		uint8_t padding[UVISOR_PAD32(config_type)]; \
 	} UVISOR_PACKED
 
-#define UVISOR_BOX_CONFIG(box_config) \
-	UVISOR_EXTERN const __attribute__((section(".uvisor.cfgtbl"), aligned(4))) void* const __ptr_ ## box_config =  &box_config;
+#define UVISOR_BOX_CONFIG(acl_list, stack_size) \
+	\
+	static const UvBoxConfig acl_list ## _cfg = { \
+		UVISOR_BOX_MAGIC, \
+		UVISOR_BOX_VERSION, \
+		UVISOR_STACK_SIZE_ROUND(stack_size), \
+		acl_list, \
+		UVISOR_ARRAY_COUNT(acl_list) \
+	}; \
+	\
+	UVISOR_EXTERN const __attribute__((section(".uvisor.cfgtbl"), aligned(4))) \
+	void* const acl_list ## _cfg_ptr  =  & acl_list ## _cfg;
 
 typedef uint32_t UvBoxAcl;
 
