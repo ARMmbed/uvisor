@@ -31,10 +31,13 @@
 
 #define UVISOR_BOX_CONFIG(acl_list, stack_size) \
 	\
+	UVISOR_EXTERN uint8_t __attribute__((section(".uvisor.stack"), aligned(32))) \
+	  acl_list ## _stack[UVISOR_STACK_SIZE_ROUND(stack_size)];\
+	\
 	static const UvBoxConfig acl_list ## _cfg = { \
 		UVISOR_BOX_MAGIC, \
 		UVISOR_BOX_VERSION, \
-		UVISOR_STACK_SIZE_ROUND(stack_size), \
+		sizeof(acl_list ## _stack), \
 		acl_list, \
 		UVISOR_ARRAY_COUNT(acl_list) \
 	}; \
