@@ -22,6 +22,9 @@ typedef struct {
     /* initialized secret data section */
     uint32_t *data_src, *data_start, *data_end;
 
+    /* uninitialized secret data section */
+    uint32_t *bss_start, *bss_end;
+
     /* uvisors protected flash memory regions */
     uint32_t *secure_start, *secure_end;
 

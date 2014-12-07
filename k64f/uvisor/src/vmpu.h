@@ -49,4 +49,6 @@ extern int vmpu_box_add(const TBoxDesc *box);
 extern int vmpu_fn_box(uint32_t addr);
 extern int vmpu_switch(uint8_t box);
 
+#define VMPU_REGION_SIZE(p1,p2) ((p1>=p2)?0:(((uint32_t)p2)-((uint32_t)p1)))
+
 #endif/*__VMPU_H__*/
