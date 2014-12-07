@@ -9,9 +9,7 @@
 
 #define UVISOR_BOX_MAGIC 0x42CFB66FUL
 #define UVISOR_BOX_VERSION 100
-
 #define UVISOR_PACKED __attribute__((packed))
-#define UVISOR_SET_MODE(mode) UVISOR_EXTERN const uint32_t __uvisor_mode = (mode);
 #define UVISOR_ARRAY_COUNT(x) (sizeof(x)/sizeof(x[0]))
 #define UVISOR_ROUND32(x) (((x)+31UL) & ~0x1FUL)
 #define UVISOR_PAD32(x) (32 - (sizeof(x) & ~0x1FUL))
@@ -22,19 +20,21 @@
 #define UVISOR_BOX_STACK_SIZE 1024
 #endif/*UVISOR_BOX_STACK*/
 
-#define UVISOR_SECURE(config_type) \
-	__attribute__((section(".text.secured"), aligned(32))) \
-	static const volatile struct { \
-		config_type secure; \
-		uint8_t padding[UVISOR_PAD32(config_type)]; \
-	} UVISOR_PACKED
+#define UVISOR_SET_MODE(mode) \
+	static UVISOR_SECURE_CONST uint32_t __uvisor_mode = (mode)
+
+#define UVISOR_SECURE_CONST \
+	const volatile __attribute__((section(".uvisor.secure"), aligned(32)))
+
+#define UVISOR_SECURE_DATA \
+	__attribute__((section(".uvisor.data"), aligned(32)))
 
 #define UVISOR_BOX_CONFIG(acl_list, stack_size) \
 	\
-	UVISOR_EXTERN uint8_t __attribute__((section(".uvisor.stack"), aligned(32))) \
-	  acl_list ## _stack[UVISOR_STACK_SIZE_ROUND(stack_size)];\
+	uint8_t __attribute__((section(".uvisor.data.stack"), aligned(32))) \
+		acl_list ## _stack[UVISOR_STACK_SIZE_ROUND(stack_size)];\
 	\
-	static const UvBoxConfig acl_list ## _cfg = { \
+	static UVISOR_SECURE_CONST UvBoxConfig acl_list ## _cfg = { \
 		UVISOR_BOX_MAGIC, \
 		UVISOR_BOX_VERSION, \
 		sizeof(acl_list ## _stack), \
@@ -42,8 +42,8 @@
 		UVISOR_ARRAY_COUNT(acl_list) \
 	}; \
 	\
-	UVISOR_EXTERN const __attribute__((section(".uvisor.cfgtbl"), aligned(4))) \
-	void* const acl_list ## _cfg_ptr  =  & acl_list ## _cfg;
+	const __attribute__((section(".uvisor.cfgtbl"), aligned(4))) \
+		volatile void* acl_list ## _cfg_ptr  =  & acl_list ## _cfg;
 
 typedef uint32_t UvBoxAcl;
 
