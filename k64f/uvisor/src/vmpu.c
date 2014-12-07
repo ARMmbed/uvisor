@@ -328,7 +328,7 @@ int vmpu_init(void)
     if(!__uvisor_config.mode || (*__uvisor_config.mode==0))
         return -1;
 
-    /* run basic sanity checks */
+    /* initialize protected box memories */
     vmpu_init_box_memories();
 
     /* setup security "bluescreen" exceptions */
