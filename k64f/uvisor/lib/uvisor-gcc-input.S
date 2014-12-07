@@ -5,13 +5,13 @@
 .type  uvisor_init, %function
 .weak  __uvisor_mode
 
-.section .text.uvisor, "x"
-    .align 5
+.section .uvisor.main, "x"
     .thumb
     .thumb_func
 
 uvisor_init:
     /* uvisor - precompiled blob */
+    .align 5
     .incbin TARGET_BIN
 
 uvisor_config:
@@ -33,6 +33,10 @@ uvisor_config:
     /* start and end address of box list */
     .long __uvisor_cfgtbl_start
     .long __uvisor_cfgtbl_end
+    .long __uvisor_stack_start
+    .long __uvisor_stack_end
+    .long __uvisor_secure_start
+    .long __uvisor_secure_end
 
     /* uvisor default mode - user can override weak reference */
 __uvisor_mode:
@@ -40,7 +44,9 @@ __uvisor_mode:
 
     .align 5
 
-.section .bss.uvisor,"awM",@nobits
+.section .uvisor.data.main,"awM",@nobits
     .align 5
+__uvisor_stack_start:
     .space UVISOR_SRAM_SIZE
     .align 5
+__uvisor_stack_end:
