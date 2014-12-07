@@ -24,6 +24,20 @@ NOINLINE int uvisor_init(void)
 {
     int res;
 
+    /* reset uvisor BSS */
+    memset(
+        &__bss_start__,
+        0,
+        VMPU_REGION_SIZE(&__bss_start__, &__bss_end__)
+    );
+
+    /* initialize data if needed */
+    memcpy(
+        &__data_start__,
+        &__data_start_src__,
+        VMPU_REGION_SIZE(&__data_start__, &__data_end__)
+    );
+
     /* init MPU */
     if((res = vmpu_init())!=0)
         return res;
@@ -44,7 +58,7 @@ void main_entry(void)
         /* swap stack pointers*/
         __disable_irq();
         __set_PSP(__get_MSP());
-        __set_MSP((uint32_t)&__stack_end__);
+        __set_MSP(((uint32_t)&__stack_end__)-STACK_GUARD_BAND);
         __enable_irq();
 
         /* switch to unprivileged mode.

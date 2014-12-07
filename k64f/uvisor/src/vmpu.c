@@ -1,8 +1,6 @@
 #include <uvisor.h>
 #include "vmpu.h"
 
-#define REGION_SIZE(p1,p2) ((p1>=p2)?0:(((uint32_t)p2)-((uint32_t)p1)))
-
 #ifndef MPU_MAX_PRIVATE_FUNCTIONS
 #define MPU_MAX_PRIVATE_FUNCTIONS 16
 #endif/*MPU_MAX_PRIVATE_FUNCTIONS*/
@@ -261,11 +259,12 @@ static void vmpu_sanity_checks(void)
     /* verify SRAM relocation */
     DPRINTF("uvisor_ram : @0x%08X (%u bytes) [config]\n",
         __uvisor_config.reserved_start,
-        REGION_SIZE(__uvisor_config.reserved_start, __uvisor_config.reserved_end)
+        VMPU_REGION_SIZE(__uvisor_config.reserved_start, __uvisor_config.reserved_end)
     );
     DPRINTF("             (0x%08X (%u bytes) [linker]\n", SRAM_ORIGIN, USE_SRAM_SIZE);
     assert( __uvisor_config.reserved_end > __uvisor_config.reserved_start );
-    assert( REGION_SIZE(__uvisor_config.reserved_start,__uvisor_config.reserved_end) == USE_SRAM_SIZE );
+    assert( VMPU_REGION_SIZE(__uvisor_config.reserved_start,__uvisor_config.reserved_end) == USE_SRAM_SIZE );
+    assert(&__stack_end__ == __uvisor_config.reserved_end);
 
     assert( (uint32_t)__uvisor_config.reserved_start == SRAM_ORIGIN);
     assert( (uint32_t)__uvisor_config.reserved_end == (SRAM_ORIGIN+USE_SRAM_SIZE) );
@@ -291,6 +290,33 @@ static void vmpu_sanity_checks(void)
     assert( __uvisor_config.data_start >= __uvisor_config.secure_start );
     assert( __uvisor_config.data_start >= __uvisor_config.reserved_end );
     assert( (uint32_t)__uvisor_config.data_end <= (uint32_t)(SRAM_ORIGIN+SRAM_LENGTH-STACK_SIZE));
+
+    /* verify data bss section */
+    assert( __uvisor_config.bss_start <= __uvisor_config.bss_end );
+    assert( __uvisor_config.bss_start >= __uvisor_config.secure_start );
+    assert( __uvisor_config.bss_start >= __uvisor_config.reserved_end );
+    assert( (uint32_t)__uvisor_config.data_end <= (uint32_t)(SRAM_ORIGIN+SRAM_LENGTH-STACK_SIZE));
+
+    /* check section ordering */
+    assert( __uvisor_config.bss_end <= __uvisor_config.data_start );
+
+}
+
+static void vmpu_init_box_memories(void)
+{
+    /* reset uninitialized secured box data sections */
+    memset(
+        __uvisor_config.bss_start,
+        0,
+        VMPU_REGION_SIZE(__uvisor_config.bss_start, __uvisor_config.bss_end)
+    );
+
+    /* initialize secured box data sections */
+    memcpy(
+        __uvisor_config.data_start,
+        __uvisor_config.data_src,
+        VMPU_REGION_SIZE(__uvisor_config.data_start, __uvisor_config.data_end)
+    );
 }
 
 int vmpu_init(void)
@@ -301,6 +327,9 @@ int vmpu_init(void)
     /* bail if uvisor is disabled */
     if(!__uvisor_config.mode || (*__uvisor_config.mode==0))
         return -1;
+
+    /* run basic sanity checks */
+    vmpu_init_box_memories();
 
     /* setup security "bluescreen" exceptions */
     ISR_SET(BusFault_IRQn,         &vmpu_fault_bus);
