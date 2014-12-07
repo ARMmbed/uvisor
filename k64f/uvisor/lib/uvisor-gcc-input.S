@@ -42,8 +42,8 @@ uvisor_config:
     .long __uvisor_data_end
 
     /* uninitialized secret data section */
-    .ĺong __uvisor_bss_start
-    .ĺong __uvisor_bss_end
+    .long __uvisor_bss_start
+    .long __uvisor_bss_end
 
     /* start and end of flash protection - remaining flash size is
        available for configuration storage */
