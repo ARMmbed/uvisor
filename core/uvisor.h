@@ -45,8 +45,10 @@ typedef void (*UnprivilegedBoxEntry)(void);
 
 #ifdef  NDEBUG
 #define DPRINTF(...) {}
+#define assert(...)
 #else /*NDEBUG*/
 #define DPRINTF dprintf
+#define assert(x) if(!(x)){dprintf("HALTED(%s:%i): assert(%s)\n",  __FILE__, __LINE__, #x);while(1);}
 #endif/*NDEBUG*/
 
 #ifdef  CHANNEL_DEBUG
