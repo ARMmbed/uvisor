@@ -80,6 +80,7 @@ SECTIONS
 
     .isr (NOLOAD):
     {
+        __uvisor_reserved_start = .;
         . = ALIGN(128);
         *(.isr_vector)
     } > RAM

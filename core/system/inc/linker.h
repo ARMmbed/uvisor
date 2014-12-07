@@ -26,8 +26,10 @@ typedef struct {
     /* uvisors protected flash memory regions */
     uint32_t *secure_start, *secure_end;
 
-} PACKED TUVisorConfig;
+    /* memory reserved for uvisor */
+    uint32_t *reserved_start, *reserved_end;
+} PACKED UvConfig;
 
-EXTERN const TUVisorConfig __uvisor_config;
+EXTERN const UvConfig __uvisor_config;
 
 #endif/*__LINKER_H__*/

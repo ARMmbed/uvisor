@@ -29,6 +29,7 @@
 /* unprivileged box as called by privileged code */
 typedef void (*UnprivilegedBoxEntry)(void);
 
+#define NOINLINE __attribute__ ((noinline))
 #define PACKED __attribute__((packed))
 #define WEAK __attribute__ ((weak))
 #define ALIAS(f) __attribute__ ((weak, alias (#f)))
@@ -41,6 +42,12 @@ typedef void (*UnprivilegedBoxEntry)(void);
 
 /* per-project-configuration */
 #include <config.h>
+
+#ifdef  NDEBUG
+#define DPRINTF(...) {}
+#else /*NDEBUG*/
+#define DPRINTF dprintf
+#endif/*NDEBUG*/
 
 #ifdef  CHANNEL_DEBUG
 #if (CHANNEL_DEBUG<0) || (CHANNEL_DEBUG>31)
