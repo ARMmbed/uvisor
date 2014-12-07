@@ -304,6 +304,10 @@ static void vmpu_sanity_checks(void)
 
 static void vmpu_init_box_memories(void)
 {
+    DPRINTF("erasing BSS at 0x%08X (%u bytes)\n",
+        __uvisor_config.bss_start,
+        VMPU_REGION_SIZE(__uvisor_config.bss_start, __uvisor_config.bss_end)
+    );
     /* reset uninitialized secured box data sections */
     memset(
         __uvisor_config.bss_start,
@@ -311,6 +315,11 @@ static void vmpu_init_box_memories(void)
         VMPU_REGION_SIZE(__uvisor_config.bss_start, __uvisor_config.bss_end)
     );
 
+    DPRINTF("copying .data from 0x%08X to 0x%08X (%u bytes)\n",
+        __uvisor_config.data_src,
+        __uvisor_config.bss_start,
+        VMPU_REGION_SIZE(__uvisor_config.data_start, __uvisor_config.data_end)
+    );
     /* initialize secured box data sections */
     memcpy(
         __uvisor_config.data_start,
