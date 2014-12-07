@@ -33,8 +33,16 @@ uvisor_config:
     /* start and end address of box list */
     .long __uvisor_cfgtbl_start
     .long __uvisor_cfgtbl_end
-    .long __uvisor_stack_start
-    .long __uvisor_stack_end
+
+    /* flash origin of initialized secret data */
+    .long __uvisor_data_src
+
+    /* initialized secret data section */
+    .long __uvisor_data_start
+    .long __uvisor_data_end
+
+    /* start and end of flash protection - remaining flash size is
+       available for configuration storage */
     .long __uvisor_secure_start
     .long __uvisor_secure_end
 
@@ -44,7 +52,7 @@ __uvisor_mode:
 
     .align 5
 
-.section .uvisor.data.main,"awM",@nobits
+.section .uvisor.bss.main,"awM",@nobits
     .align 5
 __uvisor_stack_start:
     .space UVISOR_SRAM_SIZE
