@@ -232,7 +232,13 @@ int vmpu_switch(uint8_t box)
     return -1;
 }
 
-int vmpu_init(void)
+bool vmpu_valid_code_addr(const void* address)
+{
+    return (((uint32_t)address) >= FLASH_ORIGIN)
+        && (((uint32_t)address) <= (uint32_t)__uvisor_config.secure_start);
+}
+
+static void vmpu_sanity_checks(void)
 {
     /* verify uvisor config structure */
     if(__uvisor_config.magic!=UVISOR_MAGIC)
@@ -244,14 +250,29 @@ int vmpu_init(void)
                 UVISOR_MAGIC);
         }
 
-        /* bail if uvisor was disabled */
-    if(!__uvisor_config.mode || (*__uvisor_config.mode==0))
-        return -1;
-
     DPRINTF("uvisor_mode: 0x%08X\n", *__uvisor_config.mode);
     DPRINTF("cfgtable: start=0x%08X end=0x%08X\n",
         __uvisor_config.cfgtbl_start,
         __uvisor_config.cfgtbl_end);
+
+    /* verify that __uvisor_config is within valid flash */
+    assert( ((uint32_t)&__uvisor_config)>=FLASH_ORIGIN );
+    assert( ((((uint32_t)&__uvisor_config)+sizeof(__uvisor_config))
+            <=(FLASH_ORIGIN+FLASH_LENGTH)) );
+
+    assert( __uvisor_config.secure_start <= __uvisor_config.secure_end );
+    assert( (uint32_t) __uvisor_config.secure_end < (uint32_t)(FLASH_ORIGIN+FLASH_LENGTH) );
+    assert( __uvisor_config.secure_start >= FLASH_ORIGIN );
+}
+
+int vmpu_init(void)
+{
+    /* run basic sanity checks */
+    vmpu_sanity_checks();
+
+    /* bail if uvisor was disabled */
+    if(!__uvisor_config.mode || (*__uvisor_config.mode==0))
+        return -1;
 
     /* setup security "bluescreen" exceptions */
     ISR_SET(BusFault_IRQn,         &vmpu_fault_bus);
