@@ -20,43 +20,18 @@ const NV_Type nv_config = {
 };
 #endif/*NV_CONFIG_OFFSET*/
 
-int uvisor_init(void)
+NOINLINE int uvisor_init(void)
 {
-    int t;
-    volatile int i;
-
-    /* verify config structure */
-    if(__uvisor_config.magic!=UVISOR_MAGIC)
-        while(1)
-        {
-            dprintf("config magic mismatch: &0x%08X=0x%08X - exptected 0x%08X\n",
-                &__uvisor_config,
-                __uvisor_config.magic,
-                UVISOR_MAGIC);
-            for(i = 0; i < 200000; i++);
-        }
-
-    /* bail if uvisor was disabled */
-    if(!__uvisor_config.mode || (*__uvisor_config.mode==0))
-        return -1;
-
-    dprintf("uvisor_mode: 0x%08X\n", *__uvisor_config.mode);
-    dprintf("cfgtable: start=0x%08X end=0x%08X\n",
-        __uvisor_config.cfgtbl_start,
-        __uvisor_config.cfgtbl_end);
+    int res;
 
     /* init MPU */
-    vmpu_init();
+    if((res = vmpu_init())!=0)
+        return res;
 
-    /* init SVC */
+    /* init SVC call interface */
     svc_init();
 
-    t = 0;
-    while(t < 10)
-    {
-        dprintf("Hello World %i!\n", t++);
-        for(i = 0; i < 200000; i++);
-    }
+    DPRINTF("uvisor initialized\n");
 
     return 0;
 }

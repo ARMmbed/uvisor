@@ -149,9 +149,7 @@ static int vmpu_box_add_fn(uint8_t box_id, const void **fn, uint32_t count)
         }
     } while (sorting);
 
-#ifndef NDEBUG
-        dprintf("added %i functions for box_id=%i:\n", count, box_id);
-#endif/*NDEBUG*/
+    DPRINTF("added %i functions for box_id=%i:\n", count, box_id);
 
     /* update g_fn_table_hash and function counts */
     p = g_fn;
@@ -175,10 +173,8 @@ static int vmpu_box_add_fn(uint8_t box_id, const void **fn, uint32_t count)
             hprev = h;
         }
 
-#ifndef NDEBUG
-        dprintf("\tfn_addr:0x08X, box:0x%02X, fn_hash=0x%02X, fn_count=0x%02X\n",
+        DPRINTF("\tfn_addr:0x08X, box:0x%02X, fn_hash=0x%02X, fn_count=0x%02X\n",
             p->addr, p->box_id, p->hash, p->count);
-#endif/*NDEBUG*/
 
         /* advance to next entry */
         p++;
@@ -236,8 +232,27 @@ int vmpu_switch(uint8_t box)
     return -1;
 }
 
-void vmpu_init(void)
+int vmpu_init(void)
 {
+    /* verify uvisor config structure */
+    if(__uvisor_config.magic!=UVISOR_MAGIC)
+        while(1)
+        {
+            DPRINTF("config magic mismatch: &0x%08X=0x%08X - exptected 0x%08X\n",
+                &__uvisor_config,
+                __uvisor_config.magic,
+                UVISOR_MAGIC);
+        }
+
+        /* bail if uvisor was disabled */
+    if(!__uvisor_config.mode || (*__uvisor_config.mode==0))
+        return -1;
+
+    DPRINTF("uvisor_mode: 0x%08X\n", *__uvisor_config.mode);
+    DPRINTF("cfgtable: start=0x%08X end=0x%08X\n",
+        __uvisor_config.cfgtbl_start,
+        __uvisor_config.cfgtbl_end);
+
     /* setup security "bluescreen" exceptions */
     ISR_SET(BusFault_IRQn,         &vmpu_fault_bus);
     ISR_SET(UsageFault_IRQn,       &vmpu_fault_usage);
@@ -246,4 +261,7 @@ void vmpu_init(void)
 
     /* enable mem, bus and usage faults */
     SCB->SHCSR |= 0x70000;
+
+    /* return successful */
+    return 0;
 }

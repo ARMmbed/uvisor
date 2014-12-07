@@ -46,6 +46,10 @@ uvisor_config:
     .long __uvisor_secure_start
     .long __uvisor_secure_end
 
+    /* start and end of uvisor stack */
+    .long __uvisor_reserved_start
+    .long __uvisor_reserved_end
+
     /* uvisor default mode - user can override weak reference */
 __uvisor_mode:
     .long 0
@@ -53,8 +57,6 @@ __uvisor_mode:
     .align 5
 
 .section .uvisor.bss.main,"awM",@nobits
-    .align 5
-__uvisor_stack_start:
+__uvisor_reserved_start:
     .space UVISOR_SRAM_SIZE
-    .align 5
-__uvisor_stack_end:
+__uvisor_reserved_end:
