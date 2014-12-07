@@ -21,17 +21,21 @@
 #endif/*UVISOR_BOX_STACK*/
 
 #define UVISOR_SET_MODE(mode) \
-	static UVISOR_SECURE_CONST uint32_t __uvisor_mode = (mode)
+	UVISOR_EXTERN const __attribute__((section(".uvisor.secure.keep"))) \
+	uint32_t __uvisor_mode = (mode)
 
 #define UVISOR_SECURE_CONST \
 	const volatile __attribute__((section(".uvisor.secure"), aligned(32)))
+
+#define UVISOR_SECURE_BSS \
+	__attribute__((section(".uvisor.bss.main"), aligned(32)))
 
 #define UVISOR_SECURE_DATA \
 	__attribute__((section(".uvisor.data"), aligned(32)))
 
 #define UVISOR_BOX_CONFIG(acl_list, stack_size) \
 	\
-	uint8_t __attribute__((section(".uvisor.data.stack"), aligned(32))) \
+	uint8_t __attribute__((section(".uvisor.bss.stack"), aligned(32))) \
 		acl_list ## _stack[UVISOR_STACK_SIZE_ROUND(stack_size)];\
 	\
 	static UVISOR_SECURE_CONST UvBoxConfig acl_list ## _cfg = { \
