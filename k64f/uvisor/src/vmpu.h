@@ -40,6 +40,8 @@ extern int vmpu_acl_mem(TACL acl, uint32_t addr, uint32_t size);
 extern int vmpu_acl_reg(TACL acl, uint32_t addr, uint32_t rmask, uint32_t wmask);
 extern int vmpu_acl_bit(TACL acl, uint32_t addr);
 
+extern bool vmpu_valid_code_addr(const void* address);
+
 extern int vmpu_wr(uint32_t addr, uint32_t data);
 extern int vmpu_rd(uint32_t addr);
 

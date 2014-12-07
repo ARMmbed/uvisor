@@ -2,7 +2,6 @@
 #define __LINKER_H__
 
 EXTERN const uint32_t __code_end__;
-
 EXTERN const uint32_t __stack_end__;
 
 EXTERN uint32_t __bss_start__;
