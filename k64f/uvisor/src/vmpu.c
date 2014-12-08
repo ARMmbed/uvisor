@@ -1,9 +1,17 @@
 #include <uvisor.h>
+#include <uvisor-lib.h>
 #include "vmpu.h"
 
 #ifndef MPU_MAX_PRIVATE_FUNCTIONS
 #define MPU_MAX_PRIVATE_FUNCTIONS 16
 #endif/*MPU_MAX_PRIVATE_FUNCTIONS*/
+
+/* predict SRAM offset */
+#ifdef RESERVED_SRAM
+#  define RESERVED_SRAM_START UVISOR_ROUND32(SRAM_ORIGIN+RESERVED_SRAM)
+#else
+#  define RESERVED_SRAM_START SRAM_ORIGIN
+#endif
 
 #if (MPU_MAX_PRIVATE_FUNCTIONS>0x100UL)
 #error "MPU_MAX_PRIVATE_FUNCTIONS needs to be lower/equal to 0x100"
@@ -261,13 +269,13 @@ static void vmpu_sanity_checks(void)
         __uvisor_config.reserved_start,
         VMPU_REGION_SIZE(__uvisor_config.reserved_start, __uvisor_config.reserved_end)
     );
-    DPRINTF("             (0x%08X (%u bytes) [linker]\n", SRAM_ORIGIN, USE_SRAM_SIZE);
+    DPRINTF("             (0x%08X (%u bytes) [linker]\n", RESERVED_SRAM_START, USE_SRAM_SIZE);
     assert( __uvisor_config.reserved_end > __uvisor_config.reserved_start );
     assert( VMPU_REGION_SIZE(__uvisor_config.reserved_start,__uvisor_config.reserved_end) == USE_SRAM_SIZE );
-    assert(&__stack_end__ == __uvisor_config.reserved_end);
+    assert(&__stack_end__ <= __uvisor_config.reserved_end);
 
-    assert( (uint32_t)__uvisor_config.reserved_start == SRAM_ORIGIN);
-    assert( (uint32_t)__uvisor_config.reserved_end == (SRAM_ORIGIN+USE_SRAM_SIZE) );
+    assert( (uint32_t)__uvisor_config.reserved_start == RESERVED_SRAM_START);
+    assert( (uint32_t)__uvisor_config.reserved_end == (RESERVED_SRAM_START+USE_SRAM_SIZE) );
 
     /* verify that __uvisor_config is within valid flash */
     assert( ((uint32_t)&__uvisor_config)>=FLASH_ORIGIN );
@@ -299,7 +307,6 @@ static void vmpu_sanity_checks(void)
 
     /* check section ordering */
     assert( __uvisor_config.bss_end <= __uvisor_config.data_start );
-
 }
 
 static void vmpu_init_box_memories(void)
@@ -317,7 +324,7 @@ static void vmpu_init_box_memories(void)
 
     DPRINTF("copying .data from 0x%08X to 0x%08X (%u bytes)\n",
         __uvisor_config.data_src,
-        __uvisor_config.bss_start,
+        __uvisor_config.data_start,
         VMPU_REGION_SIZE(__uvisor_config.data_start, __uvisor_config.data_end)
     );
     /* initialize secured box data sections */
