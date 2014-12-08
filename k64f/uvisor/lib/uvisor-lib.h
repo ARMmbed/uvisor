@@ -21,14 +21,13 @@
 #endif/*UVISOR_BOX_STACK*/
 
 #define UVISOR_SET_MODE(mode) \
-	UVISOR_EXTERN const __attribute__((section(".uvisor.secure.keep"))) \
-	uint32_t __uvisor_mode = (mode)
+	UVISOR_EXTERN const uint32_t __uvisor_mode = (mode);
 
 #define UVISOR_SECURE_CONST \
 	const volatile __attribute__((section(".uvisor.secure"), aligned(32)))
 
 #define UVISOR_SECURE_BSS \
-	__attribute__((section(".uvisor.bss.main"), aligned(32)))
+	__attribute__((section(".uvisor.bss.data"), aligned(32)))
 
 #define UVISOR_SECURE_DATA \
 	__attribute__((section(".uvisor.data"), aligned(32)))

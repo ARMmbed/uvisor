@@ -12,7 +12,7 @@ TARGET_BIN:=$(TARGET_DIR)/$(UVISOR_BIN)
 TARGET_VER:=$(TARGET_DIR)/version.txt
 
 APP_CLEAN:=$(TARGET_LIB) $(TARGET_S) $(TARGET_BIN) $(TARGET_VER)
-APP_CFLAGS:=-DUVISOR $(CONFIG) -Iconfig -Isrc
+APP_CFLAGS:=-DUVISOR $(CONFIG) -Iconfig -Isrc -Ilib
 APP_SRC:=\
 	src/svc.c \
 	src/vmpu.c \
