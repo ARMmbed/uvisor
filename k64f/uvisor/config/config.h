@@ -4,7 +4,7 @@
 
 #ifdef  NOSYSTEM
 #define RESERVED_FLASH 0x420
-#define RESERVED_SRAM 0x198
+#define RESERVED_SRAM 0x200
 #else
 #define NV_CONFIG_OFFSET 0x400
 #endif/*NOSYSTEM*/
