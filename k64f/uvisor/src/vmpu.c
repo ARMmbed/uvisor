@@ -340,12 +340,12 @@ int vmpu_init(void)
     /* run basic sanity checks */
     vmpu_sanity_checks();
 
+    /* always initialize protected box memories */
+    vmpu_init_box_memories();
+
     /* bail if uvisor is disabled */
     if(!__uvisor_config.mode || (*__uvisor_config.mode==0))
         return -1;
-
-    /* initialize protected box memories */
-    vmpu_init_box_memories();
 
     /* setup security "bluescreen" exceptions */
     ISR_SET(BusFault_IRQn,         &vmpu_fault_bus);
