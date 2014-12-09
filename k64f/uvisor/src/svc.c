@@ -1,21 +1,22 @@
 #include <uvisor.h>
 #include "svc.h"
+#include "vmpu.h"
 
-#define SVC_HDLRS_NUM    (ARRAY_COUNT(g_svc_vtor_tbl) - 1)
+/* max number of SVC handlers */
+#define SVC_HDLRS_NUM (ARRAY_COUNT(g_svc_vtor_tbl) - 1)
 
-static void secure_switch(uint32_t addr)
+static void secure_context_switch(uint32_t dst_addr)
 {
-    dprintf("switching for address: 0x%08X\n", addr);
 }
 
-static void svc_test()
+void uvisor_bitband(uint32_t *addr, uint32_t val)
 {
-    dprintf("svc_test\n");
+    *addr = val;
 }
 
 __attribute__ ((section(".svc_vector"))) const void *g_svc_vtor_tbl[] = {
-    secure_switch,        // 0
-    svc_test,        // 1
+    secure_context_switch,    // 0
+    uvisor_bitband,        // 1
 };
 
 static void __attribute__((naked)) __svc_irq(void)
@@ -24,7 +25,7 @@ static void __attribute__((naked)) __svc_irq(void)
         "tst    r12, #1\n"            // if ADDR_CMDn
         "itt    ne\n"
         "movne    r0, r12\n"            //   pass r12 as argument
-        "bne    secure_switch\n"        //   shortcut to switch_in
+        "bne    secure_context_switch\n"    //   shortcut to switch_in
 
         "tst    lr, #4\n"            // otherwise regular SVC:
         "itee    ne\n"                //   select sp
@@ -57,5 +58,6 @@ static void __attribute__((naked)) __svc_irq(void)
 
 void svc_init(void)
 {
+    /* register SVC handler */
     ISR_SET(SVCall_IRQn, &__svc_irq);
 }
