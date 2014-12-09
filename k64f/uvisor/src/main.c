@@ -50,6 +50,21 @@ NOINLINE int uvisor_init(void)
     return 0;
 }
 
+static void scan_box_acls(void)
+{
+    /* FIXME implement security context switch between main and
+     *       secure box - hardcoded for now, later using ACLs from
+     *       UVISOR_BOX_CONFIG */
+
+    /* the linker script creates a list of all box ACLs configuration
+     * pointers from __uvisor_cfgtbl_start to __uvisor_cfgtbl_end */
+
+    AIPS0->PACRM &= ~(1 << 14); // MCG_C1_CLKS (PACRM[15:12])
+    AIPS0->PACRN &= ~(1 << 22); // UART0       (PACRN[23:20])
+    AIPS0->PACRJ &= ~(1 << 30); // SIM_CLKDIV1 (PACRJ[31:28])
+    AIPS0->PACRJ &= ~(1 << 22); // PORTB mux   (PACRJ[23:20])
+}
+
 void main_entry(void)
 {
     /* initialize uvisor */
@@ -60,6 +75,9 @@ void main_entry(void)
         __set_PSP(__get_MSP());
         __set_MSP(((uint32_t)&__stack_end__)-STACK_GUARD_BAND);
         __enable_irq();
+
+        /* apply box ACLs */
+        scan_box_acls();
 
         /* switch to unprivileged mode.
          * this is possible as uvisor code is readable by unprivileged.
