@@ -26,7 +26,8 @@ release: lib/uvisor-gcc-input.S lib/uvisor-lib.h $(PROJECT).bin
 	echo "$(PROGRAM_VERSION)" > $(TARGET_VER)
 	cp $(PROJECT).bin $(TARGET_BIN)
 	cp lib/uvisor-lib.h $(TARGET_BASE)/uvisor-lib/uvisor-lib.h
-	$(CPP) -w -P -I$(CORE) $(APP_CFLAGS) -DP-D$(CPU) -D$(ARCH) -DTARGET_BIN=\"$(UVISOR_BIN)\" $< -o$(TARGET_S)
+	cp -f lib/uvisor-gcc-header.S $(TARGET_S)
+	$(CPP) -w -P -I$(CORE) $(APP_CFLAGS) -DP-D$(CPU) -D$(ARCH) -DTARGET_BIN=\"$(UVISOR_BIN)\" $< >> $(TARGET_S)
 
 test: release $(TARGET_S)
 	$(CC) $(CFLAGS) -c -o $@ $(TARGET_S)
