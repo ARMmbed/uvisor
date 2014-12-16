@@ -1,107 +1,152 @@
-# crypto.box - a Cortex-M TEE Prototype
+# The uVisor
 
 ## Overview
-The code in this tree creates two independent security domains on a
-Cortex M3 micro controller (M0+ will follow). The target is to increase
-resilience against malware and to protect cryptographic secrets from leaking.
+The uVisor is a self-contained software hypervisor that creates independet
+secure domains on ARM Cortex-M3 and M4 micro-controllers (M0+ will follow). Its
+target is to increase resilience against malware and to protect secrets from
+leaking even among different modules of the same application.
 
-### The crypto.box uVisor
-* initialized first during device reset
-* run in privileged mode
-* set up a protected environment using the cortex-M Memory Protection Unit (MPU)
-	* protect own memories and critical peripherals from unprivileged code
-	* limit unprivileged access to selected hardware peripherals and memories
-* allow interaction from unprivileged code by exposing a SVC call based API
-* forward and de-privilege interrupts to unprivileged code
-	* prevent register leakage of privileged code to unprivileged code
-* force access to security-critical peripherals like DMA through the SVC api
+Currently the only supported platform is:
+- Freescale FRDM-K64F (GCC ARM Embedded toolchain).
 
-### The crypto.box Client
-* runs in unprivileged mode
-* access to privileged memories and peripherals is prevented by the uVisor
-* has direct memory access to unprivileged peripherals
-* can register for unprivileged interrupts
-* can be made of mutually untrusted components isolated by the uVisor
+### The uVisor
+Independently from target-specific implementations, the uVisor:
+* is initialized right after device start-up;
+* runs in privileged mode;
+* sets up a protected environment using a Memory Protection Unit (the ARM
+  Cortex-M MPU or a vendor-specific alternative); in particular:
+    * its own memories and the security-critical peripherals are protected from
+      the unprivileged code;
+    * unprivileged access to selected hardware peripherals and memories is
+      limited through Access Control Lists (ACLs);
+* allows interaction from the unprivileged code by exposing an SVCall-based
+  API;
+* forwards and de-privileges interrupts to the unprivileged code that has
+  registered for them;
+* prevents register leakage when switching execution between privileged and
+  unprivileged code and between mutually untrusted unprivileged modules;
+* forces access to some security-critical peripherals (like DMA) through an
+  SVCall-based API.
+
+### The Client
+All the code that is not explicitly part of the uVisor is generally referred to
+as the Client. In general, the Client:
+* runs in unprivileged mode;
+* is prevented access to privileged memories and peripherals by the uVisor;
+* has direct memory access to unprivileged peripherals;
+* can register for unprivileged interrupts;
+* can be made of mutually untrusted modules (or boxes) isolated by the uVisor.
+The Client can interact with the uVisor thorugh a limited set of APIs which
+allow to configure a secure module, protect its secrets and call untrusted
+functions securely.
 
 ### Memory Layout
-crypto.box code is readable and executable by unprivileged code. The reasons for that are:
-* Easy transitions from privileged mode to unprivileged mode: de-privileging happens in crypto.box owned memory segments
-* Saves one MPU region - more regions available for dynamic allocation
-* Unprivileged code can directly call privileged helper functions without switching privilege levels: allows code-reuse to save flash memory. Helper functions can still decide to switch to privileged mode via the SVC call.
-* Unprivileged code can verify the integrity of the privileged uVisor.
-* Confidentiality of the Exception/Interrupt table is still guaranteed as it's kept in secured RAM.
+The following figure shows the memory layout of a system where security is
+enforced by the uVisor.
 
-![cryptobox MPU memory configuration](https://github.com/ARM-RD/cryptobox/raw/images/efm32_uvisor/docs/memory-map.png "cryptobox MPU memory configuration")
+![uVisor memory
+layout](https://github.com/ARMmbed/uvisor/raw/images/k64f/docs/memory_layout.png
+"uVisor memory layout")
 
-## Setting up the Hardware
+The main memory sections on which the uVisor relies are described in the
+following table:
 
-* current tree supports the EFM32™ Giant Gecko Starter Kit (EFM32GG-STK3700)
-* starter kit comes with an integrated J-Link SWD'er
-* change power switch to "DBG" so the STK3700 is powered by the debugger
-* you need to plug a mini-usb cable into the "DBG" USB port
+| Memory section | Description                                                |
+|----------------|------------------------------------------------------------|
+| uvisor.bss     | Bla                                                        |
+| uvisor.bla     | Even more bla                                              |
 
-## Software Installation
+The uVisor code is readable and executable by unprivileged code. The reasons
+for that are:
+* easy transitions from privileged to unprivileged mode: De-privileging happens
+  in the uVisor-owned memory segments;
+* unprivileged code can directly call privileged helper functions without
+  switching privilege levels. Helper functions can still switch to privileged
+  mode via an SVCall;
+* unprivileged code can verify the integrity of the privileged uVisor;
+* confidentiality of the exception/interrupt table is still guaranteed as it's
+  kept in secured RAM.
 
-Development should work in Linux and Mac
-* Get latest arm-none-eabi-gcc from https://launchpad.net/gcc-arm-embedded
-* Download the latest SEGGER J-Link software & documentation pack for your platform
+## The uVisor as a system or as a yotta module
 
-## Development
+The uVisor can be used in two different ways:
+1. As a compact system. A custom start-up code for the target platform is used;
+   the uVisor then takes full ownership and control of the system,
+   de-privileging execution to the Client application. In this case the whole
+   application can be built as follows:
+   ```bash
+   # select the correct platform in the code tree
+   cd /path/to/platform-specific/code
 
-### Quickstart
+   # rebuild the uVisor together with its unprivileged applications
+   # erase the chip and flash the uVisor
+   make clean all erase flash CONFIG=
+   ```
 
-Currently the Client application is made of two mutually untrusted modules:
-* box   - the main application
-* xor   - an example library to show modules isolation and secure context switch
-* timer - an example library to show modules isolation and unprivileged interrupt handling
+2. As a yotta module. The uVisor is compiled and packaged to be included as a
+   dependency by applications built with yotta on top of mbed. The yotta module
+   for the uVisor is called uvisor-lib and can be found
+   [here](https://github.com/ARMmbed/uvisor-lib). It is suggested to always use
+   the official module. For development, experimenting, or fun, the uVisor can
+   also be manually turned into a yotta module and locally linked to yotta.
+   First of all, build the yotta module:
+   ```bash
+   # select the correct platform in the code tree
+   cd /path/to/platform-specific/code
 
-#### Flash both uvisor and client:
-```Bash
-# rebuild cryptobox uvisor, erase chip and flash uvisor
-make -C efm32_uvisor clean all erase flash
- 
-# keeping the uVisor, rebuild cryptobox guest application modules, 
-# flash them, reset CPU and start SWD terminal with debug output
-make -C efm32_timer  clean all flash 
-make -C efm32_xor    clean all flash 
-make -C efm32_box    clean all flash reset swo
+   # build the uVisor and generate the yotta module
+   make clean release
+   ```
+   Then link your local build of yotta to this version of the module:
+   ```bash
+   # the release folder is at the top level of the code tree
+   cd /path/to/release/in/the/code/tree
+
+   # link the module to yotta locally
+   sudo yotta link
+
+   # link your project to this version of uvisor-lib
+   cd /path/to/project/including/uvisor-lib
+   yotta link uvisor-lib
+   ```
+   Again, consider using the uvisor-lib directly if building with yotta, and
+   refer to its [documentation](https://github.com/ARMmbed/uvisor-lib).
+
+## Debugging
+
+By default, debugging output is silenced and only occurs when the device is
+halted due to faults or failures catched by the uVisor. To enable more verbose
+debugging, just build as follows:
+```bash
+# uVisor as a whole system
+make clean all DEBUG=
+
+# uVisor as a yotta module
+make clean release DEBUG=
 ```
+Please note that the `DEBUG=` option prevents the execution from continuing
+if an SWO viewer is not connected.
 
-#### Example output:
-```AsciiDoc
-Target CPU is running @ 14000 kHz.
-Receiving SWO data @ 900 kHz.
-Showing data from stimulus port(s): 0, 1
------------------------------------------------
-MPU region dump:
-	R:0 RBAR=0x00000000 RASR=0x00000000
-	R:1 RBAR=0x00000001 RASR=0x00000000
-	R:2 RBAR=0x00000002 RASR=0x00000000
-	R:3 RBAR=0x20000003 RASR=0x0301FC21
-	R:4 RBAR=0x00000004 RASR=0x0602FC27
-	R:5 RBAR=0x00000005 RASR=0x15010121
-	R:6 RBAR=0x20000006 RASR=0x10010017
-	R:7 RBAR=0x20000007 RASR=0x11018417
-	CTRL=0x00000000
-MPU ACL list - maximum of 8 entries:
-  00: @0x400C8000 size=0x0080 pri=0
-  01: @0x4000E400 size=0x0080 pri=0
-  02: @0x40006000 size=0x0100 pri=0
-  03: @0x40010400 size=0x0080 pri=0
-  04: @0x0FE08100 size=0x0100 pri=0
-uVisor switching to unprivileged mode
-  caught access to 0x400C8044 (base=0x400C8000) - MPU reprogrammed
-  caught access to 0x40006094 (base=0x40006000) - MPU reprogrammed
-  caught access to 0x0FE081E0 (base=0x0FE08100) - MPU reprogrammed
-  caught access to 0x4000E414 (base=0x4000E400) - MPU reprogrammed
-  caught access to 0x4001041C (base=0x40010400) - MPU reprogrammed
-  caught access to 0x400060A8 (base=0x40006000) - MPU reprogrammed
-timer initialized!
-xor initialized!
-hardware initialized, running main loop...
-
-xor encryption...
-arg: 0x0000FEED
-ret: 0x0000FEC7
-...done.
+Debugging messages are output through the SWO port. An SWO viewer is needed to
+access it. If using a JLink debugger, just use:
+```bash
+cd /path/to/supported/platform
+make swo
 ```
+or refer to `Makefile.rules` to import the `swo` rule in your build
+environment.
+
+If SWO is also used by the Client application for different purposes (for
+example, for regular print functions), make sure to re-direct it to a different
+channel (channel 0 used here).
+
+## Software and Hardware Requirements
+
+* One of the available target boards
+
+To build:
+* Latest [GCC ARM Embeeded toolchain](https://launchpad.net/gcc-arm-embedded)
+
+To debug:
+* A JLink debugger (JLink LITE CortexM at least)
+* Latest SEGGER JLink software & documentation pack for the target platform
