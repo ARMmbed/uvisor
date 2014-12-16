@@ -70,6 +70,7 @@ for that are:
 ## The uVisor as a system or as a yotta module
 
 The uVisor can be used in two different ways:
+
 1. As a compact system. A custom start-up code for the target platform is used;
    the uVisor then takes full ownership and control of the system,
    de-privileging execution to the Client application. In this case the whole
