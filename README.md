@@ -150,4 +150,4 @@ To build:
 
 To debug:
 * A JLink debugger (JLink LITE CortexM at least)
-* Latest SEGGER JLink software & documentation pack for the target platform
+* Latest [SEGGER JLink software & documentation pack](https://www.segger.com/jlink-software.html) for the target platform
