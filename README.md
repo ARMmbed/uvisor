@@ -71,7 +71,19 @@ for that are:
 
 The uVisor can be used in two different ways:
 
-1. As a compact system. A custom start-up code for the target platform is used;
+1. As a compact system
+2. As a yotta module
+
+When used as a yotta module on top of mbed, the uVisor comes as a
+pre-compiled binary blob which is then included in the rest of the system. In
+this way the integrity of the uVisor, and hence its security model, are
+guardanteed. Each official release of uvisor-lib will then deliver an approved
+build of the code tree here presented, also exposing the APIs for the Client
+application.
+
+### As a compact system
+
+   A custom start-up code for the target platform is used;
    the uVisor then takes full ownership and control of the system,
    de-privileging execution to the Client application. In this case the whole
    application can be built as follows:
@@ -84,7 +96,9 @@ The uVisor can be used in two different ways:
    make clean all erase flash CONFIG=
    ```
 
-2. As a yotta module. The uVisor is compiled and packaged to be included as a
+### As a yotta module
+
+   The uVisor is compiled and packaged to be included as a
    dependency by applications built with yotta on top of mbed. The yotta module
    for the uVisor is called uvisor-lib and can be found
    [here](https://github.com/ARMmbed/uvisor-lib). It is suggested to always use
