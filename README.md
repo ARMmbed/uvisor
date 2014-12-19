@@ -1,6 +1,7 @@
 # The uVisor
 
 ## Overview
+
 The uVisor is a self-contained software hypervisor that creates independet
 secure domains on ARM Cortex-M3 and M4 micro-controllers (M0+ will follow). Its
 target is to increase resilience against malware and to protect secrets from
@@ -9,43 +10,94 @@ leaking even among different modules of the same application.
 Currently the only supported platform is:
 - Freescale FRDM-K64F (GCC ARM Embedded toolchain).
 
-### µvisor design philosophy
 
-The need for security features applies across a wide range of today’s IoT products. We at ARM are convinced that many IoT security problems can be solved with standardized building blocks.
+## The uVisor design philosophy
 
-The µvisor project is one of these basic building blocks – complementary to other important blocks like robust communication stacks, safe firmware update and secure crypto libraries.
+The need for security features applies across a wide range of today’s IoT
+products. We at ARM are convinced that many IoT security problems can be solved
+with standardized building blocks.
 
-The design philosophy of µvisor is to provide hardware-enforced compartments (sandboxes) for individual code blocks by limiting access to memories and peripherals using the existing hardware security features of Cortex-M micro-controllers.
+The uVisor project is one of these basic building blocks – complementary to
+other important blocks like robust communication stacks, safe firmware update
+and secure crypto libraries.
 
-Breaking the established flat security model of micro-controllers apart into compartmentalized building blocks results in high security levels as the reach of flaws or external attacks can be limited to less sensitive function blocks. Convenient remote recovery from malware infection or faulty code can be guaranteed as recovery code and security checks can be protected even against local attackers that can run code on the device.
+The design philosophy of uVisor is to provide hardware-enforced compartments
+(sandboxes) for individual code blocks by limiting access to memories and
+peripherals using the existing hardware security features of Cortex-M
+micro-controllers.
 
-A basic example for µvisor is preventing unauthorized access to flash memory from faulty or compromised code. This not only prevents malware from getting resident on the device, but also enables protection of device secrets like cryptographic keys.
+Breaking the established flat security model of micro-controllers apart into
+compartmentalized building blocks results in high security levels as the reach
+of flaws or external attacks can be limited to less sensitive function blocks.
+Convenient remote recovery from malware infection or faulty code can be
+guaranteed as recovery code and security checks can be protected even against
+local attackers that can run code on the device.
 
-Services built on top of our security layer can safely depend on an unclonable trusted identity, secure access to internet services and benefit from encryption key protection.
+A basic example for uVisor is preventing unauthorized access to flash memory
+from faulty or compromised code. This not only prevents malware from getting
+resident on the device, but also enables protection of device secrets like
+cryptographic keys.
 
-### Hardware-enforced IoT security  
+Services built on top of our security layer can safely depend on an unclonable
+trusted identity, secure access to internet services and benefit from
+encryption key protection.
 
-It is obvious to developers that security-critical functions like SSL libraries need thorough vetting when security matters are involved. It is less obvious that the same level of attention is needed for all other components in the system, too. In the traditional micro-controller security model bugs in a single system component compromise all the other components in the system.
+### Hardware-enforced IoT security
 
-When comparing the huge amount of code involved in maintaining WiFi connections or enabling ZigBee or BLE communication, it becomes obvious that the resulting attack surface is impossible to verify and thus compromises device security – especially as important parts of the stack are often available in binary format only.
+It is obvious to developers that security-critical functions like SSL libraries
+need thorough vetting when security matters are involved. It is less obvious
+that the same level of attention is needed for all other components in the
+system, too. In the traditional micro-controller security model bugs in a
+single system component compromise all the other components in the system.
 
-To make things even harder, the recovery from a common class of security flaws – the execution of arbitrary code by an attacker – can lead to a situation where remote recovery becomes impossible. The attacker can run code on the target device which infects further updates for the malware to become resident.
+When comparing the huge amount of code involved in maintaining WiFi connections
+or enabling ZigBee or BLE communication, it becomes obvious that the resulting
+attack surface is impossible to verify and thus compromises device security –
+especially as important parts of the stack are often available in binary format
+only.
 
-Even a hardware-enforced root of trust and a secure boot loader will not fix that problem. The resident malware can run safely from RAM and can decide to block commands for resetting the device or erasing the flash as part of a denial-of-service attack.
+To make things even harder, the recovery from a common class of security flaws
+– the execution of arbitrary code by an attacker – can lead to a situation
+where remote recovery becomes impossible. The attacker can run code on the
+target device which infects further updates for the malware to become resident.
 
-The same is true for extraction of security keys by an attacker; it is impossible to rotate security keys safely, as an attacker will see key updates in real time and plain-text once running code on the device.
+Even a hardware-enforced root of trust and a secure boot loader will not fix
+that problem. The resident malware can run safely from RAM and can decide to
+block commands for resetting the device or erasing the flash as part of a
+denial-of-service attack.
 
-To fix that situation to our advantage, we need to reduce the attack surface as much as we can by using µvisor to shield critical peripherals from most of the code base. Attackers can now compromise the untrusted side containing the application logic and communication stack without affecting security on the private side, which holds basic crypto functions and the actual keys. As the private side is now impervious to attacks and cannot be compromised, it can safely reason about the security state of the public side.
+The same is true for extraction of security keys by an attacker; it is
+impossible to rotate security keys safely, as an attacker will see key updates
+in real time and plain-text once running code on the device.
 
-By utilizing a server-bound crypto watchdog, the private side can enforce communication to the server, even through malware-infested code on the public side. In case of doubt, the private side or the remote server can reliably reset or re-flash the public side to a clean state.
+To fix that situation to our advantage, we need to reduce the attack surface as
+much as we can by using uVisor to shield critical peripherals from most of the
+code base. Attackers can now compromise the untrusted side containing the
+application logic and communication stack without affecting security on the
+private side, which holds basic crypto functions and the actual keys. As the
+private side is now impervious to attacks and cannot be compromised, it can
+safely reason about the security state of the public side.
 
-This safety network enables fast innovation, as security flaws in the public state are safely recoverable after the product is shipped. Security keys are protected and can keep their validity and integrity even after a malware attack has been successfully stopped.
+By utilizing a server-bound crypto watchdog, the private side can enforce
+communication to the server, even through malware-infested code on the public
+side. In case of doubt, the private side or the remote server can reliably
+reset or re-flash the public side to a clean state.
 
-Code for the public state can be developed rapidly and does not have to go through the same level of security reasoning as the code in the private state, resulting in quick innovations and a faster time to market.
+This safety network enables fast innovation, as security flaws in the public
+state are safely recoverable after the product is shipped. Security keys are
+protected and can keep their validity and integrity even after a malware attack
+has been successfully stopped.
 
-Recovery from security bugs becomes painless as firmware updates can be reliably enforced.
+Code for the public state can be developed rapidly and does not have to go
+through the same level of security reasoning as the code in the private state,
+resulting in quick innovations and a faster time to market.
 
-### Technical details
+Recovery from security bugs becomes painless as firmware updates can be
+reliably enforced.
+
+
+## Technical details
+
 Independently from target-specific implementations, the uVisor:
 * is initialized right after device start-up;
 * runs in privileged mode;
@@ -65,6 +117,7 @@ Independently from target-specific implementations, the uVisor:
   SVCall-based API.
 
 ### The Client
+
 All the code that is not explicitly part of the uVisor is generally referred to
 as the Client. In general, the Client:
 * runs in unprivileged mode;
@@ -76,7 +129,8 @@ The Client can interact with the uVisor thorugh a limited set of APIs which
 allow to configure a secure module, protect its secrets and call untrusted
 functions securely.
 
-### Memory Layout
+### Memory layout
+
 The following figure shows the memory layout of a system where security is
 enforced by the uVisor.
 
@@ -102,6 +156,7 @@ for that are:
 * unprivileged code can verify the integrity of the privileged uVisor;
 * confidentiality of the exception/interrupt table is still guaranteed as it's
   kept in secured RAM.
+
 
 ## The uVisor as a system or as a yotta module
 
@@ -163,6 +218,7 @@ application.
    Again, consider using the uvisor-lib directly if building with yotta, and
    refer to its [documentation](https://github.com/ARMmbed/uvisor-lib).
 
+
 ## Debugging
 
 By default, debugging output is silenced and only occurs when the device is
@@ -191,7 +247,7 @@ If SWO is also used by the Client application for different purposes (for
 example, for regular print functions), make sure to re-direct it to a different
 channel (channel 0 used here).
 
-## Software and Hardware Requirements
+## Software and hardware requirements
 
 * One of the available target boards
 
@@ -200,4 +256,4 @@ To build:
 
 To debug:
 * A JLink debugger (JLink LITE CortexM at least)
-* Latest [SEGGER JLink software & documentation pack](https://www.segger.com/jlink-software.html) for the target platform
+* Latest [SEGGER JLink software & documentation  pack](https://www.segger.com/jlink-software.html) for the target platform
