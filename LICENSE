@@ -8,18 +8,24 @@ The entire notice above must be reproduced on all authorised
 copies and copies may only be made to the extent permitted
 by a licensing agreement from ARM Limited.
 
+In addition to any license you have otherwise agreed to, parts of
+this software are licensed under under alternative licensed. Please
+refer to license headers in the individual files.
 
+License Exceptions:
 
-Third Party IP Exceptions - can be shared without restrictions:
+ - 3-clause BSD License (see LICENSE-BSD.txt):
 
-  core/cmsis/inc:
-    - ARM Limited ("AS IS" License)
+    - core/cmsis/inc:
+      Copyright (c) 2009-2013 ARM Limited
 
-  core/arch/EFM32GG:
-    - Energy Micro AS ("AS IS" License)
+    - core/arch/MK64F:
+      Copyright (c) 1997-2014 Freescale Semiconductor, Inc
 
-  core/arch/MK64F:
-    - Freescale Semiconductor, Inc. ("AS IS" License)
+    - core/lib/printf:
+      Copyright (c) 2004, 2012 Kustaa Nyholm / SpareTimeLabs
 
-  core/lib/printf:
-    - Kustaa Nyholm / SpareTimeLabs ("AS IS" License)
+ - ZLIB License ( see LICENSE-zlib.txt):
+
+    - core/arch/EFM32GG:
+      Copyright (c) 2012 Energy Micro AS
