@@ -134,9 +134,7 @@ functions securely.
 The following figure shows the memory layout of a system where security is
 enforced by the uVisor.
 
-![uVisor memory
-layout](https://github.com/ARMmbed/uvisor/raw/images/k64f/docs/memory_layout.png
-"uVisor memory layout")
+![uVisor memory layout](/k64f/docs/memory_layout.png)
 
 The main memory sections on which the uVisor relies are described in the
 following table:
