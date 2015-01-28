@@ -12,23 +12,84 @@
  ***************************************************************/
 #include <uvisor.h>
 #include "svc.h"
+#include "svc_gw.h"
+#include "svc_state.h"
 #include "vmpu.h"
 
 #define SVC_HDLRS_MAX 0x3FUL
 #define SVC_HDLRS_NUM (ARRAY_COUNT(g_svc_vtor_tbl))
 #define SVC_HDLRS_IND (SVC_HDLRS_NUM - 1)
 
+SecBoxTh  g_svc_state[SVC_STATE_MAX_DEPTH];
+SecBoxSp *g_svc_stack[SVC_STATE_MAX_BOXES];
+SecBoxId  g_svc_state_ptr;
+SecBoxId  g_box_num; /* FIXME this goes somewhere else */
+
 void svc_context_thunk(void)
 {
+    /* FIXME the SVC_GW macro will change */
+    SVC_GW(-1, svc_context_thunk);
 }
 
-void sec_context_swtich_in(uint32_t sp, uint32_t pc,
-                           uint32_t svc_imm, uint32_t mode)
+void svc_context_switch_in(SecBoxSp *svc_sp,  uint16_t *svc_pc,
+                           uint8_t   svc_imm)
 {
+    SecBoxId  src_id,  dst_id;
+    SecBoxSp *src_sp, *dst_sp;
+    SecBoxFn           dst_fn;
+
+    /* gather information from secure gateway */
+    svc_gw_check_magic(svc_pc);
+    dst_id = (SecBoxId) svc_gw_get_dst_id(svc_imm);
+    dst_fn = (SecBoxFn) svc_gw_get_dst_fn(svc_pc);
+
+    /* different behavior with svc_imm == 0x80 */
+    if(svc_gw_oop_mode(svc_imm))
+    {
+        /* TODO */
+    }
+
+    /* gather information from current state */
+    src_sp = svc_state_validate_sf(svc_sp);
+    src_id = svc_state_get_dst_id();
+    dst_sp = svc_state_get_last_sp(dst_id);
+
+    /* switch exception stack frame */
+    dst_sp = svc_state_switch_sf(src_sp, dst_sp,
+                                 (SecBoxFn) svc_context_thunk, dst_fn);
+    /* switch ACls */
+    vmpu_switch(dst_id);
+
+    /* save the current state */
+    svc_state_push(src_id, dst_id, src_sp, dst_sp);
 }
 
-void svc_context_switch_out(void)
+void svc_context_switch_out(SecBoxSp *svc_sp)
 {
+    SecBoxId  src_id,  dst_id;
+    SecBoxSp *src_sp, *dst_sp;
+
+    /* gather information from current state */
+    dst_id = svc_state_get_dst_id();
+    src_id = svc_state_get_src_id();
+    dst_sp = svc_state_get_dst_sp();
+    src_sp = svc_state_get_src_sp();
+
+    /* check consistency between switch in and switch out */
+    if(dst_sp != svc_state_validate_sf(svc_sp))
+    {
+        /* FIXME raise fault */
+        while(1);
+    };
+
+    /* pop state */
+    svc_state_pop(dst_id, dst_sp);
+
+    /* switch stack frames back */
+    svc_state_return_sf(src_sp, dst_sp);
+
+    /* switch ACls */
+    vmpu_switch(src_id);
 }
 
 void svc_interrupt_thunk(void)
@@ -122,7 +183,7 @@ static void __attribute__((naked)) __svc_irq(void)
         "ldrt   r0, [r0, #0]\n"             // pass args from stack (unpriv)
         "pop    {pc}\n"                     // execute handler (return to thunk)
 
-    ".thumb_func\n"                         // needed for correct referencing
+    ".thumb_func\n"                            // needed for correct referencing
     "svc_thunk_unpriv:\n"
         "mrs    r1, PSP\n"                  // unpriv stack may have changed
         "strt   r0, [r1]\n"                 // store result on stacked r0
@@ -162,7 +223,7 @@ static void __attribute__((naked)) __svc_irq(void)
         "ldm    r0, {r0-r3}\n"              // pass args from stack
         "pop    {pc}\n"                     // execute handler (return to thunk)
 
-    ".thumb_func\n"                         // needed for correct referencing
+    ".thumb_func\n"                            // needed for correct referencing
     "svc_thunk_priv:\n"
         "str    r0, [sp, #4]\n"             // store result on stacked r0
         "pop    {pc}\n"                     // return from SVCall
