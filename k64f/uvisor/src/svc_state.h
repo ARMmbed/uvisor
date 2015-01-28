@@ -32,7 +32,7 @@ typedef uint8_t  SecBoxId;
 typedef uint32_t SecBoxSp;
 typedef uint32_t SecBoxFn;
 
-typedef struct{
+typedef struct {
     SecBoxId  dst_id;
     SecBoxId  src_id;
     SecBoxSp *dst_sp;

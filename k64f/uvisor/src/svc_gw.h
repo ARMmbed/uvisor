@@ -27,11 +27,11 @@
     {                                                                        \
         asm volatile(                                                        \
             "svc   %[svc_imm]\n"                                            \
-            "b.n   skip_args\n"                                             \
+            "b.n   skip_args%=\n"                                           \
             ".word "TO_STRING(SVC_GW_MAGIC)"\n"                             \
             ".word "TO_STRING(dst_fn)"\n"                                   \
-            "skip_args:\n"                                                  \
-            :: [svc_imm] "i" ((uint8_t )((int) dst_id + SVC_GW_OFFSET + 1)) \
+            "skip_args%=:\n"                                                \
+            :: [svc_imm] "I" (dst_id + SVC_GW_OFFSET + 1)                   \
         );                                                                    \
     }
 
