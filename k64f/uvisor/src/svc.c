@@ -183,7 +183,7 @@ static void __attribute__((naked)) __svc_irq(void)
 		"ldrt   r0, [r0, #0]\n"             // pass args from stack (unpriv)
 		"pop    {pc}\n"                     // execute handler (return to thunk)
 
-	".thumb_func\n"		                    // needed for correct referencing
+	".thumb_func\n"	                        // needed for correct referencing
 	"svc_thunk_unpriv:\n"
 		"mrs    r1, PSP\n"                  // unpriv stack may have changed
 		"strt   r0, [r1]\n"                 // store result on stacked r0
@@ -223,7 +223,7 @@ static void __attribute__((naked)) __svc_irq(void)
 		"ldm    r0, {r0-r3}\n"              // pass args from stack
 		"pop    {pc}\n"                     // execute handler (return to thunk)
 
-	".thumb_func\n"		                    // needed for correct referencing
+	".thumb_func\n"	                        // needed for correct referencing
 	"svc_thunk_priv:\n"
 		"str    r0, [sp, #4]\n"             // store result on stacked r0
 		"pop    {pc}\n"                     // return from SVCall
