@@ -12,8 +12,6 @@
  ***************************************************************/
 #include <uvisor.h>
 #include "svc.h"
-#include "svc_gw.h"
-#include "svc_state.h"
 #include "vmpu.h"
 
 #define SVC_HDLRS_MAX 0x3FUL

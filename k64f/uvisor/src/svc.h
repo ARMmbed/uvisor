@@ -14,6 +14,8 @@
 #define __SVC_H__
 
 #include <uvisor.h>
+#include "svc_gw.h"
+#include "svc_state.h"
 
 void svc_init(void);
 
