@@ -21,6 +21,10 @@
 
 typedef uint32_t TACL;
 
+typedef uint8_t  TBoxId;
+typedef uint32_t TBoxSp;
+typedef uint32_t TBoxFn;
+
 typedef struct
 {
     const void* start;
