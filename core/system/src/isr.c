@@ -24,17 +24,6 @@ void __attribute__ ((weak, noreturn)) default_handler(void)
 }
 #endif/*UVISOR*/
 
-/* load required libraries */
-#if    defined(APP_CLIENT) || defined(LIB_CLIENT)
-void load_boxes(void)
-{
-    uint32_t *box_loader = &__box_init_start__;
-
-    while(box_loader < &__box_init_end__)
-        (*((BoxInitFunc)((uint32_t) *(box_loader++))))();
-}
-#endif/*defined(APP_CLIENT) || defined(LIB_CLIENT)*/
-
 void reset_handler(void)
 {
     uint32_t *dst;
@@ -58,10 +47,6 @@ void reset_handler(void)
     dst = &__bss_start__;
     while(dst<&__bss_end__)
         *dst++ = 0;
-
-#if defined(APP_CLIENT) || defined(LIB_CLIENT)
-    load_boxes();
-#endif/*defined(APP_CLIENT) || defined(LIB_CLIENT)*/
 
     main_entry();
 #if !defined(LIB_CLIENT) && !defined(NOSYSTEM)
