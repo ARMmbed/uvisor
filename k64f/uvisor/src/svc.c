@@ -12,106 +12,24 @@
  ***************************************************************/
 #include <uvisor.h>
 #include "svc.h"
+#include "svc_gw.h"
+#include "isr_unpriv.h"
 #include "vmpu.h"
 
 #define SVC_HDLRS_MAX 0x3FUL
 #define SVC_HDLRS_NUM (ARRAY_COUNT(g_svc_vtor_tbl))
 #define SVC_HDLRS_IND (SVC_HDLRS_NUM - 1)
 
-SecBoxTh  g_svc_state[SVC_STATE_MAX_DEPTH];
-SecBoxSp *g_svc_stack[SVC_STATE_MAX_BOXES];
-SecBoxId  g_svc_state_ptr;
-SecBoxId  g_box_num; /* FIXME this goes somewhere else */
-
-void svc_context_thunk(void)
-{
-    /* FIXME the SVC_GW macro will change */
-    SVC_GW(-1, svc_context_thunk);
-}
-
-void svc_context_switch_in(SecBoxSp *svc_sp,  uint16_t *svc_pc,
-                           uint8_t   svc_imm)
-{
-    SecBoxId  src_id,  dst_id;
-    SecBoxSp *src_sp, *dst_sp;
-    SecBoxFn           dst_fn;
-
-    /* gather information from secure gateway */
-    svc_gw_check_magic(svc_pc);
-    dst_id = (SecBoxId) svc_gw_get_dst_id(svc_imm);
-    dst_fn = (SecBoxFn) svc_gw_get_dst_fn(svc_pc);
-
-    /* different behavior with svc_imm == 0x80 */
-    if(svc_gw_oop_mode(svc_imm))
-    {
-        /* TODO */
-    }
-
-    /* gather information from current state */
-    src_sp = svc_state_validate_sf(svc_sp);
-    src_id = svc_state_get_dst_id();
-    dst_sp = svc_state_get_last_sp(dst_id);
-
-    /* switch exception stack frame */
-    dst_sp = svc_state_switch_sf(src_sp, dst_sp,
-                                 (SecBoxFn) svc_context_thunk, dst_fn);
-    /* switch ACls */
-    vmpu_switch(dst_id);
-
-    /* save the current state */
-    svc_state_push(src_id, dst_id, src_sp, dst_sp);
-}
-
-void svc_context_switch_out(SecBoxSp *svc_sp)
-{
-    SecBoxId  src_id,  dst_id;
-    SecBoxSp *src_sp, *dst_sp;
-
-    /* gather information from current state */
-    dst_id = svc_state_get_dst_id();
-    src_id = svc_state_get_src_id();
-    dst_sp = svc_state_get_dst_sp();
-    src_sp = svc_state_get_src_sp();
-
-    /* check consistency between switch in and switch out */
-    if(dst_sp != svc_state_validate_sf(svc_sp))
-    {
-        /* FIXME raise fault */
-        while(1);
-    };
-
-    /* pop state */
-    svc_state_pop(dst_id, dst_sp);
-
-    /* switch stack frames back */
-    svc_state_return_sf(src_sp, dst_sp);
-
-    /* switch ACls */
-    vmpu_switch(src_id);
-}
-
-void svc_interrupt_thunk(void)
-{
-}
-
-void svc_interrupt_switch_in(void)
-{
-}
-
-void svc_interrupt_switch_out(void)
-{
-}
-
 /* FIXME this function is temporary. Writes to an address should be checked
  *       against a box's ACLs */
-static void uvisor_bitband(uint32_t *addr, uint32_t val)
+static void svc_bitband(uint32_t *addr, uint32_t val)
 {
     *addr = val;
 }
 
 /* SVC handlers */
 __attribute__((section(".svc_vector"))) const void *g_svc_vtor_tbl[] = {
-    uvisor_bitband,             // 0
+    svc_bitband,             // 0
 };
 
 /*******************************************************************************
@@ -164,8 +82,8 @@ static void __attribute__((naked)) __svc_irq(void)
          * changing this code make sure the same format is used or changed
          * accordingly
          **********************************************************************/
-        "bhi    svc_context_switch_in\n"    // shortcut    for SVC#imm  > 0x7F
-        "beq    svc_context_switch_out\n"   // shortcut    for SVC#imm == 0x7F
+        "bhi    svc_cx_switch_in\n"         // shortcut    for SVC#imm  > 0x7F
+        "beq    svc_cx_switch_out\n"        // shortcut    for SVC#imm == 0x7F
         "cmp    r2, %[svc_hdlrs_num]\n"     // check SVC table overflow
         "ite    ls\n"                       // note: this ITE order speeds it up
         "ldrls  r1, =g_svc_vtor_tbl\n"      // fetch handler from table
@@ -207,8 +125,8 @@ static void __attribute__((naked)) __svc_irq(void)
          * changing this code make sure the same format is used or changed
          * accordingly
          **********************************************************************/
-        "bhi    svc_interrupt_switch_in\n"  // shortcut    for SVC#imm  > 0x7F
-        "beq    svc_interrupt_switch_out\n" // shortcut    for SVC#imm == 0x7F
+        "bhi    svc_cx_isr_in\n"            // shortcut    for SVC#imm  > 0x7F
+        "beq    svc_cx_isr_out\n"           // shortcut    for SVC#imm == 0x7F
         "cmp    r2, %[svc_hdlrs_num]\n"     // check SVC table overflow
         "ite    ls\n"                       // note: this ITE order speeds it up
         "ldrls  r1, =g_svc_vtor_tbl\n"      // fetch handler from table
