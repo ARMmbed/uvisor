@@ -81,10 +81,6 @@ typedef void (*UnprivilegedBoxEntry)(void);
 
 /* IOT-OS specific includes */
 #include <isr.h>
-#include <svc-helper.h>
 #include <linker.h>
-
-/* library context switch utilities */
-#include <exports.h>
 
 #endif/*__UVISOR_H__*/
