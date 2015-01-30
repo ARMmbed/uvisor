@@ -143,7 +143,7 @@ static inline TBoxSp *svc_cx_validate_sf(TBoxSp *sp)
     return sp;
 }
 
-static inline TBoxSp *svc_cx_switch_sf(TBoxSp *src_sp, TBoxSp *dst_sp,
+static inline TBoxSp *svc_cx_create_sf(TBoxSp *src_sp, TBoxSp *dst_sp,
                                        TBoxFn  thunk,  TBoxFn  dst_fn)
 {
     TBoxSp  dst_sf_align;
@@ -165,8 +165,6 @@ static inline TBoxSp *svc_cx_switch_sf(TBoxSp *src_sp, TBoxSp *dst_sp,
     dst_sf[6] = (TBoxSp) dst_fn;
     dst_sf[7] = src_sp[7] | SVC_CX_EXC_DW(dst_sf_align);
 
-    /* destination stack frame selected */
-    __set_PSP((uint32_t) dst_sf);
     return dst_sf;
 }
 
@@ -174,8 +172,5 @@ static inline void svc_cx_return_sf(TBoxSp *src_sp, TBoxSp *dst_sp)
 {
     /* copy return value to source stack */
     src_sp[0] = dst_sp[0];
-
-    /* revert back to source stack */
-    __set_PSP((uint32_t) src_sp);
 }
 #endif/*__SVC_CX_H__*/

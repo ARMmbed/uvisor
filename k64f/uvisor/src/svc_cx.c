@@ -52,7 +52,8 @@ void svc_cx_switch_in(TBoxSp  *svc_sp,  uint16_t *svc_pc,
     dst_sp = svc_cx_get_last_sp(dst_id);
 
     /* switch exception stack frame */
-    dst_sp = svc_cx_switch_sf(src_sp, dst_sp, (TBoxFn) svc_cx_thunk, dst_fn);
+    dst_sp = svc_cx_create_sf(src_sp, dst_sp, (TBoxFn) svc_cx_thunk, dst_fn);
+    __set_PSP((uint32_t) dst_sp);
 
     /* switch ACls */
     vmpu_switch(dst_id);
@@ -84,6 +85,7 @@ void svc_cx_switch_out(TBoxSp *svc_sp)
 
     /* switch stack frames back */
     svc_cx_return_sf(src_sp, dst_sp);
+    __set_PSP((uint32_t) src_sp);
 
     /* switch ACls */
     vmpu_switch(src_id);
