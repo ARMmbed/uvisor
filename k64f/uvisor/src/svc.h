@@ -13,6 +13,9 @@
 #ifndef __SVC_H__
 #define __SVC_H__
 
+#include "svc_cx.h"
+#include "svc_gw.h"
+
 void svc_init(void);
 
 #endif/*__SVC_H__*/
