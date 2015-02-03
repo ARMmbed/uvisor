@@ -18,105 +18,109 @@
 #include "vmpu.h"
 
 #define SVC_CX_EXC_SF_SIZE 8
-#define SVC_CX_EXC_DW_Pos  9
-#define SVC_CX_EXC_DW(x)   ((uint32_t) (x) << SVC_CX_EXC_DW_Pos)
-#define SVC_CX_EXC_DW_Msk  SVC_CX_EXC_DW(1)
 
-#define SVC_CX_LR_DW_Pos  2
-#define SVC_CX_LR_DW(x)   ((uint32_t) (x) << SVC_CX_LR_DW_Pos)
-#define SVC_CX_LR_DW_Msk  SVC_CX_LR_DW(1)
+#define SVC_CX_xPSR_DW_Pos 9
+#define SVC_CX_xPSR_DW(x)  ((uint32_t) (x) << SVC_CX_xPSR_DW_Pos)
+#define SVC_CX_xPSR_DW_Msk SVC_CX_xPSR_DW(1)
 
-#define SVC_CX_MAX_BOXES   0x80U
-#define SVC_CX_MAX_DEPTH   0x10U
+#define SVC_CX_SP_DW_Pos 2
+#define SVC_CX_SP_DW(x)  ((uint32_t) (x) << SVC_CX_SP_DW_Pos)
+#define SVC_CX_SP_DW_Msk SVC_CX_SP_DW(1)
+
+#define SVC_CX_MAX_DEPTH 0x10
 
 typedef struct {
-    TBoxId  dst_id;
-    TBoxId  src_id;
-    TBoxSp *dst_sp;
-    TBoxSp *src_sp;
-} TBoxTh;
-
-extern TBoxTh  g_svc_cx[SVC_CX_MAX_DEPTH];
-extern TBoxId  g_svc_cx_ptr;
+    uint8_t   rfu[3];  /* for 32 bit alignment */
+    uint8_t   src_id;
+    uint32_t *src_sp;
+} PACKED TBoxCx;
 
 /* FIXME this goes somewhere else */
-extern TBoxSp *g_svc_stack[SVC_CX_MAX_BOXES];
-extern TBoxId  g_box_num;
+#define SVC_CX_MAX_BOXES   0x80U
 
-static inline TBoxId svc_cx_get_src_id()
+/* state variables */
+extern TBoxCx    g_svc_cx_state[SVC_CX_MAX_DEPTH];
+extern uint32_t  g_svc_cx_state_ptr;
+extern uint32_t *g_svc_cx_last_sp[SVC_CX_MAX_BOXES];
+extern uint8_t   g_svc_cx_curr_id;
+
+static inline uint8_t svc_cx_get_src_id(void)
 {
-    return g_svc_cx[g_svc_cx_ptr].src_id;
+    return g_svc_cx_state[g_svc_cx_state_ptr].src_id;
 }
 
-static inline TBoxId svc_cx_get_dst_id()
+static inline uint32_t *svc_cx_get_src_sp(void)
 {
-    return g_svc_cx[g_svc_cx_ptr].dst_id;
+    return g_svc_cx_state[g_svc_cx_state_ptr].src_sp;
 }
 
-static inline TBoxSp *svc_cx_get_dst_sp()
+static inline uint32_t *svc_cx_get_last_sp(uint8_t box_id)
 {
-    return g_svc_cx[g_svc_cx_ptr].dst_sp;
+    return g_svc_cx_last_sp[box_id];
 }
 
-static inline TBoxSp *svc_cx_get_src_sp()
+static inline void svc_cx_set_last_sp(uint8_t box_id, uint32_t *box_sp)
 {
-    return g_svc_cx[g_svc_cx_ptr].src_sp;
+    g_svc_cx_last_sp[box_id] = box_sp;
 }
 
-static inline TBoxSp *svc_cx_get_last_sp(TBoxId box_id)
+static inline uint8_t svc_cx_get_curr_id(void)
 {
-    return g_svc_stack[box_id];
+    return g_svc_cx_curr_id;
 }
 
-static inline void svc_cx_set_last_sp(TBoxId box_id, TBoxSp *box_sp)
+static inline void svc_cx_set_curr_id(uint8_t box_id)
 {
-    g_svc_stack[box_id] = box_sp;
+    g_svc_cx_curr_id = box_id;
 }
 
-static void inline svc_cx_push(TBoxId  src_id, TBoxId  dst_id,
-                               TBoxSp *src_sp, TBoxSp *dst_sp)
+static void inline svc_cx_push(uint8_t src_id, uint32_t *src_sp, uint8_t dst_id)
 {
     /* check state stack overflow */
-    if(g_svc_cx_ptr == SVC_CX_MAX_DEPTH)
+    if(g_svc_cx_state_ptr == SVC_CX_MAX_DEPTH - 1)
     {
         /* FIXME raise fault */
         while(1);
     }
     else
     {
-        ++g_svc_cx_ptr;
+        ++g_svc_cx_state_ptr;
     }
 
     /* save state */
-    g_svc_cx[g_svc_cx_ptr].dst_id = dst_id;
-    g_svc_cx[g_svc_cx_ptr].src_id = src_id;
-    g_svc_cx[g_svc_cx_ptr].dst_sp = dst_sp;
-    g_svc_cx[g_svc_cx_ptr].src_sp = src_sp;
+    g_svc_cx_state[g_svc_cx_state_ptr].src_id = src_id;
+    g_svc_cx_state[g_svc_cx_state_ptr].src_sp = src_sp;
 
     /* save last used stack pointer for the src box */
     svc_cx_set_last_sp(src_id, src_sp);
+
+    /* update current box id */
+    svc_cx_set_curr_id(dst_id);
 }
 
-static inline void svc_cx_pop(TBoxId dst_id, TBoxSp *dst_sp)
+static inline void svc_cx_pop(uint8_t dst_id, uint32_t *dst_sp, uint8_t src_id)
 {
     /* check state stack underflow */
-    if(!g_svc_cx_ptr)
+    if(!g_svc_cx_state_ptr)
     {
         /* FIXME raise fault */
         while(1);
     }
     else
     {
-        --g_svc_cx_ptr;
+        --g_svc_cx_state_ptr;
     }
 
     /* save last used stack pointer for the dst box */
-    TBoxSp dst_sp_align= (dst_sp[7] & SVC_CX_EXC_DW_Msk) ? 1 : 0;
+    uint32_t dst_sp_align = (dst_sp[7] & SVC_CX_xPSR_DW_Msk) ? 1 : 0;
     svc_cx_set_last_sp(dst_id,
                        dst_sp + SVC_CX_EXC_SF_SIZE + dst_sp_align);
+
+    /* update current box id */
+    svc_cx_set_curr_id(src_id);
 }
 
-static inline TBoxSp *svc_cx_validate_sf(TBoxSp *sp)
+static inline uint32_t *svc_cx_validate_sf(uint32_t *sp)
 {
     /* the box stack pointer is validated through direct access: if it has been
      * tampered with access is proihibited by the uvisor and a fault occurs;
@@ -132,10 +136,10 @@ static inline TBoxSp *svc_cx_validate_sf(TBoxSp *sp)
         "ldrtne %[tmp], [%[sp], %[max_exc_sf_size]]\n" /* test sp[8] */
         : [tmp]             "=r" (tmp)
         : [sp]              "r"  ((uint32_t) sp),
-          [exc_sf_dw_msk]   "i"  ((uint32_t) SVC_CX_EXC_DW_Msk),
-          [exc_sf_size]     "i"  ((uint32_t) (sizeof(TBoxSp) *
+          [exc_sf_dw_msk]   "i"  ((uint32_t) SVC_CX_xPSR_DW_Msk),
+          [exc_sf_size]     "i"  ((uint32_t) (sizeof(uint32_t) *
                                               (SVC_CX_EXC_SF_SIZE - 1))),
-          [max_exc_sf_size] "i"  ((uint32_t) (sizeof(TBoxSp) *
+          [max_exc_sf_size] "i"  ((uint32_t) (sizeof(uint32_t) *
                                               (SVC_CX_EXC_SF_SIZE)))
     );
 
@@ -143,14 +147,14 @@ static inline TBoxSp *svc_cx_validate_sf(TBoxSp *sp)
     return sp;
 }
 
-static inline TBoxSp *svc_cx_create_sf(TBoxSp *src_sp, TBoxSp *dst_sp,
-                                       TBoxFn  thunk,  TBoxFn  dst_fn)
+static inline uint32_t *svc_cx_create_sf(uint32_t *src_sp, uint32_t *dst_sp,
+                                         uint32_t  thunk,  uint32_t  dst_fn)
 {
-    TBoxSp  dst_sf_align;
-    TBoxSp *dst_sf;
+    uint32_t  dst_sf_align;
+    uint32_t *dst_sf;
 
     /* create destination stack frame */
-    dst_sf_align = ((TBoxSp) dst_sp & SVC_CX_LR_DW_Msk) ? 1 : 0;
+    dst_sf_align = ((uint32_t) dst_sp & SVC_CX_SP_DW_Msk) ? 1 : 0;
     dst_sf       = dst_sp - SVC_CX_EXC_SF_SIZE - dst_sf_align;
 
     /* populate destination stack frame:
@@ -159,16 +163,16 @@ static inline TBoxSp *svc_cx_create_sf(TBoxSp *src_sp, TBoxSp *dst_sp,
      *   lr              is the thunk function
      *   return address  is the destination function
      *   xPSR            is modified to account for stack alignment */
-    memcpy((void *) dst_sf, (void *) src_sp, sizeof(TBoxSp) * 4);
+    memcpy((void *) dst_sf, (void *) src_sp, sizeof(uint32_t) * 4);
     dst_sf[4] = 0;
-    dst_sf[5] = (TBoxSp) thunk;
-    dst_sf[6] = (TBoxSp) dst_fn;
-    dst_sf[7] = src_sp[7] | SVC_CX_EXC_DW(dst_sf_align);
+    dst_sf[5] = thunk;
+    dst_sf[6] = dst_fn;
+    dst_sf[7] = src_sp[7] | SVC_CX_xPSR_DW(dst_sf_align);
 
     return dst_sf;
 }
 
-static inline void svc_cx_return_sf(TBoxSp *src_sp, TBoxSp *dst_sp)
+static inline void svc_cx_return_sf(uint32_t *src_sp, uint32_t *dst_sp)
 {
     /* copy return value to source stack */
     src_sp[0] = dst_sp[0];

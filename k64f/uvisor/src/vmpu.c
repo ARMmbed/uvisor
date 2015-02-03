@@ -64,12 +64,13 @@ static void vmpu_fault(int reason)
                 MPU->SP[t].EDR);
         sperr <<= 1;
     }
-    dprintf("CFSR : 0x%08X (reason 0x%02x)\n\r", SCB->CFSR, reason);
+    dprintf("CFSR : 0x%08X\n\r", SCB->CFSR);
     while(1);
 }
 
 static void vmpu_fault_bus(void)
 {
+    dprintf("Bus Fault\n\r");
     dprintf("BFAR : 0x%08X\n\r", SCB->BFAR);
     vmpu_fault(MPU_FAULT_BUS);
 }
@@ -82,13 +83,14 @@ static void vmpu_fault_usage(void)
 
 static void vmpu_fault_hard(void)
 {
+    dprintf("Hard Fault\n\r");
     dprintf("HFSR : 0x%08X\n\r", SCB->HFSR);
     vmpu_fault(MPU_FAULT_HARD);
 }
 
 static void vmpu_fault_debug(void)
 {
-    dprintf("MPU_FAULT_DEBUG\n\r");
+    dprintf("Debug Fault\n\r");
     vmpu_fault(MPU_FAULT_DEBUG);
 }
 

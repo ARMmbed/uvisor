@@ -12,7 +12,6 @@
  ***************************************************************/
 #include <uvisor.h>
 #include "svc.h"
-#include "svc_gw.h"
 #include "isr_unpriv.h"
 #include "vmpu.h"
 

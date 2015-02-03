@@ -35,18 +35,25 @@
         );                                                                    \
     }
 
-static inline void svc_gw_check_magic(uint16_t *svc_pc)
+typedef struct {
+    uint16_t opcode;
+    uint16_t branch;
+    uint32_t magic;
+    uint32_t dst_fn;
+} PACKED TSecGw;
+
+static inline void svc_gw_check_magic(TSecGw *svc_pc)
 {
-    if(*(((uint32_t *) svc_pc) + 1) != SVC_GW_MAGIC)
+    if(svc_pc->magic != SVC_GW_MAGIC)
     {
         /* FIXME raise fault */
         while(1);
     }
 }
 
-static inline uint32_t svc_gw_get_dst_fn(uint16_t *svc_pc)
+static inline uint32_t svc_gw_get_dst_fn(TSecGw *svc_pc)
 {
-    return *(((uint32_t *) svc_pc) + 2);
+    return svc_pc->dst_fn;
 }
 
 static inline uint8_t svc_gw_get_dst_id(uint8_t svc_imm)
