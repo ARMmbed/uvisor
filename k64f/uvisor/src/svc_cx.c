@@ -11,16 +11,13 @@
  *
  ***************************************************************/
 #include <uvisor.h>
-#include "svc_cx.h"
-#include "svc_gw.h"
+#include "svc.h"
 #include "vmpu.h"
 
-TBoxTh  g_svc_cx[SVC_CX_MAX_DEPTH];
-TBoxId  g_svc_cx_ptr;
-
-/* FIXME this goes somewhere else */
-TBoxSp *g_svc_stack[SVC_CX_MAX_BOXES];
-TBoxId  g_box_num;
+TBoxCx    g_svc_cx_state[SVC_CX_MAX_DEPTH];
+uint32_t  g_svc_cx_state_ptr;
+uint32_t *g_svc_cx_last_sp[SVC_CX_MAX_BOXES];
+uint8_t   g_svc_cx_curr_id;
 
 void svc_cx_thunk(void)
 {
@@ -28,67 +25,61 @@ void svc_cx_thunk(void)
     SVC_GW(-1, svc_cx_thunk);
 }
 
-void svc_cx_switch_in(TBoxSp  *svc_sp,  uint16_t *svc_pc,
-                      uint8_t  svc_imm)
+void svc_cx_switch_in(uint32_t *svc_sp,  uint32_t svc_pc,
+                      uint8_t   svc_imm)
 {
-    TBoxId  src_id,  dst_id;
-    TBoxSp *src_sp, *dst_sp;
-    TBoxFn           dst_fn;
+    uint8_t   src_id,  dst_id;
+    uint32_t *src_sp, *dst_sp;
+    uint32_t           dst_fn;
 
     /* gather information from secure gateway */
-    svc_gw_check_magic(svc_pc);
-    dst_id = (TBoxId) svc_gw_get_dst_id(svc_imm);
-    dst_fn = (TBoxFn) svc_gw_get_dst_fn(svc_pc);
+    svc_gw_check_magic((TSecGw *) svc_pc);
+    dst_fn = svc_gw_get_dst_fn((TSecGw *) svc_pc);
+    dst_id = svc_gw_get_dst_id(svc_imm);
 
     /* different behavior with svc_imm == 0x80 */
     if(svc_gw_oop_mode(svc_imm))
     {
         /* TODO */
+        while(1);
     }
 
     /* gather information from current state */
     src_sp = svc_cx_validate_sf(svc_sp);
-    src_id = svc_cx_get_dst_id();
+    src_id = svc_cx_get_curr_id();
     dst_sp = svc_cx_get_last_sp(dst_id);
 
     /* switch exception stack frame */
-    dst_sp = svc_cx_create_sf(src_sp, dst_sp, (TBoxFn) svc_cx_thunk, dst_fn);
-    __set_PSP((uint32_t) dst_sp);
+    dst_sp = svc_cx_create_sf(src_sp, dst_sp, (uint32_t) svc_cx_thunk, dst_fn);
+
+    /* save the current state */
+    svc_cx_push(src_id, src_sp, dst_id);
 
     /* switch ACls */
     vmpu_switch(dst_id);
-
-    /* save the current state */
-    svc_cx_push(src_id, dst_id, src_sp, dst_sp);
+    __set_PSP((uint32_t) dst_sp);
 }
 
-void svc_cx_switch_out(TBoxSp *svc_sp)
+void svc_cx_switch_out(uint32_t *svc_sp)
 {
-    TBoxId  src_id,  dst_id;
-    TBoxSp *src_sp, *dst_sp;
+    uint8_t   src_id,  dst_id;
+    uint32_t *src_sp, *dst_sp;
 
     /* gather information from current state */
-    dst_id = svc_cx_get_dst_id();
+    dst_id = svc_cx_get_curr_id();
     src_id = svc_cx_get_src_id();
-    dst_sp = svc_cx_get_dst_sp();
+    dst_sp = svc_cx_validate_sf(svc_sp);
     src_sp = svc_cx_get_src_sp();
 
-    /* check consistency between switch in and switch out */
-    if(dst_sp != svc_cx_validate_sf(svc_sp))
-    {
-        /* FIXME raise fault */
-        while(1);
-    };
-
     /* pop state */
-    svc_cx_pop(dst_id, dst_sp);
+    svc_cx_pop(dst_id, dst_sp, src_id);
 
     /* switch stack frames back */
     svc_cx_return_sf(src_sp, dst_sp);
-    __set_PSP((uint32_t) src_sp);
 
     /* switch ACls */
     vmpu_switch(src_id);
+    __set_PSP((uint32_t) src_sp);
 }
 
 void svc_cx_isr_in(void)
