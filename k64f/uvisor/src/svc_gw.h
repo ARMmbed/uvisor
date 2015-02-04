@@ -23,6 +23,9 @@
 #define SVC_GW_BOX_ID_Msk  ((uint8_t) 0x3FU)
 #define SVC_GW_BOX_OOP_Msk ((uint8_t) 0x40U)
 
+#define SVC_GW_InFlash_Msk   ((uint32_t) ~(FLASH_ORIGIN + FLASH_LENGTH - 1))
+#define SVC_GW_InFlash(addr) ((uint32_t) (addr) & SVC_GW_InFlash_Msk)
+
 #define SVC_GW(dst_id, dst_fn)                                                \
     {                                                                        \
         asm volatile(                                                        \
@@ -44,6 +47,11 @@ typedef struct {
 
 static inline void svc_gw_check_magic(TSecGw *svc_pc)
 {
+    if(SVC_GW_InFlash((uint32_t) svc_pc))
+    {
+        /* FIXME raise fault */
+        while(1);
+    }
     if(svc_pc->magic != SVC_GW_MAGIC)
     {
         /* FIXME raise fault */

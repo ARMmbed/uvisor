@@ -279,6 +279,10 @@ static void vmpu_sanity_checks(void)
     DPRINTF("uvisor_mode: %u\n", *__uvisor_config.mode);
     assert(*__uvisor_config.mode <= 2);
 
+    /* verify flash origin and size */
+    assert( FLASH_ORIGIN  == 0 );
+    assert( __builtin_popcount(FLASH_ORIGIN + FLASH_LENGTH) == 1 );
+
     /* verify SRAM relocation */
     DPRINTF("uvisor_ram : @0x%08X (%u bytes) [config]\n",
         __uvisor_config.reserved_start,
