@@ -266,7 +266,8 @@ static void vmpu_sanity_checks(void)
     if(__uvisor_config.magic!=UVISOR_MAGIC)
         while(1)
         {
-            DPRINTF("config magic mismatch: &0x%08X=0x%08X - exptected 0x%08X\n",
+            DPRINTF("config magic mismatch: &0x%08X = 0x%08X \
+                                 - exptected 0x%08X\n",
                 &__uvisor_config,
                 __uvisor_config.magic,
                 UVISOR_MAGIC);
@@ -281,15 +282,18 @@ static void vmpu_sanity_checks(void)
     /* verify SRAM relocation */
     DPRINTF("uvisor_ram : @0x%08X (%u bytes) [config]\n",
         __uvisor_config.reserved_start,
-        VMPU_REGION_SIZE(__uvisor_config.reserved_start, __uvisor_config.reserved_end)
-    );
-    DPRINTF("             (0x%08X (%u bytes) [linker]\n", RESERVED_SRAM_START, USE_SRAM_SIZE);
+        VMPU_REGION_SIZE(__uvisor_config.reserved_start,
+                         __uvisor_config.reserved_end));
+    DPRINTF("             (0x%08X (%u bytes) [linker]\n",
+            RESERVED_SRAM_START, USE_SRAM_SIZE);
     assert( __uvisor_config.reserved_end > __uvisor_config.reserved_start );
-    assert( VMPU_REGION_SIZE(__uvisor_config.reserved_start,__uvisor_config.reserved_end) == USE_SRAM_SIZE );
+    assert( VMPU_REGION_SIZE(__uvisor_config.reserved_start,
+                             __uvisor_config.reserved_end) == USE_SRAM_SIZE );
     assert(&__stack_end__ <= __uvisor_config.reserved_end);
 
     assert( (uint32_t)__uvisor_config.reserved_start == RESERVED_SRAM_START);
-    assert( (uint32_t)__uvisor_config.reserved_end == (RESERVED_SRAM_START+USE_SRAM_SIZE) );
+    assert( (uint32_t)__uvisor_config.reserved_end == (RESERVED_SRAM_START +
+                                                       USE_SRAM_SIZE) );
 
     /* verify that __uvisor_config is within valid flash */
     assert( ((uint32_t)&__uvisor_config)>=FLASH_ORIGIN );
@@ -298,26 +302,31 @@ static void vmpu_sanity_checks(void)
 
     /* verify that secure flash area is accessible and after public code */
     assert( __uvisor_config.secure_start <= __uvisor_config.secure_end );
-    assert( (uint32_t) __uvisor_config.secure_end <= (uint32_t)(FLASH_ORIGIN+FLASH_LENGTH) );
-    assert( (uint32_t) __uvisor_config.secure_start >= (uint32_t)&vmpu_sanity_checks );
+    assert( (uint32_t) __uvisor_config.secure_end <=
+            (uint32_t) (FLASH_ORIGIN+FLASH_LENGTH) );
+    assert( (uint32_t) __uvisor_config.secure_start >=
+            (uint32_t)&vmpu_sanity_checks );
 
     /* verify configuration table */
     assert( __uvisor_config.cfgtbl_start <= __uvisor_config.cfgtbl_end );
     assert( __uvisor_config.cfgtbl_start >= __uvisor_config.secure_start );
-    assert( (uint32_t) __uvisor_config.cfgtbl_end <= (uint32_t)(FLASH_ORIGIN+FLASH_LENGTH) );
+    assert( (uint32_t) __uvisor_config.cfgtbl_end <=
+            (uint32_t)(FLASH_ORIGIN+FLASH_LENGTH) );
 
     /* verify data initialization section */
     assert( __uvisor_config.data_src >= __uvisor_config.secure_start );
     assert( __uvisor_config.data_start <= __uvisor_config.data_end );
     assert( __uvisor_config.data_start >= __uvisor_config.secure_start );
     assert( __uvisor_config.data_start >= __uvisor_config.reserved_end );
-    assert( (uint32_t)__uvisor_config.data_end <= (uint32_t)(SRAM_ORIGIN+SRAM_LENGTH-STACK_SIZE));
+    assert( (uint32_t)__uvisor_config.data_end <=
+            (uint32_t)(SRAM_ORIGIN+SRAM_LENGTH-STACK_SIZE));
 
     /* verify data bss section */
     assert( __uvisor_config.bss_start <= __uvisor_config.bss_end );
     assert( __uvisor_config.bss_start >= __uvisor_config.secure_start );
     assert( __uvisor_config.bss_start >= __uvisor_config.reserved_end );
-    assert( (uint32_t)__uvisor_config.data_end <= (uint32_t)(SRAM_ORIGIN+SRAM_LENGTH-STACK_SIZE));
+    assert( (uint32_t)__uvisor_config.data_end <=
+            (uint32_t)(SRAM_ORIGIN+SRAM_LENGTH-STACK_SIZE));
 
     /* check section ordering */
     assert( __uvisor_config.bss_end <= __uvisor_config.data_start );
