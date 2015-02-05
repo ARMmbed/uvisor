@@ -27,16 +27,24 @@
 #define SVC_GW_InFlash(addr) ((uint32_t) (addr) & SVC_GW_InFlash_Msk)
 
 #define SVC_GW(dst_id, dst_fn)                                                \
-    {                                                                        \
+    ({                                                                        \
+        register uint32_t __r0 asm("r0");                                   \
+        register uint32_t __r1 asm("r1");                                   \
+        register uint32_t __r2 asm("r2");                                   \
+        register uint32_t __r3 asm("r3");                                   \
+        register uint32_t __res asm("r0");                                  \
         asm volatile(                                                        \
             "svc   %[svc_imm]\n"                                            \
             "b.n   skip_args%=\n"                                           \
             ".word "TO_STRING(SVC_GW_MAGIC)"\n"                             \
             ".word "TO_STRING(dst_fn)"\n"                                   \
             "skip_args%=:\n"                                                \
-            :: [svc_imm] "I" (dst_id + SVC_GW_OFFSET + 1)                   \
+            : "=r" (__res)                                                  \
+            : [svc_imm] "I" (dst_id + SVC_GW_OFFSET + 1),                   \
+              "r" (__r0), "r" (__r1), "r" (__r2), "r" (__r3)                \
         );                                                                    \
-    }
+        __res;                                                                \
+     })
 
 typedef struct {
     uint16_t opcode;
