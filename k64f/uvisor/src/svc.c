@@ -12,7 +12,6 @@
  ***************************************************************/
 #include <uvisor.h>
 #include "svc.h"
-#include "isr_unpriv.h"
 #include "vmpu.h"
 
 #define SVC_HDLRS_MAX 0x3FUL
@@ -55,7 +54,7 @@ __attribute__((section(".svc_vector"))) const void *g_svc_vtor_tbl[] = {
 static void __attribute__((naked)) __svc_irq(void)
 {
     asm volatile(
-        "ands   r3, lr, #4\n"               // get mode privileged/unprivileged
+        "tst    lr, #4\n"                   // privileged/unprivileged mode
         "it     eq\n"
         "beq    called_from_priv\n"
 
@@ -66,23 +65,36 @@ static void __attribute__((naked)) __svc_irq(void)
         "ldrt   r1, [r0, #24]\n"            // stacked pc
         "add    r1, r1, #-2\n"              // pc at SVC call
         "ldrbt  r2, [r1]\n"                 // SVC immediate
-        "cmp    r2, %[svc_gateway_start]\n" // check SVC shortcut
         /***********************************************************************
          *  ATTENTION
          ***********************************************************************
-         * the special handler
-         *    sec_context_switch_in
-         * is called here with 4 arguments:
+         * the special handlers
+         *   (b00 custom_table_unpriv)
+         *    b01 svc_cx_isr_out
+         *    b10 svc_cx_switch_in
+         *    b11 svc_cx_switch_out
+         * are called here with 3 arguments:
          *    r0 - PSP
          *    r1 - pc of SVCall
          *    r2 - immediate value in SVC opcode
-         *    r3 - execution mode (1 = unprivileged)
          * these arguments are defined by the asm code you are reading; when
          * changing this code make sure the same format is used or changed
          * accordingly
          **********************************************************************/
-        "bhi    svc_cx_switch_in\n"         // shortcut    for SVC#imm  > 0x7F
-        "beq    svc_cx_switch_out\n"        // shortcut    for SVC#imm == 0x7F
+        "lsr    r3, r2, #6\n"               // mode bits
+        "adr    r12, jump_table_unpriv\n"
+        "ldr    pc, [r12, r3, lsl #2]\n"
+        ".align 4\n"
+    "jump_table_unpriv:\n"
+        ".word  custom_table_unpriv\n"
+        ".word  svc_cx_isr_out\n"
+        ".word  svc_cx_switch_in\n"
+        ".word  svc_cx_switch_out\n"
+
+    ".thumb_func\n"                            // needed for correct referencing
+    "custom_table_unpriv:\n"
+        /* there is no need to mask the lower 6 bits of the SVC# because
+         * custom_table_unpriv is only when SVC# <= 0x3F */
         "cmp    r2, %[svc_hdlrs_num]\n"     // check SVC table overflow
         "ite    ls\n"                       // note: this ITE order speeds it up
         "ldrls  r1, =g_svc_vtor_tbl\n"      // fetch handler from table
@@ -109,23 +121,32 @@ static void __attribute__((naked)) __svc_irq(void)
         "ldr    r1, [r0, #24]\n"            // stacked pc
         "add    r1, r1, #-2\n"              // pc at SVC call
         "ldrb   r2, [r1]\n"                 // SVC immediate
-        "cmp    r2, %[svc_gateway_start]\n" // check SVC shortcut
         /***********************************************************************
          *  ATTENTION
          ***********************************************************************
-         * the special handler
-         *    sec_interrupt_switch_in
-         * is called here with 4 arguments:
+         * the special handlers
+         *   (b00 custom_table_priv)
+         *    b01 svc_cx_isr_out
+         * are called here with 3 arguments:
          *    r0 - MSP
          *    r1 - pc of SVCall
          *    r2 - immediate value in SVC opcode
-         *    r3 - execution mode (0 = privileged)
          * these arguments are defined by the asm code you are reading; when
          * changing this code make sure the same format is used or changed
          * accordingly
          **********************************************************************/
-        "bhi    svc_cx_isr_in\n"            // shortcut    for SVC#imm  > 0x7F
-        "beq    svc_cx_isr_out\n"           // shortcut    for SVC#imm == 0x7F
+        "lsr    r3, r2, #6\n"               // mode bits
+        "adr    r12, jump_table_priv\n"
+        "ldr    pc, [r12, r3, lsl #2]\n"
+        ".align 4\n"
+    "jump_table_priv:\n"
+        ".word  custom_table_priv\n"
+        ".word  svc_cx_isr_in\n"
+
+    ".thumb_func\n"                            // needed for correct referencing
+    "custom_table_priv:\n"
+        /* there is no need to mask the lower 6 bits of the SVC# because
+         * custom_table_unpriv is only when SVC# <= 0x3F */
         "cmp    r2, %[svc_hdlrs_num]\n"     // check SVC table overflow
         "ite    ls\n"                       // note: this ITE order speeds it up
         "ldrls  r1, =g_svc_vtor_tbl\n"      // fetch handler from table
@@ -142,8 +163,7 @@ static void __attribute__((naked)) __svc_irq(void)
     "svc_thunk_priv:\n"
         "str    r0, [sp, #4]\n"             // store result on stacked r0
         "pop    {pc}\n"                     // return from SVCall
-        :: [svc_hdlrs_num]     "i" (SVC_HDLRS_IND),
-           [svc_gateway_start] "i" (SVC_GW_OFFSET)
+        :: [svc_hdlrs_num] "i" (SVC_HDLRS_IND)
     );
 }
 

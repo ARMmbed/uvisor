@@ -13,6 +13,14 @@
 #ifndef __SVC_H__
 #define __SVC_H__
 
+#define SVC_MODE_UNPRIV_SVC_CUSTOM  (0x0 << 6)
+#define SVC_MODE_UNPRIV_SVC_ISR_OUT (0x1 << 6)
+#define SVC_MODE_UNPRIV_SVC_CX_IN   (0x2 << 6)
+#define SVC_MODE_UNPRIV_SVC_CX_OUT  (0x3 << 6)
+
+#define SVC_MODE_PRIV_SVC_CUSTOM_IN (0x0 << 6)
+#define SVC_MODE_PRIV_SVC_ISR_IN    (0x1 << 6)
+
 #include "svc_cx.h"
 #include "svc_gw.h"
 
