@@ -133,8 +133,8 @@ static inline uint32_t *svc_cx_validate_sf(uint32_t *sp)
     return sp;
 }
 
-static inline uint32_t *svc_cx_create_sf(uint32_t *src_sp, uint32_t *dst_sp,
-                                         uint32_t  thunk,  uint32_t  dst_fn)
+static inline uint32_t *svc_cx_switch_sf(uint32_t *src_sp, uint32_t *dst_sp,
+                                         uint32_t  lr,     uint32_t  dst_fn)
 {
     uint32_t  dst_sf_align;
     uint32_t *dst_sf;
@@ -143,17 +143,13 @@ static inline uint32_t *svc_cx_create_sf(uint32_t *src_sp, uint32_t *dst_sp,
     dst_sf_align = ((uint32_t) dst_sp & SVC_CX_SP_DW_Msk) ? 1 : 0;
     dst_sf       = dst_sp - SVC_CX_EXC_SF_SIZE - dst_sf_align;
 
-    /* populate destination stack frame:
-     *   r0 - r3         are copied
-     *   r12             is cleared
-     *   lr              is the thunk function
-     *   return address  is the destination function
-     *   xPSR            is modified to account for stack alignment */
-    memcpy((void *) dst_sf, (void *) src_sp, sizeof(uint32_t) * 4);
-    dst_sf[4] = 0;
-    dst_sf[5] = thunk;
-    dst_sf[6] = dst_fn;
-    dst_sf[7] = src_sp[7] | SVC_CX_xPSR_DW(dst_sf_align);
+    /* populate destination stack frame */
+    memcpy((void *) dst_sf, (void *) src_sp,
+           sizeof(uint32_t) * 4);                           /* r0 - r3        */
+    dst_sf[4] = 0;                                          /* r12            */
+    dst_sf[5] = lr;                                         /* lr             */
+    dst_sf[6] = dst_fn;                                     /* return address */
+    dst_sf[7] = src_sp[7] | SVC_CX_xPSR_DW(dst_sf_align);   /* alignment      */
 
     return dst_sf;
 }

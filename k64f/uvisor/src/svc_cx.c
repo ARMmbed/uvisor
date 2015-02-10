@@ -20,10 +20,12 @@ int       g_svc_cx_state_ptr;
 uint32_t *g_svc_cx_curr_sp[SVC_CX_MAX_BOXES];
 uint8_t   g_svc_cx_curr_id;
 
-void svc_cx_thunk(void)
+void __attribute__((naked)) svc_cx_thunk(void)
 {
-    /* FIXME the SVC_GW macro will change */
-    SVC_GW(-1, svc_cx_thunk);
+    asm volatile(
+        "svc %[svc_imm]\n"
+        :: [svc_imm] "i" (SVC_MODE_UNPRIV_SVC_CX_OUT)
+    );
 }
 
 void svc_cx_switch_in(uint32_t *svc_sp,  uint32_t svc_pc,
@@ -51,7 +53,7 @@ void svc_cx_switch_in(uint32_t *svc_sp,  uint32_t svc_pc,
     dst_sp = svc_cx_get_curr_sp(dst_id);
 
     /* switch exception stack frame */
-    dst_sp = svc_cx_create_sf(src_sp, dst_sp, (uint32_t) svc_cx_thunk, dst_fn);
+    dst_sp = svc_cx_switch_sf(src_sp, dst_sp, (uint32_t) svc_cx_thunk, dst_fn);
 
     /* save the current state */
     svc_cx_push_state(src_id, src_sp, dst_id);
@@ -83,10 +85,10 @@ void svc_cx_switch_out(uint32_t *svc_sp)
     __set_PSP((uint32_t) src_sp);
 }
 
-void svc_cx_isr_in(void)
+void svc_cx_isr_in(uint32_t *svc_sp)
 {
 }
 
-void svc_cx_isr_out(void)
+void svc_cx_isr_out(uint32_t *svc_sp)
 {
 }
