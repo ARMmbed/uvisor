@@ -14,37 +14,13 @@
 #define __SVC_GW_H__
 
 #include <uvisor.h>
+#include <uvisor-lib.h>
 
-#define TO_STR(x)    #x
-#define TO_STRING(x) TO_STR(x)
-
-#define SVC_GW_MAGIC       0xABCDABCD /* FIXME update with correct magic */
-#define SVC_GW_OFFSET      ((uint8_t) 0x7FU)
 #define SVC_GW_BOX_ID_Msk  ((uint8_t) 0x3FU)
 #define SVC_GW_BOX_OOP_Msk ((uint8_t) 0x40U)
 
 #define SVC_GW_InFlash_Msk   ((uint32_t) ~(FLASH_ORIGIN + FLASH_LENGTH - 1))
 #define SVC_GW_InFlash(addr) ((uint32_t) (addr) & SVC_GW_InFlash_Msk)
-
-#define SVC_GW(dst_id, dst_fn)                                                \
-    ({                                                                        \
-        register uint32_t __r0 asm("r0");                                   \
-        register uint32_t __r1 asm("r1");                                   \
-        register uint32_t __r2 asm("r2");                                   \
-        register uint32_t __r3 asm("r3");                                   \
-        register uint32_t __res asm("r0");                                  \
-        asm volatile(                                                        \
-            "svc   %[svc_imm]\n"                                            \
-            "b.n   skip_args%=\n"                                           \
-            ".word "TO_STRING(SVC_GW_MAGIC)"\n"                             \
-            ".word "TO_STRING(dst_fn)"\n"                                   \
-            "skip_args%=:\n"                                                \
-            : "=r" (__res)                                                  \
-            : [svc_imm] "I" (dst_id + SVC_GW_OFFSET + 1),                   \
-              "r" (__r0), "r" (__r1), "r" (__r2), "r" (__r3)                \
-        );                                                                    \
-        __res;                                                                \
-     })
 
 typedef struct {
     uint16_t opcode;

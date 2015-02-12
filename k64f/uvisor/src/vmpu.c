@@ -13,6 +13,7 @@
 #include <uvisor.h>
 #include <uvisor-lib.h>
 #include "vmpu.h"
+#include "debug.h"
 
 #ifndef MPU_MAX_PRIVATE_FUNCTIONS
 #define MPU_MAX_PRIVATE_FUNCTIONS 16
@@ -70,6 +71,7 @@ static void vmpu_fault(int reason)
 
 static void vmpu_fault_bus(void)
 {
+    DEBUG_FAULT_BUS();
     dprintf("Bus Fault\n\r");
     dprintf("BFAR : 0x%08X\n\r", SCB->BFAR);
     vmpu_fault(MPU_FAULT_BUS);

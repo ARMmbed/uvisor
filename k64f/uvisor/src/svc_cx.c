@@ -11,6 +11,7 @@
  *
  ***************************************************************/
 #include <uvisor.h>
+#include <uvisor-lib.h>
 #include "svc.h"
 #include "vmpu.h"
 
@@ -41,6 +42,7 @@ void svc_cx_switch_in(uint32_t *svc_sp,  uint32_t svc_pc,
     dst_id = svc_gw_get_dst_id(svc_imm);
 
     /* different behavior with svc_imm == 0x80 */
+    /* FIXME check special case */
     if(svc_gw_oop_mode(svc_imm))
     {
         /* TODO */
