@@ -18,16 +18,7 @@
 #include "vmpu.h"
 
 #define SVC_CX_EXC_SF_SIZE 8
-
-#define SVC_CX_xPSR_DW_Pos 9
-#define SVC_CX_xPSR_DW(x)  ((uint32_t) (x) << SVC_CX_xPSR_DW_Pos)
-#define SVC_CX_xPSR_DW_Msk SVC_CX_xPSR_DW(1)
-
-#define SVC_CX_SP_DW_Pos 2
-#define SVC_CX_SP_DW(x)  ((uint32_t) (x) << SVC_CX_SP_DW_Pos)
-#define SVC_CX_SP_DW_Msk SVC_CX_SP_DW(1)
-
-#define SVC_CX_MAX_DEPTH 0x10
+#define SVC_CX_MAX_DEPTH   0x10
 
 typedef struct {
     uint8_t   rfu[3];  /* for 32 bit alignment */
@@ -99,7 +90,7 @@ static inline void svc_cx_pop_state(uint8_t dst_id, uint32_t *dst_sp)
     --g_svc_cx_state_ptr;
 
     /* save curr stack pointer for the dst box */
-    uint32_t dst_sp_align = (dst_sp[7] & SVC_CX_xPSR_DW_Msk) ? 1 : 0;
+    uint32_t dst_sp_align = (dst_sp[7] & 0x4) ? 1 : 0;
     g_svc_cx_curr_sp[dst_id] = dst_sp + SVC_CX_EXC_SF_SIZE + dst_sp_align;
 
     /* update current box id */
@@ -117,12 +108,11 @@ static inline uint32_t *svc_cx_validate_sf(uint32_t *sp)
     asm volatile(
         "ldrt   %[tmp], [%[sp]]\n"                     /* test sp[0] */
         "ldrt   %[tmp], [%[sp], %[exc_sf_size]]\n"     /* test sp[7] */
-        "tst    %[tmp], %[exc_sf_dw_msk]\n"            /* test alignment */
+        "tst    %[tmp], #0x4\n"                        /* test alignment */
         "it     ne\n"
         "ldrtne %[tmp], [%[sp], %[max_exc_sf_size]]\n" /* test sp[8] */
         : [tmp]             "=r" (tmp)
         : [sp]              "r"  ((uint32_t) sp),
-          [exc_sf_dw_msk]   "i"  ((uint32_t) SVC_CX_xPSR_DW_Msk),
           [exc_sf_size]     "i"  ((uint32_t) (sizeof(uint32_t) *
                                               (SVC_CX_EXC_SF_SIZE - 1))),
           [max_exc_sf_size] "i"  ((uint32_t) (sizeof(uint32_t) *
@@ -140,16 +130,35 @@ static inline uint32_t *svc_cx_switch_sf(uint32_t *src_sp, uint32_t *dst_sp,
     uint32_t *dst_sf;
 
     /* create destination stack frame */
-    dst_sf_align = ((uint32_t) dst_sp & SVC_CX_SP_DW_Msk) ? 1 : 0;
+    dst_sf_align = ((uint32_t) dst_sp & 0x4) ? 1 : 0;
     dst_sf       = dst_sp - SVC_CX_EXC_SF_SIZE - dst_sf_align;
 
     /* populate destination stack frame */
     memcpy((void *) dst_sf, (void *) src_sp,
-           sizeof(uint32_t) * 4);                           /* r0 - r3        */
-    dst_sf[4] = 0;                                          /* r12            */
-    dst_sf[5] = lr;                                         /* lr             */
-    dst_sf[6] = dst_fn;                                     /* return address */
-    dst_sf[7] = src_sp[7] | SVC_CX_xPSR_DW(dst_sf_align);   /* alignment      */
+           sizeof(uint32_t) * 4);                         /* r0 - r3          */
+    dst_sf[4] = 0;                                        /* r12              */
+    dst_sf[5] = lr;                                       /* lr               */
+    dst_sf[6] = dst_fn;                                   /* return address   */
+    dst_sf[7] = src_sp[7] | (dst_sf_align << 9);          /* xPSR - alignment */
+
+    return dst_sf;
+}
+
+static inline uint32_t *svc_cx_depriv_sf(uint32_t *msp, uint32_t *dst_sp)
+{
+    uint32_t  dst_sf_align;
+    uint32_t *dst_sf;
+
+    /* create destination stack frame */
+    dst_sf_align = ((uint32_t) dst_sp & 0x4) ? 1 : 0;
+    dst_sf       = dst_sp - SVC_CX_EXC_SF_SIZE - dst_sf_align;
+
+    /* populate destination stack frame */
+    memset((void *) dst_sf, 0, sizeof(uint32_t) * 5);   /* r0 - r3, r12       */
+    dst_sf[5]  = msp[5] | 0x1C;                         /* lr                 */
+    dst_sf[6]  = msp[6];                                /* return address     */
+    dst_sf[7]  = msp[7] & ~0x3F;                        /* IPSR - clear IRQn  */
+    dst_sf[7] |= dst_sf_align << 9;                     /* xPSR - alignment   */
 
     return dst_sf;
 }
