@@ -82,9 +82,9 @@ static void __attribute__((naked)) __svc_irq(void)
          * accordingly
          **********************************************************************/
         "lsr    r3, r2, #6\n"               // mode bits
-        "adr    r12, jump_table_unpriv\n"
-        "ldr    pc, [r12, r3, lsl #2]\n"
-        ".align 4\n"
+        "adr    r12, jump_table_unpriv\n"   // address of jump table
+        "ldr    pc, [r12, r3, lsl #2]\n"    // branch to handler
+        ".align 4\n"                        // the jump table must be aligned
     "jump_table_unpriv:\n"
         ".word  custom_table_unpriv\n"
         ".word  svc_cx_isr_out\n"
@@ -136,9 +136,9 @@ static void __attribute__((naked)) __svc_irq(void)
          * accordingly
          **********************************************************************/
         "lsr    r3, r2, #6\n"               // mode bits
-        "adr    r12, jump_table_priv\n"
-        "ldr    pc, [r12, r3, lsl #2]\n"
-        ".align 4\n"
+        "adr    r12, jump_table_priv\n"     // address of jump table
+        "ldr    pc, [r12, r3, lsl #2]\n"    // branch to handler
+        ".align 4\n"                        // the jump table must be aligned
     "jump_table_priv:\n"
         ".word  custom_table_priv\n"
         ".word  svc_cx_isr_in\n"

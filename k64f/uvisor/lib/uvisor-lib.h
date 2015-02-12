@@ -60,6 +60,32 @@
     const __attribute__((section(".uvisor.cfgtbl"), aligned(4))) \
         volatile void* acl_list ## _cfg_ptr  =  & acl_list ## _cfg;
 
+/* FIXME the whole secure gateway will change */
+#define TO_STR(x)     #x
+#define TO_STRING(x)  TO_STR(x)
+#define SVC_GW_MAGIC  0xABCDABCD /* FIXME update with correct magic */
+#define SVC_GW_OFFSET ((uint8_t) 0x7FU)
+
+#define secure_gateway(dst_id, dst_fn)                                        \
+    ({                                                                        \
+        register uint32_t __r0 asm("r0");                                   \
+        register uint32_t __r1 asm("r1");                                   \
+        register uint32_t __r2 asm("r2");                                   \
+        register uint32_t __r3 asm("r3");                                   \
+        register uint32_t __res asm("r0");                                  \
+        asm volatile(                                                        \
+            "svc   %[svc_imm]\n"                                            \
+            "b.n   skip_args%=\n"                                           \
+            ".word "TO_STRING(SVC_GW_MAGIC)"\n"                             \
+            ".word "TO_STRING(dst_fn)"\n"                                   \
+            "skip_args%=:\n"                                                \
+            :           "=r" (__res)                                        \
+            : [svc_imm] "I"  (dst_id + SVC_GW_OFFSET + 1),                  \
+                        "r"  (__r0), "r" (__r1), "r" (__r2), "r" (__r3)     \
+        );                                                                    \
+        __res;                                                                \
+     })
+
 typedef uint32_t UvBoxAcl;
 
 typedef struct

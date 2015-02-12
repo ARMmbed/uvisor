@@ -13,6 +13,7 @@
 #include <uvisor.h>
 #include "vmpu.h"
 #include "svc.h"
+#include "debug.h"
 
 #ifdef  NV_CONFIG_OFFSET
 __attribute__ ((section(".nv_config")))
@@ -57,6 +58,9 @@ NOINLINE int uvisor_init(void)
     /* init SVC call interface */
     svc_init();
 
+    /* initialize debugging features */
+    DEBUG_INIT();
+
     DPRINTF("uvisor initialized\n");
 
     return 0;
@@ -75,6 +79,7 @@ static void scan_box_acls(void)
     AIPS0->PACRN &= ~(1 << 22); // UART0       (PACRN[23:20])
     AIPS0->PACRJ &= ~(1 << 30); // SIM_CLKDIV1 (PACRJ[31:28])
     AIPS0->PACRJ &= ~(1 << 22); // PORTB mux   (PACRJ[23:20])
+    AIPS0->PACRG &= ~(1 << 2);  // PIT module  (PACRJ[ 3: 0])
 }
 
 void main_entry(void)
