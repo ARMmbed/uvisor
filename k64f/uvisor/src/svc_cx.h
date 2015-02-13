@@ -59,7 +59,7 @@ static void inline svc_cx_push_state(uint8_t src_id, uint32_t *src_sp,
                                      uint8_t dst_id)
 {
     /* check state stack overflow */
-    if(g_svc_cx_state_ptr == SVC_CX_MAX_DEPTH - 1)
+    if(g_svc_cx_state_ptr == SVC_CX_MAX_DEPTH)
     {
         /* FIXME raise fault */
         while(1);
