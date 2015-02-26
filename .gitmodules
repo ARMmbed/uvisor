@@ -1,4 +1,4 @@
 [submodule "release"]
 	path = release
-	url = git@github.com:ARMmbed/uvisor-lib.git
+	url = git@github.com:AlessandroA/uvisor-lib-private.git
 	ignore = dirty
