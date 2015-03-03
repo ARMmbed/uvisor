@@ -42,8 +42,8 @@
 typedef void (*UnprivilegedBoxEntry)(void);
 
 #define NOINLINE __attribute__ ((noinline))
-#define PACKED __attribute__((packed))
-#define WEAK __attribute__ ((weak))
+#define PACKED   __attribute__((packed))
+#define WEAK     __attribute__ ((weak))
 #define ALIAS(f) __attribute__ ((weak, alias (#f)))
 
 /* array count macro */
@@ -60,7 +60,8 @@ typedef void (*UnprivilegedBoxEntry)(void);
 #define assert(...)
 #else /*NDEBUG*/
 #define DPRINTF dprintf
-#define assert(x) if(!(x)){dprintf("HALTED(%s:%i): assert(%s)\n",  __FILE__, __LINE__, #x);while(1);}
+#define assert(x) if(!(x)){dprintf("HALTED(%s:%i): assert(%s)\n",\
+                                   __FILE__, __LINE__, #x);while(1);}
 #endif/*NDEBUG*/
 
 #ifdef  CHANNEL_DEBUG
@@ -81,10 +82,6 @@ typedef void (*UnprivilegedBoxEntry)(void);
 
 /* IOT-OS specific includes */
 #include <isr.h>
-#include <svc-helper.h>
 #include <linker.h>
-
-/* library context switch utilities */
-#include <exports.h>
 
 #endif/*__UVISOR_H__*/
