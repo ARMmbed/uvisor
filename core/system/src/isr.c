@@ -44,6 +44,7 @@ void reset_handler(void)
     while(dst<((uint32_t*)&g_isr_vector[MAX_ISR_VECTORS]))
         *dst++ = (uint32_t)&default_handler;
     SCB->VTOR = (uint32_t)&g_isr_vector;
+#endif/*NOSYSTEM*/
 
     main_entry();
 
