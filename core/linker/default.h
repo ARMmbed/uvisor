@@ -53,19 +53,22 @@ ENTRY(reset_handler)
 
 MEMORY
 {
-  FLASH (rx) : ORIGIN = (FLASH_ORIGIN+RESERVED_FLASH), LENGTH = USE_FLASH_SIZE
-  RAM   (rwx): ORIGIN = (SRAM_ORIGIN +RESERVED_SRAM),  LENGTH = USE_SRAM_SIZE-STACK_SECTION_SIZE
-  STACK (rw) : ORIGIN = (SRAM_ORIGIN +RESERVED_SRAM+USE_SRAM_SIZE-STACK_SECTION_SIZE), LENGTH = STACK_SECTION_SIZE
+  FLASH (rx) : ORIGIN = (FLASH_ORIGIN + RESERVED_FLASH),
+               LENGTH = USE_FLASH_SIZE
+  RAM   (rwx): ORIGIN = (SRAM_ORIGIN + RESERVED_SRAM),
+               LENGTH = USE_SRAM_SIZE - STACK_SECTION_SIZE
+  STACK (rw) : ORIGIN = (SRAM_ORIGIN + RESERVED_SRAM + USE_SRAM_SIZE -
+                                                       STACK_SECTION_SIZE),
+               LENGTH = STACK_SECTION_SIZE
 }
 
 SECTIONS
 {
     .text :
     {
-        KEEP(*(.box_header))
         KEEP(*(.isr_vector_tmp))
 #ifdef  NV_CONFIG_OFFSET
-        . = (FLASH_ORIGIN+NV_CONFIG_OFFSET);
+        . = (FLASH_ORIGIN + NV_CONFIG_OFFSET);
         KEEP(*(.nv_config))
 #endif/*NV_CONFIG_OFFSET*/
         *(.text.reset_handler)
@@ -73,9 +76,6 @@ SECTIONS
         *(.text*)
         *(.rodata*)
         . = ALIGN(4);
-        __box_init_start__ = .;
-        KEEP(*(.box_init*))
-        __box_init_end__ = .;
         PROVIDE(__data_start_src__ = LOADADDR(.data));
         PROVIDE(__uvisor_config = LOADADDR(.data) + SIZEOF(.data));
         PROVIDE(__stack_end__ = ORIGIN(STACK) + LENGTH(STACK));
