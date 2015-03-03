@@ -49,7 +49,8 @@ void WEAK default_putc (uint8_t data)
         ITM->TCR  = ITM->TER = 0x0;
 
         /* wait for debugger to connect */
-        while(!((ITM->TCR & ITM_TCR_ITMENA_Msk) && (ITM->TER & (1<<CHANNEL_DEBUG))));
+        while(!((ITM->TCR & ITM_TCR_ITMENA_Msk) &&
+                (ITM->TER & (1<<CHANNEL_DEBUG))));
     }
 
     if(    (ITM->TCR & ITM_TCR_ITMENA_Msk) &&

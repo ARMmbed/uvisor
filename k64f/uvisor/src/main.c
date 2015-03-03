@@ -55,6 +55,12 @@ NOINLINE int uvisor_init(void)
     if((res = vmpu_init())!=0)
         return res;
 
+    /* vector table relocation */
+    uint32_t *dst = (uint32_t *) &g_isr_vector;
+    while(dst < ((uint32_t *) &g_isr_vector[MAX_ISR_VECTORS]))
+        *dst++ = (uint32_t) &default_handler;
+    SCB->VTOR = (uint32_t) &g_isr_vector;
+
     /* init SVC call interface */
     svc_init();
 
