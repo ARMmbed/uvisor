@@ -45,7 +45,8 @@ typedef struct
     uint32_t fn_count;
 } TBoxDesc;
 
-extern int vmpu_init(void);
+extern int  vmpu_check_mode(void);
+extern void vmpu_init(void);
 
 extern int vmpu_acl_dev(TACL acl, uint16_t device_id);
 extern int vmpu_acl_mem(TACL acl, uint32_t addr, uint32_t size);

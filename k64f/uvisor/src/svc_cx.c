@@ -20,6 +20,7 @@ TBoxCx    g_svc_cx_state[SVC_CX_MAX_DEPTH];
 int       g_svc_cx_state_ptr;
 uint32_t *g_svc_cx_curr_sp[SVC_CX_MAX_BOXES];
 uint8_t   g_svc_cx_curr_id;
+uint32_t  g_svc_cx_box_num;
 
 void __attribute__((naked)) svc_cx_thunk(void)
 {
@@ -39,20 +40,19 @@ void svc_cx_switch_in(uint32_t *svc_sp,  uint32_t svc_pc,
     /* gather information from secure gateway */
     svc_gw_check_magic((TSecGw *) svc_pc);
     dst_fn = svc_gw_get_dst_fn((TSecGw *) svc_pc);
-    dst_id = svc_gw_get_dst_id(svc_imm);
-
-    /* different behavior with svc_imm == 0x80 */
-    /* FIXME check special case */
-    if(svc_gw_oop_mode(svc_imm))
-    {
-        /* TODO */
-        while(1);
-    }
+    dst_id = svc_gw_get_dst_id((TSecGw *) svc_pc);
 
     /* gather information from current state */
     src_sp = svc_cx_validate_sf(svc_sp);
     src_id = svc_cx_get_curr_id();
     dst_sp = svc_cx_get_curr_sp(dst_id);
+
+    /* check src and dst IDs */
+    if(src_id == dst_id)
+    {
+        /* FIXME raise fault */
+        while(1);
+    }
 
     /* switch exception stack frame */
     dst_sp = svc_cx_switch_sf(src_sp, dst_sp, (uint32_t) svc_cx_thunk, dst_fn);

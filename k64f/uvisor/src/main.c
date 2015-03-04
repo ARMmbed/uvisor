@@ -15,28 +15,8 @@
 #include "svc.h"
 #include "debug.h"
 
-#ifdef  NV_CONFIG_OFFSET
-__attribute__ ((section(".nv_config")))
-const NV_Type nv_config = {
-    /* backdoor key */
-    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-    /* flash protection */
-    0xFF, 0xFF, 0xFF, 0xFF,
-    /* FSEC */
-    0xFF,
-    /* FOPT */
-    0xFF,
-    /* FEPROT */
-    0xFF,
-    /* FDPROT */
-    0xFF
-};
-#endif/*NV_CONFIG_OFFSET*/
-
-NOINLINE int uvisor_init(void)
+NOINLINE void uvisor_init(void)
 {
-    int res;
-
     /* reset uvisor BSS */
     memset(
         &__bss_start__,
@@ -51,15 +31,14 @@ NOINLINE int uvisor_init(void)
         VMPU_REGION_SIZE(&__data_start__, &__data_end__)
     );
 
-    /* init MPU */
-    if((res = vmpu_init())!=0)
-        return res;
-
     /* vector table relocation */
     uint32_t *dst = (uint32_t *) &g_isr_vector;
     while(dst < ((uint32_t *) &g_isr_vector[MAX_ISR_VECTORS]))
         *dst++ = (uint32_t) &default_handler;
     SCB->VTOR = (uint32_t) &g_isr_vector;
+
+    /* init MPU */
+    vmpu_init();
 
     /* init SVC call interface */
     svc_init();
@@ -68,8 +47,6 @@ NOINLINE int uvisor_init(void)
     DEBUG_INIT();
 
     DPRINTF("uvisor initialized\n");
-
-    return 0;
 }
 
 static void scan_box_acls(void)
@@ -90,24 +67,26 @@ static void scan_box_acls(void)
 
 void main_entry(void)
 {
+    /* check uvisor mode */
+    if(vmpu_check_mode())
+        return;
+
     /* initialize uvisor */
-    if(!uvisor_init())
-    {
-        /* swap stack pointers*/
-        __disable_irq();
-        __set_PSP(__get_MSP());
-        __set_MSP(((uint32_t)&__stack_end__)-STACK_GUARD_BAND);
-        __enable_irq();
+    uvisor_init();
 
-        /* apply box ACLs */
-        scan_box_acls();
+    /* swap stack pointers*/
+    __disable_irq();
+    __set_PSP((uint32_t) __get_MSP());
+    __set_MSP(((uint32_t) &__stack_end__) - STACK_GUARD_BAND);
+    __enable_irq();
 
-        /* switch to unprivileged mode.
-         * this is possible as uvisor code is readable by unprivileged.
-         * code and only the key-value database is protected from the.
-         * unprivileged mode */
-        __set_CONTROL(__get_CONTROL()|3);
-        __ISB();
-        __DSB();
-    }
+    /* apply box ACLs */
+    scan_box_acls();
+
+    /* switch to unprivileged mode; this is possible as uvisor code is readable
+     * by unprivileged code and only the key-value database is protected from
+     * the unprivileged mode */
+    __set_CONTROL(__get_CONTROL() | 3);
+    __ISB();
+    __DSB();
 }
