@@ -13,6 +13,7 @@
 #include <uvisor.h>
 #include <uvisor-lib.h>
 #include "vmpu.h"
+#include "svc.h"
 #include "debug.h"
 
 #ifndef MPU_MAX_PRIVATE_FUNCTIONS
@@ -264,23 +265,6 @@ bool vmpu_valid_code_addr(const void* address)
 
 static void vmpu_sanity_checks(void)
 {
-    /* verify uvisor config structure */
-    if(__uvisor_config.magic!=UVISOR_MAGIC)
-        while(1)
-        {
-            DPRINTF("config magic mismatch: &0x%08X = 0x%08X \
-                                 - exptected 0x%08X\n",
-                &__uvisor_config,
-                __uvisor_config.magic,
-                UVISOR_MAGIC);
-        }
-
-    /* verify if configuration mode is inside flash memory */
-    assert((uint32_t)__uvisor_config.mode >= FLASH_ORIGIN);
-    assert((uint32_t)__uvisor_config.mode <= (FLASH_ORIGIN+FLASH_LENGTH-4));
-    DPRINTF("uvisor_mode: %u\n", *__uvisor_config.mode);
-    assert(*__uvisor_config.mode <= 2);
-
     /* verify flash origin and size */
     assert( FLASH_ORIGIN  == 0 );
     assert( __builtin_popcount(FLASH_ORIGIN + FLASH_LENGTH) == 1 );
@@ -364,7 +348,33 @@ static void vmpu_init_box_memories(void)
     );
 }
 
-int vmpu_init(void)
+int vmpu_check_mode(void)
+{
+    /* verify uvisor config structure */
+    if(__uvisor_config.magic!=UVISOR_MAGIC)
+        while(1)
+        {
+            DPRINTF("config magic mismatch: &0x%08X = 0x%08X \
+                                 - exptected 0x%08X\n",
+                &__uvisor_config,
+                __uvisor_config.magic,
+                UVISOR_MAGIC);
+        }
+
+    /* verify if configuration mode is inside flash memory */
+    assert((uint32_t)__uvisor_config.mode >= FLASH_ORIGIN);
+    assert((uint32_t)__uvisor_config.mode <= (FLASH_ORIGIN + FLASH_LENGTH - 4));
+    DPRINTF("uvisor_mode: %u\n", *__uvisor_config.mode);
+    assert(*__uvisor_config.mode <= 2);
+
+    /* return error if uvisor is disabled */
+    if(!__uvisor_config.mode || (*__uvisor_config.mode == 0))
+        return -1;
+    else
+        return 0;
+}
+
+void vmpu_init(void)
 {
     /* run basic sanity checks */
     vmpu_sanity_checks();
@@ -372,9 +382,8 @@ int vmpu_init(void)
     /* always initialize protected box memories */
     vmpu_init_box_memories();
 
-    /* bail if uvisor is disabled */
-    if(!__uvisor_config.mode || (*__uvisor_config.mode==0))
-        return -1;
+    /* load boxes */
+    vmpu_load_boxes();
 
     /* setup security "bluescreen" exceptions */
     ISR_SET(BusFault_IRQn,         &vmpu_fault_bus);
@@ -385,6 +394,5 @@ int vmpu_init(void)
     /* enable mem, bus and usage faults */
     SCB->SHCSR |= 0x70000;
 
-    /* return successful */
-    return 0;
+    return;
 }

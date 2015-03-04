@@ -34,6 +34,7 @@ extern TBoxCx    g_svc_cx_state[SVC_CX_MAX_DEPTH];
 extern int       g_svc_cx_state_ptr;
 extern uint32_t *g_svc_cx_curr_sp[SVC_CX_MAX_BOXES];
 extern uint8_t   g_svc_cx_curr_id;
+extern uint32_t  g_svc_cx_box_num;
 
 static inline uint8_t svc_cx_get_src_id(void)
 {
@@ -123,6 +124,13 @@ static inline uint32_t *svc_cx_validate_sf(uint32_t *sp)
     return sp;
 }
 
+static inline void svc_cx_tamper_sf(uint32_t *src_sp, uint32_t dst_fn)
+{
+    /* modify exception stack frame */
+    src_sp[5] = src_sp[6] | 1;                            /* lr               */
+    src_sp[6] = dst_fn;                                   /* return address   */
+}
+
 static inline uint32_t *svc_cx_switch_sf(uint32_t *src_sp, uint32_t *dst_sp,
                                          uint32_t  lr,     uint32_t  dst_fn)
 {
@@ -154,11 +162,11 @@ static inline uint32_t *svc_cx_depriv_sf(uint32_t *msp, uint32_t *dst_sp)
     dst_sf       = dst_sp - SVC_CX_EXC_SF_SIZE - dst_sf_align;
 
     /* populate destination stack frame */
-    memset((void *) dst_sf, 0, sizeof(uint32_t) * 5);   /* r0 - r3, r12       */
-    dst_sf[5]  = msp[5] | 0x1C;                         /* lr                 */
-    dst_sf[6]  = msp[6];                                /* return address     */
-    dst_sf[7]  = msp[7] & ~0x3F;                        /* IPSR - clear IRQn  */
-    dst_sf[7] |= dst_sf_align << 9;                     /* xPSR - alignment   */
+    memset((void *) dst_sf, 0, sizeof(uint32_t) * 5);    /* r0 - r3, r12      */
+    dst_sf[5]  = msp[5] | 0x1C;                          /* lr                */
+    dst_sf[6]  = msp[6];                                 /* return address    */
+    dst_sf[7]  = msp[7] & ~0x3F;                         /* IPSR - clear IRQn */
+    dst_sf[7] |= dst_sf_align << 9;                      /* xPSR - alignment  */
 
     return dst_sf;
 }
