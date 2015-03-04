@@ -26,7 +26,8 @@
 #define UVISOR_ROUND32(x) (((x)+31UL) & ~0x1FUL)
 #define UVISOR_PAD32(x) (32 - (sizeof(x) & ~0x1FUL))
 #define UVISOR_STACK_BAND_SIZE 128
-#define UVISOR_STACK_SIZE_ROUND(size) (UVISOR_ROUND32(size)+(UVISOR_STACK_BAND_SIZE*2))
+#define UVISOR_STACK_SIZE_ROUND(size) (UVISOR_ROUND32(size) +                 \
+                                      (UVISOR_STACK_BAND_SIZE * 2))
 
 #ifndef UVISOR_BOX_STACK_SIZE
 #define UVISOR_BOX_STACK_SIZE 1024
@@ -44,21 +45,25 @@
 #define UVISOR_SECURE_DATA \
     __attribute__((section(".uvisor.data"), aligned(32)))
 
-#define UVISOR_BOX_CONFIG(acl_list, stack_size) \
+#define UVISOR_BOX_CONFIG(box_name, acl_list, stack_size) \
     \
     uint8_t __attribute__((section(".uvisor.bss.stack"), aligned(32))) \
-        acl_list ## _stack[UVISOR_STACK_SIZE_ROUND(stack_size)];\
+        box_name ## _stack[UVISOR_STACK_SIZE_ROUND(stack_size)];\
     \
-    static UVISOR_SECURE_CONST UvBoxConfig acl_list ## _cfg = { \
+    static UVISOR_SECURE_CONST UvBoxConfig box_name ## _cfg = { \
         UVISOR_BOX_MAGIC, \
         UVISOR_BOX_VERSION, \
-        sizeof(acl_list ## _stack), \
+        sizeof(box_name ## _stack), \
         acl_list, \
         UVISOR_ARRAY_COUNT(acl_list) \
     }; \
     \
     const __attribute__((section(".uvisor.cfgtbl"), aligned(4))) \
-        volatile void* acl_list ## _cfg_ptr  =  & acl_list ## _cfg;
+        volatile void* box_name ## _cfg_ptr  =  & box_name ## _cfg;
+
+#define UVISOR_SVC_ID_WRITE_BITBAND     0
+
+UVISOR_EXTERN const uint32_t __uvisor_mode;
 
 /* FIXME the whole secure gateway will change */
 #define TO_STR(x)     #x
@@ -66,25 +71,47 @@
 #define SVC_GW_MAGIC  0xABCDABCD /* FIXME update with correct magic */
 #define SVC_GW_OFFSET ((uint8_t) 0x7FU)
 
-#define secure_gateway(dst_id, dst_fn)                                        \
+#define secure_gateway(dst_box, dst_fn, a0, a1, a2, a3)                        \
     ({                                                                        \
-        register uint32_t __r0 asm("r0");                                   \
-        register uint32_t __r1 asm("r1");                                   \
-        register uint32_t __r2 asm("r2");                                   \
-        register uint32_t __r3 asm("r3");                                   \
-        register uint32_t __res asm("r0");                                  \
+        register uint32_t __r0  asm("r0") = a0;                                \
+        register uint32_t __r1  asm("r1") = a1;                                \
+        register uint32_t __r2  asm("r2") = a2;                                \
+        register uint32_t __r3  asm("r3") = a3;                                \
+        register uint32_t __res asm("r0");                                    \
         asm volatile(                                                        \
             "svc   %[svc_imm]\n"                                            \
             "b.n   skip_args%=\n"                                           \
             ".word "TO_STRING(SVC_GW_MAGIC)"\n"                             \
             ".word "TO_STRING(dst_fn)"\n"                                   \
+            ".word "TO_STRING(dst_box)"_cfg_ptr\n"                          \
             "skip_args%=:\n"                                                \
             :           "=r" (__res)                                        \
-            : [svc_imm] "I"  (dst_id + SVC_GW_OFFSET + 1),                  \
+            : [svc_imm] "I"  (SVC_GW_OFFSET + 1),                           \
                         "r"  (__r0), "r" (__r1), "r" (__r2), "r" (__r3)     \
         );                                                                    \
         __res;                                                                \
      })
+
+static inline void uvisor_write_bitband(uint32_t volatile *addr, uint32_t val)
+{
+    if (__uvisor_mode == 0)
+    {
+        *addr = val;
+    }
+    else
+    {
+        register uint32_t __r0 __asm__("r0") = (uint32_t) addr;
+        register uint32_t __r1 __asm__("r1") = (uint32_t) val;
+        __asm__ volatile(
+            "svc  %[svc_id]\n"
+            :
+            :          "r" (__r0),
+                       "r" (__r1),
+              [svc_id] "i" (UVISOR_SVC_ID_WRITE_BITBAND)
+        );
+    }
+}
+
 
 typedef uint32_t UvBoxAcl;
 
