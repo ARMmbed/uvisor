@@ -348,6 +348,64 @@ static void vmpu_init_box_memories(void)
     );
 }
 
+static void vmpu_load_acls(uint8_t box_id, const UvBoxAclItem *acl_list,
+                           uint32_t acl_count)
+{
+    UvBoxAclItem acl_item;
+    uint32_t i;
+
+    for(i = 0; i < acl_count; i++)
+    {
+        acl_item = acl_list[i];
+        (void)acl_item;
+        /* FIXME then what? */
+    }
+}
+
+static void vmpu_load_boxes(void)
+{
+    uint32_t *addr, *sp;
+    UvBoxConfig *box_cfgtbl;
+    uint8_t box_id;
+
+    /* stack region grows from bss_start downwards */
+    sp = __uvisor_config.bss_start;
+
+    /* enumerate and initialize boxes */
+    for(addr = (uint32_t *) __uvisor_config.cfgtbl_start;
+        addr < (uint32_t *) __uvisor_config.cfgtbl_end;
+        ++addr)
+    {
+        /* increment box counter */
+        box_id = ++g_svc_cx_box_num;
+
+        /* load box configuration table */
+        box_cfgtbl = (UvBoxConfig *) *addr;
+
+        /* load box ACLs in table */
+        vmpu_load_acls(box_id, box_cfgtbl->acl_list, box_cfgtbl->acl_count);
+
+        /* initialize box stack pointers */
+        if(box_id < SVC_CX_MAX_BOXES)
+        {
+            g_svc_cx_curr_sp[box_id] = sp - UVISOR_STACK_BAND_SIZE;
+            sp -= box_cfgtbl->stack_size >> 2;
+        }
+        else
+        {
+            /* FIXME fail properly */
+            while(1);
+        }
+    }
+
+    /* check consistency between allocated and actual stack sizes */
+    if(sp != __uvisor_config.reserved_end)
+    {
+        /* FIXME fail properly */
+        while(1);
+    }
+}
+
 int vmpu_check_mode(void)
 {
     /* verify uvisor config structure */
