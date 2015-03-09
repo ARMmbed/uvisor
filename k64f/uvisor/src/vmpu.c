@@ -398,6 +398,19 @@ static void vmpu_load_boxes(void)
         }
     }
 
+    /* set initial stack pointer for box 0 */
+    /* the initial stack pointer is taken as ISR vector 0 from the mbed vector
+     * table */
+    /* using C to take the value pointed from address 0x0 gives unstable
+     * compiler behaviors */
+    uint32_t *tmp;
+    asm volatile(
+        "mov %[tmp], #0\n"
+        "ldr %[tmp], [%[tmp], #0]\n"
+        : [tmp] "=r" (tmp) :
+    );
+    g_svc_cx_curr_sp[0] = tmp;
+
     /* check consistency between allocated and actual stack sizes */
     if(sp != __uvisor_config.reserved_end)
     {
