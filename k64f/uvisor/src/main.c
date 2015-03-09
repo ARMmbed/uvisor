@@ -67,26 +67,27 @@ static void scan_box_acls(void)
 
 void main_entry(void)
 {
-    /* check uvisor mode */
-    if(vmpu_check_mode())
-        return;
+    /* run basic sanity checks */
+    if(vmpu_sanity_checks() == 0)
+    {
 
-    /* initialize uvisor */
-    uvisor_init();
+        /* initialize uvisor */
+        uvisor_init();
 
-    /* swap stack pointers*/
-    __disable_irq();
-    __set_PSP(__get_MSP());
-    __set_MSP(((uint32_t) &__stack_end__) - STACK_GUARD_BAND);
-    __enable_irq();
+        /* swap stack pointers*/
+        __disable_irq();
+        __set_PSP(__get_MSP());
+        __set_MSP(((uint32_t) &__stack_end__) - STACK_GUARD_BAND);
+        __enable_irq();
 
-    /* apply box ACLs */
-    scan_box_acls();
+        /* apply box ACLs */
+        scan_box_acls();
 
-    /* switch to unprivileged mode; this is possible as uvisor code is readable
-     * by unprivileged code and only the key-value database is protected from
-     * the unprivileged mode */
-    __set_CONTROL(__get_CONTROL() | 3);
-    __ISB();
-    __DSB();
+        /* switch to unprivileged mode; this is possible as uvisor code is readable
+         * by unprivileged code and only the key-value database is protected from
+         * the unprivileged mode */
+        __set_CONTROL(__get_CONTROL() | 3);
+        __ISB();
+        __DSB();
+    }
 }
