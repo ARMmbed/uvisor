@@ -10,17 +10,21 @@
  *  by a licensing agreement from ARM Limited.
  *
  ***************************************************************/
-#ifndef __UVISOR_LIB_H__
-#define __UVISOR_LIB_H__
+#ifndef __UVISOR_EXPORTS_H__
+#define __UVISOR_EXPORTS_H__
 
-#include <stdint.h>
-#include <uvisor-lib/uvisor_exports.h>
-#include <uvisor-lib/svc_exports.h>
-#include <uvisor-lib/svc_gw_exports.h>
-#include <uvisor-lib/vmpu_exports.h>
-#include <uvisor-lib/config.h>
-#include <uvisor-lib/interrupts.h>
-#include <uvisor-lib/secure_gateway.h>
-#include <uvisor-lib/bitband.h>
+#ifdef  __cplusplus
+#define UVISOR_EXTERN extern "C"
+#else
+#define UVISOR_EXTERN extern
+#endif/*__CPP__*/
 
-#endif/*__UVISOR_LIB_H__*/
+#define UVISOR_NOINLINE __attribute__ ((noinline))
+#define UVISOR_PACKED   __attribute__((packed))
+#define UVISOR_WEAK     __attribute__ ((weak))
+#define UVISOR_ALIAS(f) __attribute__ ((weak, alias (#f)))
+
+/* array count macro */
+#define UVISOR_ARRAY_COUNT(x) (sizeof(x)/sizeof(x[0]))
+
+#endif/*__UVISOR_EXPORTS_H__*/

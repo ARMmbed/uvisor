@@ -13,11 +13,8 @@
 #ifndef __UVISOR_H__
 #define __UVISOR_H__
 
-#ifdef  __cplusplus
-#  define EXTERN extern "C"
-#else
-#  define EXTERN extern
-#endif/*__CPP__*/
+/* definitions that are made visible externally */
+#include "uvisor_exports.h"
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -32,7 +29,6 @@
 #define FALSE 0
 #endif/*FALSE*/
 
-
 #include <tfp_printf.h>
 #ifndef dprintf
 #define dprintf tfp_printf
@@ -40,14 +36,6 @@
 
 /* unprivileged box as called by privileged code */
 typedef void (*UnprivilegedBoxEntry)(void);
-
-#define NOINLINE __attribute__ ((noinline))
-#define PACKED   __attribute__((packed))
-#define WEAK     __attribute__ ((weak))
-#define ALIAS(f) __attribute__ ((weak, alias (#f)))
-
-/* array count macro */
-#define ARRAY_COUNT(x) (sizeof(x)/sizeof(x[0]))
 
 /* device-specific definitions */
 #include "uvisor-device.h"

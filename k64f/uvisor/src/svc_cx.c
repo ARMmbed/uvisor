@@ -11,7 +11,6 @@
  *
  ***************************************************************/
 #include <uvisor.h>
-#include <uvisor-lib.h>
 #include "svc.h"
 #include "vmpu.h"
 

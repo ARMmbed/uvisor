@@ -109,12 +109,12 @@ regs Kusti, 23.10.2004
 #include <stdarg.h>
 
 /* declare default global putchar */
-EXTERN void default_putc (uint8_t data);
+UVISOR_EXTERN void default_putc (uint8_t data);
 
 typedef void (*tfp_putcf) (void*,char);
 
-EXTERN void tfp_sprintf(char* s,char *fmt, ...);
-EXTERN void tfp_printf (const char *fmt, ...);
-EXTERN void tfp_format(void* putp,tfp_putcf putf,const char *fmt, va_list va);
+UVISOR_EXTERN void tfp_sprintf(char* s,char *fmt, ...);
+UVISOR_EXTERN void tfp_printf (const char *fmt, ...);
+UVISOR_EXTERN void tfp_format(void* putp,tfp_putcf putf,const char *fmt, va_list va);
 
 #endif
