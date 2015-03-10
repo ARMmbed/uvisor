@@ -14,7 +14,6 @@
 #define __SVC_CX_H__
 
 #include <uvisor.h>
-#include <uvisor-lib.h>
 #include "vmpu.h"
 
 #define SVC_CX_EXC_SF_SIZE 8
@@ -24,7 +23,7 @@ typedef struct {
     uint8_t   rfu[3];  /* for 32 bit alignment */
     uint8_t   src_id;
     uint32_t *src_sp;
-} PACKED TBoxCx;
+} UVISOR_PACKED TBoxCx;
 
 /* FIXME this goes somewhere else */
 #define SVC_CX_MAX_BOXES   0x80U

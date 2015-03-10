@@ -36,7 +36,7 @@ void *memcpy(void *dst, const void *src, size_t n)
 }
 
 #ifdef  CHANNEL_DEBUG
-void WEAK default_putc (uint8_t data)
+void UVISOR_WEAK default_putc (uint8_t data)
 {
     static uint8_t itm_init = 0;
 

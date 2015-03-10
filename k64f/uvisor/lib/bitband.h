@@ -10,17 +10,9 @@
  *  by a licensing agreement from ARM Limited.
  *
  ***************************************************************/
-#ifndef __UVISOR_LIB_H__
-#define __UVISOR_LIB_H__
+#ifndef __BITBAND_H__
+#define __BITBAND_H__
 
-#include <stdint.h>
-#include <uvisor-lib/uvisor_exports.h>
-#include <uvisor-lib/svc_exports.h>
-#include <uvisor-lib/svc_gw_exports.h>
-#include <uvisor-lib/vmpu_exports.h>
-#include <uvisor-lib/config.h>
-#include <uvisor-lib/interrupts.h>
-#include <uvisor-lib/secure_gateway.h>
-#include <uvisor-lib/bitband.h>
+void uvisor_write_bitband(uint32_t volatile *addr, uint32_t val);
 
-#endif/*__UVISOR_LIB_H__*/
+#endif/*__BITBAND_H__*/

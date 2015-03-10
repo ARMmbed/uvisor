@@ -10,17 +10,10 @@
  *  by a licensing agreement from ARM Limited.
  *
  ***************************************************************/
-#ifndef __UVISOR_LIB_H__
-#define __UVISOR_LIB_H__
+#ifndef __SVC_GW_EXPORTS_H__
+#define __SVC_GW_EXPORTS_H__
 
-#include <stdint.h>
-#include <uvisor-lib/uvisor_exports.h>
-#include <uvisor-lib/svc_exports.h>
-#include <uvisor-lib/svc_gw_exports.h>
-#include <uvisor-lib/vmpu_exports.h>
-#include <uvisor-lib/config.h>
-#include <uvisor-lib/interrupts.h>
-#include <uvisor-lib/secure_gateway.h>
-#include <uvisor-lib/bitband.h>
+#define UVISOR_SVC_GW_MAGIC  0xABCDABCD /* FIXME update with correct magic */
+#define UVISOR_SVC_GW_OFFSET ((uint8_t) 0x7FU)
 
-#endif/*__UVISOR_LIB_H__*/
+#endif/*__SVC_GW_EXPORTS_H__*/

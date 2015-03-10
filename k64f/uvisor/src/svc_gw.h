@@ -14,7 +14,7 @@
 #define __SVC_GW_H__
 
 #include <uvisor.h>
-#include <uvisor-lib.h>
+#include "svc_gw_exports.h"
 
 #define SVC_GW_BOX_ID_Msk  ((uint8_t) 0x3FU)
 #define SVC_GW_BOX_OOP_Msk ((uint8_t) 0x40U)
@@ -28,7 +28,7 @@ typedef struct {
     uint32_t magic;
     uint32_t dst_fn;
     uint32_t *cfg_ptr;
-} PACKED TSecGw;
+} UVISOR_PACKED TSecGw;
 
 static inline void svc_gw_check_magic(TSecGw *svc_pc)
 {
@@ -37,7 +37,7 @@ static inline void svc_gw_check_magic(TSecGw *svc_pc)
         /* FIXME raise fault */
         while(1);
     }
-    if(svc_pc->magic != SVC_GW_MAGIC)
+    if(svc_pc->magic != UVISOR_SVC_GW_MAGIC)
     {
         /* FIXME raise fault */
         while(1);
