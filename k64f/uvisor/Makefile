@@ -27,8 +27,8 @@ include ../../core/Makefile.rules
 
 release: lib/source/uvisor-gcc-input.S $(PROJECT).bin
 	rm -rf $(TARGET_SRC_HW)
-	rm $(TARGET_INC)/*.h
-	rm $(TARGET_SRC)/*.cpp
+	rm -f $(TARGET_INC)/*.h
+	rm -f $(TARGET_SRC)/*.cpp
 	mkdir -p $(TARGET_SRC_HW)
 	echo "$(PROGRAM_VERSION)" > $(TARGET_VER)
 	cp $(PROJECT).bin $(TARGET_BIN)
