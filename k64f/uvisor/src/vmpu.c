@@ -234,7 +234,8 @@ static void vmpu_init_box_memories(void)
     );
 }
 
-static void vmpu_load_acls(uint8_t box_id, const UvisorBoxAclItem *acl_list,
+static void vmpu_load_acls(uint8_t box_id,
+                           const UvisorBoxAclItem * const acl_list,
                            uint32_t acl_count)
 {
     UvisorBoxAclItem acl_item;
@@ -251,7 +252,7 @@ static void vmpu_load_acls(uint8_t box_id, const UvisorBoxAclItem *acl_list,
 static void vmpu_load_boxes(void)
 {
     uint32_t *addr, *sp;
-    UvisorBoxConfig *box_cfgtbl;
+    const UvisorBoxConfig *box_cfgtbl;
     uint8_t box_id;
 
     /* stack region grows from bss_start downwards */
@@ -266,7 +267,7 @@ static void vmpu_load_boxes(void)
         box_id = ++g_svc_cx_box_num;
 
         /* load box configuration table */
-        box_cfgtbl = (UvisorBoxConfig *) *addr;
+        box_cfgtbl = (const UvisorBoxConfig *) *addr;
 
         /* load box ACLs in table */
         vmpu_load_acls(box_id, box_cfgtbl->acl_list, box_cfgtbl->acl_count);
