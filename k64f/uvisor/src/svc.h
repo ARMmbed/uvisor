@@ -13,6 +13,8 @@
 #ifndef __SVC_H__
 #define __SVC_H__
 
+#include "svc_exports.h"
+
 #define SVC_MODE_UNPRIV_SVC_CUSTOM  (0x0 << 6)
 #define SVC_MODE_UNPRIV_SVC_ISR_OUT (0x1 << 6)
 #define SVC_MODE_UNPRIV_SVC_CX_IN   (0x2 << 6)
