@@ -6,10 +6,12 @@ CONFIG:=-DNOSYSTEM
 # mbed libray files
 UVISOR_BIN:=uvisor-$(CPU).box
 TARGET_BASE:=../../release
-TARGET_DIR:=$(TARGET_BASE)/source/$(CPU)
-TARGET_S:=$(TARGET_DIR)/uvisor-GCC_ARM.s
-TARGET_BIN:=$(TARGET_DIR)/$(UVISOR_BIN)
-TARGET_VER:=$(TARGET_DIR)/version.txt
+TARGET_SRC:=$(TARGET_BASE)/source
+TARGET_SRC_HW:=$(TARGET_SRC)/$(CPU)
+TARGET_INC:=$(TARGET_BASE)/uvisor-lib
+TARGET_S:=$(TARGET_SRC_HW)/uvisor-GCC_ARM.s
+TARGET_BIN:=$(TARGET_SRC_HW)/$(UVISOR_BIN)
+TARGET_VER:=$(TARGET_SRC_HW)/version.txt
 
 APP_CLEAN:=$(TARGET_LIB) $(TARGET_S) $(TARGET_BIN) $(TARGET_VER)
 APP_CFLAGS:=-DUVISOR $(CONFIG) -Iconfig -Isrc -Ilib -Idebug
@@ -23,17 +25,20 @@ APP_SRC:=\
 
 include ../../core/Makefile.rules
 
-release: lib/uvisor-gcc-input.S lib/uvisor-lib.h $(PROJECT).bin
-	rm -rf $(TARGET_DIR)
-	mkdir -p $(TARGET_DIR)
+release: lib/source/uvisor-gcc-input.S $(PROJECT).bin
+	rm -rf $(TARGET_SRC_HW)
+	rm $(TARGET_INC)/*.h
+	rm $(TARGET_SRC)/*.cpp
+	mkdir -p $(TARGET_SRC_HW)
 	echo "$(PROGRAM_VERSION)" > $(TARGET_VER)
 	cp $(PROJECT).bin $(TARGET_BIN)
-	cp lib/*.h $(TARGET_BASE)/uvisor-lib/
-	cp lib/*.c $(TARGET_BASE)/source/
-	find ../.. -name "*_exports.h" -not -path "../../release/*"\
-	     -exec cp {} ../../release/uvisor-lib/ \;
-	cp -f lib/uvisor-gcc-header.S $(TARGET_S)
-	$(CPP) -w -P -I$(CORE) $(APP_CFLAGS) -DP-D$(CPU) -D$(ARCH) -DTARGET_BIN=\"$(UVISOR_BIN)\" $< >> $(TARGET_S)
+	cp lib/uvisor-lib/*.h $(TARGET_INC)/
+	cp lib/source/*.cpp $(TARGET_SRC)/
+	find ../.. -name "*_exports.h" -not -path "$(TARGET_BASE)/*"\
+	     -exec cp {} $(TARGET_INC)/ \;
+	cp -f lib/source/uvisor-gcc-header.S $(TARGET_S)
+	$(CPP) -w -P -I$(CORE) $(APP_CFLAGS) -DP-D$(CPU) -D$(ARCH)\
+	     -DTARGET_BIN=\"$(UVISOR_BIN)\" $< >> $(TARGET_S)
 
 test: release $(TARGET_S)
 	$(CC) $(CFLAGS) -c -o $@ $(TARGET_S)

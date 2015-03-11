@@ -10,6 +10,7 @@
  *  by a licensing agreement from ARM Limited.
  *
  ***************************************************************/
+#include <mbed/mbed.h>
 #include <uvisor-lib/uvisor-lib.h>
 
 void __uvisor_set_isr(uint32_t irqn, uint32_t vector, uint32_t flag)
