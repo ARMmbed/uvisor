@@ -10,18 +10,21 @@
  *  by a licensing agreement from ARM Limited.
  *
  ***************************************************************/
-#ifndef __ISR_H__
-#define __ISR_H__
+#ifndef __UVISOR_EXPORTS_H__
+#define __UVISOR_EXPORTS_H__
 
-#define IRQn_OFFSET            16
-#define ISR_VECTORS            38
-#define MAX_ISR_VECTORS        (IRQn_OFFSET + ISR_VECTORS)
-#define ISR_SET(irqn, handler) g_isr_vector[IRQn_OFFSET + irqn] = handler;
-#define ISR_GET(irqn)          (g_isr_vector[IRQn_OFFSET + irqn])
+#ifdef  __cplusplus
+#define UVISOR_EXTERN extern "C"
+#else
+#define UVISOR_EXTERN extern
+#endif/*__CPP__*/
 
-typedef void (*TIsrVector)(void);
-UVISOR_EXTERN TIsrVector g_isr_vector[MAX_ISR_VECTORS];
-UVISOR_EXTERN void main_entry(void);
-void default_handler(void);
+#define UVISOR_NOINLINE __attribute__ ((noinline))
+#define UVISOR_PACKED   __attribute__((packed))
+#define UVISOR_WEAK     __attribute__ ((weak))
+#define UVISOR_ALIAS(f) __attribute__ ((weak, alias (#f)))
 
-#endif/*__ISR_H__*/
+/* array count macro */
+#define UVISOR_ARRAY_COUNT(x) (sizeof(x)/sizeof(x[0]))
+
+#endif/*__UVISOR_EXPORTS_H__*/
