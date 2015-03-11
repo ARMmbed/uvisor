@@ -10,18 +10,16 @@
  *  by a licensing agreement from ARM Limited.
  *
  ***************************************************************/
-#ifndef __ISR_H__
-#define __ISR_H__
+#ifndef __UVISOR_LIB_H__
+#define __UVISOR_LIB_H__
 
-#define IRQn_OFFSET            16
-#define ISR_VECTORS            38
-#define MAX_ISR_VECTORS        (IRQn_OFFSET + ISR_VECTORS)
-#define ISR_SET(irqn, handler) g_isr_vector[IRQn_OFFSET + irqn] = handler;
-#define ISR_GET(irqn)          (g_isr_vector[IRQn_OFFSET + irqn])
+#include <uvisor-lib/uvisor_exports.h>
+#include <uvisor-lib/svc_exports.h>
+#include <uvisor-lib/svc_gw_exports.h>
+#include <uvisor-lib/vmpu_exports.h>
+#include <uvisor-lib/config.h>
+#include <uvisor-lib/interrupts.h>
+#include <uvisor-lib/secure_gateway.h>
+#include <uvisor-lib/bitband.h>
 
-typedef void (*TIsrVector)(void);
-UVISOR_EXTERN TIsrVector g_isr_vector[MAX_ISR_VECTORS];
-UVISOR_EXTERN void main_entry(void);
-void default_handler(void);
-
-#endif/*__ISR_H__*/
+#endif/*__UVISOR_LIB_H__*/

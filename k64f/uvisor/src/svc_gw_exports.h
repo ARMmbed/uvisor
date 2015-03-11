@@ -10,18 +10,10 @@
  *  by a licensing agreement from ARM Limited.
  *
  ***************************************************************/
-#ifndef __ISR_H__
-#define __ISR_H__
+#ifndef __SVC_GW_EXPORTS_H__
+#define __SVC_GW_EXPORTS_H__
 
-#define IRQn_OFFSET            16
-#define ISR_VECTORS            38
-#define MAX_ISR_VECTORS        (IRQn_OFFSET + ISR_VECTORS)
-#define ISR_SET(irqn, handler) g_isr_vector[IRQn_OFFSET + irqn] = handler;
-#define ISR_GET(irqn)          (g_isr_vector[IRQn_OFFSET + irqn])
+#define UVISOR_SVC_GW_MAGIC  0xABCDABCD /* FIXME update with correct magic */
+#define UVISOR_SVC_GW_OFFSET ((uint8_t) 0x7FU)
 
-typedef void (*TIsrVector)(void);
-UVISOR_EXTERN TIsrVector g_isr_vector[MAX_ISR_VECTORS];
-UVISOR_EXTERN void main_entry(void);
-void default_handler(void);
-
-#endif/*__ISR_H__*/
+#endif/*__SVC_GW_EXPORTS_H__*/

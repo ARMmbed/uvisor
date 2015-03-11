@@ -15,7 +15,7 @@
 #include "svc.h"
 #include "debug.h"
 
-NOINLINE void uvisor_init(void)
+UVISOR_NOINLINE void uvisor_init(void)
 {
     /* reset uvisor BSS */
     memset(

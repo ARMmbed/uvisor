@@ -15,7 +15,7 @@
 #include "vmpu.h"
 
 #define SVC_HDLRS_MAX 0x3FUL
-#define SVC_HDLRS_NUM (ARRAY_COUNT(g_svc_vtor_tbl))
+#define SVC_HDLRS_NUM (UVISOR_ARRAY_COUNT(g_svc_vtor_tbl))
 #define SVC_HDLRS_IND (SVC_HDLRS_NUM - 1)
 
 /* FIXME this function is temporary. Writes to an address should be checked

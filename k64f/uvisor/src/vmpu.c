@@ -11,7 +11,6 @@
  *
  ***************************************************************/
 #include <uvisor.h>
-#include <uvisor-lib.h>
 #include "vmpu.h"
 #include "svc.h"
 #include "debug.h"
@@ -45,10 +44,6 @@ typedef struct {
     uint8_t box_id;
     uint8_t flags;
 } TFnTable;
-
-static TFnTable g_fn[MPU_MAX_PRIVATE_FUNCTIONS];
-static uint8_t g_fn_hash[0x100];
-static int g_fn_count, g_fn_box_count;
 
 static void vmpu_fault(int reason)
 {
@@ -97,159 +92,25 @@ static void vmpu_fault_debug(void)
     vmpu_fault(MPU_FAULT_DEBUG);
 }
 
-int vmpu_acl_dev(TACL acl, uint16_t device_id)
+int vmpu_acl_dev(UvisorBoxAcl acl, uint16_t device_id)
 {
     return 1;
 }
 
-int vmpu_acl_mem(TACL acl, uint32_t addr, uint32_t size)
+int vmpu_acl_mem(UvisorBoxAcl acl, uint32_t addr, uint32_t size)
 {
     return 1;
 }
 
-int vmpu_acl_reg(TACL acl, uint32_t addr, uint32_t rmask, uint32_t wmask)
+int vmpu_acl_reg(UvisorBoxAcl acl, uint32_t addr, uint32_t rmask,
+                 uint32_t wmask)
 {
     return 1;
 }
 
-int vmpu_acl_bit(TACL acl, uint32_t addr)
+int vmpu_acl_bit(UvisorBoxAcl acl, uint32_t addr)
 {
     return 1;
-}
-
-static uint8_t vmpu_hash_addr(uint32_t data)
-{
-    return
-        (data >> 24) ^
-        (data >> 16) ^
-        (data >>  8) ^
-        data;
-}
-
-static int vmpu_box_add_fn(uint8_t box_id, const void **fn, uint32_t count)
-{
-    TFnTable tmp, *p;
-    uint8_t sorting, h, hprev;
-    uint32_t addr;
-    int i, j;
-
-    /* ensure atomic operation */
-    __disable_irq();
-
-    /* add new functions */
-    p = &g_fn[g_fn_count];
-    for(i=0; i<count; i++)
-    {
-        /* bail out on table overflow */
-        if(g_fn_count>=MPU_MAX_PRIVATE_FUNCTIONS)
-        {
-            __enable_irq();
-            return -1;
-        }
-
-        addr = (uint32_t)*fn++;
-        p->addr = addr;
-        p->hash = vmpu_hash_addr(addr);
-        p->box_id = box_id;
-
-        g_fn_count++;
-        p++;
-    }
-
-    /* silly-sort address hash table & correspondimg addresses */
-    do {
-        sorting = FALSE;
-
-        for(i=1; i<g_fn_count; i++)
-        {
-            if(g_fn[i].hash<g_fn[i-1].hash)
-            {
-                /* swap corresponding adresses */
-                tmp = g_fn[i];
-                g_fn[i] = g_fn[i-1];
-                g_fn[i-1] = tmp;
-
-                sorting = TRUE;
-            }
-        }
-    } while (sorting);
-
-    DPRINTF("added %i functions for box_id=%i:\n", count, box_id);
-
-    /* update g_fn_table_hash and function counts */
-    p = g_fn;
-    j = 0;
-    hprev = g_fn[0].hash;
-    for(i=1; i<g_fn_count; i++)
-    {
-        h = p->hash;
-        if(h==hprev)
-            p->count = 0;
-        else
-        {
-            /* point hash-table entry to first address in list */
-            g_fn_hash[hprev] = j;
-            /* remember function count at entry point */
-            g_fn[j].count = i-j;
-
-            /* set new entry */
-            j = i;
-            /* update hash */
-            hprev = h;
-        }
-
-        DPRINTF("\tfn_addr:0x08X, box:0x%02X, fn_hash=0x%02X, fn_count=0x%02X\n",
-            p->addr, p->box_id, p->hash, p->count);
-
-        /* advance to next entry */
-        p++;
-    }
-
-    /* ensure atomic operation */
-    __enable_irq();
-
-    return g_fn_count;
-}
-
-int vmpu_box_add(const TBoxDesc *box)
-{
-    int res;
-
-    if(g_fn_box_count>=0xFF)
-        return -1;
-
-    /* incrememt box_id */
-    g_fn_box_count++;
-
-    /* add function pointers to global function table */
-    if((box->fn_count) &&
-        ((res = vmpu_box_add_fn(g_fn_box_count, box->fn_list, box->fn_count))<0))
-            return res;
-
-    return 0;
-}
-
-int vmpu_fn_box(uint32_t addr)
-{
-    TFnTable *p;
-    uint8_t hash, fn_index, count;
-
-    /* calculate address hash */
-    hash = vmpu_hash_addr(addr);
-
-    /* early bail on invalid addresses */
-    if((fn_index = g_fn_hash[hash])==0)
-        return -1;
-
-    p = &g_fn[fn_index];
-    count = p->count;
-    do {
-        if(p->addr == addr)
-            return p->box_id;
-        count--;
-    } while(count>0);
-
-    return 0;
 }
 
 int vmpu_switch(uint8_t box)
@@ -373,10 +234,11 @@ static void vmpu_init_box_memories(void)
     );
 }
 
-static void vmpu_load_acls(uint8_t box_id, const UvBoxAclItem *acl_list,
+static void vmpu_load_acls(uint8_t box_id,
+                           const UvisorBoxAclItem * const acl_list,
                            uint32_t acl_count)
 {
-    UvBoxAclItem acl_item;
+    UvisorBoxAclItem acl_item;
     uint32_t i;
 
     for(i = 0; i < acl_count; i++)
@@ -390,7 +252,7 @@ static void vmpu_load_acls(uint8_t box_id, const UvBoxAclItem *acl_list,
 static void vmpu_load_boxes(void)
 {
     uint32_t *addr, *sp;
-    UvBoxConfig *box_cfgtbl;
+    const UvisorBoxConfig *box_cfgtbl;
     uint8_t box_id;
 
     /* stack region grows from bss_start downwards */
@@ -405,7 +267,7 @@ static void vmpu_load_boxes(void)
         box_id = ++g_svc_cx_box_num;
 
         /* load box configuration table */
-        box_cfgtbl = (UvBoxConfig *) *addr;
+        box_cfgtbl = (const UvisorBoxConfig *) *addr;
 
         /* load box ACLs in table */
         vmpu_load_acls(box_id, box_cfgtbl->acl_list, box_cfgtbl->acl_count);

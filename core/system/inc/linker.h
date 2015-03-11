@@ -13,15 +13,15 @@
 #ifndef __LINKER_H__
 #define __LINKER_H__
 
-EXTERN const uint32_t __code_end__;
-EXTERN const uint32_t __stack_end__;
+UVISOR_EXTERN const uint32_t __code_end__;
+UVISOR_EXTERN const uint32_t __stack_end__;
 
-EXTERN uint32_t __bss_start__;
-EXTERN uint32_t __bss_end__;
+UVISOR_EXTERN uint32_t __bss_start__;
+UVISOR_EXTERN uint32_t __bss_end__;
 
-EXTERN uint32_t __data_start__;
-EXTERN uint32_t __data_end__;
-EXTERN const uint32_t __data_start_src__;
+UVISOR_EXTERN uint32_t __data_start__;
+UVISOR_EXTERN uint32_t __data_end__;
+UVISOR_EXTERN const uint32_t __data_start_src__;
 
 typedef struct {
     uint32_t magic;
@@ -42,8 +42,8 @@ typedef struct {
 
     /* memory reserved for uvisor */
     uint32_t *reserved_start, *reserved_end;
-} PACKED UvConfig;
+} UVISOR_PACKED UvisorConfig;
 
-EXTERN const UvConfig __uvisor_config;
+UVISOR_EXTERN const UvisorConfig __uvisor_config;
 
 #endif/*__LINKER_H__*/
