@@ -258,7 +258,7 @@ static void vmpu_load_boxes(void)
         /* check for magic value in box configuration */
         if(((*box_cfgtbl)->magic)!=UVISOR_BOX_MAGIC)
         {
-            DPRINTF("box[%i] @0x%08X - invalid magic",
+            DPRINTF("box[%i] @0x%08X - invalid magic\n",
                 g_svc_cx_box_num,
                 (uint32_t)(*box_cfgtbl)
             );
@@ -269,11 +269,11 @@ static void vmpu_load_boxes(void)
         /* check for magic value in box configuration */
         if(((*box_cfgtbl)->version)!=UVISOR_BOX_VERSION)
         {
-            DPRINTF("box[%i] @0x%08X - invalid version (0x%04X!-0x%04X)",
+            DPRINTF("box[%i] @0x%08X - invalid version (0x%04X!-0x%04X)\n",
                 g_svc_cx_box_num,
                 (uint32_t)(*box_cfgtbl),
                 (*box_cfgtbl)->version,
-                UVISOR_BOX_VERSION,
+                UVISOR_BOX_VERSION
             );
             /* FIXME fail properly */
             while(1);
@@ -283,7 +283,7 @@ static void vmpu_load_boxes(void)
         /* increment box counter */
         if((box_id = g_svc_cx_box_num++)>=SVC_CX_MAX_BOXES)
         {
-            DPRINTF("box number overflow");
+            DPRINTF("box number overflow\n");
             /* FIXME fail properly */
             while(1);
         }
@@ -318,18 +318,19 @@ static void vmpu_load_boxes(void)
 
     /* read stack pointer from vector table */
     g_svc_cx_curr_sp[0] = *((uint32_t**)0);
+    DPRINTF("box[0] stack pointer = 0x%08X\n", g_svc_cx_curr_sp[0]);
 
     /* check consistency between allocated and actual stack sizes */
-    if(sp != *__uvisor_config.reserved_end)
+    if(sp != (uint32_t)__uvisor_config.reserved_end)
     {
-        DPRINTF("stack didn't match up: 0x%X != 0x%X",
-            sp_top,
+        DPRINTF("stack didn't match up: 0x%X != 0x%X\n",
+            sp,
             __uvisor_config.reserved_end
         );
         /* FIXME fail properly */
         while(1);
     }
-    DPRINTF("vmpu_load_boxes [DONE]");
+    DPRINTF("vmpu_load_boxes [DONE]\n");
 }
 
 void vmpu_init(void)
