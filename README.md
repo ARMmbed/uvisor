@@ -266,6 +266,7 @@ cd ../../../
 
 # compile hello world example 
 git clone git@github.com:ARMmbed/uvisor-helloworld-private.git
+cd uvisor-helloworld-private/
 yt link uvisor-lib
 
 # flash firmware
