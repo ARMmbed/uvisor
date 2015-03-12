@@ -234,76 +234,102 @@ static void vmpu_init_box_memories(void)
     );
 }
 
-static void vmpu_load_acls(uint8_t box_id,
-                           const UvisorBoxAclItem * const acl_list,
-                           uint32_t acl_count)
+static void vmpu_add_acl(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 {
-    UvisorBoxAclItem acl_item;
-    uint32_t i;
-
-    for(i = 0; i < acl_count; i++)
-    {
-        acl_item = acl_list[i];
-        (void)acl_item;
-        /* FIXME then what? */
-    }
 }
 
 static void vmpu_load_boxes(void)
 {
-    uint32_t *addr, *sp;
-    const UvisorBoxConfig *box_cfgtbl;
+    int i, count;
+    uint32_t *addr, sp, sp_size;
+    const UvisorBoxAclItem *region;
+    const UvisorBoxConfig **box_cfgtbl;
     uint8_t box_id;
 
     /* stack region grows from bss_start downwards */
-    sp = __uvisor_config.bss_start;
+    sp = UVISOR_STACK_SIZE_ROUND((uint32_t)__uvisor_config.bss_start);
 
     /* enumerate and initialize boxes */
-    for(addr = (uint32_t *) __uvisor_config.cfgtbl_start;
-        addr < (uint32_t *) __uvisor_config.cfgtbl_end;
+    g_svc_cx_box_num = 1;
+    for(box_cfgtbl = (const UvisorBoxConfig**) __uvisor_config.cfgtbl_start;
+        box_cfgtbl < (const UvisorBoxConfig**) __uvisor_config.cfgtbl_end;
         ++addr)
     {
-        /* increment box counter */
-        box_id = ++g_svc_cx_box_num;
-
-        /* load box configuration table */
-        box_cfgtbl = (const UvisorBoxConfig *) *addr;
-
-        /* load box ACLs in table */
-        vmpu_load_acls(box_id, box_cfgtbl->acl_list, box_cfgtbl->acl_count);
-
-        /* initialize box stack pointers */
-        if(box_id < SVC_CX_MAX_BOXES)
+        /* check for magic value in box configuration */
+        if(((*box_cfgtbl)->magic)!=UVISOR_BOX_MAGIC)
         {
-            g_svc_cx_curr_sp[box_id] = sp - UVISOR_STACK_BAND_SIZE;
-            sp -= box_cfgtbl->stack_size >> 2;
-        }
-        else
-        {
+            DPRINTF("box[%i] @0x%08X - invalid magic",
+                g_svc_cx_box_num,
+                (uint32_t)(*box_cfgtbl)
+            );
             /* FIXME fail properly */
             while(1);
         }
+
+        /* check for magic value in box configuration */
+        if(((*box_cfgtbl)->version)!=UVISOR_BOX_VERSION)
+        {
+            DPRINTF("box[%i] @0x%08X - invalid version (0x%04X!-0x%04X)",
+                g_svc_cx_box_num,
+                (uint32_t)(*box_cfgtbl),
+                (*box_cfgtbl)->version,
+                UVISOR_BOX_VERSION,
+            );
+            /* FIXME fail properly */
+            while(1);
+        }
+
+
+        /* increment box counter */
+        if((box_id = g_svc_cx_box_num++)>=SVC_CX_MAX_BOXES)
+        {
+            DPRINTF("box number overflow");
+            /* FIXME fail properly */
+            while(1);
+        }
+
+        /* load box ACLs in table */
+        region = (*box_cfgtbl)->acl_list;
+        count = (*box_cfgtbl)->acl_count;
+        for(i=0; i<count; i++, region++)
+            vmpu_add_acl(
+                box_id,
+                region->start,
+                region->length,
+                region->acl
+            );
+
+        /* determine stack extent */
+        sp_size = UVISOR_STACK_SIZE_ROUND((*box_cfgtbl)->stack_size);
+        sp -= sp_size;
+        /* add stack ACL to list */
+        vmpu_add_acl(
+            box_id,
+            (void*)sp,
+            sp_size,
+            TACL_STACK
+        );
+        /* set stack pointer to box stack size minus guard band */
+        g_svc_cx_curr_sp[box_id] = (uint32_t*)(sp-UVISOR_STACK_BAND_SIZE);
+
+        /* do next box configuration */
+        box_cfgtbl++;
     }
 
-    /* set initial stack pointer for box 0 */
-    /* the initial stack pointer is taken as ISR vector 0 from the mbed vector
-     * table */
-    /* using C to take the value pointed from address 0x0 gives unstable
-     * compiler behaviors */
-    uint32_t *tmp;
-    asm volatile(
-        "mov %[tmp], #0\n"
-        "ldr %[tmp], [%[tmp], #0]\n"
-        : [tmp] "=r" (tmp) :
-    );
-    g_svc_cx_curr_sp[0] = tmp;
+    /* read stack pointer from vector table */
+    g_svc_cx_curr_sp[0] = *((uint32_t**)0);
 
     /* check consistency between allocated and actual stack sizes */
-    if(sp != __uvisor_config.reserved_end)
+    if(sp != *__uvisor_config.reserved_end)
     {
+        DPRINTF("stack didn't match up: 0x%X != 0x%X",
+            sp_top,
+            __uvisor_config.reserved_end
+        );
         /* FIXME fail properly */
         while(1);
     }
+    DPRINTF("vmpu_load_boxes [DONE]");
 }
 
 void vmpu_init(void)

@@ -18,6 +18,7 @@
 #define TACL_READ          0x0001
 #define TACL_WRITE         0x0002
 #define TACL_EXECUTE       0x0004
+#define TACL_STACK         (TACL_READ|TACL_WRITE)
 #define TACL_SIZE_ROUND_UP 0x0008
 #define TACL_PERIPHERAL    TACL_SIZE_ROUND_UP
 
