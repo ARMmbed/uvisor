@@ -236,6 +236,7 @@ static void vmpu_init_box_memories(void)
 
 static void vmpu_add_acl(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 {
+    DPRINTF("\t@0x%08X size=%06i acl=0x%04X\n", start, size, acl);
 }
 
 static void vmpu_load_boxes(void)
@@ -248,6 +249,10 @@ static void vmpu_load_boxes(void)
 
     /* stack region grows from bss_start downwards */
     sp = UVISOR_STACK_SIZE_ROUND((uint32_t)__uvisor_config.bss_start);
+
+    /* read stack pointer from vector table */
+    g_svc_cx_curr_sp[0] = *((uint32_t**)0);
+    DPRINTF("box[0] stack pointer = 0x%08X\n", g_svc_cx_curr_sp[0]);
 
     /* enumerate and initialize boxes */
     g_svc_cx_box_num = 1;
@@ -289,6 +294,7 @@ static void vmpu_load_boxes(void)
         }
 
         /* load box ACLs in table */
+        DPRINTF("box[%i] ACL list:\n", box_id);
         region = (*box_cfgtbl)->acl_list;
         count = (*box_cfgtbl)->acl_count;
         for(i=0; i<count; i++, region++)
@@ -315,10 +321,6 @@ static void vmpu_load_boxes(void)
         /* do next box configuration */
         box_cfgtbl++;
     }
-
-    /* read stack pointer from vector table */
-    g_svc_cx_curr_sp[0] = *((uint32_t**)0);
-    DPRINTF("box[0] stack pointer = 0x%08X\n", g_svc_cx_curr_sp[0]);
 
     /* check consistency between allocated and actual stack sizes */
     if(sp != (uint32_t)__uvisor_config.reserved_end)
