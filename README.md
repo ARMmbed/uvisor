@@ -245,6 +245,36 @@ If SWO is also used by the Client application for different purposes (for
 example, for regular print functions), make sure to re-direct it to a different
 channel (channel 0 used here).
 
+## Compile debug version of uvisor
+The following recipe is used to enable the single wire debug debug (SWD) version of uvisor with SWO output using a SEGGER JLink debugger:
+```bash
+# create custom directory
+mkdir debug
+cd debug/
+
+# clone & link private uvisor-lib repository
+git clone git@github.com:ARMmbed/uvisor-lib-private.git
+cd uvisor-lib-private/
+yt link
+cd ..
+
+# build JLink SWO debug console version & copy binary to private uvisor-lib
+git clone git@github.com:ARMmbed/uvisor-private.git
+cd uvisor-private/k64f/uvisor/
+make DEBUG="-g3" TARGET_BASE=../../../uvisor-lib-private clean release
+cd ../../../
+
+# compile hello world example 
+git clone git@github.com:ARMmbed/uvisor-helloworld-private.git
+yt link uvisor-lib
+
+# flash firmware
+make clean flash
+
+# start debug output
+make swo
+```
+
 ## Software and hardware requirements
 
 * One of the available target boards
