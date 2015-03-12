@@ -32,7 +32,7 @@ typedef uint32_t UvisorBoxAcl;
 
 typedef struct
 {
-    const volatile void* start;
+    void* start;
     uint32_t length;
     UvisorBoxAcl acl;
 } UVISOR_PACKED UvisorBoxAclItem;
