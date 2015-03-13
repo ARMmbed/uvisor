@@ -15,6 +15,9 @@
 
 #include "vmpu_exports.h"
 
+#define VMPU_FLASH_ADDR_MASK (~(((uint32_t)(FLASH_LENGTH)) - 1))
+#define VMPU_FLASH_ADDR(addr) ((VMPU_FLASH_ADDR_MASK & (uint32_t)(addr)) == (FLASH_ORIGIN & VMPU_FLASH_ADDR_MASK))
+
 extern int  vmpu_sanity_checks(void);
 extern void vmpu_init(void);
 
