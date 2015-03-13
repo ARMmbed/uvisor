@@ -14,13 +14,11 @@
 #define __SVC_GW_H__
 
 #include <uvisor.h>
+#include <vmpu.h>
 #include "svc_gw_exports.h"
 
 #define SVC_GW_BOX_ID_Msk  ((uint8_t) 0x3FU)
 #define SVC_GW_BOX_OOP_Msk ((uint8_t) 0x40U)
-
-#define SVC_GW_InFlash_Msk   ((uint32_t) ~(FLASH_ORIGIN + FLASH_LENGTH - 1))
-#define SVC_GW_InFlash(addr) ((uint32_t) (addr) & SVC_GW_InFlash_Msk)
 
 typedef struct {
     uint16_t opcode;
@@ -32,13 +30,16 @@ typedef struct {
 
 static inline void svc_gw_check_magic(TSecGw *svc_pc)
 {
-    if(SVC_GW_InFlash((uint32_t) svc_pc))
+    if(!VMPU_FLASH_ADDR(svc_pc))
     {
+        DPRINTF("error: secure gateway not in flash (0x%08X)\n", svc_pc);
         /* FIXME raise fault */
         while(1);
     }
+
     if(svc_pc->magic != UVISOR_SVC_GW_MAGIC)
     {
+        DPRINTF("error: secure gateway magic invalid (0x%08X)\n", &svc_pc->magic);
         /* FIXME raise fault */
         while(1);
     }
