@@ -21,6 +21,7 @@
 #define UVISOR_BOX_MAGIC              0x42CFB66FUL
 #define UVISOR_BOX_VERSION            100
 #define UVISOR_STACK_BAND_SIZE        128
+#define UVISOR_ROUND_REGION(size)     UVISOR_ROUND32(size)
 #define UVISOR_STACK_SIZE_ROUND(size) (UVISOR_ROUND32(size) + \
                                       (UVISOR_STACK_BAND_SIZE * 2))
 

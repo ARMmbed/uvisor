@@ -36,15 +36,6 @@
 #define MPU_FAULT_HARD   0x03
 #define MPU_FAULT_DEBUG  0x04
 
-/* function table hashing support functions */
-typedef struct {
-    uint32_t addr;
-    uint8_t count;
-    uint8_t hash;
-    uint8_t box_id;
-    uint8_t flags;
-} TFnTable;
-
 static void vmpu_fault(int reason)
 {
     uint32_t sperr,t;
@@ -236,6 +227,8 @@ static void vmpu_init_box_memories(void)
 
 static void vmpu_add_acl(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 {
+    size = UVISOR_ROUND_REGION(size);
+
     DPRINTF("\t@0x%08X size=%06i acl=0x%04X\n", start, size, acl);
 }
 
