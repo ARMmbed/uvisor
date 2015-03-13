@@ -13,18 +13,26 @@
 #ifndef __VMPU_EXPORTS_H__
 #define __VMPU_EXPORTS_H__
 
+#define UVISOR_TACL_DEFAULT         UVISOR_TACL_RW
+#define UVISOR_TACL_READ            0x0001
+#define UVISOR_TACL_WRITE           0x0002
+#define UVISOR_TACL_RW              (UVISOR_TACL_READ|UVISOR_TACL_WRITE)
+#define UVISOR_TACL_EXECUTE         0x0004
+#define UVISOR_TACL_STACK           (0x0008|UVISOR_TACL_RW)
+#define UVISOR_TACL_SIZE_ROUND_UP   0x0010
+#define UVISOR_TACL_PERIPHERAL      (0x0010|UVISOR_TACL_RW|UVISOR_TACL_SIZE_ROUND_UP)
+#define UVISOR_TACL_SIZE_ROUND_DOWN 0x0020
+
 #define UVISOR_TO_STR(x)              #x
 #define UVISOR_TO_STRING(x)           UVISOR_TO_STR(x)
 #define UVISOR_ARRAY_COUNT(x)         (sizeof(x)/sizeof(x[0]))
-#define UVISOR_ROUND32(x)             (((x)+31UL) & ~0x1FUL)
+#define UVISOR_ROUND32_DOWN(x)        ((x) & ~0x1FUL)
+#define UVISOR_ROUND32_UP(x)          UVISOR_ROUND32_DOWN((x)+31UL)
 #define UVISOR_PAD32(x)               (32 - (sizeof(x) & ~0x1FUL))
 #define UVISOR_BOX_MAGIC              0x42CFB66FUL
 #define UVISOR_BOX_VERSION            100
 #define UVISOR_STACK_BAND_SIZE        128
-#define UVISOR_ROUND_REGION(size)     UVISOR_ROUND32(size)
-#define UVISOR_STACK_SIZE_ROUND(size) (UVISOR_ROUND32(size) + \
-                                      (UVISOR_STACK_BAND_SIZE * 2))
-
+#define UVISOR_STACK_SIZE_ROUND(x)    UVISOR_ROUND32_UP((x) + (UVISOR_STACK_BAND_SIZE * 2))
 #ifndef UVISOR_BOX_STACK_SIZE
 #define UVISOR_BOX_STACK_SIZE 1024
 #endif/*UVISOR_BOX_STACK*/
