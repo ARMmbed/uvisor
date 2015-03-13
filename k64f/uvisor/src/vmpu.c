@@ -21,7 +21,7 @@
 
 /* predict SRAM offset */
 #ifdef RESERVED_SRAM
-#  define RESERVED_SRAM_START UVISOR_ROUND32(SRAM_ORIGIN+RESERVED_SRAM)
+#  define RESERVED_SRAM_START UVISOR_ROUND32_UP(SRAM_ORIGIN+RESERVED_SRAM)
 #else
 #  define RESERVED_SRAM_START SRAM_ORIGIN
 #endif
@@ -227,7 +227,12 @@ static void vmpu_init_box_memories(void)
 
 static void vmpu_add_acl(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 {
-    size = UVISOR_ROUND_REGION(size);
+    if(acl & UVISOR_TACL_SIZE_ROUND_UP)
+        size = UVISOR_ROUND32_UP(size);
+
+    if(acl & UVISOR_TACL_SIZE_ROUND_DOWN)
+        size = UVISOR_ROUND32_DOWN(size);
+
 
     DPRINTF("\t@0x%08X size=%06i acl=0x%04X\n", start, size, acl);
 }
@@ -277,7 +282,6 @@ static void vmpu_load_boxes(void)
             while(1);
         }
 
-
         /* increment box counter */
         if((box_id = g_svc_cx_box_num++)>=SVC_CX_MAX_BOXES)
         {
@@ -306,7 +310,7 @@ static void vmpu_load_boxes(void)
             box_id,
             (void*)sp,
             sp_size,
-            TACL_STACK
+            UVISOR_TACL_STACK
         );
         /* set stack pointer to box stack size minus guard band */
         g_svc_cx_curr_sp[box_id] = (uint32_t*)(sp-UVISOR_STACK_BAND_SIZE);
