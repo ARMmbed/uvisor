@@ -112,7 +112,7 @@ int vmpu_switch(uint8_t box)
 bool vmpu_valid_code_addr(const void* address)
 {
     return (((uint32_t)address) >= FLASH_ORIGIN)
-        && (((uint32_t)address) <= (uint32_t)__uvisor_config.secure_start);
+        && (((uint32_t)address) < (uint32_t)__uvisor_config.secure_start);
 }
 
 int vmpu_sanity_checks(void)
@@ -233,7 +233,6 @@ static void vmpu_add_acl(uint8_t box_id, void* start, uint32_t size, UvisorBoxAc
     if(acl & UVISOR_TACL_SIZE_ROUND_DOWN)
         size = UVISOR_ROUND32_DOWN(size);
 
-
     DPRINTF("\t@0x%08X size=%06i acl=0x%04X\n", start, size, acl);
 }
 
@@ -258,6 +257,17 @@ static void vmpu_load_boxes(void)
         box_cfgtbl < (const UvisorBoxConfig**) __uvisor_config.cfgtbl_end;
         ++addr)
     {
+        /* ensure that configuration resides in flash */
+        if(!(vmpu_valid_code_addr(*box_cfgtbl) &&
+            vmpu_valid_code_addr(
+                (uint8_t*)(*box_cfgtbl) + (sizeof(**box_cfgtbl)-1))
+            ))
+        {
+            DPRINTF("invalid address - *box_cfgtbl must point to flash (0x%08X)\n", *box_cfgtbl);
+            /* FIXME fail properly */
+            while(1);
+        }
+
         /* check for magic value in box configuration */
         if(((*box_cfgtbl)->magic)!=UVISOR_BOX_MAGIC)
         {
@@ -274,7 +284,7 @@ static void vmpu_load_boxes(void)
         {
             DPRINTF("box[%i] @0x%08X - invalid version (0x%04X!-0x%04X)\n",
                 g_svc_cx_box_num,
-                (uint32_t)(*box_cfgtbl),
+                *box_cfgtbl,
                 (*box_cfgtbl)->version,
                 UVISOR_BOX_VERSION
             );
@@ -294,13 +304,30 @@ static void vmpu_load_boxes(void)
         DPRINTF("box[%i] ACL list:\n", box_id);
         region = (*box_cfgtbl)->acl_list;
         count = (*box_cfgtbl)->acl_count;
-        for(i=0; i<count; i++, region++)
+        for(i=0; i<count; i++)
+        {
+            /* ensure that ACL resides in flash */
+            if(!vmpu_valid_code_addr(region))
+            {
+                DPRINTF("box[i]:acl[i] must be in code section (@0x%08X)\n",
+                    g_svc_cx_box_num,
+                    i,
+                    *box_cfgtbl
+                );
+                /* FIXME fail properly */
+                while(1);
+            }
+
             vmpu_add_acl(
                 box_id,
                 region->start,
                 region->length,
                 region->acl
             );
+
+            /* proceed to next ACL */
+            region++;
+        }
 
         /* determine stack extent */
         sp_size = UVISOR_STACK_SIZE_ROUND((*box_cfgtbl)->stack_size);
