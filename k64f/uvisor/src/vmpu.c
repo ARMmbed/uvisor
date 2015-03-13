@@ -109,12 +109,6 @@ int vmpu_switch(uint8_t box)
     return -1;
 }
 
-bool vmpu_valid_code_addr(const void* address)
-{
-    return (((uint32_t)address) >= FLASH_ORIGIN)
-        && (((uint32_t)address) < (uint32_t)__uvisor_config.secure_start);
-}
-
 int vmpu_sanity_checks(void)
 {
     /* verify uvisor config structure */
@@ -258,10 +252,10 @@ static void vmpu_load_boxes(void)
         ++addr)
     {
         /* ensure that configuration resides in flash */
-        if(!(vmpu_valid_code_addr(*box_cfgtbl) &&
-            vmpu_valid_code_addr(
-                (uint8_t*)(*box_cfgtbl) + (sizeof(**box_cfgtbl)-1))
-            ))
+        if(!(VMPU_FLASH_ADDR(*box_cfgtbl) &&
+            VMPU_FLASH_ADDR(
+                ((uint8_t*)(*box_cfgtbl)) + (sizeof(**box_cfgtbl)-1)
+            )))
         {
             DPRINTF("invalid address - *box_cfgtbl must point to flash (0x%08X)\n", *box_cfgtbl);
             /* FIXME fail properly */
@@ -307,7 +301,7 @@ static void vmpu_load_boxes(void)
         for(i=0; i<count; i++)
         {
             /* ensure that ACL resides in flash */
-            if(!vmpu_valid_code_addr(region))
+            if(!VMPU_FLASH_ADDR(region))
             {
                 DPRINTF("box[i]:acl[i] must be in code section (@0x%08X)\n",
                     g_svc_cx_box_num,
