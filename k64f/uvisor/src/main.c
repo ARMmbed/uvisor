@@ -13,6 +13,7 @@
 #include <uvisor.h>
 #include "vmpu.h"
 #include "svc.h"
+#include "unvic.h"
 #include "debug.h"
 
 UVISOR_NOINLINE void uvisor_init(void)
@@ -31,11 +32,8 @@ UVISOR_NOINLINE void uvisor_init(void)
         VMPU_REGION_SIZE(&__data_start__, &__data_end__)
     );
 
-    /* vector table relocation */
-    uint32_t *dst = (uint32_t *) &g_isr_vector;
-    while(dst < ((uint32_t *) &g_isr_vector[MAX_ISR_VECTORS]))
-        *dst++ = (uint32_t) &default_handler;
-    SCB->VTOR = (uint32_t) &g_isr_vector;
+    /* vector table initialization */
+    unvic_init();
 
     /* init MPU */
     vmpu_init();

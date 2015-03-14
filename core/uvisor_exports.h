@@ -23,6 +23,8 @@
 #define UVISOR_PACKED   __attribute__((packed))
 #define UVISOR_WEAK     __attribute__ ((weak))
 #define UVISOR_ALIAS(f) __attribute__ ((weak, alias (#f)))
+#define UVISOR_LINKTO(f) __attribute__ ((alias (#f)))
+#define UVISOR_NORETURN__attribute__ ((noreturn))
 
 /* array count macro */
 #define UVISOR_ARRAY_COUNT(x) (sizeof(x)/sizeof(x[0]))
