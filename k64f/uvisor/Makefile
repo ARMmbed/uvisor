@@ -17,6 +17,7 @@ APP_CLEAN:=$(TARGET_LIB) $(TARGET_S) $(TARGET_BIN) $(TARGET_VER)
 APP_CFLAGS:=-DUVISOR $(CONFIG) -Iconfig -Isrc -Ilib -Idebug
 APP_SRC:=\
 	src/halt.c \
+	src/unvic.c \
 	src/svc.c \
 	src/svc_cx.c \
 	src/vmpu.c \
