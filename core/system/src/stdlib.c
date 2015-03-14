@@ -46,7 +46,6 @@ void UVISOR_WEAK default_putc (uint8_t data)
 
         /* reset previous channel settings */
         ITM->LAR  = 0xC5ACCE55;
-        ITM->TCR  = ITM->TER = 0x0;
 
         /* wait for debugger to connect */
         while(!((ITM->TCR & ITM_TCR_ITMENA_Msk) &&
