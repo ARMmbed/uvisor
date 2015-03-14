@@ -14,6 +14,7 @@
 #define __SVC_CX_H__
 
 #include <uvisor.h>
+#include "halt.h"
 #include "vmpu.h"
 
 #define SVC_CX_EXC_SF_SIZE 8
@@ -60,10 +61,7 @@ static void inline svc_cx_push_state(uint8_t src_id, uint32_t *src_sp,
 {
     /* check state stack overflow */
     if(g_svc_cx_state_ptr == SVC_CX_MAX_DEPTH)
-    {
-        /* FIXME raise fault */
-        while(1);
-    }
+        HALT_ERROR("stack stack overflow");
 
     /* push state */
     g_svc_cx_state[g_svc_cx_state_ptr].src_id = src_id;
@@ -81,10 +79,7 @@ static inline void svc_cx_pop_state(uint8_t dst_id, uint32_t *dst_sp)
 {
     /* check state stack underflow */
     if(!g_svc_cx_state_ptr)
-    {
-        /* FIXME raise fault */
-        while(1);
-    }
+        HALT_ERROR("stack stack underflow");
 
     /* pop state */
     --g_svc_cx_state_ptr;

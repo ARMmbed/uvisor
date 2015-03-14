@@ -113,14 +113,11 @@ int vmpu_sanity_checks(void)
 {
     /* verify uvisor config structure */
     if(__uvisor_config.magic != UVISOR_MAGIC)
-        while(1)
-        {
-            DPRINTF("config magic mismatch: &0x%08X = 0x%08X \
+        HALT_ERROR("config magic mismatch: &0x%08X = 0x%08X \
                                  - exptected 0x%08X\n",
                 &__uvisor_config,
                 __uvisor_config.magic,
                 UVISOR_MAGIC);
-        }
 
     /* verify if configuration mode is inside flash memory */
     assert((uint32_t)__uvisor_config.mode >= FLASH_ORIGIN);
@@ -221,11 +218,11 @@ static void vmpu_init_box_memories(void)
 
 static void vmpu_add_acl(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 {
-    if(acl & UVISOR_TACL_SIZE_ROUND_UP)
-        size = UVISOR_ROUND32_UP(size);
-
     if(acl & UVISOR_TACL_SIZE_ROUND_DOWN)
         size = UVISOR_ROUND32_DOWN(size);
+    else
+        if(acl & UVISOR_TACL_SIZE_ROUND_UP)
+            size = UVISOR_ROUND32_UP(size);
 
     DPRINTF("\t@0x%08X size=%06i acl=0x%04X\n", start, size, acl);
 }
@@ -256,43 +253,27 @@ static void vmpu_load_boxes(void)
             VMPU_FLASH_ADDR(
                 ((uint8_t*)(*box_cfgtbl)) + (sizeof(**box_cfgtbl)-1)
             )))
-        {
-            DPRINTF("invalid address - *box_cfgtbl must point to flash (0x%08X)\n", *box_cfgtbl);
-            /* FIXME fail properly */
-            while(1);
-        }
+            HALT_ERROR("invalid address - *box_cfgtbl must point to flash (0x%08X)\n", *box_cfgtbl);
 
         /* check for magic value in box configuration */
         if(((*box_cfgtbl)->magic)!=UVISOR_BOX_MAGIC)
-        {
-            DPRINTF("box[%i] @0x%08X - invalid magic\n",
+            HALT_ERROR("box[%i] @0x%08X - invalid magic\n",
                 g_svc_cx_box_num,
                 (uint32_t)(*box_cfgtbl)
             );
-            /* FIXME fail properly */
-            while(1);
-        }
 
         /* check for magic value in box configuration */
         if(((*box_cfgtbl)->version)!=UVISOR_BOX_VERSION)
-        {
-            DPRINTF("box[%i] @0x%08X - invalid version (0x%04X!-0x%04X)\n",
+            HALT_ERROR("box[%i] @0x%08X - invalid version (0x%04X!-0x%04X)\n",
                 g_svc_cx_box_num,
                 *box_cfgtbl,
                 (*box_cfgtbl)->version,
                 UVISOR_BOX_VERSION
             );
-            /* FIXME fail properly */
-            while(1);
-        }
 
         /* increment box counter */
         if((box_id = g_svc_cx_box_num++)>=SVC_CX_MAX_BOXES)
-        {
-            DPRINTF("box number overflow\n");
-            /* FIXME fail properly */
-            while(1);
-        }
+            HALT_ERROR("box number overflow\n");
 
         /* load box ACLs in table */
         DPRINTF("box[%i] ACL list:\n", box_id);
@@ -302,15 +283,11 @@ static void vmpu_load_boxes(void)
         {
             /* ensure that ACL resides in flash */
             if(!VMPU_FLASH_ADDR(region))
-            {
-                DPRINTF("box[i]:acl[i] must be in code section (@0x%08X)\n",
+                HALT_ERROR("box[i]:acl[i] must be in code section (@0x%08X)\n",
                     g_svc_cx_box_num,
                     i,
                     *box_cfgtbl
                 );
-                /* FIXME fail properly */
-                while(1);
-            }
 
             vmpu_add_acl(
                 box_id,
@@ -342,30 +319,26 @@ static void vmpu_load_boxes(void)
 
     /* check consistency between allocated and actual stack sizes */
     if(sp != (uint32_t)__uvisor_config.reserved_end)
-    {
-        DPRINTF("stack didn't match up: 0x%X != 0x%X\n",
+        HALT_ERROR("stack pointers didn't match up: 0x%X != 0x%X\n",
             sp,
             __uvisor_config.reserved_end
         );
-        /* FIXME fail properly */
-        while(1);
-    }
     DPRINTF("vmpu_load_boxes [DONE]\n");
 }
 
 void vmpu_init(void)
 {
-    /* always initialize protected box memories */
-    vmpu_init_box_memories();
-
-    /* load boxes */
-    vmpu_load_boxes();
-
     /* setup security "bluescreen" exceptions */
     ISR_SET(BusFault_IRQn,         &vmpu_fault_bus);
     ISR_SET(UsageFault_IRQn,       &vmpu_fault_usage);
     ISR_SET(HardFault_IRQn,        &vmpu_fault_hard);
     ISR_SET(DebugMonitor_IRQn,     &vmpu_fault_debug);
+
+    /* always initialize protected box memories */
+    vmpu_init_box_memories();
+
+    /* load boxes */
+    vmpu_load_boxes();
 
     /* enable mem, bus and usage faults */
     SCB->SHCSR |= 0x70000;
