@@ -334,12 +334,13 @@ void vmpu_init(void)
     ISR_SET(HardFault_IRQn,        &vmpu_fault_hard);
     ISR_SET(DebugMonitor_IRQn,     &vmpu_fault_debug);
 
+    /* enable mem, bus and usage faults */
+    SCB->SHCSR |= 0x70000;
+
     /* always initialize protected box memories */
     vmpu_init_box_memories();
 
     /* load boxes */
     vmpu_load_boxes();
 
-    /* enable mem, bus and usage faults */
-    SCB->SHCSR |= 0x70000;
 }
