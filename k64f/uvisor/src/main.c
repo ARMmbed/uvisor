@@ -68,15 +68,14 @@ void main_entry(void)
     /* run basic sanity checks */
     if(vmpu_sanity_checks() == 0)
     {
-
-        /* initialize uvisor */
-        uvisor_init();
-
         /* swap stack pointers*/
         __disable_irq();
         __set_PSP(__get_MSP());
         __set_MSP(((uint32_t) &__stack_end__) - STACK_GUARD_BAND);
         __enable_irq();
+
+        /* initialize uvisor */
+        uvisor_init();
 
         /* apply box ACLs */
         scan_box_acls();
