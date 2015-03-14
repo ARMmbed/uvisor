@@ -29,7 +29,7 @@ void isr_init(void)
     while(dst < ((uint32_t *) &g_isr_vector[MAX_ISR_VECTORS]))
         *dst++ = (uint32_t) &isr_default_handler;
 
-    if(SCB->VTOR != (uint32_t)g_isr_vector_prev)
+    if(SCB->VTOR != (uint32_t)&g_isr_vector)
     {
         /* remember previous vector table */
         g_isr_vector_prev = (TIsrVector*)SCB->VTOR;
