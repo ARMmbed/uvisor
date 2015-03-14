@@ -48,10 +48,7 @@ void svc_cx_switch_in(uint32_t *svc_sp,  uint32_t svc_pc,
 
     /* check src and dst IDs */
     if(src_id == dst_id)
-    {
-        /* FIXME raise fault */
-        while(1);
-    }
+        HALT_ERROR("src_id == dst_id at box %i", src_id);
 
     /* switch exception stack frame */
     dst_sp = svc_cx_switch_sf(src_sp, dst_sp, (uint32_t) svc_cx_thunk, dst_fn);
