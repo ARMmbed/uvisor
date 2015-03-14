@@ -15,16 +15,49 @@
 
 /* actual vector table in RAM */
 __attribute__ ((section(".isr_vector"), aligned(128)))
-TIsrVector g_isr_vector[MAX_ISR_VECTORS];
+TIsrVector *g_isr_vector_prev, g_isr_vector[MAX_ISR_VECTORS];
+
+void UVISOR_WEAK isr_default_handler(void)
+{
+    while(1);
+}
+
+void isr_init(void)
+{
+    /* vector table relocation */
+    uint32_t *dst = (uint32_t *) &g_isr_vector;
+    while(dst < ((uint32_t *) &g_isr_vector[MAX_ISR_VECTORS]))
+        *dst++ = (uint32_t) &isr_default_handler;
+
+    if(SCB->VTOR != (uint32_t)g_isr_vector_prev)
+    {
+        /* remember previous vector table */
+        g_isr_vector_prev = (TIsrVector*)SCB->VTOR;
+        /* udate vector table to new SRAM table */
+        SCB->VTOR = (uint32_t) &g_isr_vector;
+    }
+}
+
+#ifdef NOSYSTEM
+
+void reset_handler(void)
+{
+    /* reset VTOR table pointer */
+    g_isr_vector_prev = NULL;
+
+    /* call main program */
+    main_entry();
+}
+
+#else/*NOSYSTEM*/
 
 void __attribute__ ((weak, noreturn)) default_handler(void)
 {
     while(1);
 }
 
-void reset_handler(void)
+void UVISOR_NORETURN reset_handler(void)
 {
-#ifndef NOSYSTEM
     uint32_t *dst;
     const uint32_t* src;
 
@@ -39,21 +72,15 @@ void reset_handler(void)
     while(dst<&__bss_end__)
         *dst++ = 0;
 
-    /* set VTOR to default handlers */
-    dst = (uint32_t*)&g_isr_vector;
-    while(dst<((uint32_t*)&g_isr_vector[MAX_ISR_VECTORS]))
-        *dst++ = (uint32_t)&default_handler;
-    SCB->VTOR = (uint32_t)&g_isr_vector;
-#endif/*NOSYSTEM*/
+    /* initialize interrupt service routines */
+    isr_init();
 
+    /* call main program */
     main_entry();
 
-#ifndef NOSYSTEM
     while(1);
-#endif/*NOSYSTEM*/
 }
 
-#ifndef NOSYSTEM
 /* initial vector table - just needed for boot process */
 __attribute__ ((section(".isr_vector_tmp")))
 const TIsrVector g_isr_vector_tmp[] =
@@ -65,4 +92,5 @@ const TIsrVector g_isr_vector_tmp[] =
 #endif/*STACK_POINTER*/
     reset_handler,                       /* reset Handler */
 };
+
 #endif/*NOSYSTEM*/
