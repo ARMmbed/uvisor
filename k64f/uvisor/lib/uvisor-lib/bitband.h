@@ -13,6 +13,6 @@
 #ifndef __BITBAND_H__
 #define __BITBAND_H__
 
-void uvisor_write_bitband(uint32_t volatile *addr, uint32_t val);
+UVISOR_EXTERN void uvisor_write_bitband(uint32_t volatile *addr, uint32_t val);
 
 #endif/*__BITBAND_H__*/

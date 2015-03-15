@@ -13,6 +13,17 @@
 #ifndef __INTERRUPTS_H__
 #define __INTERRUPTS_H__
 
+UVISOR_EXTERN void __uvisor_set_isr(uint32_t irqn, uint32_t vector,
+                                    uint32_t flag);
+UVISOR_EXTERN void __uvisor_let_isr(uint32_t irqn);
+UVISOR_EXTERN void __uvisor_ena_irq(uint32_t irqn);
+UVISOR_EXTERN void __uvisor_dis_irq(uint32_t irqn);
+UVISOR_EXTERN void __uvisor_set_ena_isr(uint32_t irqn, uint32_t vector,
+                                        uint32_t flag);
+UVISOR_EXTERN void __uvisor_dis_let_isr(uint32_t irqn);
+
+UVISOR_EXTERN uint32_t __uvisor_get_isr(uint32_t irqn);
+
 #define uvisor_set_isr(irqn, vector, flag) {                                   \
     if(__uvisor_mode == 0)                                                     \
     {                                                                          \
@@ -79,14 +90,5 @@
         __uvisor_dis_let_isr(irqn);                                            \
     }                                                                          \
 }
-
-void __uvisor_set_isr(uint32_t irqn, uint32_t vector, uint32_t flag);
-void __uvisor_let_isr(uint32_t irqn);
-void __uvisor_ena_irq(uint32_t irqn);
-void __uvisor_dis_irq(uint32_t irqn);
-void __uvisor_set_ena_isr(uint32_t irqn, uint32_t vector, uint32_t flag);
-void __uvisor_dis_let_isr(uint32_t irqn);
-
-uint32_t __uvisor_get_isr(uint32_t irqn);
 
 #endif/*__INTERRUPTS_H__*/
