@@ -75,7 +75,7 @@ CFLAGS_PRE:=\
         $(WARNING) \
         -D$(ARCH) \
         -D$(CPU) \
-        -DPROGRAM_VERSION=$(PROGRAM_VERSION) \
+        -DPROGRAM_VERSION=\"$(PROGRAM_VERSION)\" \
         -DCPU=$(CPU) \
         $(APP_CFLAGS) \
         -include $(MEM_CONFIG) \
