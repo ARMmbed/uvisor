@@ -47,22 +47,6 @@ UVISOR_NOINLINE void uvisor_init(void)
     DPRINTF("uvisor initialized\n");
 }
 
-static void scan_box_acls(void)
-{
-    /* FIXME implement security context switch between main and
-     *       secure box - hardcoded for now, later using ACLs from
-     *       UVISOR_BOX_CONFIG */
-
-    /* the linker script creates a list of all box ACLs configuration
-     * pointers from __uvisor_cfgtbl_start to __uvisor_cfgtbl_end */
-
-    AIPS0->PACRM &= ~(1 << 14); // MCG_C1_CLKS (PACRM[15:12])
-    AIPS0->PACRN &= ~(1 << 22); // UART0       (PACRN[23:20])
-    AIPS0->PACRJ &= ~(1 << 30); // SIM_CLKDIV1 (PACRJ[31:28])
-    AIPS0->PACRJ &= ~(1 << 22); // PORTB mux   (PACRJ[23:20])
-    AIPS0->PACRG &= ~(1 << 2);  // PIT module  (PACRJ[ 3: 0])
-}
-
 void main_entry(void)
 {
     /* run basic sanity checks */
@@ -76,9 +60,6 @@ void main_entry(void)
 
         /* initialize uvisor */
         uvisor_init();
-
-        /* apply box ACLs */
-        scan_box_acls();
 
         /* switch to unprivileged mode; this is possible as uvisor code is readable
          * by unprivileged code and only the key-value database is protected from

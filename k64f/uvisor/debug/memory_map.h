@@ -22,11 +22,12 @@
 #define MEMORY_MAP_BITBANDING_END   ((uint32_t) 0x43FFFFFF)
 
 typedef struct mem_map {
-    char name[10];
+    char name[12];
     uint32_t base;
     uint32_t end;
 } MemMap;
 
 extern const MemMap g_mem_map[MEMORY_MAP_NUM];
+extern const MemMap* memory_map_name(uint32_t addr);
 
 #endif/*__MEMORY_MAP_H__*/

@@ -105,3 +105,19 @@ const MemMap g_mem_map[MEMORY_MAP_NUM] = {
     {"MMCAU",      0xE0081000, 0xE0081FFF},
     {"ROMTable",   0xE00FF000, 0xE00FFFFF}, /* end of PPB                     */
 };
+
+const MemMap* memory_map_name(uint32_t addr)
+{
+    int i;
+    const MemMap *map;
+
+    /* find system memory region */
+    map = g_mem_map;
+    for(i = 0; i < MEMORY_MAP_NUM; i++)
+        if((addr >= map->base) && (addr <= map->end))
+            return map;
+        else
+            map++;
+
+    return NULL;
+}

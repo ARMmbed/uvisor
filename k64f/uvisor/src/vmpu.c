@@ -14,6 +14,7 @@
 #include "vmpu.h"
 #include "svc.h"
 #include "halt.h"
+#include "memory_map.h"
 #include "debug.h"
 
 #ifndef MPU_MAX_PRIVATE_FUNCTIONS
@@ -221,13 +222,18 @@ static void vmpu_init_box_memories(void)
 
 static void vmpu_add_acl(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 {
+    const char* dev;
+    const MemMap *map;
+
     if(acl & UVISOR_TACL_SIZE_ROUND_DOWN)
         size = UVISOR_ROUND32_DOWN(size);
     else
         if(acl & UVISOR_TACL_SIZE_ROUND_UP)
             size = UVISOR_ROUND32_UP(size);
 
-    DPRINTF("\t@0x%08X size=%06i acl=0x%04X\n", start, size, acl);
+    dev = ((map = memory_map_name((uint32_t)start))!=NULL) ? map->name : "unknown";
+
+    DPRINTF("\t@0x%08X size=%06i acl=0x%04X [%s]\n", start, size, acl, dev);
 }
 
 static void vmpu_load_boxes(void)
@@ -329,6 +335,22 @@ static void vmpu_load_boxes(void)
     DPRINTF("vmpu_load_boxes [DONE]\n");
 }
 
+static void vmpu_fixme(void)
+{
+    /* FIXME implement security context switch between main and
+     *       secure box - hardcoded for now, later using ACLs from
+     *       UVISOR_BOX_CONFIG */
+
+    /* the linker script creates a list of all box ACLs configuration
+     * pointers from __uvisor_cfgtbl_start to __uvisor_cfgtbl_end */
+
+    AIPS0->PACRM &= ~(1 << 14); // MCG_C1_CLKS (PACRM[15:12])
+    AIPS0->PACRN &= ~(1 << 22); // UART0       (PACRN[23:20])
+    AIPS0->PACRJ &= ~(1 << 30); // SIM_CLKDIV1 (PACRJ[31:28])
+    AIPS0->PACRJ &= ~(1 << 22); // PORTB mux   (PACRJ[23:20])
+    AIPS0->PACRG &= ~(1 << 2);  // PIT module  (PACRJ[ 3: 0])
+}
+
 void vmpu_init(void)
 {
     /* setup security "bluescreen" exceptions */
@@ -346,4 +368,6 @@ void vmpu_init(void)
     /* load boxes */
     vmpu_load_boxes();
 
+    /* FIXME: remove once vmpu_load_boxes works */
+    vmpu_fixme();
 }
