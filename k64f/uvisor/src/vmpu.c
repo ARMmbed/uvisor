@@ -222,8 +222,9 @@ static void vmpu_init_box_memories(void)
 
 static void vmpu_add_acl(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 {
-    const char* dev;
+#ifndef NDEBUG
     const MemMap *map;
+#endif/*NDEBUG*/
 
     if(acl & UVISOR_TACL_SIZE_ROUND_DOWN)
         size = UVISOR_ROUND32_DOWN(size);
@@ -231,9 +232,9 @@ static void vmpu_add_acl(uint8_t box_id, void* start, uint32_t size, UvisorBoxAc
         if(acl & UVISOR_TACL_SIZE_ROUND_UP)
             size = UVISOR_ROUND32_UP(size);
 
-    dev = ((map = memory_map_name((uint32_t)start))!=NULL) ? map->name : "unknown";
-
-    DPRINTF("\t@0x%08X size=%06i acl=0x%04X [%s]\n", start, size, acl, dev);
+    DPRINTF("\t@0x%08X size=%06i acl=0x%04X [%s]\n", start, size, acl,
+        ((map = memory_map_name((uint32_t)start))!=NULL) ? map->name : "unknown"
+    );
 }
 
 static void vmpu_load_boxes(void)
