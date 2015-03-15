@@ -16,6 +16,8 @@
 UVISOR_EXTERN const uint32_t __uvisor_mode;
 
 #define UVISOR_SET_MODE(mode) \
+    uint8_t __attribute__((section(".uvisor.bss.stack"), aligned(32))) \
+        __reserved_stack[UVISOR_STACK_BAND_SIZE]; \
     UVISOR_EXTERN const uint32_t __uvisor_mode = (mode);
 
 #define UVISOR_SECURE_CONST \
