@@ -239,7 +239,7 @@ static void vmpu_add_acl(uint8_t box_id, void* start, uint32_t size, UvisorBoxAc
 static void vmpu_load_boxes(void)
 {
     int i, count;
-    uint32_t *addr, sp, sp_size;
+    uint32_t sp, sp_size;
     const UvisorBoxAclItem *region;
     const UvisorBoxConfig **box_cfgtbl;
     uint8_t box_id;
@@ -255,7 +255,8 @@ static void vmpu_load_boxes(void)
     g_svc_cx_box_num = 1;
     for(box_cfgtbl = (const UvisorBoxConfig**) __uvisor_config.cfgtbl_start;
         box_cfgtbl < (const UvisorBoxConfig**) __uvisor_config.cfgtbl_end;
-        ++addr)
+        box_cfgtbl++
+        )
     {
         /* ensure that configuration resides in flash */
         if(!(VMPU_FLASH_ADDR(*box_cfgtbl) &&
@@ -321,9 +322,6 @@ static void vmpu_load_boxes(void)
         );
         /* set stack pointer to box stack size minus guard band */
         g_svc_cx_curr_sp[box_id] = (uint32_t*)(sp-UVISOR_STACK_BAND_SIZE);
-
-        /* do next box configuration */
-        box_cfgtbl++;
     }
 
     /* check consistency between allocated and actual stack sizes */
