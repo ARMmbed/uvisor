@@ -125,58 +125,39 @@ inline uint32_t debug_aips_addr_from_alias(uint32_t alias)
 
 inline void debug_map_addr_to_periph(uint32_t address)
 {
-    int i;
-    int found = 0;
     uint32_t aips_addr;
+    const MemMap *map;
 
     dprintf("* MEMORY MAP\n");
-
     dprintf("  Address:           0x%08X\n", address);
 
     /* find system memory region */
-    for(i = 0; i < MEMORY_MAP_NUM; ++i)
+    if((map = memory_map_name(address)) != NULL)
     {
-        if(address >= g_mem_map[i].base)
+        dprintf("  Region/Peripheral: %s\n", map->name);
+        dprintf("    Base address:    0x%08X\n", map->base);
+        dprintf("    End address:     0x%08X\n", map->end);
+
+        if(address >= MEMORY_MAP_PERIPH_START &&
+           address <= MEMORY_MAP_PERIPH_END)
         {
-            if(address <= g_mem_map[i].end)
-            {
-                dprintf("  Region/Peripheral: %s\n",
-                        g_mem_map[i].name);
-                dprintf("    Base address:    0x%08X\n",
-                        g_mem_map[i].base);
-                dprintf("    End address:     0x%08X\n",
-                        g_mem_map[i].end);
-                if(address >= MEMORY_MAP_PERIPH_START &&
-                   address <= MEMORY_MAP_PERIPH_END)
-                {
-                    dprintf("    AIPS slot:       %d\n",
-                            debug_aips_slot_from_addr(g_mem_map[i].base));
-                }
-                else if(address >= MEMORY_MAP_BITBANDING_START &&
-                        address <= MEMORY_MAP_BITBANDING_END)
-                {
-                    dprintf("    Before bitband:  0x%08X\n",
-                            (aips_addr = debug_aips_addr_from_alias(address)));
-                    dprintf("    Accessed bit:    %d\n",
-                             debug_aips_bitn_from_alias(address, aips_addr));
-                    dprintf("    AIPS slot:       %d\n",
-                             debug_aips_slot_from_addr(aips_addr));
-                }
-                found = 1;
-                break;
-            }
+            dprintf("    AIPS slot:       %d\n",
+                    debug_aips_slot_from_addr(map->base));
         }
-        else {
-            dprintf("  Reserved memory region\n");
-            found = 1;
-            break;
+        else if(address >= MEMORY_MAP_BITBANDING_START &&
+                address <= MEMORY_MAP_BITBANDING_END)
+        {
+            dprintf("    Before bitband:  0x%08X\n",
+                    (aips_addr = debug_aips_addr_from_alias(address)));
+            dprintf("    Accessed bit:    %d\n",
+                     debug_aips_bitn_from_alias(address, aips_addr));
+            dprintf("    AIPS slot:       %d\n",
+                     debug_aips_slot_from_addr(aips_addr));
         }
+
+        dprintf("\n");
     }
 
-    if(!found) {
-        dprintf("No region/peripheral found in the memory map\n");
-    }
-    dprintf("\n");
 }
 
 inline void debug_fault_bus(uint32_t lr)
