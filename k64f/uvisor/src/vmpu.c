@@ -246,7 +246,7 @@ static void vmpu_load_boxes(void)
     uint8_t box_id;
 
     /* stack region grows from bss_start downwards */
-    sp = UVISOR_STACK_SIZE_ROUND((uint32_t)__uvisor_config.bss_start);
+    sp = UVISOR_ROUND32_DOWN(((uint32_t)__uvisor_config.bss_start) - UVISOR_STACK_BAND_SIZE);
 
     /* read stack pointer from vector table */
     g_svc_cx_curr_sp[0] = *((uint32_t**)0);
@@ -311,18 +311,18 @@ static void vmpu_load_boxes(void)
             region++;
         }
 
+        /* set stack pointer to box stack size minus guard band */
+        g_svc_cx_curr_sp[box_id] = (uint32_t*)sp;
         /* determine stack extent */
-        sp_size = UVISOR_STACK_SIZE_ROUND((*box_cfgtbl)->stack_size);
+        sp_size = UVISOR_ROUND32_DOWN((*box_cfgtbl)->stack_size);
         sp -= sp_size;
         /* add stack ACL to list */
         vmpu_add_acl(
             box_id,
-            (void*)sp,
-            sp_size,
+            (void*)(sp + UVISOR_STACK_BAND_SIZE),
+            sp_size - UVISOR_STACK_BAND_SIZE,
             UVISOR_TACL_STACK
         );
-        /* set stack pointer to box stack size minus guard band */
-        g_svc_cx_curr_sp[box_id] = (uint32_t*)(sp-UVISOR_STACK_BAND_SIZE);
     }
 
     /* check consistency between allocated and actual stack sizes */
