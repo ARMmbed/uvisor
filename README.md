@@ -261,7 +261,7 @@ cd ..
 # build JLink SWO debug console version & copy binary to private uvisor-lib
 git clone git@github.com:ARMmbed/uvisor-private.git
 cd uvisor-private/k64f/uvisor/
-make DEBUG="-g3" TARGET_BASE=../../../uvisor-lib-private clean release
+make OPT= TARGET_BASE=../../../uvisor-lib-private clean release
 cd ../../../
 
 # compile hello world example 
