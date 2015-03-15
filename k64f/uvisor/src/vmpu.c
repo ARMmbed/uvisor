@@ -13,6 +13,7 @@
 #include <uvisor.h>
 #include "vmpu.h"
 #include "svc.h"
+#include "halt.h"
 #include "debug.h"
 
 #ifndef MPU_MAX_PRIVATE_FUNCTIONS
@@ -41,45 +42,47 @@ static void vmpu_fault(int reason)
     uint32_t sperr,t;
 
     /* print slave port details */
-    dprintf("CESR : 0x%08X\n\r", MPU->CESR);
+    DPRINTF("CESR : 0x%08X\n\r", MPU->CESR);
     sperr = (MPU->CESR >> 27);
     for(t=0; t<5; t++)
     {
         if(sperr & 0x10)
-            dprintf("  SLAVE_PORT[%i]: @0x%08X (Detail 0x%08X)\n\r",
+            DPRINTF("  SLAVE_PORT[%i]: @0x%08X (Detail 0x%08X)\n\r",
                 t,
                 MPU->SP[t].EAR,
                 MPU->SP[t].EDR);
         sperr <<= 1;
     }
-    dprintf("CFSR : 0x%08X\n\r", SCB->CFSR);
-    while(1);
+    DPRINTF("CFSR : 0x%08X\n\r", SCB->CFSR);
+
+    /* doper over and die */
+    HALT_ERROR("fault reason %i", reason);
 }
 
 static void vmpu_fault_bus(void)
 {
     DEBUG_FAULT_BUS();
-    dprintf("Bus Fault\n\r");
-    dprintf("BFAR : 0x%08X\n\r", SCB->BFAR);
+    DPRINTF("Bus Fault\n\r");
+    DPRINTF("BFAR : 0x%08X\n\r", SCB->BFAR);
     vmpu_fault(MPU_FAULT_BUS);
 }
 
 static void vmpu_fault_usage(void)
 {
-    dprintf("Usage Fault\n\r");
+    DPRINTF("Usage Fault\n\r");
     vmpu_fault(MPU_FAULT_USAGE);
 }
 
 static void vmpu_fault_hard(void)
 {
-    dprintf("Hard Fault\n\r");
-    dprintf("HFSR : 0x%08X\n\r", SCB->HFSR);
+    DPRINTF("Hard Fault\n\r");
+    DPRINTF("HFSR : 0x%08X\n\r", SCB->HFSR);
     vmpu_fault(MPU_FAULT_HARD);
 }
 
 static void vmpu_fault_debug(void)
 {
-    dprintf("Debug Fault\n\r");
+    DPRINTF("Debug Fault\n\r");
     vmpu_fault(MPU_FAULT_DEBUG);
 }
 
