@@ -159,7 +159,7 @@ static inline uint32_t *svc_cx_depriv_sf(uint32_t *msp, uint32_t *dst_sp)
     memset((void *) dst_sf, 0, sizeof(uint32_t) * 5);    /* r0 - r3, r12      */
     dst_sf[5]  = msp[5] | 0x1C;                          /* lr                */
     dst_sf[6]  = msp[6];                                 /* return address    */
-    dst_sf[7]  = msp[7] & ~0x3F;                         /* IPSR - clear IRQn */
+    dst_sf[7]  = msp[7] & ~0xFF;                         /* IPSR - clear IRQn */
     dst_sf[7] |= dst_sf_align << 9;                      /* xPSR - alignment  */
 
     return dst_sf;
