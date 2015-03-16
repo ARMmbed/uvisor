@@ -19,7 +19,7 @@
 /* unprivileged vector table */
 TIsrUVector g_unvic_vector[ISR_VECTORS];
 
-/* isr_default_handler to nvic_unpriv_default_handler */
+/* isr_default_handler to unvic_default_handler */
 void isr_default_handler(void) UVISOR_LINKTO(unvic_default_handler);
 
 /* unprivileged default handler */
@@ -40,7 +40,6 @@ void unvic_isr_mux(void)
     {
         HALT_ERROR("unvic_isr_mux() executed with no active IRQ\n\r");
     }
-    DPRINTF("IRQ %d being served\n\r", irqn);
 
     /* ISR vector */
     if(!(unvic_hdlr = g_unvic_vector[irqn].hdlr))
@@ -49,6 +48,7 @@ void unvic_isr_mux(void)
     }
 
     /* handle IRQ with an unprivileged handler */
+    DPRINTF("IRQ %d being served with vector 0x%08X\n\r", irqn, unvic_hdlr);
     asm volatile(
         "svc  %[nonbasethrdena_in]\n"
         "blx  %[unvic_hdlr]\n"
