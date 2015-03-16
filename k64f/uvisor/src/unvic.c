@@ -44,7 +44,7 @@ void unvic_isr_mux(void)
     /* ISR vector */
     if(!(unvic_hdlr = g_unvic_vector[irqn].hdlr))
     {
-        HALT_ERROR("Unprivileged handler for IRQ %d not found\n\r", irqn);
+        HALT_ERROR("unprivileged handler for IRQ %d not found\n\r", irqn);
     }
 
     /* handle IRQ with an unprivileged handler */
@@ -69,7 +69,7 @@ void unvic_set_isr(uint32_t irqn, uint32_t vector, uint32_t flag)
         /* FIXME currently only ISR multiplexer is allowed as privileged ISR */
         if(current_isr != (TIsrVector) &unvic_isr_mux)
         {
-            HALT_ERROR("Spurious ISR for IRQ %d: 0x%08X\n\r", irqn,
+            HALT_ERROR("spurious ISR for IRQ %d: 0x%08X\n\r", irqn,
                                                               current_isr);
         }
 
@@ -95,12 +95,43 @@ void unvic_set_isr(uint32_t irqn, uint32_t vector, uint32_t flag)
 
 uint32_t unvic_get_isr(uint32_t irqn)
 {
-    return 1;
+    /* FIXME currently only ISR multiplexer is allowed as privileged ISR */
+    TIsrVector current_isr = ISR_GET(irqn);
+    if((current_isr == (TIsrVector) &unvic_default_handler))
+    {
+        HALT_ERROR("no ISR set yet for IRQ %d\n\r", irqn);
+    }
+    if((current_isr != (TIsrVector) &unvic_isr_mux))
+    {
+        HALT_ERROR("spurious ISR for IRQ %d: 0x%08X\n\r", irqn, current_isr);
+    }
+
+    return (uint32_t) g_unvic_vector[irqn].hdlr;
 }
 
 void unvic_let_isr(uint32_t irqn)
 {
-    return;
+    /* FIXME currently only ISR multiplexer is allowed as privileged ISR */
+    TIsrVector current_isr = ISR_GET(irqn);
+    if((current_isr == (TIsrVector) &unvic_default_handler))
+    {
+        HALT_ERROR("no ISR set yet for IRQ %d\n\r", irqn);
+    }
+    if((current_isr != (TIsrVector) &unvic_isr_mux))
+    {
+        HALT_ERROR("spurious ISR for IRQ %d: 0x%08X\n\r", irqn, current_isr);
+    }
+
+    /* check if the same box that registered the ISR is letting it */
+    if(svc_cx_get_curr_id() != g_unvic_vector[irqn].id)
+    {
+        HALT_ERROR("access denied: IRQ %d is owned by box %d\n\r", irqn,
+                                               g_unvic_vector[irqn].id);
+    }
+
+    /* set privileged handler to unprivleged default handler */
+    DPRINTF("ownership of IRQ %d is now released\n\r");
+    ISR_SET(irqn, &unvic_default_handler);
 }
 
 /* FIXME check if allowed (ACL) */
@@ -110,38 +141,68 @@ void unvic_ena_irq(uint32_t irqn)
     TIsrVector current_isr = ISR_GET(irqn);
     if((current_isr == (TIsrVector) &unvic_default_handler))
     {
-        HALT_ERROR("No ISR set yet for IRQ %d\n\r", irqn);
+        HALT_ERROR("no ISR set yet for IRQ %d\n\r", irqn);
     }
     if((current_isr != (TIsrVector) &unvic_isr_mux))
     {
-        HALT_ERROR("Spurious ISR for IRQ %d: 0x%08X\n\r", irqn, current_isr);
+        HALT_ERROR("spurious ISR for IRQ %d: 0x%08X\n\r", irqn, current_isr);
     }
 
     /* check if the same box that registered the ISR is enabling it */
     if(svc_cx_get_curr_id() != g_unvic_vector[irqn].id)
     {
-        HALT_ERROR("Access denied: IRQ %d is owned by box %d\n\r", irqn,
+        HALT_ERROR("access denied: IRQ %d is owned by box %d\n\r", irqn,
                                                g_unvic_vector[irqn].id);
     }
 
-    DPRINTF("IRQ %d is now active and owned by box %d\n\r", irqn,
-                                        g_unvic_vector[irqn].id);
+    /* enable IRQ */
+    DPRINTF("IRQ %d is now active\n\r", irqn);
     NVIC_EnableIRQ(irqn);
 }
 
 void unvic_dis_irq(uint32_t irqn)
 {
-    return;
+    /* FIXME currently only ISR multiplexer is allowed as privileged ISR */
+    TIsrVector current_isr = ISR_GET(irqn);
+    if((current_isr == (TIsrVector) &unvic_default_handler))
+    {
+        HALT_ERROR("no ISR set yet for IRQ %d\n\r", irqn);
+    }
+    if((current_isr != (TIsrVector) &unvic_isr_mux))
+    {
+        HALT_ERROR("spurious ISR for IRQ %d: 0x%08X\n\r", irqn, current_isr);
+    }
+
+    /* check if the same box that registered the ISR is disabling it */
+    if(svc_cx_get_curr_id() != g_unvic_vector[irqn].id)
+    {
+        HALT_ERROR("access denied: IRQ %d is owned by box %d\n\r", irqn,
+                                               g_unvic_vector[irqn].id);
+    }
+
+    DPRINTF("IRQ %d is now disabled, but still owned by box %d\n\r", irqn,
+                                                 g_unvic_vector[irqn].id);
+    NVIC_DisableIRQ(irqn);
 }
 
 void unvic_set_ena_isr(uint32_t irqn, uint32_t vector, uint32_t flag)
 {
-    return;
+    /* set ISR for IRQn */
+    unvic_set_isr(irqn, vector, flag);
+    /* enable IRQ */
+    DPRINTF("IRQ %d is now active and owned by box %d\n\r", irqn,
+                                        g_unvic_vector[irqn].id);
+    NVIC_EnableIRQ(irqn);
 }
 
-void unvic_dis_let_isr(uint32_t isr)
+void unvic_dis_let_isr(uint32_t irqn)
 {
-    return;
+    /* disable IRQ */
+    unvic_dis_irq(irqn);
+
+    /* set privileged handler to unprivleged default handler */
+    DPRINTF("ownership of IRQ %d is now released\n\r");
+    ISR_SET(irqn, &unvic_default_handler);
 }
 
 void unvic_svc_cx_in(uint32_t *svc_sp)
