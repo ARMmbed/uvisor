@@ -13,6 +13,7 @@
 #include <uvisor.h>
 #include "svc.h"
 #include "vmpu.h"
+#include "unvic.h"
 
 #define SVC_HDLRS_MAX 0x3FUL
 #define SVC_HDLRS_NUM (UVISOR_ARRAY_COUNT(g_svc_vtor_tbl))
@@ -22,12 +23,20 @@
  *       against a box's ACLs */
 static void svc_bitband(uint32_t *addr, uint32_t val)
 {
+    DPRINTF("Executed privileged bitband access to 0x%08X\n\r", addr);
     *addr = val;
 }
 
 /* SVC handlers */
 __attribute__((section(".svc_vector"))) const void *g_svc_vtor_tbl[] = {
     svc_bitband,             // 0
+    unvic_set_isr,           // 1
+    unvic_get_isr,           // 2
+    unvic_let_isr,           // 3
+    unvic_ena_irq,           // 4
+    unvic_dis_irq,           // 5
+    unvic_set_ena_isr,       // 6
+    unvic_dis_let_isr,       // 7
 };
 
 /*******************************************************************************
