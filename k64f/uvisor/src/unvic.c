@@ -36,7 +36,35 @@ void unvic_isr_mux(void)
 /* FIXME check if allowed (ACL) */
 void unvic_set_isr(uint32_t irqn, uint32_t vector, uint32_t flag)
 {
-    return;
+    /* check if the IRQn is already registered */
+    TIsrVector current_isr = ISR_GET(irqn);
+    if(current_isr != (TIsrVector) &unvic_default_handler)
+    {
+        /* FIXME currently only ISR multiplexer is allowed as privileged ISR */
+        if(current_isr != (TIsrVector) &unvic_isr_mux)
+        {
+            HALT_ERROR("Spurious ISR for IRQ %d: 0x%08X\n\r", irqn,
+                                                              current_isr);
+        }
+
+        DPRINTF("IRQ %d already registered to box %d with vector 0x%08X\n\r",
+                 irqn, g_unvic_vector[irqn].id, g_unvic_vector[irqn].hdlr);
+        return;
+    }
+
+    DPRINTF("IRQ %d is now registered to box %d with vector 0x%08X\n\r",
+             irqn, svc_cx_get_curr_id(), vector);
+
+    /* save unprivileged handler */
+    g_unvic_vector[irqn].hdlr = (TIsrVector) vector;
+    g_unvic_vector[irqn].id   = svc_cx_get_curr_id();
+
+    /* set privileged handler to unprivleged mux */
+    ISR_SET(irqn, &unvic_isr_mux);
+
+    /* set proper priority (SVC must always be higher) */
+    /* FIXME currently only one level of priority is allowed */
+    NVIC_SetPriority(irqn, 1);
 }
 
 uint32_t unvic_get_isr(uint32_t irqn)
@@ -52,7 +80,27 @@ void unvic_let_isr(uint32_t irqn)
 /* FIXME check if allowed (ACL) */
 void unvic_ena_irq(uint32_t irqn)
 {
-    return;
+    /* FIXME currently only ISR multiplexer is allowed as privileged ISR */
+    TIsrVector current_isr = ISR_GET(irqn);
+    if((current_isr == (TIsrVector) &unvic_default_handler))
+    {
+        HALT_ERROR("No ISR set yet for IRQ %d\n\r", irqn);
+    }
+    if((current_isr != (TIsrVector) &unvic_isr_mux))
+    {
+        HALT_ERROR("Spurious ISR for IRQ %d: 0x%08X\n\r", irqn, current_isr);
+    }
+
+    /* check if the same box that registered the ISR is enabling it */
+    if(svc_cx_get_curr_id() != g_unvic_vector[irqn].id)
+    {
+        HALT_ERROR("Access denied: IRQ %d is owned by box %d\n\r", irqn,
+                                               g_unvic_vector[irqn].id);
+    }
+
+    DPRINTF("IRQ %d is now active and owned by box %d\n\r", irqn,
+                                        g_unvic_vector[irqn].id);
+    NVIC_EnableIRQ(irqn);
 }
 
 void unvic_dis_irq(uint32_t irqn)
