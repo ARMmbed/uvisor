@@ -346,7 +346,9 @@ static void vmpu_fixme(void)
     AIPS0->PACRM &= ~(1 << 14); // MCG_C1_CLKS (PACRM[15:12])
     AIPS0->PACRN &= ~(1 << 22); // UART0       (PACRN[23:20])
     AIPS0->PACRJ &= ~(1 << 30); // SIM_CLKDIV1 (PACRJ[31:28])
+    AIPS0->PACRJ &= ~(1 << 26); // PORTA mux   (PACRJ[27:24])
     AIPS0->PACRJ &= ~(1 << 22); // PORTB mux   (PACRJ[23:20])
+    AIPS0->PACRJ &= ~(1 << 18); // PORTC mux   (PACRJ[19:16])
     AIPS0->PACRG &= ~(1 << 2);  // PIT module  (PACRJ[ 3: 0])
 }
 
