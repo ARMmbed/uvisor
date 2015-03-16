@@ -13,8 +13,10 @@
 #ifndef __ISR_H__
 #define __ISR_H__
 
+#include <config.h>
+
 #define IRQn_OFFSET            16
-#define ISR_VECTORS            38
+#define ISR_VECTORS            USER_VECTORS
 #define MAX_ISR_VECTORS        (IRQn_OFFSET + ISR_VECTORS)
 #define ISR_SET(irqn, handler) g_isr_vector[IRQn_OFFSET + irqn] = handler;
 #define ISR_GET(irqn)          (g_isr_vector[IRQn_OFFSET + irqn])
