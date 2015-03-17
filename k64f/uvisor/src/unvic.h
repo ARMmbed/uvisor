@@ -19,7 +19,7 @@ typedef struct {
     uint8_t    id;
 } TIsrUVector;
 
-extern TIsrUVector g_unvic_vector[ISR_VECTORS];
+extern TIsrUVector g_unvic_vector[IRQ_VECTORS];
 
 extern void     unvic_set_isr(uint32_t irqn, uint32_t vector, uint32_t flag);
 extern uint32_t unvic_get_isr(uint32_t irqn);

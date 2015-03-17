@@ -16,14 +16,14 @@
 #include <config.h>
 
 #define IRQn_OFFSET            16
-#define ISR_VECTORS            USER_VECTORS
-#define MAX_ISR_VECTORS        (IRQn_OFFSET + ISR_VECTORS)
+#define IRQ_VECTORS            HW_IRQ_VECTORS
+#define ISR_VECTORS            (IRQn_OFFSET + IRQ_VECTORS)
 #define ISR_SET(irqn, handler) g_isr_vector[IRQn_OFFSET + irqn] = handler;
 #define ISR_GET(irqn)          (g_isr_vector[IRQn_OFFSET + irqn])
 
 typedef void (*TIsrVector)(void);
 UVISOR_EXTERN void isr_init(void);
-UVISOR_EXTERN TIsrVector *g_isr_vector_prev, g_isr_vector[MAX_ISR_VECTORS];
+UVISOR_EXTERN TIsrVector *g_isr_vector_prev, g_isr_vector[ISR_VECTORS];
 UVISOR_EXTERN void main_entry(void);
 UVISOR_EXTERN void isr_default_handler(void);
 
