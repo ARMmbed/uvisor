@@ -73,7 +73,8 @@ void unvic_set_isr(uint32_t irqn, uint32_t vector, uint32_t flag)
              irqn, svc_cx_get_curr_id(), vector);
 
     /* save unprivileged handler */
-    g_unvic_vector[irqn].hdlr = (TIsrVector) vector;
+    g_unvic_vector[irqn].hdlr = vector ? (TIsrVector) vector :
+                                         &unvic_default_handler;
     g_unvic_vector[irqn].id   = svc_cx_get_curr_id();
 
     /* set privileged handler to unprivleged mux */
