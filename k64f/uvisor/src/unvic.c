@@ -99,7 +99,7 @@ uint32_t unvic_get_isr(uint32_t irqn)
     TIsrVector current_isr = ISR_GET(irqn);
     if((current_isr == (TIsrVector) &unvic_default_handler))
     {
-        HALT_ERROR("no ISR set yet for IRQ %d\n\r", irqn);
+        return 0;
     }
     if((current_isr != (TIsrVector) &unvic_isr_mux))
     {
