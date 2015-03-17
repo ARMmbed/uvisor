@@ -60,8 +60,15 @@ void unvic_isr_mux(void)
 }
 
 /* FIXME check if allowed (ACL) */
+/* FIXME flag is currently not implemented */
 void unvic_set_isr(uint32_t irqn, uint32_t vector, uint32_t flag)
 {
+    /* check IRQn */
+    if(irqn > ISR_VECTORS)
+    {
+        HALT_ERROR("IRQ %d out of range (%d to %d)\n\r", irqn, 0, ISR_VECTORS);
+    }
+
     /* check if the IRQn is already registered */
     if(ISR_GET(irqn) != (TIsrVector) &unvic_default_handler)
     {
@@ -69,10 +76,7 @@ void unvic_set_isr(uint32_t irqn, uint32_t vector, uint32_t flag)
                    irqn, g_unvic_vector[irqn].id, g_unvic_vector[irqn].hdlr);
     }
 
-    DPRINTF("IRQ %d is now registered to box %d with vector 0x%08X\n\r",
-             irqn, svc_cx_get_curr_id(), vector);
-
-    /* save unprivileged handler */
+    /* save unprivileged handler (unvic_default_handler if 0) */
     g_unvic_vector[irqn].hdlr = vector ? (TIsrVector) vector :
                                          &unvic_default_handler;
     g_unvic_vector[irqn].id   = svc_cx_get_curr_id();
@@ -83,10 +87,19 @@ void unvic_set_isr(uint32_t irqn, uint32_t vector, uint32_t flag)
     /* set proper priority (SVC must always be higher) */
     /* FIXME currently only one level of priority is allowed */
     NVIC_SetPriority(irqn, 1);
+
+    DPRINTF("IRQ %d is now registered to box %d with vector 0x%08X\n\r",
+             irqn, svc_cx_get_curr_id(), vector);
 }
 
 uint32_t unvic_get_isr(uint32_t irqn)
 {
+    /* check IRQn */
+    if(irqn > ISR_VECTORS)
+    {
+        HALT_ERROR("IRQ %d out of range (%d to %d)\n\r", irqn, 0, ISR_VECTORS);
+    }
+
     /* if the vector is unregistered return 0, otherwise the vector */
     if(ISR_GET(irqn) == (TIsrVector) &unvic_default_handler)
         return 0;
@@ -97,6 +110,12 @@ uint32_t unvic_get_isr(uint32_t irqn)
 /* FIXME check if allowed (ACL) */
 void unvic_enable_irq(uint32_t irqn)
 {
+    /* check IRQn */
+    if(irqn > ISR_VECTORS)
+    {
+        HALT_ERROR("IRQ %d out of range (%d to %d)\n\r", irqn, 0, ISR_VECTORS);
+    }
+
     if(ISR_GET(irqn) == (TIsrVector) &unvic_default_handler)
     {
         HALT_ERROR("no ISR set yet for IRQ %d\n\r", irqn);
@@ -116,6 +135,12 @@ void unvic_enable_irq(uint32_t irqn)
 
 void unvic_disable_irq(uint32_t irqn)
 {
+    /* check IRQn */
+    if(irqn > ISR_VECTORS)
+    {
+        HALT_ERROR("IRQ %d out of range (%d to %d)\n\r", irqn, 0, ISR_VECTORS);
+    }
+
     if(ISR_GET(irqn) == (TIsrVector) &unvic_default_handler)
     {
         HALT_ERROR("no ISR set yet for IRQ %d\n\r", irqn);
