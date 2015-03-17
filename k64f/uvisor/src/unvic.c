@@ -17,7 +17,7 @@
 #include "svc.h"
 
 /* unprivileged vector table */
-TIsrUVector g_unvic_vector[ISR_VECTORS];
+TIsrUVector g_unvic_vector[IRQ_VECTORS];
 
 /* isr_default_handler to unvic_default_handler */
 void isr_default_handler(void) UVISOR_LINKTO(unvic_default_handler);
@@ -64,9 +64,9 @@ void unvic_isr_mux(void)
 void unvic_set_isr(uint32_t irqn, uint32_t vector, uint32_t flag)
 {
     /* check IRQn */
-    if(irqn > ISR_VECTORS)
+    if(irqn > IRQ_VECTORS)
     {
-        HALT_ERROR("IRQ %d out of range (%d to %d)\n\r", irqn, 0, ISR_VECTORS);
+        HALT_ERROR("IRQ %d out of range (%d to %d)\n\r", irqn, 0, IRQ_VECTORS);
     }
 
     /* check if the IRQn is already registered */
@@ -95,9 +95,9 @@ void unvic_set_isr(uint32_t irqn, uint32_t vector, uint32_t flag)
 uint32_t unvic_get_isr(uint32_t irqn)
 {
     /* check IRQn */
-    if(irqn > ISR_VECTORS)
+    if(irqn > IRQ_VECTORS)
     {
-        HALT_ERROR("IRQ %d out of range (%d to %d)\n\r", irqn, 0, ISR_VECTORS);
+        HALT_ERROR("IRQ %d out of range (%d to %d)\n\r", irqn, 0, IRQ_VECTORS);
     }
 
     /* if the vector is unregistered return 0, otherwise the vector */
@@ -111,9 +111,9 @@ uint32_t unvic_get_isr(uint32_t irqn)
 void unvic_enable_irq(uint32_t irqn)
 {
     /* check IRQn */
-    if(irqn > ISR_VECTORS)
+    if(irqn > IRQ_VECTORS)
     {
-        HALT_ERROR("IRQ %d out of range (%d to %d)\n\r", irqn, 0, ISR_VECTORS);
+        HALT_ERROR("IRQ %d out of range (%d to %d)\n\r", irqn, 0, IRQ_VECTORS);
     }
 
     if(ISR_GET(irqn) == (TIsrVector) &unvic_default_handler)
@@ -136,9 +136,9 @@ void unvic_enable_irq(uint32_t irqn)
 void unvic_disable_irq(uint32_t irqn)
 {
     /* check IRQn */
-    if(irqn > ISR_VECTORS)
+    if(irqn > IRQ_VECTORS)
     {
-        HALT_ERROR("IRQ %d out of range (%d to %d)\n\r", irqn, 0, ISR_VECTORS);
+        HALT_ERROR("IRQ %d out of range (%d to %d)\n\r", irqn, 0, IRQ_VECTORS);
     }
 
     if(ISR_GET(irqn) == (TIsrVector) &unvic_default_handler)

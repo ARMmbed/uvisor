@@ -15,7 +15,7 @@
 
 /* actual vector table in RAM */
 __attribute__ ((section(".isr_vector"), aligned(128)))
-TIsrVector *g_isr_vector_prev, g_isr_vector[MAX_ISR_VECTORS];
+TIsrVector *g_isr_vector_prev, g_isr_vector[ISR_VECTORS];
 
 void UVISOR_WEAK isr_default_handler(void)
 {
@@ -26,7 +26,7 @@ void isr_init(void)
 {
     /* vector table relocation */
     uint32_t *dst = (uint32_t *) &g_isr_vector;
-    while(dst < ((uint32_t *) &g_isr_vector[MAX_ISR_VECTORS]))
+    while(dst < ((uint32_t *) &g_isr_vector[ISR_VECTORS]))
         *dst++ = (uint32_t) &isr_default_handler;
 
     if(SCB->VTOR != (uint32_t)&g_isr_vector)
