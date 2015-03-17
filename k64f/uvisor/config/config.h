@@ -15,8 +15,8 @@
 
 #include <uvisor-config.h>
 
-/* number of NVIC vectors (user vectors, hardware specific) */
-#define USER_VECTORS 85
+/* number of NVIC vectors (IRQ vectors, hardware specific) */
+#define HW_IRQ_VECTORS 85
 
 #ifdef  NOSYSTEM
 #define RESERVED_FLASH 0x420
