@@ -32,11 +32,8 @@ __attribute__((section(".svc_vector"))) const void *g_svc_vtor_tbl[] = {
     svc_bitband,             // 0
     unvic_set_isr,           // 1
     unvic_get_isr,           // 2
-    unvic_let_isr,           // 3
-    unvic_ena_irq,           // 4
-    unvic_dis_irq,           // 5
-    unvic_set_ena_isr,       // 6
-    unvic_dis_let_isr,       // 7
+    unvic_enable_irq,        // 4
+    unvic_disable_irq,       // 5
 };
 
 /*******************************************************************************
