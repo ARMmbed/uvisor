@@ -64,7 +64,7 @@ void unvic_isr_mux(void)
 void unvic_set_isr(uint32_t irqn, uint32_t vector, uint32_t flag)
 {
     /* check IRQn */
-    if(irqn > IRQ_VECTORS)
+    if(irqn >= IRQ_VECTORS)
     {
         HALT_ERROR("IRQ %d out of range (%d to %d)\n\r", irqn, 0, IRQ_VECTORS);
     }
@@ -95,7 +95,7 @@ void unvic_set_isr(uint32_t irqn, uint32_t vector, uint32_t flag)
 uint32_t unvic_get_isr(uint32_t irqn)
 {
     /* check IRQn */
-    if(irqn > IRQ_VECTORS)
+    if(irqn >= IRQ_VECTORS)
     {
         HALT_ERROR("IRQ %d out of range (%d to %d)\n\r", irqn, 0, IRQ_VECTORS);
     }
@@ -111,7 +111,7 @@ uint32_t unvic_get_isr(uint32_t irqn)
 void unvic_enable_irq(uint32_t irqn)
 {
     /* check IRQn */
-    if(irqn > IRQ_VECTORS)
+    if(irqn >= IRQ_VECTORS)
     {
         HALT_ERROR("IRQ %d out of range (%d to %d)\n\r", irqn, 0, IRQ_VECTORS);
     }
@@ -136,7 +136,7 @@ void unvic_enable_irq(uint32_t irqn)
 void unvic_disable_irq(uint32_t irqn)
 {
     /* check IRQn */
-    if(irqn > IRQ_VECTORS)
+    if(irqn >= IRQ_VECTORS)
     {
         HALT_ERROR("IRQ %d out of range (%d to %d)\n\r", irqn, 0, IRQ_VECTORS);
     }
