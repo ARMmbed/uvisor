@@ -24,6 +24,24 @@
     DPRINTF("***********************************************************\n\n");\
 }
 
+void default_putc(uint8_t data)
+{
+    /* if UART0 is not initialized fall back to SWO */
+    if(!((SIM_SCGC4 & SIM_SCGC4_UART0_MASK) && /* clock enabled       */
+         (UART0_C2  & UART_C2_TE_MASK)))       /* transmitter enabled */
+    {
+        swo_putc(data);
+    }
+    else
+    {
+        /* wait for FIFO to be available */
+        while(!(UART0_S1 & UART_S1_TDRE_MASK));
+
+        /* send char */
+        UART0_D = (uint8_t) data;
+    }
+}
+
 inline void debug_print_mpu_config(void)
 {
     int i, j;
