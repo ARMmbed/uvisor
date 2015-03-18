@@ -14,6 +14,19 @@
 #ifndef __UNVIC_H__
 #define __UNVIC_H__
 
+typedef struct {
+    TIsrVector hdlr;
+    uint8_t    id;
+} TIsrUVector;
+
+extern TIsrUVector g_unvic_vector[IRQ_VECTORS];
+
+extern void     unvic_set_isr(uint32_t irqn, uint32_t vector, uint32_t flag);
+extern uint32_t unvic_get_isr(uint32_t irqn);
+
+extern void unvic_enable_irq(uint32_t irqn);
+extern void unvic_disable_irq(uint32_t irqn);
+
 extern void unvic_init(void);
 
 #endif/*__UNVIC_H__*/
