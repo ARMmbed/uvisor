@@ -36,7 +36,7 @@ void *memcpy(void *dst, const void *src, size_t n)
 }
 
 #ifdef  CHANNEL_DEBUG
-void UVISOR_WEAK default_putc (uint8_t data)
+void swo_putc(uint8_t data)
 {
     static uint8_t itm_init = 0;
 
@@ -62,5 +62,10 @@ void UVISOR_WEAK default_putc (uint8_t data)
         /* TX debug character */
         ITM->PORT[CHANNEL_DEBUG].u8 = data;
     }
+}
+
+void UVISOR_WEAK default_putc(uint8_t data)
+{
+    swo_putc(data);
 }
 #endif/*CHANNEL_DEBUG*/
