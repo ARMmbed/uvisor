@@ -10,9 +10,13 @@
  *  by a licensing agreement from ARM Limited.
  *
  ***************************************************************/
-#ifndef  __CONFIG_H__
+#ifndef __CONFIG_H__
+#define __CONFIG_H__
 
 #include <uvisor-config.h>
+
+/* number of NVIC vectors (IRQ vectors, hardware specific) */
+#define HW_IRQ_VECTORS 86
 
 #ifdef  NOSYSTEM
 #define RESERVED_FLASH 0x420
@@ -31,4 +35,4 @@
 #define STACK_GUARD_BAND 128
 #define TOTAL_SRAM_SIZE (256*1024UL)
 
-#endif /*__CONFIG_H__*/
+#endif/*__CONFIG_H__*/

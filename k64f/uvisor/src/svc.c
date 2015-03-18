@@ -13,6 +13,7 @@
 #include <uvisor.h>
 #include "svc.h"
 #include "vmpu.h"
+#include "unvic.h"
 
 #define SVC_HDLRS_MAX 0x3FUL
 #define SVC_HDLRS_NUM (UVISOR_ARRAY_COUNT(g_svc_vtor_tbl))
@@ -22,12 +23,17 @@
  *       against a box's ACLs */
 static void svc_bitband(uint32_t *addr, uint32_t val)
 {
+    DPRINTF("Executed privileged bitband access to 0x%08X\n\r", addr);
     *addr = val;
 }
 
 /* SVC handlers */
 __attribute__((section(".svc_vector"))) const void *g_svc_vtor_tbl[] = {
     svc_bitband,             // 0
+    unvic_set_isr,           // 1
+    unvic_get_isr,           // 2
+    unvic_enable_irq,        // 4
+    unvic_disable_irq,       // 5
 };
 
 /*******************************************************************************
@@ -70,7 +76,7 @@ static void __attribute__((naked)) __svc_irq(void)
          ***********************************************************************
          * the special handlers
          *   (b00 custom_table_unpriv)
-         *    b01 svc_cx_isr_out
+         *    b01 unvic_svc_cx_out
          *    b10 svc_cx_switch_in
          *    b11 svc_cx_switch_out
          * are called here with 3 arguments:
@@ -126,7 +132,7 @@ static void __attribute__((naked)) __svc_irq(void)
          ***********************************************************************
          * the special handlers
          *   (b00 custom_table_priv)
-         *    b01 svc_cx_isr_out
+         *    b01 unvic_svc_cx_in
          * are called here with 3 arguments:
          *    r0 - MSP
          *    r1 - pc of SVCall
