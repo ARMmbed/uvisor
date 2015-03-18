@@ -109,7 +109,8 @@ regs Kusti, 23.10.2004
 #include <stdarg.h>
 
 /* declare default global putchar */
-UVISOR_EXTERN void default_putc (uint8_t data);
+UVISOR_EXTERN void swo_putc(uint8_t data);
+UVISOR_EXTERN void default_putc(uint8_t data);
 
 typedef void (*tfp_putcf) (void*,char);
 
