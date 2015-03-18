@@ -41,61 +41,24 @@ uint32_t __uvisor_get_isr(uint32_t irqn)
     return __res;
 }
 
-void __uvisor_let_isr(uint32_t irqn)
-{
-    register uint32_t __r0  __asm__("r0") = irqn;
-    __asm__ volatile(
-        "svc %[svc_id]\n"
-        :
-        : [r0]     "r"  (__r0),
-          [svc_id] "i"  (UVISOR_SVC_ID_LET_ISR)
-    );
-}
-
-void __uvisor_ena_irq(uint32_t irqn)
+void __uvisor_enable_irq(uint32_t irqn)
 {
     register uint32_t __r0 __asm__("r0") = irqn;
     __asm__ volatile(
         "svc %[svc_id]\n"
         :
         : [r0]     "r" (__r0),
-          [svc_id] "i" (UVISOR_SVC_ID_ENA_IRQ)
+          [svc_id] "i" (UVISOR_SVC_ID_ENABLE_IRQ)
     );
 }
 
-void __uvisor_dis_irq(uint32_t irqn)
+void __uvisor_disable_irq(uint32_t irqn)
 {
     register uint32_t __r0 __asm__("r0") = irqn;
     __asm__ volatile(
         "svc %[svc_id]\n"
         :
         : [r0]     "r" (__r0),
-          [svc_id] "i" (UVISOR_SVC_ID_DIS_IRQ)
-    );
-}
-
-void __uvisor_set_ena_isr(uint32_t irqn, uint32_t vector, uint32_t flag)
-{
-    register uint32_t __r0 __asm__("r0") = irqn;
-    register uint32_t __r1 __asm__("r1") = vector;
-    register uint32_t __r2 __asm__("r2") = flag;
-    __asm__ volatile(
-        "svc %[svc_id]\n"
-        :
-        : [r0]     "r" (__r0),
-          [r1]     "r" (__r1),
-          [r2]     "r" (__r2),
-          [svc_id] "i" (UVISOR_SVC_ID_SET_ENA_ISR)
-    );
-}
-
-void __uvisor_dis_let_isr(uint32_t irqn)
-{
-    register uint32_t __r0  __asm__("r0") = irqn;
-    __asm__ volatile(
-        "svc %[svc_id]\n"
-        :
-        : [r0]     "r"  (__r0),
-          [svc_id] "i"  (UVISOR_SVC_ID_DIS_LET_ISR)
+          [svc_id] "i" (UVISOR_SVC_ID_DISABLE_IRQ)
     );
 }
