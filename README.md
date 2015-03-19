@@ -156,65 +156,44 @@ for that are:
   kept in secured RAM.
 
 
-## The uVisor as a system or as a yotta module
+## The uVisor as a yotta module
 
-The uVisor can be used in two different ways:
+The uVisor is compiled and packaged to be included as a dependency by
+applications built with yotta on top of mbed. The yotta module for the uVisor
+is called [uvisor-lib](https://github.com/ARMmbed/uvisor-lib).
 
-1. As a compact system
-2. As a yotta module
+When used as a yotta module on top of mbed, the uVisor comes as a pre-compiled
+binary blob which is then included in the rest of the system. In this way the
+integrity of the uVisor, and hence its security model, are guardanteed. Each
+official release of uvisor-lib will then deliver an approved build of the code
+tree here presented, also exposing the APIs for the unprivileged application.
 
-When used as a yotta module on top of mbed, the uVisor comes as a
-pre-compiled binary blob which is then included in the rest of the system. In
-this way the integrity of the uVisor, and hence its security model, are
-guardanteed. Each official release of uvisor-lib will then deliver an approved
-build of the code tree here presented, also exposing the APIs for the Client
-application.
+It is suggested to always use the official uvisor-lib module through the
+regular yotta build process. For development, experimenting, or fun, the uVisor
+can also be manually turned into a yotta module and locally linked to your
+project. First of all, build the yotta module:
+```bash
+# select the correct platform in the code tree
+cd k64f/uvisor
 
-### As a compact system
+# build the uVisor and generate the yotta module
+make clean release
+```
+Then link your local version of the module to yotta:
+```bash
+# the release folder is at the top level of the code tree
+cd ../../release
 
-   A custom start-up code for the target platform is used;
-   the uVisor then takes full ownership and control of the system,
-   de-privileging execution to the Client application. In this case the whole
-   application can be built as follows:
-   ```bash
-   # select the correct platform in the code tree
-   cd /path/to/platform-specific/code
+# link the module to yotta locally
+yotta link
 
-   # rebuild the uVisor together with its unprivileged applications
-   # erase the chip and flash the uVisor
-   make clean all erase flash CONFIG=
-   ```
-
-### As a yotta module
-
-   The uVisor is compiled and packaged to be included as a
-   dependency by applications built with yotta on top of mbed. The yotta module
-   for the uVisor is called uvisor-lib and can be found
-   [here](https://github.com/ARMmbed/uvisor-lib). It is suggested to always use
-   the official module. For development, experimenting, or fun, the uVisor can
-   also be manually turned into a yotta module and locally linked to yotta.
-   First of all, build the yotta module:
-   ```bash
-   # select the correct platform in the code tree
-   cd /path/to/platform-specific/code
-
-   # build the uVisor and generate the yotta module
-   make clean release
-   ```
-   Then link your local build of yotta to this version of the module:
-   ```bash
-   # the release folder is at the top level of the code tree
-   cd /path/to/release/in/the/code/tree
-
-   # link the module to yotta locally
-   sudo yotta link
-
-   # link your project to this version of uvisor-lib
-   cd /path/to/project/including/uvisor-lib
-   yotta link uvisor-lib
-   ```
-   Again, consider using the uvisor-lib directly if building with yotta, and
-   refer to its [documentation](https://github.com/ARMmbed/uvisor-lib).
+# link your project to this version of uvisor-lib
+cd ../your_custom_project
+yotta link uvisor-lib
+```
+Again, consider using the official uvisor-lib release if building with yotta,
+and refer to its [documentation](https://github.com/ARMmbed/uvisor-lib) for the
+APIs it exposes to unprivileged code.
 
 
 ## Debugging
