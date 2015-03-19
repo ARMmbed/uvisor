@@ -198,64 +198,29 @@ APIs it exposes to unprivileged code.
 
 ## Debugging
 
-By default, debugging output is silenced and only occurs when the device is
-halted due to faults or failures catched by the uVisor. To enable more verbose
-debugging, just build as follows:
-```bash
-# uVisor as a whole system
-make clean all DEBUG=
+By default, debug output is silenced. Special debug messages only occur when
+the device is halted due to faults or failures catched by the uVisor.  These
+messages are tentatively printed on the UART0 port, if it has previously been
+enable by the unprivileged code. Otherwise, SWO is used as a fallback.
 
-# uVisor as a yotta module
-make clean release DEBUG=
+To enable more verbose debug messages, just build as follows:
+```bash
+# create local version of uvisor-lib with debug enabled
+make OPT= clean release
 ```
-Please note that the `DEBUG=` option prevents the execution from continuing
-if an SWO viewer is not connected.
+Note that this debug build implements non-blocking messages. Is an SWO viewer
+is not used, messages are just lost and executions continues normally. If the
+uVisor catched an error or an access fault, though, the system is halted.
 
-Debugging messages are output through the SWO port. An SWO viewer is needed to
-access it. If using a JLink debugger, just use:
+Debugging messages that are output through the SWO port, can be observed with
+an SWO viewer. If using a JLink debugger, just do as follows:
 ```bash
-cd /path/to/supported/platform
+cd k64f/uvisor
 make swo
 ```
 or refer to `Makefile.rules` to import the `swo` rule in your build
 environment.
 
-If SWO is also used by the Client application for different purposes (for
-example, for regular print functions), make sure to re-direct it to a different
-channel (channel 0 used here).
-
-## Compile debug version of uvisor
-
-The following recipe is used to enable the single wire debug debug (SWD)
-version of uvisor with SWO output using a SEGGER JLink debugger:
-```bash
-# create custom directory
-mkdir debug
-cd debug/
-
-# clone & link private uvisor-lib repository
-git clone git@github.com:ARMmbed/uvisor-lib-private.git
-cd uvisor-lib-private/
-yt link
-cd ..
-
-# build JLink SWO debug console version & copy binary to private uvisor-lib
-git clone git@github.com:ARMmbed/uvisor-private.git
-cd uvisor-private/k64f/uvisor/
-make OPT= TARGET_BASE=../../../uvisor-lib-private clean release
-cd ../../../
-
-# compile hello world example
-git clone git@github.com:ARMmbed/uvisor-helloworld-private.git
-cd uvisor-helloworld-private/
-yt link uvisor-lib
-
-# flash firmware
-make clean flash
-
-# start debug output
-make swo
-```
 
 ## Software and hardware requirements
 
