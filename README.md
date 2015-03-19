@@ -144,27 +144,41 @@ which is not protected in a secure domain is referred to as main application.
 The main memory sections that the uVisor protects are described in the
 following table with more detail:
 
--------------------------------------------------------------------------------
-Memory section              Description
---------------------------  ---------------------------------------------------
-uVisor code                 The uVisor code is readable and executable by
-                            unprivileged code, so that code sharing is
-                            facilitated and transitions privileged-unprivileged
-                            are easier
+<table>
+  <tbody>
+    <tr>
+      <th>Memory section</th>
+      <th>Description</th>
+    </tr>
+    <tr>
+      <td>uVisor code</td>
+      <td>The uVisor code is readable and executable by unprivileged code, so
+          that code sharing is facilitated and transitions
+          privileged-unprivileged are easier
+      </td>
+    </tr>
+    <tr>
+      <td>uVisor data/bss/stack/td>
+      <td>The uVisor places all its `const`, un-/initialized data and stack in
+          secured areas of memory, separated from the unprivileged code
+      </td>
+    </tr>
+    <tr>
+      <td>secure boxes data/bss/stack</td>
+      <td>Through a configuration process, unprivileged code can setup a secure
+          box for which data and stack can be secured by the uVisor and placed
+          in isolated and protected memory areas
+      </td>
+    </tr>
+    <tr>
+      <td>protected VTORs</td>
+      <td>Interrupt vectors are relocated to SRAM but protected by the uVisor.
+          Access to them is made thorugh specific APIs
+      </td>
+    </tr>
+  </tbody>
+</table>
 
-uVisor data/bss/stack       The uVisor places all its `const`, un-/initialized
-                            data and stack in secured areas of memory,
-                            separated from the unprivileged code
-
-secure boxes data/bss/stack Through a configuration process, unprivileged code
-                            can setup a secure box for which data and stack can
-                            be secured by the uVisor and placed in isolated and
-                            protected memory areas
-
-protected VTORs             Interrupt vectors are relocated to SRAM but
-                            protected by the uVisor. Access to them is made
-                            thorugh specific APIs
--------------------------------------------------------------------------------
 
 ### The boot process
 
