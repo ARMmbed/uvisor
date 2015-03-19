@@ -2,7 +2,7 @@
 
 ## Overview
 
-The uVisor is a self-contained software hypervisor that creates independet
+The uVisor is a self-contained software hypervisor that creates independent
 secure domains on ARM Cortex-M3 and M4 micro-controllers (M0+ will follow). Its
 target is to increase resilience against malware and to protect secrets from
 leaking even among different modules of the same application.
@@ -98,7 +98,7 @@ reliably enforced.
 
 ## Technical details
 
-Independently from target-specific implementations, the uVisor:
+The uVisor:
 * is initialized right after device start-up;
 * runs in privileged mode;
 * sets up a protected environment using a Memory Protection Unit (the ARM
@@ -107,27 +107,27 @@ Independently from target-specific implementations, the uVisor:
       the unprivileged code;
     * unprivileged access to selected hardware peripherals and memories is
       limited through Access Control Lists (ACLs);
-* allows interaction from the unprivileged code by exposing an SVCall-based
-  API;
+* allows interaction from the unprivileged code by exposing SVCall-based APIs;
 * forwards and de-privileges interrupts to the unprivileged code that has
   registered for them;
-* prevents register leakage when switching execution between privileged and
+* prevents registers leakage when switching execution between privileged and
   unprivileged code and between mutually untrusted unprivileged modules;
-* forces access to some security-critical peripherals (like DMA) through an
-  SVCall-based API.
+* forces access to some security-critical peripherals (like DMA) through
+  SVCall-based APIs.
 
-### The Client
+### The unprivileged code
 
 All the code that is not explicitly part of the uVisor is generally referred to
-as the Client. In general, the Client:
+as unprivileged code. The unprivileged code:
 * runs in unprivileged mode;
 * is prevented access to privileged memories and peripherals by the uVisor;
 * has direct memory access to unprivileged peripherals;
-* can register for unprivileged interrupts;
-* can be made of mutually untrusted modules (or boxes) isolated by the uVisor.
-The Client can interact with the uVisor thorugh a limited set of APIs which
-allow to configure a secure module, protect its secrets and call untrusted
-functions securely.
+* can register for unprivileged interrupts.
+
+The unprivileged code can be made of mutually untrusted isolated modules (or
+boxes). In this way, even if all running with unprivileged permissions,
+different modules can protect their own secrets and execute critical code
+securely.
 
 ### Memory layout
 
@@ -136,25 +136,55 @@ enforced by the uVisor.
 
 ![uVisor memory layout](/k64f/docs/memory_layout.png)
 
-The main memory sections on which the uVisor relies are described in the
-following table:
+The uVisor secures two main memory blocks, in Flash and SRAM respectively. In
+both cases, the uVisor protects its own data and the data of the secure boxes
+it  manages for the unprivileged code. In general, all the unprivileged code
+which is not protected in a secure domain is referred to as main application.
 
-| Memory section | Description                                                |
-|----------------|------------------------------------------------------------|
-| uvisor.bss     | Bla                                                        |
-| uvisor.bla     | Even more bla                                              |
+The main memory sections that the uVisor protects are described in the
+following table with more detail:
 
-The uVisor code is readable and executable by unprivileged code. The reasons
-for that are:
-* easy transitions from privileged to unprivileged mode: De-privileging happens
-  in the uVisor-owned memory segments;
-* unprivileged code can directly call privileged helper functions without
-  switching privilege levels. Helper functions can still switch to privileged
-  mode via an SVCall;
-* unprivileged code can verify the integrity of the privileged uVisor;
-* confidentiality of the exception/interrupt table is still guaranteed as it's
-  kept in secured RAM.
+-------------------------------------------------------------------------------
+Memory section              Description
+--------------------------  ---------------------------------------------------
+uVisor code                 The uVisor code is readable and executable by
+                            unprivileged code, so that code sharing is
+                            facilitated and transitions privileged-unprivileged
+                            are easier
 
+uVisor data/bss/stack       The uVisor places all its `const`, un-/initialized
+                            data and stack in secured areas of memory,
+                            separated from the unprivileged code
+
+secure boxes data/bss/stack Through a configuration process, unprivileged code
+                            can setup a secure box for which data and stack can
+                            be secured by the uVisor and placed in isolated and
+                            protected memory areas
+
+protected VTORs             Interrupt vectors are relocated to SRAM but
+                            protected by the uVisor. Access to them is made
+                            thorugh specific APIs
+-------------------------------------------------------------------------------
+
+### The boot process
+
+The uVisor is initialized right after device startup and takes ownership of its
+most critical assets, like privileged peripherals, the vector table, memory
+management. In particular:
+
+1. Several sanity checks are performed, to verify integrity of the memory
+   structure as expected by the uVisor;
+2. The `bss` section is zeroed, the `data` section initialized (uVisor);
+3. The vector table is relocated;
+4. The virtual Memory Protection Unit (vMPU) is initialized:
+    a. Secure boxes are loaded:
+        * The `bss` section is zeroed, the `data` section initialized (secure
+          boxes);
+        * Access Control Lists (ACLs) are registered for each secure box;
+        * Stacks are initialized for each secure box;
+    b. The MPU (ARM or third-party) is configured;
+5. Un-/Privileged stack pointers are initialized;
+6. Execution is de-privileged and handed over to the unprivileged code.
 
 ## The uVisor as a yotta module
 
