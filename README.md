@@ -158,9 +158,9 @@ following table with more detail:
       </td>
     </tr>
     <tr>
-      <td>uVisor data/bss/stack/td>
-      <td>The uVisor places all its `const`, un-/initialized data and stack in
-          secured areas of memory, separated from the unprivileged code
+      <td>uVisor data/bss/stack</td>
+      <td>The uVisor places all its constants, un-/initialized data and stack
+          in secured areas of memory, separated from the unprivileged code
       </td>
     </tr>
     <tr>
