@@ -191,12 +191,12 @@ management. In particular:
 2. The `bss` section is zeroed, the `data` section initialized (uVisor);
 3. The vector table is relocated;
 4. The virtual Memory Protection Unit (vMPU) is initialized:
-    a. Secure boxes are loaded:
+    *. Secure boxes are loaded:
         * The `bss` section is zeroed, the `data` section initialized (secure
           boxes);
         * Access Control Lists (ACLs) are registered for each secure box;
         * Stacks are initialized for each secure box;
-    b. The MPU (ARM or third-party) is configured;
+    *. The MPU (ARM or third-party) is configured;
 5. Un-/Privileged stack pointers are initialized;
 6. Execution is de-privileged and handed over to the unprivileged code.
 
