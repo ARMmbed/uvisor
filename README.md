@@ -246,7 +246,9 @@ example, for regular print functions), make sure to re-direct it to a different
 channel (channel 0 used here).
 
 ## Compile debug version of uvisor
-The following recipe is used to enable the single wire debug debug (SWD) version of uvisor with SWO output using a SEGGER JLink debugger:
+
+The following recipe is used to enable the single wire debug debug (SWD)
+version of uvisor with SWO output using a SEGGER JLink debugger:
 ```bash
 # create custom directory
 mkdir debug
@@ -264,7 +266,7 @@ cd uvisor-private/k64f/uvisor/
 make OPT= TARGET_BASE=../../../uvisor-lib-private clean release
 cd ../../../
 
-# compile hello world example 
+# compile hello world example
 git clone git@github.com:ARMmbed/uvisor-helloworld-private.git
 cd uvisor-helloworld-private/
 yt link uvisor-lib
@@ -285,4 +287,5 @@ To build:
 
 To debug:
 * A JLink debugger (JLink LITE CortexM at least)
-* Latest [SEGGER JLink software & documentation  pack](https://www.segger.com/jlink-software.html) for the target platform
+* Latest [SEGGER JLink software & documentation  pack](https://www.segger.com/jlink-software.html)
+  for the target platform
