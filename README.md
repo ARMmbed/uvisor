@@ -245,18 +245,20 @@ APIs it exposes to unprivileged code.
 By default, debug output is silenced. Special debug messages only occur when
 the device is halted due to faults or failures catched by the uVisor.  These
 messages are tentatively printed on the UART0 port, if it has previously been
-enable by the unprivileged code. Otherwise, SWO is used as a fallback.
+enabled by the unprivileged code. Otherwise, SWO is used as a fallback.
 
 To enable more verbose debug messages, just build as follows:
 ```bash
 # create local version of uvisor-lib with debug enabled
 make OPT= clean release
 ```
-Note that this debug build implements non-blocking messages. Is an SWO viewer
+and localy link the resulting debug relese to yotta as described previously.
+
+Note that this debug build implements non-blocking messages. If an SWO viewer
 is not used, messages are just lost and executions continues normally. If the
 uVisor catched an error or an access fault, though, the system is halted.
 
-Debugging messages that are output through the SWO port, can be observed with
+Debugging messages that are output through the SWO port can be observed with
 an SWO viewer. If using a JLink debugger, just do as follows:
 ```bash
 cd k64f/uvisor
