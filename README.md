@@ -2,7 +2,7 @@
 
 ## Overview
 
-The uVisor is a self-contained software hypervisor that creates independet
+The uVisor is a self-contained software hypervisor that creates independent
 secure domains on ARM Cortex-M3 and M4 micro-controllers (M0+ will follow). Its
 target is to increase resilience against malware and to protect secrets from
 leaking even among different modules of the same application.
@@ -98,7 +98,7 @@ reliably enforced.
 
 ## Technical details
 
-Independently from target-specific implementations, the uVisor:
+The uVisor:
 * is initialized right after device start-up;
 * runs in privileged mode;
 * sets up a protected environment using a Memory Protection Unit (the ARM
@@ -107,27 +107,27 @@ Independently from target-specific implementations, the uVisor:
       the unprivileged code;
     * unprivileged access to selected hardware peripherals and memories is
       limited through Access Control Lists (ACLs);
-* allows interaction from the unprivileged code by exposing an SVCall-based
-  API;
+* allows interaction from the unprivileged code by exposing SVCall-based APIs;
 * forwards and de-privileges interrupts to the unprivileged code that has
   registered for them;
-* prevents register leakage when switching execution between privileged and
+* prevents registers leakage when switching execution between privileged and
   unprivileged code and between mutually untrusted unprivileged modules;
-* forces access to some security-critical peripherals (like DMA) through an
-  SVCall-based API.
+* forces access to some security-critical peripherals (like DMA) through
+  SVCall-based APIs.
 
-### The Client
+### The unprivileged code
 
 All the code that is not explicitly part of the uVisor is generally referred to
-as the Client. In general, the Client:
+as unprivileged code. The unprivileged code:
 * runs in unprivileged mode;
 * is prevented access to privileged memories and peripherals by the uVisor;
 * has direct memory access to unprivileged peripherals;
-* can register for unprivileged interrupts;
-* can be made of mutually untrusted modules (or boxes) isolated by the uVisor.
-The Client can interact with the uVisor thorugh a limited set of APIs which
-allow to configure a secure module, protect its secrets and call untrusted
-functions securely.
+* can register for unprivileged interrupts.
+
+The unprivileged code can be made of mutually untrusted isolated modules (or
+boxes). In this way, even if all running with unprivileged permissions,
+different modules can protect their own secrets and execute critical code
+securely.
 
 ### Memory layout
 
@@ -136,145 +136,135 @@ enforced by the uVisor.
 
 ![uVisor memory layout](k64f/docs/memory_layout.png)
 
-The main memory sections on which the uVisor relies are described in the
-following table:
+The uVisor secures two main memory blocks, in Flash and SRAM respectively. In
+both cases, the uVisor protects its own data and the data of the secure boxes
+it  manages for the unprivileged code. In general, all the unprivileged code
+which is not protected in a secure domain is referred to as main application.
 
-| Memory section | Description                                                |
-|----------------|------------------------------------------------------------|
-| uvisor.bss     | Bla                                                        |
-| uvisor.bla     | Even more bla                                              |
+The main memory sections that the uVisor protects are described in the
+following table with more detail:
 
-The uVisor code is readable and executable by unprivileged code. The reasons
-for that are:
-* easy transitions from privileged to unprivileged mode: De-privileging happens
-  in the uVisor-owned memory segments;
-* unprivileged code can directly call privileged helper functions without
-  switching privilege levels. Helper functions can still switch to privileged
-  mode via an SVCall;
-* unprivileged code can verify the integrity of the privileged uVisor;
-* confidentiality of the exception/interrupt table is still guaranteed as it's
-  kept in secured RAM.
+<table>
+  <tbody>
+    <tr>
+      <th>Memory section</th>
+      <th>Description</th>
+    </tr>
+    <tr>
+      <td>uVisor code</td>
+      <td>The uVisor code is readable and executable by unprivileged code, so
+          that code sharing is facilitated and transitions
+          privileged-unprivileged are easier
+      </td>
+    </tr>
+    <tr>
+      <td>uVisor data/bss/stack</td>
+      <td>The uVisor places all its constants, un-/initialized data and stack
+          in secured areas of memory, separated from the unprivileged code
+      </td>
+    </tr>
+    <tr>
+      <td>secure boxes data/bss/stack</td>
+      <td>Through a configuration process, unprivileged code can setup a secure
+          box for which data and stack can be secured by the uVisor and placed
+          in isolated and protected memory areas
+      </td>
+    </tr>
+    <tr>
+      <td>protected VTORs</td>
+      <td>Interrupt vectors are relocated to SRAM but protected by the uVisor.
+          Access to them is made thorugh specific APIs
+      </td>
+    </tr>
+  </tbody>
+</table>
 
 
-## The uVisor as a system or as a yotta module
+### The boot process
 
-The uVisor can be used in two different ways:
+The uVisor is initialized right after device startup and takes ownership of its
+most critical assets, like privileged peripherals, the vector table, memory
+management. In particular:
 
-1. As a compact system
-2. As a yotta module
+1. Several sanity checks are performed, to verify integrity of the memory
+   structure as expected by the uVisor;
+2. The `bss` section is zeroed, the `data` section initialized (uVisor);
+3. The vector table is relocated;
+4. The virtual Memory Protection Unit (vMPU) is initialized:
+    * Secure boxes are loaded:
+        * The `bss` section is zeroed, the `data` section initialized (secure
+          boxes);
+        * Access Control Lists (ACLs) are registered for each secure box;
+        * Stacks are initialized for each secure box;
+    * The MPU (ARM or third-party) is configured;
+5. Un-/Privileged stack pointers are initialized;
+6. Execution is de-privileged and handed over to the unprivileged code.
 
-When used as a yotta module on top of mbed, the uVisor comes as a
-pre-compiled binary blob which is then included in the rest of the system. In
-this way the integrity of the uVisor, and hence its security model, are
-guardanteed. Each official release of uvisor-lib will then deliver an approved
-build of the code tree here presented, also exposing the APIs for the Client
-application.
+## The uVisor as a yotta module
 
-### As a compact system
+The uVisor is compiled and packaged to be included as a dependency by
+applications built with yotta on top of mbed. The yotta module for the uVisor
+is called [uvisor-lib](https://github.com/ARMmbed/uvisor-lib).
 
-   A custom start-up code for the target platform is used;
-   the uVisor then takes full ownership and control of the system,
-   de-privileging execution to the Client application. In this case the whole
-   application can be built as follows:
-   ```bash
-   # select the correct platform in the code tree
-   cd /path/to/platform-specific/code
+When used as a yotta module on top of mbed, the uVisor comes as a pre-compiled
+binary blob which is then included in the rest of the system. In this way the
+integrity of the uVisor, and hence its security model, are guardanteed. Each
+official release of uvisor-lib will then deliver an approved build of the code
+tree here presented, also exposing the APIs for the unprivileged application.
 
-   # rebuild the uVisor together with its unprivileged applications
-   # erase the chip and flash the uVisor
-   make clean all erase flash CONFIG=
-   ```
+It is suggested to always use the official uvisor-lib module through the
+regular yotta build process. For development, experimenting, or fun, the uVisor
+can also be manually turned into a yotta module and locally linked to your
+project. First of all, build the yotta module:
+```bash
+# select the correct platform in the code tree
+cd k64f/uvisor
 
-### As a yotta module
+# build the uVisor and generate the yotta module
+make clean release
+```
+Then link your local version of the module to yotta:
+```bash
+# the release folder is at the top level of the code tree
+cd ../../release
 
-   The uVisor is compiled and packaged to be included as a
-   dependency by applications built with yotta on top of mbed. The yotta module
-   for the uVisor is called uvisor-lib and can be found
-   [here](https://github.com/ARMmbed/uvisor-lib). It is suggested to always use
-   the official module. For development, experimenting, or fun, the uVisor can
-   also be manually turned into a yotta module and locally linked to yotta.
-   First of all, build the yotta module:
-   ```bash
-   # select the correct platform in the code tree
-   cd /path/to/platform-specific/code
+# link the module to yotta locally
+yotta link
 
-   # build the uVisor and generate the yotta module
-   make clean release
-   ```
-   Then link your local build of yotta to this version of the module:
-   ```bash
-   # the release folder is at the top level of the code tree
-   cd /path/to/release/in/the/code/tree
-
-   # link the module to yotta locally
-   sudo yotta link
-
-   # link your project to this version of uvisor-lib
-   cd /path/to/project/including/uvisor-lib
-   yotta link uvisor-lib
-   ```
-   Again, consider using the uvisor-lib directly if building with yotta, and
-   refer to its [documentation](https://github.com/ARMmbed/uvisor-lib).
+# link your project to this version of uvisor-lib
+cd ../your_custom_project
+yotta link uvisor-lib
+```
+Again, consider using the official uvisor-lib release if building with yotta,
+and refer to its [documentation](https://github.com/ARMmbed/uvisor-lib) for the
+APIs it exposes to unprivileged code.
 
 
 ## Debugging
 
-By default, debugging output is silenced and only occurs when the device is
-halted due to faults or failures catched by the uVisor. To enable more verbose
-debugging, just build as follows:
-```bash
-# uVisor as a whole system
-make clean all DEBUG=
+By default, debug output is silenced. Special debug messages only occur when
+the device is halted due to faults or failures catched by the uVisor.  These
+messages are tentatively printed on the UART0 port, if it has previously been
+enable by the unprivileged code. Otherwise, SWO is used as a fallback.
 
-# uVisor as a yotta module
-make clean release DEBUG=
+To enable more verbose debug messages, just build as follows:
+```bash
+# create local version of uvisor-lib with debug enabled
+make OPT= clean release
 ```
-Please note that the `DEBUG=` option prevents the execution from continuing
-if an SWO viewer is not connected.
+Note that this debug build implements non-blocking messages. Is an SWO viewer
+is not used, messages are just lost and executions continues normally. If the
+uVisor catched an error or an access fault, though, the system is halted.
 
-Debugging messages are output through the SWO port. An SWO viewer is needed to
-access it. If using a JLink debugger, just use:
+Debugging messages that are output through the SWO port, can be observed with
+an SWO viewer. If using a JLink debugger, just do as follows:
 ```bash
-cd /path/to/supported/platform
+cd k64f/uvisor
 make swo
 ```
 or refer to `Makefile.rules` to import the `swo` rule in your build
 environment.
 
-If SWO is also used by the Client application for different purposes (for
-example, for regular print functions), make sure to re-direct it to a different
-channel (channel 0 used here).
-
-## Compile debug version of uvisor
-The following recipe is used to enable the single wire debug debug (SWD) version of uvisor with SWO output using a SEGGER JLink debugger:
-```bash
-# create custom directory
-mkdir debug
-cd debug/
-
-# clone & link private uvisor-lib repository
-git clone git@github.com:ARMmbed/uvisor-lib-private.git
-cd uvisor-lib-private/
-yt link
-cd ..
-
-# build JLink SWO debug console version & copy binary to private uvisor-lib
-git clone git@github.com:ARMmbed/uvisor-private.git
-cd uvisor-private/k64f/uvisor/
-make OPT= TARGET_BASE=../../../uvisor-lib-private clean release
-cd ../../../
-
-# compile hello world example 
-git clone git@github.com:ARMmbed/uvisor-helloworld-private.git
-cd uvisor-helloworld-private/
-yt link uvisor-lib
-
-# flash firmware
-make clean flash
-
-# start debug output
-make swo
-```
 
 ## Software and hardware requirements
 
@@ -285,4 +275,5 @@ To build:
 
 To debug:
 * A JLink debugger (JLink LITE CortexM at least)
-* Latest [SEGGER JLink software & documentation  pack](https://www.segger.com/jlink-software.html) for the target platform
+* Latest [SEGGER JLink software & documentation  pack](https://www.segger.com/jlink-software.html)
+  for the target platform
