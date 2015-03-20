@@ -204,7 +204,7 @@ management. In particular:
 
 The uVisor is compiled and packaged to be included as a dependency by
 applications built with yotta on top of mbed. The yotta module for the uVisor
-is called [uvisor-lib](https://github.com/ARMmbed/uvisor-lib).
+is called [uvisor-lib](https://github.com/ARMmbed/uvisor-lib-private).
 
 When used as a yotta module on top of mbed, the uVisor comes as a pre-compiled
 binary blob which is then included in the rest of the system. In this way the
@@ -236,8 +236,9 @@ cd ../your_custom_project
 yotta link uvisor-lib
 ```
 Again, consider using the official uvisor-lib release if building with yotta,
-and refer to its [documentation](https://github.com/ARMmbed/uvisor-lib) for the
-APIs it exposes to unprivileged code.
+and refer to its
+[documentation](https://github.com/ARMmbed/uvisor-lib-private) for the APIs
+it exposes to unprivileged code.
 
 
 ## Debugging
