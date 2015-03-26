@@ -24,21 +24,32 @@
     DPRINTF("***********************************************************\n\n");\
 }
 
+#ifndef DEBUG_MAX_BUFFER
+#define DEBUG_MAX_BUFFER 128
+#endif/*DEBUG_MAX_BUFFER*/
+
+uint8_t g_buffer[DEBUG_MAX_BUFFER];
+int g_buffer_pos;
+
 void default_putc(uint8_t data)
 {
-    /* if UART0 is not initialized fall back to SWO */
-    if(!((SIM_SCGC4 & SIM_SCGC4_UART0_MASK) && /* clock enabled       */
-         (UART0_C2  & UART_C2_TE_MASK)))       /* transmitter enabled */
-    {
-        swo_putc(data);
-    }
+    if(g_buffer_pos<(DEBUG_MAX_BUFFER-1))
+        g_buffer[g_buffer_pos++] = data;
     else
-    {
-        /* wait for FIFO to be available */
-        while(!(UART0_S1 & UART_S1_TDRE_MASK));
+        data = '\n';
 
-        /* send char */
-        UART0_D = (uint8_t) data;
+    if(data == '\n')
+    {
+        g_buffer[g_buffer_pos] = 0;
+        asm(
+            "mov r0, #4\n"
+            "mov r1, %[data]\n"
+            "bkpt #0xAB\n"
+            :
+            : [data] "r" (&g_buffer)
+            : "r0", "r1"
+        );
+        g_buffer_pos = 0;
     }
 }
 
@@ -191,6 +202,8 @@ inline void debug_fault_bus(uint32_t lr)
 
 inline void debug_init(void)
 {
+    g_buffer_pos = 0;
+
     /* debugging bus faults requires them to be precise, so write buffering is
      * disabled; note: it slows down execution */
     SCnSCB->ACTLR |= 0x2;
