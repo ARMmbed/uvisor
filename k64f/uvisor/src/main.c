@@ -41,14 +41,14 @@ UVISOR_NOINLINE void uvisor_init(void)
     /* init SVC call interface */
     svc_init();
 
-    /* initialize debugging features */
-    DEBUG_INIT();
-
     DPRINTF("uvisor initialized\n");
 }
 
 void main_entry(void)
 {
+    /* initialize debugging features */
+    DEBUG_INIT();
+
     /* run basic sanity checks */
     if(vmpu_sanity_checks() == 0)
     {
