@@ -39,6 +39,9 @@ void halt_error (const char *fmt, ...)
     tfp_format (NULL, halt_putcp, fmt, va);
     va_end (va);
 
+    /* final line feed */
+    default_putc('\n');
+
     /* sleep & die */
     while(1)
         __WFI();
@@ -53,6 +56,9 @@ void halt_line (const char* file, uint32_t line, const char *fmt, ...)
     va_start (va, fmt);
     tfp_format (NULL, halt_putcp, fmt, va);
     va_end (va);
+
+    /* final line feed */
+    default_putc('\n');
 
     /* sleep & die */
     while(1)
