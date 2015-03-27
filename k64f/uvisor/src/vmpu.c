@@ -17,6 +17,9 @@
 #include "memory_map.h"
 #include "debug.h"
 
+#define AIPSx_SLOT_SIZE 0x1000UL
+#define AIPSx_SLOT_MAX 0xFE
+
 #ifndef MPU_MAX_PRIVATE_FUNCTIONS
 #define MPU_MAX_PRIVATE_FUNCTIONS 16
 #endif/*MPU_MAX_PRIVATE_FUNCTIONS*/
@@ -222,6 +225,10 @@ static void vmpu_init_box_memories(void)
 
 static void vmpu_add_acl(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 {
+    int slot_count;
+    uint8_t aips_slot;
+    uint32_t base;
+
 #ifndef NDEBUG
     const MemMap *map;
 #endif/*NDEBUG*/
@@ -235,6 +242,56 @@ static void vmpu_add_acl(uint8_t box_id, void* start, uint32_t size, UvisorBoxAc
     DPRINTF("\t@0x%08X size=%06i acl=0x%04X [%s]\n", start, size, acl,
         ((map = memory_map_name((uint32_t)start))!=NULL) ? map->name : "unknown"
     );
+
+    if(    (((uint32_t)start)>=AIPS0_BASE) &&
+        (((uint32_t)start)<(AIPS0_BASE+(0xFEUL*(AIPSx_SLOT_SIZE)))) )
+    {
+        aips_slot = (uint8_t)(((uint32_t)start) >> 12);
+        if(aips_slot > AIPSx_SLOT_MAX)
+            HALT_ERROR("AIPS slot out of range (0xFF)");
+
+        /* calculate resulting APIS slot and base */
+        base = AIPS0_BASE | (((uint32_t)(aips_slot)) << 12);
+        DPRINTF("\t\tAPIS slot[%02i] for base 0x%08X\n",
+            aips_slot, base);
+
+        /* check if ACL base is equal to slot base */
+        if(base != (uint32_t)start)
+            HALT_ERROR("AIPS base (0x%08X) != ACL base (0x%08X)", base, start);
+
+        /* calculate slot count */
+        slot_count = (uint8_t)((base+size) >> 12);
+        if(slot_count>AIPSx_SLOT_MAX)
+            HALT_ERROR("AIPS slot size out of range (%i slots)", slot_count);
+        slot_count -= aips_slot;
+
+        /* ensure that ACL size can be rounded up to slot size */
+        if(((size % AIPSx_SLOT_SIZE) != 0) && ((acl & UVISOR_TACL_SIZE_ROUND_UP)==0))
+            HALT_ERROR("Use UVISOR_TACL_SIZE_ROUND_UP to round ACL size to AIPS slot size");
+
+        return;
+    }
+
+    if(    (((uint32_t*)start)>=__uvisor_config.secure_start) &&
+        ((((uint32_t)start)+size)<=(uint32_t)__uvisor_config.secure_end) )
+    {
+        DPRINTF("FLASH\n");
+        return;
+    }
+
+    if(    (((uint32_t*)start)>=__uvisor_config.reserved_end) &&
+        ((((uint32_t)start)+size)<=(uint32_t)__uvisor_config.bss_start) )
+    {
+        DPRINTF("STACK\n");
+        return;
+    }
+
+    if(    (((uint32_t*)start)>=__uvisor_config.bss_start) &&
+        ((((uint32_t)start)+size)<=(uint32_t)__uvisor_config.bss_end) )
+    {
+        DPRINTF("BSS\n");
+        return;
+    }
 }
 
 static void vmpu_load_boxes(void)
@@ -248,12 +305,8 @@ static void vmpu_load_boxes(void)
     /* stack region grows from bss_start downwards */
     sp = UVISOR_ROUND32_DOWN(((uint32_t)__uvisor_config.bss_start) - UVISOR_STACK_BAND_SIZE);
 
-    /* read stack pointer from vector table */
-    g_svc_cx_curr_sp[0] = *((uint32_t**)0);
-    DPRINTF("box[0] stack pointer = 0x%08X\n", g_svc_cx_curr_sp[0]);
-
     /* enumerate and initialize boxes */
-    g_svc_cx_box_num = 1;
+    g_svc_cx_box_num = 0;
     for(box_cfgtbl = (const UvisorBoxConfig**) __uvisor_config.cfgtbl_start;
         box_cfgtbl < (const UvisorBoxConfig**) __uvisor_config.cfgtbl_end;
         box_cfgtbl++
@@ -289,39 +342,57 @@ static void vmpu_load_boxes(void)
         /* load box ACLs in table */
         DPRINTF("box[%i] ACL list:\n", box_id);
         region = (*box_cfgtbl)->acl_list;
-        count = (*box_cfgtbl)->acl_count;
-        for(i=0; i<count; i++)
+        if(region)
         {
-            /* ensure that ACL resides in flash */
-            if(!VMPU_FLASH_ADDR(region))
-                HALT_ERROR("box[i]:acl[i] must be in code section (@0x%08X)\n",
-                    g_svc_cx_box_num,
-                    i,
-                    *box_cfgtbl
+            count = (*box_cfgtbl)->acl_count;
+            for(i=0; i<count; i++)
+            {
+                /* ensure that ACL resides in flash */
+                if(!VMPU_FLASH_ADDR(region))
+                    HALT_ERROR("box[%i]:acl[%i] must be in code section (@0x%08X)\n",
+                        g_svc_cx_box_num,
+                        i,
+                        *box_cfgtbl
+                    );
+
+                vmpu_add_acl(
+                    box_id,
+                    region->start,
+                    region->length,
+                    region->acl
                 );
 
-            vmpu_add_acl(
-                box_id,
-                region->start,
-                region->length,
-                region->acl
-            );
-
-            /* proceed to next ACL */
-            region++;
+                /* proceed to next ACL */
+                region++;
+            }
         }
 
-        /* set stack pointer to box stack size minus guard band */
-        g_svc_cx_curr_sp[box_id] = (uint32_t*)sp;
-        /* determine stack extent */
-        sp_size = UVISOR_ROUND32_DOWN((*box_cfgtbl)->stack_size);
-        sp -= sp_size;
-        /* add stack ACL to list */
-        vmpu_add_acl(
+        /* update stack pointers */
+        if(!(*box_cfgtbl)->stack_size)
+            g_svc_cx_curr_sp[box_id] = box_id ? 0 : *((uint32_t**)0);
+        else
+        {
+            /* set stack pointer to box stack size minus guard band */
+            g_svc_cx_curr_sp[box_id] = (uint32_t*)sp;
+            /* determine stack extent */
+            sp_size = UVISOR_ROUND32_DOWN((*box_cfgtbl)->stack_size);
+            if(sp_size <= (UVISOR_STACK_BAND_SIZE+4))
+                HALT_ERROR("box[%i] stack too small (%i)\n",
+                    box_id,
+                    sp_size
+                );
+            sp -= sp_size;
+            /* add stack ACL to list */
+            vmpu_add_acl(
+                box_id,
+                (void*)(sp + UVISOR_STACK_BAND_SIZE),
+                sp_size - UVISOR_STACK_BAND_SIZE,
+                UVISOR_TACL_STACK
+            );
+        }
+        DPRINTF("box[%i] stack pointer = 0x%08X\n",
             box_id,
-            (void*)(sp + UVISOR_STACK_BAND_SIZE),
-            sp_size - UVISOR_STACK_BAND_SIZE,
-            UVISOR_TACL_STACK
+            g_svc_cx_curr_sp[box_id]
         );
     }
 

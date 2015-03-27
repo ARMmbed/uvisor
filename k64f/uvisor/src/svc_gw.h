@@ -44,10 +44,9 @@ static inline uint32_t svc_gw_get_dst_fn(TSecGw *svc_pc)
 
 static inline uint8_t svc_gw_get_dst_id(TSecGw *svc_pc)
 {
-    uint32_t box_id = (uint32_t) (svc_pc->cfg_ptr -
-                                  __uvisor_config.cfgtbl_start) + 1;
+    uint32_t box_id = svc_pc->cfg_ptr - __uvisor_config.cfgtbl_start;
 
-    if(box_id <= 0 || box_id > g_svc_cx_box_num)
+    if(box_id <= 0 || box_id >= g_svc_cx_box_num)
         HALT_ERROR("box_id out of range (%i)", box_id);
 
     return (uint8_t) (box_id & 0xFF);
