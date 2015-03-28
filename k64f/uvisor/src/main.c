@@ -16,7 +16,7 @@
 #include "unvic.h"
 #include "debug.h"
 
-UVISOR_NOINLINE void uvisor_init(void)
+UVISOR_NOINLINE void uvisor_init_pre(void)
 {
     /* reset uvisor BSS */
     memset(
@@ -32,25 +32,31 @@ UVISOR_NOINLINE void uvisor_init(void)
         VMPU_REGION_SIZE(&__data_start__, &__data_end__)
     );
 
-    /* vector table initialization */
-    unvic_init();
+    /* initialize debugging features */
+    DEBUG_INIT();
+}
 
-    /* init MPU */
-    vmpu_init();
+UVISOR_NOINLINE void uvisor_init_post(void)
+{
+        /* vector table initialization */
+        unvic_init();
 
-    /* init SVC call interface */
-    svc_init();
+        /* init MPU */
+        vmpu_init_post();
 
-    DPRINTF("uvisor initialized\n");
+        /* init SVC call interface */
+        svc_init();
+
+        DPRINTF("uvisor initialized\n");
 }
 
 void main_entry(void)
 {
-    /* initialize debugging features */
-    DEBUG_INIT();
+    /* initialize uvisor */
+    uvisor_init_pre();
 
     /* run basic sanity checks */
-    if(vmpu_sanity_checks() == 0)
+    if(vmpu_init_pre() == 0)
     {
         /* swap stack pointers*/
         __disable_irq();
@@ -58,8 +64,8 @@ void main_entry(void)
         __set_MSP(((uint32_t) &__stack_end__) - STACK_GUARD_BAND);
         __enable_irq();
 
-        /* initialize uvisor */
-        uvisor_init();
+        /* finish initialization */
+        uvisor_init_post();
 
         /* switch to unprivileged mode; this is possible as uvisor code is readable
          * by unprivileged code and only the key-value database is protected from

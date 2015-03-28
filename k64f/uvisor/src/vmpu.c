@@ -116,7 +116,7 @@ int vmpu_switch(uint8_t box)
     return -1;
 }
 
-int vmpu_sanity_checks(void)
+static int vmpu_sanity_checks(void)
 {
     /* verify uvisor config structure */
     if(__uvisor_config.magic != UVISOR_MAGIC)
@@ -195,7 +195,7 @@ int vmpu_sanity_checks(void)
         return 0;
 }
 
-static void vmpu_init_box_memories(void)
+int vmpu_init_pre(void)
 {
     DPRINTF("erasing BSS at 0x%08X (%u bytes)\n",
         __uvisor_config.bss_start,
@@ -221,6 +221,8 @@ static void vmpu_init_box_memories(void)
         __uvisor_config.data_src,
         VMPU_REGION_SIZE(__uvisor_config.data_start, __uvisor_config.data_end)
     );
+
+    return vmpu_sanity_checks();
 }
 
 static void vmpu_add_acl(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
@@ -423,7 +425,7 @@ static void vmpu_fixme(void)
     AIPS0->PACRG &= ~(1 << 2);  // PIT module  (PACRJ[ 3: 0])
 }
 
-void vmpu_init(void)
+void vmpu_init_post(void)
 {
     /* setup security "bluescreen" exceptions */
     ISR_SET(BusFault_IRQn,         &vmpu_fault_bus);
@@ -433,9 +435,6 @@ void vmpu_init(void)
 
     /* enable mem, bus and usage faults */
     SCB->SHCSR |= 0x70000;
-
-    /* always initialize protected box memories */
-    vmpu_init_box_memories();
 
     /* load boxes */
     vmpu_load_boxes();
