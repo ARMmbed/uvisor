@@ -18,8 +18,8 @@
 #define VMPU_FLASH_ADDR_MASK (~(((uint32_t)(FLASH_LENGTH)) - 1))
 #define VMPU_FLASH_ADDR(addr) ((VMPU_FLASH_ADDR_MASK & (uint32_t)(addr)) == (FLASH_ORIGIN & VMPU_FLASH_ADDR_MASK))
 
-extern int  vmpu_sanity_checks(void);
-extern void vmpu_init(void);
+extern int  vmpu_init_pre(void);
+extern void vmpu_init_post(void);
 
 extern int vmpu_acl_dev(UvisorBoxAcl acl, uint16_t device_id);
 extern int vmpu_acl_mem(UvisorBoxAcl acl, uint32_t addr, uint32_t size);
