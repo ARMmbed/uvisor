@@ -22,6 +22,9 @@ TIsrUVector g_unvic_vector[IRQ_VECTORS];
 /* isr_default_handler to unvic_default_handler */
 void isr_default_handler(void) UVISOR_LINKTO(unvic_default_handler);
 
+/* a backup copy of the MSP is needed during interrupt de-/re-privileging */
+static uint32_t *g_unvic_svc_msp;
+
 /* unprivileged default handler */
 void unvic_default_handler(void)
 {
@@ -158,10 +161,28 @@ void unvic_disable_irq(uint32_t irqn)
     NVIC_DisableIRQ(irqn);
 }
 
+void __attribute__((naked)) unvic_svc_cx_in_ret(void)
+{
+    asm volatile(
+        "orr lr, #0x1C\n"
+        "bx  lr\n"
+    );
+}
+
+void __attribute__((naked)) unvic_svc_cx_out_ret(void)
+{
+    asm volatile(
+        "orr lr, #0x10\n"
+        "bic lr, #0xC\n"
+        "bx  lr\n"
+    );
+}
+
 void unvic_svc_cx_in(uint32_t *svc_sp)
 {
     uint8_t   src_id,  dst_id;
     uint32_t *src_sp, *dst_sp;
+    uint32_t           dst_sp_align;
 
     /* this handler is always executed from privileged code */
     uint32_t *msp = svc_sp;
@@ -180,9 +201,6 @@ void unvic_svc_cx_in(uint32_t *svc_sp)
         /* gather information from current state */
         dst_sp = svc_cx_get_curr_sp(dst_id);
 
-        /* save the current state */
-        svc_cx_push_state(src_id, src_sp, dst_id);
-
         /* switch boxes */
         vmpu_switch(dst_id);
     }
@@ -191,8 +209,25 @@ void unvic_svc_cx_in(uint32_t *svc_sp)
         dst_sp = src_sp;
     }
 
-    /* create stack frame for de-privileging the interrupt */
-    dst_sp = svc_cx_depriv_sf(msp, dst_sp);
+    /* save the current state */
+    svc_cx_push_state(src_id, src_sp, dst_id);
+    /* FIXME nested unprivileged interrupts are not supported */
+    g_unvic_svc_msp = msp;
+
+    /* create unprivileged stack frame */
+    dst_sp_align = ((uint32_t) dst_sp & 0x4) ? 1 : 0;
+    dst_sp      -= (SVC_CX_EXC_SF_SIZE - dst_sp_align);
+
+    /* copy stack frame for de-privileging the interrupt:
+     *   - all registers are copied
+     *   - pending IRQs are cleared in iPSR
+     *   - store alignment for future unstacking */
+    memcpy((void *) dst_sp, (void *) msp,
+           sizeof(uint32_t) * 8);                  /* r0 - r3, r12, lr, xPSR */
+    dst_sp[7] &= ~0x1FF;                           /* IPSR - clear IRQn      */
+    dst_sp[7] |= dst_sp_align << 9;                /* xPSR - alignment       */
+
+    /* FIXME find a place for this */
     __set_PSP((uint32_t) dst_sp);
 
     /* enable non-base threading */
@@ -200,6 +235,7 @@ void unvic_svc_cx_in(uint32_t *svc_sp)
 
     /* de-privilege executionn */
     __set_CONTROL(__get_CONTROL() | 3);
+    unvic_svc_cx_in_ret();
 }
 
 void unvic_svc_cx_out(uint32_t *svc_sp)
@@ -216,18 +252,26 @@ void unvic_svc_cx_out(uint32_t *svc_sp)
     src_id = svc_cx_get_src_id();
     src_sp = svc_cx_get_src_sp();
 
-    /* switch stack frames back */
-    svc_cx_return_sf(src_sp, dst_sp);
+    /* copy return address of previous stack frame to the privileged one, which
+     * was kept idle after interrupt de-privileging */
+    /* FIXME nested unprivileged interrupts are not supported */
+    g_unvic_svc_msp[6] = dst_sp[6];
 
-    /* switch ACls */
-    vmpu_switch(src_id);
+    /* FIXME find a place for this */
     __set_PSP((uint32_t) src_sp);
+
+    if(src_id != dst_id)
+    {
+        /* switch ACls */
+        vmpu_switch(src_id);
+    }
 
     /* disable non-base threading */
     SCB->CCR &= ~1;
 
     /* re-privilege execution */
     __set_CONTROL(__get_CONTROL() & ~2);
+    unvic_svc_cx_out_ret();
 }
 
 void unvic_init(void)
