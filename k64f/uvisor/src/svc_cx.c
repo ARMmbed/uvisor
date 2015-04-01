@@ -82,11 +82,3 @@ void svc_cx_switch_out(uint32_t *svc_sp)
     vmpu_switch(src_id);
     __set_PSP((uint32_t) src_sp);
 }
-
-void svc_cx_isr_in(uint32_t *svc_sp)
-{
-}
-
-void svc_cx_isr_out(uint32_t *svc_sp)
-{
-}
