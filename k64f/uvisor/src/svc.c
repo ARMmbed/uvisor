@@ -93,7 +93,7 @@ static void __attribute__((naked)) __svc_irq(void)
         ".align 4\n"                        // the jump table must be aligned
     "jump_table_unpriv:\n"
         ".word  custom_table_unpriv\n"
-        ".word  svc_cx_isr_out\n"
+        ".word  unvic_svc_cx_out\n"
         ".word  svc_cx_switch_in\n"
         ".word  svc_cx_switch_out\n"
 
@@ -147,7 +147,7 @@ static void __attribute__((naked)) __svc_irq(void)
         ".align 4\n"                        // the jump table must be aligned
     "jump_table_priv:\n"
         ".word  custom_table_priv\n"
-        ".word  svc_cx_isr_in\n"
+        ".word  unvic_svc_cx_in\n"
 
     ".thumb_func\n"                            // needed for correct referencing
     "custom_table_priv:\n"
