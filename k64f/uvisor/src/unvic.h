@@ -14,6 +14,8 @@
 #ifndef __UNVIC_H__
 #define __UNVIC_H__
 
+#define UNVIC_MIN_PRIORITY (uint32_t) 1
+
 typedef struct {
     TIsrVector hdlr;
     uint8_t    id;
@@ -26,6 +28,9 @@ extern uint32_t unvic_get_isr(uint32_t irqn);
 
 extern void unvic_enable_irq(uint32_t irqn);
 extern void unvic_disable_irq(uint32_t irqn);
+
+extern void     unvic_set_priority(uint32_t irqn, uint32_t priority);
+extern uint32_t unvic_get_priority(uint32_t irqn);
 
 extern void unvic_init(void);
 
