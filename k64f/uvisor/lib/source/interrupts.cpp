@@ -62,3 +62,29 @@ void __uvisor_disable_irq(uint32_t irqn)
           [svc_id] "i" (UVISOR_SVC_ID_DISABLE_IRQ)
     );
 }
+
+void __uvisor_set_priority(uint32_t irqn, uint32_t priority)
+{
+    register uint32_t __r0 __asm__("r0") = irqn;
+    register uint32_t __r1 __asm__("r1") = priority;
+    __asm__ volatile(
+        "svc %[svc_id]\n"
+        :
+        : [r0]     "r" (__r0),
+          [r1]     "r" (__r1),
+          [svc_id] "i" (UVISOR_SVC_ID_SET_PRIORITY)
+    );
+}
+
+uint32_t __uvisor_get_priority(uint32_t irqn)
+{
+    register uint32_t __r0  __asm__("r0") = irqn;
+    register uint32_t __res __asm__("r0");
+    __asm__ volatile(
+        "svc %[svc_id]\n"
+        : [res]    "=r" (__res)
+        : [r0]     "r"  (__r0),
+          [svc_id] "i"  (UVISOR_SVC_ID_GET_PRIORITY)
+    );
+    return __res;
+}
