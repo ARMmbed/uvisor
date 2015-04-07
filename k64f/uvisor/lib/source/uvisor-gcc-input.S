@@ -75,4 +75,4 @@ __uvisor_mode:
 .section .uvisor.bss.main,"awM",@nobits
 __uvisor_reserved_start:
     .space USE_SRAM_SIZE
-  uvisor_reserved_end:
+__uvisor_reserved_end:
