@@ -34,6 +34,8 @@ __attribute__((section(".svc_vector"))) const void *g_svc_vtor_tbl[] = {
     unvic_get_isr,           // 2
     unvic_enable_irq,        // 4
     unvic_disable_irq,       // 5
+    unvic_set_priority,      // 6
+    unvic_get_priority,      // 7
 };
 
 /*******************************************************************************

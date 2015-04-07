@@ -169,6 +169,57 @@ void unvic_disable_irq(uint32_t irqn)
     NVIC_DisableIRQ(irqn);
 }
 
+void unvic_set_priority(uint32_t irqn, uint32_t priority)
+{
+    /* unprivileged code cannot set priorities for system interrupts */
+    if((int32_t) irqn < 0)
+    {
+        HALT_ERROR("access denied: IRQ %d is a system interrupt and is owned\
+                    by uVisor\n\r", irqn);
+    }
+    else
+    {
+        /* check IRQn */
+        if(irqn >= IRQ_VECTORS)
+        {
+            HALT_ERROR("IRQ %d out of range (%d to %d)\n\r",
+                        irqn, 0, IRQ_VECTORS);
+        }
+
+        /* check priority */
+        if(priority < UNVIC_MIN_PRIORITY)
+        {
+            HALT_ERROR("access denied: mimimum allowed priority is %d\n\r",
+                        UNVIC_MIN_PRIORITY);
+        }
+
+        /* set priority for device specific interrupts */
+        NVIC->IP[irqn] = ((priority << (8 - __NVIC_PRIO_BITS)) & 0xff);
+    }
+
+}
+
+uint32_t unvic_get_priority(uint32_t irqn)
+{
+    /* unprivileged code only see a default 0-priority for system interrupts */
+    if((int32_t) irqn < 0)
+    {
+        return 0;
+    }
+    else
+    {
+        /* check IRQn */
+        if(irqn >= IRQ_VECTORS)
+        {
+            HALT_ERROR("IRQ %d out of range (%d to %d)\n\r",
+                        irqn, 0, IRQ_VECTORS);
+        }
+
+        /* get priority for device specific interrupts  */
+        return (uint32_t) (NVIC->IP[irqn] >> (8 - __NVIC_PRIO_BITS));
+    }
+}
+
 void __attribute__((naked)) unvic_svc_cx_in_ret(void)
 {
     asm volatile(
