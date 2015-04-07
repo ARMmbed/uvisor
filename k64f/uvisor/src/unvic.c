@@ -23,6 +23,7 @@ TIsrUVector g_unvic_vector[IRQ_VECTORS];
 void isr_default_handler(void) UVISOR_LINKTO(unvic_default_handler);
 
 /* a backup copy of the MSP is needed during interrupt de-/re-privileging */
+/* FIXME currently only one level of priority is allowed */
 static uint32_t *g_unvic_svc_msp;
 
 /* unprivileged default handler */
@@ -66,30 +67,35 @@ void unvic_isr_mux(void)
 /* FIXME flag is currently not implemented */
 void unvic_set_isr(uint32_t irqn, uint32_t vector, uint32_t flag)
 {
+    uint32_t curr_id;
+
     /* check IRQn */
     if(irqn >= IRQ_VECTORS)
     {
         HALT_ERROR("IRQ %d out of range (%d to %d)\n\r", irqn, 0, IRQ_VECTORS);
     }
 
-    /* check if the IRQn is already registered */
-    if(ISR_GET(irqn) != (TIsrVector) &unvic_default_handler)
+    /* get current ID to check ownership of the IRQn slot */
+    curr_id = svc_cx_get_curr_id();
+
+    /* check if the same box that registered the ISR is modifying it */
+    if(ISR_GET(irqn) != (TIsrVector) &unvic_default_handler &&
+       svc_cx_get_curr_id() != g_unvic_vector[irqn].id)
     {
-        HALT_ERROR("IRQ %d already registered to box %d with vector 0x%08X\n\r",
-                   irqn, g_unvic_vector[irqn].id, g_unvic_vector[irqn].hdlr);
+        HALT_ERROR("access denied: IRQ %d is owned by box %d\n\r", irqn,
+                                               g_unvic_vector[irqn].id);
     }
 
     /* save unprivileged handler (unvic_default_handler if 0) */
     g_unvic_vector[irqn].hdlr = vector ? (TIsrVector) vector :
                                          &unvic_default_handler;
-    g_unvic_vector[irqn].id   = svc_cx_get_curr_id();
+    g_unvic_vector[irqn].id   = curr_id;
 
     /* set privileged handler to unprivleged mux */
     ISR_SET(irqn, &unvic_isr_mux);
 
-    /* set proper priority (SVC must always be higher) */
-    /* FIXME currently only one level of priority is allowed */
-    NVIC_SetPriority(irqn, 1);
+    /* set default priority (SVC must always be higher) */
+    NVIC_SetPriority(irqn, UNVIC_MIN_PRIORITY);
 
     DPRINTF("IRQ %d is now registered to box %d with vector 0x%08X\n\r",
              irqn, svc_cx_get_curr_id(), vector);
@@ -119,6 +125,7 @@ void unvic_enable_irq(uint32_t irqn)
         HALT_ERROR("IRQ %d out of range (%d to %d)\n\r", irqn, 0, IRQ_VECTORS);
     }
 
+    /* check if ISR has been set for this IRQn slot */
     if(ISR_GET(irqn) == (TIsrVector) &unvic_default_handler)
     {
         HALT_ERROR("no ISR set yet for IRQ %d\n\r", irqn);
@@ -144,6 +151,7 @@ void unvic_disable_irq(uint32_t irqn)
         HALT_ERROR("IRQ %d out of range (%d to %d)\n\r", irqn, 0, IRQ_VECTORS);
     }
 
+    /* check if ISR has been set for this IRQn slot */
     if(ISR_GET(irqn) == (TIsrVector) &unvic_default_handler)
     {
         HALT_ERROR("no ISR set yet for IRQ %d\n\r", irqn);
