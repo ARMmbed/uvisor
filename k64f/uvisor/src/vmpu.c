@@ -422,7 +422,7 @@ static void vmpu_fixme(void)
     AIPS0->PACRJ &= ~(1 << 26); // PORTA mux   (PACRJ[27:24])
     AIPS0->PACRJ &= ~(1 << 22); // PORTB mux   (PACRJ[23:20])
     AIPS0->PACRJ &= ~(1 << 18); // PORTC mux   (PACRJ[19:16])
-    AIPS0->PACRG &= ~(1 << 2);  // PIT module  (PACRJ[ 3: 0])
+    AIPS0->PACRG &= ~(1 << 2);  // PIT module  (PACRG[ 3: 0])
 }
 
 void vmpu_init_post(void)
