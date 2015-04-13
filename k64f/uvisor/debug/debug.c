@@ -55,29 +55,48 @@ void default_putc(uint8_t data)
 }
 #endif/*CHANNEL_DEBUG*/
 
-inline void debug_print_svc_cx_state(void)
+inline void debug_print_cx_state(int _indent)
 {
     int i;
 
-    dprintf("* SVC CONTEXT STATE\n\r");
+    /* generate indentation depending on nesting depth */
+    char _sp[SVC_CX_MAX_BOXES + 4];
+    for (i = 0; i < _indent; i++)
+    {
+        _sp[i]     = ' ';
+    }
+    _sp[i] = '\0';
+
+    /* print state stack */
     if (!g_svc_cx_state_ptr)
     {
-        dprintf("    No saved state\n\r");
+        dprintf("%sNo saved state\n\r", _sp);
     }
     else
     {
         for (i = 0; i < g_svc_cx_state_ptr; i++)
         {
-            dprintf("    State %d\n\r", i);
-            dprintf("      src_id %d\n\r",     g_svc_cx_state[i].src_id);
-            dprintf("      src_sp 0x%08X\n\r", g_svc_cx_state[i].src_sp);
+            dprintf("%sState %d\n\r",        _sp, i);
+            dprintf("%s  src_id %d\n\r",     _sp, g_svc_cx_state[i].src_id);
+            dprintf("%s  src_sp 0x%08X\n\r", _sp, g_svc_cx_state[i].src_sp);
         }
     }
-    dprintf("\n");
-    dprintf("* SVC CONTEXT STACK POINTERS\n\r");
+
+    /* print current stack pointers for all boxes */
+    dprintf("%s     ", _sp);
     for (i = 0; i < g_svc_cx_box_num; i++)
     {
-        dprintf("    Box %2d sp: 0x%08X\n\r", i, g_svc_cx_curr_sp[i]);
+        dprintf("------------ ");
+    }
+    dprintf("\n%sSP: |", _sp);
+    for (i = 0; i < g_svc_cx_box_num; i++)
+    {
+        dprintf(" 0x%08X |", g_svc_cx_curr_sp[i]);
+    }
+    dprintf("\n%s     ", _sp);
+    for (i = 0; i < g_svc_cx_box_num; i++)
+    {
+        dprintf("------------ ");
     }
     dprintf("\n");
 }
@@ -216,6 +235,36 @@ inline void debug_map_addr_to_periph(uint32_t address)
         dprintf("\n");
     }
 
+}
+
+inline void debug_cx_switch_in(void)
+{
+    int i;
+
+    /* indent debug messages linearly with the nesting depth */
+    dprintf("\n\r");
+    for(i = 0; i < g_svc_cx_state_ptr; i++)
+    {
+        dprintf("--");
+    }
+    dprintf("> Context switch in\n");
+    debug_print_cx_state(2 + (g_svc_cx_state_ptr << 1));
+    dprintf("\n\r");
+}
+
+inline void debug_cx_switch_out(void)
+{
+    int i;
+
+    /* indent debug messages linearly with the nesting depth */
+    dprintf("\n\r<--");
+    for(i = 0; i < g_svc_cx_state_ptr; i++)
+    {
+        dprintf("--");
+    }
+    dprintf(" Context switch out\n");
+    debug_print_cx_state(4 + (g_svc_cx_state_ptr << 1));
+    dprintf("\n\r");
 }
 
 inline void debug_fault_bus(uint32_t lr)
