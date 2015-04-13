@@ -31,6 +31,7 @@
 uint8_t g_buffer[DEBUG_MAX_BUFFER];
 int g_buffer_pos;
 
+#ifndef CHANNEL_DEBUG
 void default_putc(uint8_t data)
 {
     if(g_buffer_pos<(DEBUG_MAX_BUFFER-1))
@@ -52,6 +53,7 @@ void default_putc(uint8_t data)
         g_buffer_pos = 0;
     }
 }
+#endif/*CHANNEL_DEBUG*/
 
 inline void debug_print_mpu_config(void)
 {
