@@ -73,6 +73,7 @@ static void vmpu_fault_bus(void)
 
 static void vmpu_fault_usage(void)
 {
+    DEBUG_FAULT_USAGE();
     DPRINTF("Usage Fault\n\r");
     vmpu_fault(MPU_FAULT_USAGE);
 }
