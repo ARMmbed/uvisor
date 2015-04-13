@@ -16,13 +16,17 @@
 #include <uvisor.h>
 
 void debug_fault_bus(uint32_t lr);
+void debug_fault_usage(uint32_t lr);
 void debug_init(void);
 
 #ifdef  NDEBUG
-#define DEBUG_FAULT_BUS(...) {}
-#define DEBUG_INIT(...)      {}
+
+#define DEBUG_FAULT_BUS(...)          {}
+#define DEBUG_FAULT_USAGE(...)        {}
+#define DEBUG_INIT(...)               {}
 #else /*NDEBUG*/
-#define DEBUG_FAULT_BUS()    {\
+
+#define DEBUG_FAULT_BUS() {\
     /************************************************************************/\
     /* lr is used to check execution mode before exception                  */\
     /* NOTE: this only works if the function is executed before any branch  */\
@@ -32,7 +36,18 @@ void debug_init(void);
     debug_fault_bus(lr);                                                      \
 }
 
+#define DEBUG_FAULT_USAGE() {\
+    /************************************************************************/\
+    /* lr is used to check execution mode before exception                  */\
+    /* NOTE: this only works if the function is executed before any branch  */\
+    /*       instruction right after the exception                          */\
+    register uint32_t lr asm("lr");\
+    /************************************************************************/\
+    debug_fault_usage(lr);                                                    \
+}
+
 #define DEBUG_INIT debug_init
+
 #endif/*NDEBUG*/
 
 #endif/*__DEBUG_H__*/
