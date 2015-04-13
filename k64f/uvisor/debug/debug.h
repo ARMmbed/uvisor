@@ -17,12 +17,14 @@
 
 void debug_fault_bus(uint32_t lr);
 void debug_fault_usage(uint32_t lr);
+void debug_print_svc_cx_state(void);
 void debug_init(void);
 
 #ifdef  NDEBUG
 
 #define DEBUG_FAULT_BUS(...)          {}
 #define DEBUG_FAULT_USAGE(...)        {}
+#define DEBUG_PRINT_SVC_CX_STATE(...) {}
 #define DEBUG_INIT(...)               {}
 #else /*NDEBUG*/
 
@@ -45,6 +47,8 @@ void debug_init(void);
     /************************************************************************/\
     debug_fault_usage(lr);                                                    \
 }
+
+#define DEBUG_PRINT_SVC_CX_STATE debug_print_svc_cx_state
 
 #define DEBUG_INIT debug_init
 

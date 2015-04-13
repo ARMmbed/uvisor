@@ -55,6 +55,33 @@ void default_putc(uint8_t data)
 }
 #endif/*CHANNEL_DEBUG*/
 
+inline void debug_print_svc_cx_state(void)
+{
+    int i;
+
+    dprintf("* SVC CONTEXT STATE\n\r");
+    if (!g_svc_cx_state_ptr)
+    {
+        dprintf("    No saved state\n\r");
+    }
+    else
+    {
+        for (i = 0; i < g_svc_cx_state_ptr; i++)
+        {
+            dprintf("    State %d\n\r", i);
+            dprintf("      src_id %d\n\r",     g_svc_cx_state[i].src_id);
+            dprintf("      src_sp 0x%08X\n\r", g_svc_cx_state[i].src_sp);
+        }
+    }
+    dprintf("\n");
+    dprintf("* SVC CONTEXT STACK POINTERS\n\r");
+    for (i = 0; i < g_svc_cx_box_num; i++)
+    {
+        dprintf("    Box %2d sp: 0x%08X\n\r", i, g_svc_cx_curr_sp[i]);
+    }
+    dprintf("\n");
+}
+
 inline void debug_print_mpu_config(void)
 {
     int i, j;
