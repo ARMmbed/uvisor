@@ -15,6 +15,7 @@
 #include "halt.h"
 #include "unvic.h"
 #include "svc.h"
+#include "debug.h"
 
 /* unprivileged vector table */
 TIsrUVector g_unvic_vector[IRQ_VECTORS];
@@ -261,9 +262,6 @@ void __unvic_svc_cx_in(uint32_t *svc_sp)
         dst_sp = src_sp;
     }
 
-    /* save the current state */
-    svc_cx_push_state(src_id, src_sp, dst_id);
-
     /* create unprivileged stack frame */
     dst_sp_align = ((uint32_t) dst_sp & 0x4) ? 1 : 0;
     dst_sp      -= (SVC_CX_EXC_SF_SIZE - dst_sp_align);
@@ -276,6 +274,10 @@ void __unvic_svc_cx_in(uint32_t *svc_sp)
            sizeof(uint32_t) * 8);                  /* r0 - r3, r12, lr, xPSR */
     dst_sp[7] &= ~0x1FF;                           /* IPSR - clear IRQn      */
     dst_sp[7] |= dst_sp_align << 9;                /* xPSR - alignment       */
+
+    /* save the current state */
+    svc_cx_push_state(src_id, src_sp, dst_id, dst_sp);
+    DEBUG_PRINT_SVC_CX_STATE();
 
     /* enable non-base threading */
     SCB->CCR |= 1;
@@ -314,6 +316,7 @@ void __unvic_svc_cx_out(uint32_t *svc_sp, uint32_t *msp)
     svc_cx_pop_state(dst_id, dst_sp);
     src_id = svc_cx_get_src_id();
     src_sp = svc_cx_get_src_sp();
+    DEBUG_PRINT_SVC_CX_STATE();
 
     /* copy return address of previous stack frame to the privileged one, which
      * was kept idle after interrupt de-privileging */

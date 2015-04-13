@@ -57,7 +57,7 @@ static inline uint8_t svc_cx_get_curr_id(void)
 }
 
 static void inline svc_cx_push_state(uint8_t src_id, uint32_t *src_sp,
-                                     uint8_t dst_id)
+                                     uint8_t dst_id, uint32_t *dst_sp)
 {
     /* check state stack overflow */
     if(g_svc_cx_state_ptr == SVC_CX_MAX_DEPTH)
@@ -69,7 +69,15 @@ static void inline svc_cx_push_state(uint8_t src_id, uint32_t *src_sp,
     ++g_svc_cx_state_ptr;
 
     /* save curr stack pointer for the src box */
-    g_svc_cx_curr_sp[src_id] = src_sp;
+    if(src_id != dst_id)
+    {
+        g_svc_cx_curr_sp[src_id] = src_sp;
+    }
+    else
+    {
+        /* this only happens with interrupts */
+        g_svc_cx_curr_sp[src_id] = dst_sp;
+    }
 
     /* update current box id */
     g_svc_cx_curr_id = dst_id;

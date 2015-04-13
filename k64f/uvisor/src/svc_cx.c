@@ -13,6 +13,7 @@
 #include <uvisor.h>
 #include "svc.h"
 #include "vmpu.h"
+#include "debug.h"
 
 /* state variables */
 TBoxCx    g_svc_cx_state[SVC_CX_MAX_DEPTH];
@@ -68,7 +69,8 @@ void svc_cx_switch_in(uint32_t *svc_sp,  uint32_t svc_pc,
     dst_sp[7] = src_sp[7] | (dst_sp_align << 9);          /* xPSR - alignment */
 
     /* save the current state */
-    svc_cx_push_state(src_id, src_sp, dst_id);
+    svc_cx_push_state(src_id, src_sp, dst_id, dst_sp);
+    DEBUG_PRINT_SVC_CX_STATE();
 
     /* switch boxes */
     vmpu_switch(dst_id);
@@ -88,6 +90,7 @@ void svc_cx_switch_out(uint32_t *svc_sp)
     svc_cx_pop_state(dst_id, dst_sp);
     src_id = svc_cx_get_src_id();
     src_sp = svc_cx_get_src_sp();
+    DEBUG_PRINT_SVC_CX_STATE();
 
     /* copy return value from destination stack frame */
     src_sp[0] = dst_sp[0];
