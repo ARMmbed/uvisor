@@ -15,7 +15,6 @@
 #define __UNVIC_H__
 
 #define UNVIC_MIN_PRIORITY    (uint32_t) 1
-#define UNVIC_MAX_NEST_DEPTH  0x10
 
 typedef struct {
     TIsrVector hdlr;
