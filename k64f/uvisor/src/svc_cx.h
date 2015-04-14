@@ -100,29 +100,6 @@ static inline void svc_cx_pop_state(uint8_t dst_id, uint32_t *dst_sp)
     g_svc_cx_curr_id = svc_cx_get_src_id();
 }
 
-static inline uint32_t *svc_cx_validate_sf(uint32_t *sp)
-{
-    /* the box stack pointer is validated through direct access: if it has been
-     * tampered with access is proihibited by the uvisor and a fault occurs;
-     * the approach is applied to the whole stack frame:
-     *   from sp[0] to sp[7] if the stack is double word aligned
-     *   from sp[0] to sp[8] if the stack is not double word aligned */
-    uint32_t tmp = 0;
-    asm volatile(
-        "ldrt   %[tmp], [%[sp]]\n"                     /* test sp[0] */
-        "ldrt   %[tmp], [%[sp], %[exc_sf_size]]\n"     /* test sp[7] */
-        "tst    %[tmp], #0x4\n"                        /* test alignment */
-        "it     ne\n"
-        "ldrtne %[tmp], [%[sp], %[max_exc_sf_size]]\n" /* test sp[8] */
-        : [tmp]             "=r" (tmp)
-        : [sp]              "r"  ((uint32_t) sp),
-          [exc_sf_size]     "i"  ((uint32_t) (sizeof(uint32_t) *
-                                              (SVC_CX_EXC_SF_SIZE - 1))),
-          [max_exc_sf_size] "i"  ((uint32_t) (sizeof(uint32_t) *
-                                              (SVC_CX_EXC_SF_SIZE)))
-    );
+uint32_t *svc_cx_validate_sf(uint32_t *sp);
 
-    /* the initial stack pointer, if validated, is returned unchanged */
-    return sp;
-}
 #endif/*__SVC_CX_H__*/

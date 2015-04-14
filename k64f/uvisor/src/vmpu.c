@@ -80,6 +80,7 @@ static void vmpu_fault_usage(void)
 
 static void vmpu_fault_hard(void)
 {
+    DEBUG_FAULT_HARD();
     DPRINTF("Hard Fault\n\r");
     DPRINTF("HFSR : 0x%08X\n\r", SCB->HFSR);
     vmpu_fault(MPU_FAULT_HARD);
