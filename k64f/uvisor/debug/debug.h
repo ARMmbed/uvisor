@@ -17,6 +17,7 @@
 
 void debug_fault_bus(uint32_t lr);
 void debug_fault_usage(uint32_t lr);
+void debug_fault_hard(uint32_t lr);
 void debug_cx_switch_in(void);
 void debug_cx_switch_out(void);
 void debug_init(void);
@@ -25,6 +26,7 @@ void debug_init(void);
 
 #define DEBUG_FAULT_BUS(...)     {}
 #define DEBUG_FAULT_USAGE(...)   {}
+#define DEBUG_FAULT_HARD(...)    {}
 #define DEBUG_CX_SWITCH_IN(...)  {}
 #define DEBUG_CX_SWITCH_OUT(...) {}
 #define DEBUG_INIT(...)          {}
@@ -48,6 +50,16 @@ void debug_init(void);
     register uint32_t lr asm("lr");\
     /************************************************************************/\
     debug_fault_usage(lr);                                                    \
+}
+
+#define DEBUG_FAULT_HARD() {\
+    /************************************************************************/\
+    /* lr is used to check execution mode before exception                  */\
+    /* NOTE: this only works if the function is executed before any branch  */\
+    /*       instruction right after the exception                          */\
+    register uint32_t lr asm("lr");\
+    /************************************************************************/\
+    debug_fault_hard(lr);                                                     \
 }
 
 #define DEBUG_CX_SWITCH_IN  debug_cx_switch_in
