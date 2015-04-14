@@ -438,6 +438,11 @@ void vmpu_init_post(void)
     /* enable mem, bus and usage faults */
     SCB->SHCSR |= 0x70000;
 
+    /* enable non-base thread mode */
+    /* exceptions can now return to thread mode regardless their origin
+     * (supervisor or thread mode); the opposite is not true */
+    SCB->CCR |= 1;
+
     /* load boxes */
     vmpu_load_boxes();
 

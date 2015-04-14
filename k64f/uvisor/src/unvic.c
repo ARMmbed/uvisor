@@ -20,9 +20,6 @@
 /* unprivileged vector table */
 TIsrUVector g_unvic_vector[IRQ_VECTORS];
 
-/* level of nesting for IRQs */
-uint32_t g_unvic_nested;
-
 /* isr_default_handler to unvic_default_handler */
 void isr_default_handler(void) UVISOR_LINKTO(unvic_default_handler);
 
@@ -282,15 +279,6 @@ void __unvic_svc_cx_in(uint32_t *svc_sp)
     svc_cx_push_state(src_id, src_sp, dst_id, dst_sp);
     DEBUG_CX_SWITCH_IN();
 
-    /* keep track of nesting depth */
-    if(g_unvic_nested < UNVIC_MAX_NEST_DEPTH)
-    {
-        ++g_unvic_nested;
-    }
-
-    /* enable non-base threading */
-    SCB->CCR |= 1;
-
     /* de-privilege executionn */
     __set_PSP((uint32_t) dst_sp);
     __set_CONTROL(__get_CONTROL() | 3);
@@ -335,18 +323,6 @@ void __unvic_svc_cx_out(uint32_t *svc_sp, uint32_t *msp)
     {
         /* switch ACls */
         vmpu_switch(src_id);
-    }
-
-    /* keep track of nesting depth */
-    if(g_unvic_nested)
-    {
-        --g_unvic_nested;
-    }
-    else
-    {
-        /* disable non-base threading */
-        /* only done if all level of nesting depth have been resolved */
-        SCB->CCR &= ~1;
     }
 
     /* re-privilege execution */
