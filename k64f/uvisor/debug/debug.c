@@ -286,6 +286,14 @@ inline void debug_fault_usage(uint32_t lr)
     DEBUG_PRINT_END();
 }
 
+inline void debug_fault_hard(uint32_t lr)
+{
+    DEBUG_PRINT_HEAD("HARD FAULT");
+    debug_print_unpriv_exc_sf(lr);
+    debug_print_mpu_config();
+    DEBUG_PRINT_END();
+}
+
 inline void debug_init(void)
 {
     g_buffer_pos = 0;
