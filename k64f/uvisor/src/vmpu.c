@@ -73,12 +73,14 @@ static void vmpu_fault_bus(void)
 
 static void vmpu_fault_usage(void)
 {
+    DEBUG_FAULT_USAGE();
     DPRINTF("Usage Fault\n\r");
     vmpu_fault(MPU_FAULT_USAGE);
 }
 
 static void vmpu_fault_hard(void)
 {
+    DEBUG_FAULT_HARD();
     DPRINTF("Hard Fault\n\r");
     DPRINTF("HFSR : 0x%08X\n\r", SCB->HFSR);
     vmpu_fault(MPU_FAULT_HARD);
@@ -422,7 +424,7 @@ static void vmpu_fixme(void)
     AIPS0->PACRJ &= ~(1 << 26); // PORTA mux   (PACRJ[27:24])
     AIPS0->PACRJ &= ~(1 << 22); // PORTB mux   (PACRJ[23:20])
     AIPS0->PACRJ &= ~(1 << 18); // PORTC mux   (PACRJ[19:16])
-    AIPS0->PACRG &= ~(1 << 2);  // PIT module  (PACRJ[ 3: 0])
+    AIPS0->PACRG &= ~(1 << 2);  // PIT module  (PACRG[ 3: 0])
 }
 
 void vmpu_init_post(void)
@@ -435,6 +437,11 @@ void vmpu_init_post(void)
 
     /* enable mem, bus and usage faults */
     SCB->SHCSR |= 0x70000;
+
+    /* enable non-base thread mode */
+    /* exceptions can now return to thread mode regardless their origin
+     * (supervisor or thread mode); the opposite is not true */
+    SCB->CCR |= 1;
 
     /* load boxes */
     vmpu_load_boxes();

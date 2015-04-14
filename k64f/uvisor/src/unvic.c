@@ -15,6 +15,7 @@
 #include "halt.h"
 #include "unvic.h"
 #include "svc.h"
+#include "debug.h"
 
 /* unprivileged vector table */
 TIsrUVector g_unvic_vector[IRQ_VECTORS];
@@ -63,30 +64,35 @@ void unvic_isr_mux(void)
 /* FIXME flag is currently not implemented */
 void unvic_set_isr(uint32_t irqn, uint32_t vector, uint32_t flag)
 {
+    uint32_t curr_id;
+
     /* check IRQn */
     if(irqn >= IRQ_VECTORS)
     {
         HALT_ERROR("IRQ %d out of range (%d to %d)\n\r", irqn, 0, IRQ_VECTORS);
     }
 
-    /* check if the IRQn is already registered */
-    if(ISR_GET(irqn) != (TIsrVector) &unvic_default_handler)
+    /* get current ID to check ownership of the IRQn slot */
+    curr_id = svc_cx_get_curr_id();
+
+    /* check if the same box that registered the ISR is modifying it */
+    if(ISR_GET(irqn) != (TIsrVector) &unvic_default_handler &&
+       svc_cx_get_curr_id() != g_unvic_vector[irqn].id)
     {
-        HALT_ERROR("IRQ %d already registered to box %d with vector 0x%08X\n\r",
-                   irqn, g_unvic_vector[irqn].id, g_unvic_vector[irqn].hdlr);
+        HALT_ERROR("access denied: IRQ %d is owned by box %d\n\r", irqn,
+                                               g_unvic_vector[irqn].id);
     }
 
     /* save unprivileged handler (unvic_default_handler if 0) */
     g_unvic_vector[irqn].hdlr = vector ? (TIsrVector) vector :
                                          &unvic_default_handler;
-    g_unvic_vector[irqn].id   = svc_cx_get_curr_id();
+    g_unvic_vector[irqn].id   = curr_id;
 
     /* set privileged handler to unprivleged mux */
     ISR_SET(irqn, &unvic_isr_mux);
 
-    /* set proper priority (SVC must always be higher) */
-    /* FIXME currently only one level of priority is allowed */
-    NVIC_SetPriority(irqn, 1);
+    /* set default priority (SVC must always be higher) */
+    NVIC_SetPriority(irqn, UNVIC_MIN_PRIORITY);
 
     DPRINTF("IRQ %d is now registered to box %d with vector 0x%08X\n\r",
              irqn, svc_cx_get_curr_id(), vector);
@@ -116,6 +122,7 @@ void unvic_enable_irq(uint32_t irqn)
         HALT_ERROR("IRQ %d out of range (%d to %d)\n\r", irqn, 0, IRQ_VECTORS);
     }
 
+    /* check if ISR has been set for this IRQn slot */
     if(ISR_GET(irqn) == (TIsrVector) &unvic_default_handler)
     {
         HALT_ERROR("no ISR set yet for IRQ %d\n\r", irqn);
@@ -141,6 +148,7 @@ void unvic_disable_irq(uint32_t irqn)
         HALT_ERROR("IRQ %d out of range (%d to %d)\n\r", irqn, 0, IRQ_VECTORS);
     }
 
+    /* check if ISR has been set for this IRQn slot */
     if(ISR_GET(irqn) == (TIsrVector) &unvic_default_handler)
     {
         HALT_ERROR("no ISR set yet for IRQ %d\n\r", irqn);
@@ -158,10 +166,76 @@ void unvic_disable_irq(uint32_t irqn)
     NVIC_DisableIRQ(irqn);
 }
 
-void unvic_svc_cx_in(uint32_t *svc_sp)
+void unvic_set_priority(uint32_t irqn, uint32_t priority)
+{
+    /* unprivileged code cannot set priorities for system interrupts */
+    if((int32_t) irqn < 0)
+    {
+        HALT_ERROR("access denied: IRQ %d is a system interrupt and is owned\
+                    by uVisor\n\r", irqn);
+    }
+    else
+    {
+        /* check IRQn */
+        if(irqn >= IRQ_VECTORS)
+        {
+            HALT_ERROR("IRQ %d out of range (%d to %d)\n\r",
+                        irqn, 0, IRQ_VECTORS);
+        }
+
+        /* check priority */
+        if(priority < UNVIC_MIN_PRIORITY)
+        {
+            HALT_ERROR("access denied: mimimum allowed priority is %d\n\r",
+                        UNVIC_MIN_PRIORITY);
+        }
+
+        /* set priority for device specific interrupts */
+        NVIC->IP[irqn] = ((priority << (8 - __NVIC_PRIO_BITS)) & 0xff);
+    }
+
+}
+
+uint32_t unvic_get_priority(uint32_t irqn)
+{
+    /* unprivileged code only see a default 0-priority for system interrupts */
+    if((int32_t) irqn < 0)
+    {
+        return 0;
+    }
+    else
+    {
+        /* check IRQn */
+        if(irqn >= IRQ_VECTORS)
+        {
+            HALT_ERROR("IRQ %d out of range (%d to %d)\n\r",
+                        irqn, 0, IRQ_VECTORS);
+        }
+
+        /* get priority for device specific interrupts  */
+        return (uint32_t) (NVIC->IP[irqn] >> (8 - __NVIC_PRIO_BITS));
+    }
+}
+
+/* naked wrapper function needed to preserve LR */
+void UVISOR_NAKED unvic_svc_cx_in(uint32_t *svc_sp)
+{
+    asm volatile(
+        "mov  r0, %[svc_sp]\n"                 /* 1st arg: svc_sp            */
+        "push {lr}\n"                          /* save lr for later          */
+        "bl   __unvic_svc_cx_in\n"             /* execute handler and return */
+        "pop  {lr}\n"                          /* restore lr                 */
+        "orr  lr, #0x1C\n"                     /* return with PSP, 8 words   */
+        "bx   lr\n"
+        :: [svc_sp] "r" (svc_sp)
+    );
+}
+
+void __unvic_svc_cx_in(uint32_t *svc_sp)
 {
     uint8_t   src_id,  dst_id;
     uint32_t *src_sp, *dst_sp;
+    uint32_t           dst_sp_align;
 
     /* this handler is always executed from privileged code */
     uint32_t *msp = svc_sp;
@@ -180,9 +254,6 @@ void unvic_svc_cx_in(uint32_t *svc_sp)
         /* gather information from current state */
         dst_sp = svc_cx_get_curr_sp(dst_id);
 
-        /* save the current state */
-        svc_cx_push_state(src_id, src_sp, dst_id);
-
         /* switch boxes */
         vmpu_switch(dst_id);
     }
@@ -191,18 +262,45 @@ void unvic_svc_cx_in(uint32_t *svc_sp)
         dst_sp = src_sp;
     }
 
-    /* create stack frame for de-privileging the interrupt */
-    dst_sp = svc_cx_depriv_sf(msp, dst_sp);
-    __set_PSP((uint32_t) dst_sp);
+    /* create unprivileged stack frame */
+    dst_sp_align = ((uint32_t) dst_sp & 0x4) ? 1 : 0;
+    dst_sp      -= (SVC_CX_EXC_SF_SIZE - dst_sp_align);
 
-    /* enable non-base threading */
-    SCB->CCR |= 1;
+    /* copy stack frame for de-privileging the interrupt:
+     *   - all registers are copied
+     *   - pending IRQs are cleared in iPSR
+     *   - store alignment for future unstacking */
+    memcpy((void *) dst_sp, (void *) msp,
+           sizeof(uint32_t) * 8);                  /* r0 - r3, r12, lr, xPSR */
+    dst_sp[7] &= ~0x1FF;                           /* IPSR - clear IRQn      */
+    dst_sp[7] |= dst_sp_align << 9;                /* xPSR - alignment       */
+
+    /* save the current state */
+    svc_cx_push_state(src_id, src_sp, dst_id, dst_sp);
+    DEBUG_CX_SWITCH_IN();
 
     /* de-privilege executionn */
+    __set_PSP((uint32_t) dst_sp);
     __set_CONTROL(__get_CONTROL() | 3);
 }
 
-void unvic_svc_cx_out(uint32_t *svc_sp)
+/* naked wrapper function needed to preserve MSP and LR */
+void UVISOR_NAKED unvic_svc_cx_out(uint32_t *svc_sp)
+{
+    asm volatile(
+        "mov r0, %[svc_sp]\n"                  /* 1st arg; svc_sp            */
+        "mrs r1, MSP\n"                        /* 2nd arg: msp               */
+        "push {lr}\n"                          /* save lr for later          */
+        "bl __unvic_svc_cx_out\n"              /* execute handler and return */
+        "pop  {lr}\n"                          /* restore lr                 */
+        "orr lr, #0x10\n"                      /* return with MSP, 8 words   */
+        "bic lr, #0xC\n"
+        "bx  lr\n"
+        :: [svc_sp] "r" (svc_sp)
+    );
+}
+
+void __unvic_svc_cx_out(uint32_t *svc_sp, uint32_t *msp)
 {
     uint8_t   src_id,  dst_id;
     uint32_t *src_sp, *dst_sp;
@@ -215,18 +313,20 @@ void unvic_svc_cx_out(uint32_t *svc_sp)
     svc_cx_pop_state(dst_id, dst_sp);
     src_id = svc_cx_get_src_id();
     src_sp = svc_cx_get_src_sp();
+    DEBUG_CX_SWITCH_OUT();
 
-    /* switch stack frames back */
-    svc_cx_return_sf(src_sp, dst_sp);
+    /* copy return address of previous stack frame to the privileged one, which
+     * was kept idle after interrupt de-privileging */
+    msp[6] = dst_sp[6];
 
-    /* switch ACls */
-    vmpu_switch(src_id);
-    __set_PSP((uint32_t) src_sp);
-
-    /* disable non-base threading */
-    SCB->CCR &= ~1;
+    if(src_id != dst_id)
+    {
+        /* switch ACls */
+        vmpu_switch(src_id);
+    }
 
     /* re-privilege execution */
+    __set_PSP((uint32_t) src_sp);
     __set_CONTROL(__get_CONTROL() & ~2);
 }
 

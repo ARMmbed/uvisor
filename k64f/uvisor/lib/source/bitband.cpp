@@ -15,20 +15,20 @@
 
 void uvisor_write_bitband(uint32_t volatile *addr, uint32_t val)
 {
-	if (__uvisor_mode == 0)
-	{
-		*addr = val;
-	}
-	else
-	{
-		register uint32_t __r0 __asm__("r0") = (uint32_t) addr;
-		register uint32_t __r1 __asm__("r1") = (uint32_t) val;
-		__asm__ volatile(
-			"svc  %[svc_id]\n"
-			:
-			:          "r" (__r0),
-			           "r" (__r1),
-			  [svc_id] "i" (UVISOR_SVC_ID_WRITE_BITBAND)
-		);
-	}
+    if (__uvisor_mode == 0)
+    {
+        *addr = val;
+    }
+    else
+    {
+        register uint32_t __r0 __asm__("r0") = (uint32_t) addr;
+        register uint32_t __r1 __asm__("r1") = (uint32_t) val;
+        __asm__ volatile(
+            "svc  %[svc_id]\n"
+            :
+            :          "r" (__r0),
+                       "r" (__r1),
+              [svc_id] "i" (UVISOR_SVC_ID_WRITE_BITBAND)
+        );
+    }
 }

@@ -57,11 +57,11 @@ static inline uint8_t svc_cx_get_curr_id(void)
 }
 
 static void inline svc_cx_push_state(uint8_t src_id, uint32_t *src_sp,
-                                     uint8_t dst_id)
+                                     uint8_t dst_id, uint32_t *dst_sp)
 {
     /* check state stack overflow */
     if(g_svc_cx_state_ptr == SVC_CX_MAX_DEPTH)
-        HALT_ERROR("stack stack overflow");
+        HALT_ERROR("state stack overflow");
 
     /* push state */
     g_svc_cx_state[g_svc_cx_state_ptr].src_id = src_id;
@@ -69,7 +69,15 @@ static void inline svc_cx_push_state(uint8_t src_id, uint32_t *src_sp,
     ++g_svc_cx_state_ptr;
 
     /* save curr stack pointer for the src box */
-    g_svc_cx_curr_sp[src_id] = src_sp;
+    if(src_id != dst_id)
+    {
+        g_svc_cx_curr_sp[src_id] = src_sp;
+    }
+    else
+    {
+        /* this only happens with interrupts */
+        g_svc_cx_curr_sp[src_id] = dst_sp;
+    }
 
     /* update current box id */
     g_svc_cx_curr_id = dst_id;
@@ -79,7 +87,7 @@ static inline void svc_cx_pop_state(uint8_t dst_id, uint32_t *dst_sp)
 {
     /* check state stack underflow */
     if(!g_svc_cx_state_ptr)
-        HALT_ERROR("stack stack underflow");
+        HALT_ERROR("state stack underflow");
 
     /* pop state */
     --g_svc_cx_state_ptr;
@@ -92,82 +100,6 @@ static inline void svc_cx_pop_state(uint8_t dst_id, uint32_t *dst_sp)
     g_svc_cx_curr_id = svc_cx_get_src_id();
 }
 
-static inline uint32_t *svc_cx_validate_sf(uint32_t *sp)
-{
-    /* the box stack pointer is validated through direct access: if it has been
-     * tampered with access is proihibited by the uvisor and a fault occurs;
-     * the approach is applied to the whole stack frame:
-     *   from sp[0] to sp[7] if the stack is double word aligned
-     *   from sp[0] to sp[8] if the stack is not double word aligned */
-    uint32_t tmp = 0;
-    asm volatile(
-        "ldrt   %[tmp], [%[sp]]\n"                     /* test sp[0] */
-        "ldrt   %[tmp], [%[sp], %[exc_sf_size]]\n"     /* test sp[7] */
-        "tst    %[tmp], #0x4\n"                        /* test alignment */
-        "it     ne\n"
-        "ldrtne %[tmp], [%[sp], %[max_exc_sf_size]]\n" /* test sp[8] */
-        : [tmp]             "=r" (tmp)
-        : [sp]              "r"  ((uint32_t) sp),
-          [exc_sf_size]     "i"  ((uint32_t) (sizeof(uint32_t) *
-                                              (SVC_CX_EXC_SF_SIZE - 1))),
-          [max_exc_sf_size] "i"  ((uint32_t) (sizeof(uint32_t) *
-                                              (SVC_CX_EXC_SF_SIZE)))
-    );
+uint32_t *svc_cx_validate_sf(uint32_t *sp);
 
-    /* the initial stack pointer, if validated, is returned unchanged */
-    return sp;
-}
-
-static inline void svc_cx_tamper_sf(uint32_t *src_sp, uint32_t dst_fn)
-{
-    /* modify exception stack frame */
-    src_sp[5] = src_sp[6] | 1;                            /* lr               */
-    src_sp[6] = dst_fn;                                   /* return address   */
-}
-
-static inline uint32_t *svc_cx_switch_sf(uint32_t *src_sp, uint32_t *dst_sp,
-                                         uint32_t  lr,     uint32_t  dst_fn)
-{
-    uint32_t  dst_sf_align;
-    uint32_t *dst_sf;
-
-    /* create destination stack frame */
-    dst_sf_align = ((uint32_t) dst_sp & 0x4) ? 1 : 0;
-    dst_sf       = dst_sp - SVC_CX_EXC_SF_SIZE - dst_sf_align;
-
-    /* populate destination stack frame */
-    memcpy((void *) dst_sf, (void *) src_sp,
-           sizeof(uint32_t) * 4);                         /* r0 - r3          */
-    dst_sf[4] = 0;                                        /* r12              */
-    dst_sf[5] = lr;                                       /* lr               */
-    dst_sf[6] = dst_fn;                                   /* return address   */
-    dst_sf[7] = src_sp[7] | (dst_sf_align << 9);          /* xPSR - alignment */
-
-    return dst_sf;
-}
-
-static inline uint32_t *svc_cx_depriv_sf(uint32_t *msp, uint32_t *dst_sp)
-{
-    uint32_t  dst_sf_align;
-    uint32_t *dst_sf;
-
-    /* create destination stack frame */
-    dst_sf_align = ((uint32_t) dst_sp & 0x4) ? 1 : 0;
-    dst_sf       = dst_sp - SVC_CX_EXC_SF_SIZE - dst_sf_align;
-
-    /* populate destination stack frame */
-    memset((void *) dst_sf, 0, sizeof(uint32_t) * 5);    /* r0 - r3, r12      */
-    dst_sf[5]  = msp[5] | 0x1C;                          /* lr                */
-    dst_sf[6]  = msp[6];                                 /* return address    */
-    dst_sf[7]  = msp[7] & ~0xFF;                         /* IPSR - clear IRQn */
-    dst_sf[7] |= dst_sf_align << 9;                      /* xPSR - alignment  */
-
-    return dst_sf;
-}
-
-static inline void svc_cx_return_sf(uint32_t *src_sp, uint32_t *dst_sp)
-{
-    /* copy return value to source stack */
-    src_sp[0] = dst_sp[0];
-}
 #endif/*__SVC_CX_H__*/

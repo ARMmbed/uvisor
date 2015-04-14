@@ -31,6 +31,7 @@
 uint8_t g_buffer[DEBUG_MAX_BUFFER];
 int g_buffer_pos;
 
+#ifndef CHANNEL_DEBUG
 void default_putc(uint8_t data)
 {
     if(g_buffer_pos<(DEBUG_MAX_BUFFER-1))
@@ -51,6 +52,53 @@ void default_putc(uint8_t data)
         );
         g_buffer_pos = 0;
     }
+}
+#endif/*CHANNEL_DEBUG*/
+
+inline void debug_print_cx_state(int _indent)
+{
+    int i;
+
+    /* generate indentation depending on nesting depth */
+    char _sp[SVC_CX_MAX_BOXES + 4];
+    for (i = 0; i < _indent; i++)
+    {
+        _sp[i]     = ' ';
+    }
+    _sp[i] = '\0';
+
+    /* print state stack */
+    if (!g_svc_cx_state_ptr)
+    {
+        dprintf("%sNo saved state\n\r", _sp);
+    }
+    else
+    {
+        for (i = 0; i < g_svc_cx_state_ptr; i++)
+        {
+            dprintf("%sState %d\n\r",        _sp, i);
+            dprintf("%s  src_id %d\n\r",     _sp, g_svc_cx_state[i].src_id);
+            dprintf("%s  src_sp 0x%08X\n\r", _sp, g_svc_cx_state[i].src_sp);
+        }
+    }
+
+    /* print current stack pointers for all boxes */
+    dprintf("%s     ", _sp);
+    for (i = 0; i < g_svc_cx_box_num; i++)
+    {
+        dprintf("------------ ");
+    }
+    dprintf("\n%sSP: |", _sp);
+    for (i = 0; i < g_svc_cx_box_num; i++)
+    {
+        dprintf(" 0x%08X |", g_svc_cx_curr_sp[i]);
+    }
+    dprintf("\n%s     ", _sp);
+    for (i = 0; i < g_svc_cx_box_num; i++)
+    {
+        dprintf("------------ ");
+    }
+    dprintf("\n");
 }
 
 inline void debug_print_mpu_config(void)
@@ -189,6 +237,36 @@ inline void debug_map_addr_to_periph(uint32_t address)
 
 }
 
+inline void debug_cx_switch_in(void)
+{
+    int i;
+
+    /* indent debug messages linearly with the nesting depth */
+    dprintf("\n\r");
+    for(i = 0; i < g_svc_cx_state_ptr; i++)
+    {
+        dprintf("--");
+    }
+    dprintf("> Context switch in\n");
+    debug_print_cx_state(2 + (g_svc_cx_state_ptr << 1));
+    dprintf("\n\r");
+}
+
+inline void debug_cx_switch_out(void)
+{
+    int i;
+
+    /* indent debug messages linearly with the nesting depth */
+    dprintf("\n\r<--");
+    for(i = 0; i < g_svc_cx_state_ptr; i++)
+    {
+        dprintf("--");
+    }
+    dprintf(" Context switch out\n");
+    debug_print_cx_state(4 + (g_svc_cx_state_ptr << 1));
+    dprintf("\n\r");
+}
+
 inline void debug_fault_bus(uint32_t lr)
 {
     uint32_t addr = SCB->BFAR;
@@ -196,6 +274,22 @@ inline void debug_fault_bus(uint32_t lr)
     DEBUG_PRINT_HEAD("BUS FAULT");
     debug_print_unpriv_exc_sf(lr);
     debug_map_addr_to_periph(addr);
+    debug_print_mpu_config();
+    DEBUG_PRINT_END();
+}
+
+inline void debug_fault_usage(uint32_t lr)
+{
+    DEBUG_PRINT_HEAD("USAGE FAULT");
+    debug_print_unpriv_exc_sf(lr);
+    debug_print_mpu_config();
+    DEBUG_PRINT_END();
+}
+
+inline void debug_fault_hard(uint32_t lr)
+{
+    DEBUG_PRINT_HEAD("HARD FAULT");
+    debug_print_unpriv_exc_sf(lr);
     debug_print_mpu_config();
     DEBUG_PRINT_END();
 }
