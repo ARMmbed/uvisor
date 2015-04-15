@@ -15,13 +15,26 @@
 #include "vmpu.h"
 #include "unvic.h"
 
-#define SVC_HDLRS_MAX 0x3FUL
+#define SVC_HDLRS_MAX (1 << UVISOR_SVC_CUSTOM_BITS)
 #define SVC_HDLRS_NUM (UVISOR_ARRAY_COUNT(g_svc_vtor_tbl))
 #define SVC_HDLRS_IND (SVC_HDLRS_NUM - 1)
 
+/* these symbols are linked in this scope from the ASM code in __svc_irq and
+ * are needed for sanity checks */
+UVISOR_EXTERN const uint32_t jump_table_unpriv;
+UVISOR_EXTERN const uint32_t jump_table_unpriv_end;
+UVISOR_EXTERN const uint32_t jump_table_priv;
+UVISOR_EXTERN const uint32_t jump_table_priv_end;
+
+/* default function for not implemented handlers */
+void __svc_not_implemented(void)
+{
+    HALT_ERROR("function not implemented\n\r");
+}
+
 /* FIXME this function is temporary. Writes to an address should be checked
  *       against a box's ACLs */
-static void svc_bitband(uint32_t *addr, uint32_t val)
+static void svc_write_bitband(uint32_t *addr, uint32_t val)
 {
     DPRINTF("Executed privileged bitband access to 0x%08X\n\r", addr);
     *addr = val;
@@ -29,13 +42,13 @@ static void svc_bitband(uint32_t *addr, uint32_t val)
 
 /* SVC handlers */
 __attribute__((section(".svc_vector"))) const void *g_svc_vtor_tbl[] = {
-    svc_bitband,             // 0
+    svc_write_bitband,       // 0
     unvic_set_isr,           // 1
     unvic_get_isr,           // 2
-    unvic_enable_irq,        // 4
-    unvic_disable_irq,       // 5
-    unvic_set_priority,      // 6
-    unvic_get_priority,      // 7
+    unvic_enable_irq,        // 3
+    unvic_disable_irq,       // 4
+    unvic_set_priority,      // 5
+    unvic_get_priority,      // 6
 };
 
 /*******************************************************************************
@@ -76,12 +89,8 @@ static void UVISOR_NAKED __svc_irq(void)
         /***********************************************************************
          *  ATTENTION
          ***********************************************************************
-         * the special handlers
-         *   (b00 custom_table_unpriv)
-         *    b01 unvic_svc_cx_out
-         *    b10 svc_cx_switch_in
-         *    b11 svc_cx_switch_out
-         * are called here with 3 arguments:
+         * the handlers hardcoded in the jump table are called here with 3
+         * arguments:
          *    r0 - PSP
          *    r1 - pc of SVCall
          *    r2 - immediate value in SVC opcode
@@ -89,7 +98,7 @@ static void UVISOR_NAKED __svc_irq(void)
          * changing this code make sure the same format is used or changed
          * accordingly
          **********************************************************************/
-        "lsr    r3, r2, #6\n"               // mode bits
+        "lsr    r3, r2, %[mode_bits]\n"     // mode bits
         "adr    r12, jump_table_unpriv\n"   // address of jump table
         "ldr    pc, [r12, r3, lsl #2]\n"    // branch to handler
         ".align 4\n"                        // the jump table must be aligned
@@ -98,11 +107,24 @@ static void UVISOR_NAKED __svc_irq(void)
         ".word  unvic_svc_cx_out\n"
         ".word  svc_cx_switch_in\n"
         ".word  svc_cx_switch_out\n"
+        ".word  __svc_not_implemented\n"
+        ".word  __svc_not_implemented\n"
+        ".word  __svc_not_implemented\n"
+        ".word  __svc_not_implemented\n"
+        ".word  __svc_not_implemented\n"
+        ".word  __svc_not_implemented\n"
+        ".word  __svc_not_implemented\n"
+        ".word  __svc_not_implemented\n"
+        ".word  __svc_not_implemented\n"
+        ".word  __svc_not_implemented\n"
+        ".word  __svc_not_implemented\n"
+        ".word  __svc_not_implemented\n"
+    "jump_table_unpriv_end:\n"
 
     ".thumb_func\n"                            // needed for correct referencing
     "custom_table_unpriv:\n"
-        /* there is no need to mask the lower 6 bits of the SVC# because
-         * custom_table_unpriv is only when SVC# <= 0x3F */
+        /* there is no need to mask the lower 4 bits of the SVC# because
+         * custom_table_unpriv is only when SVC# <= 0x0F */
         "cmp    r2, %[svc_hdlrs_num]\n"     // check SVC table overflow
         "ite    ls\n"                       // note: this ITE order speeds it up
         "ldrls  r1, =g_svc_vtor_tbl\n"      // fetch handler from table
@@ -132,10 +154,8 @@ static void UVISOR_NAKED __svc_irq(void)
         /***********************************************************************
          *  ATTENTION
          ***********************************************************************
-         * the special handlers
-         *   (b00 custom_table_priv)
-         *    b01 unvic_svc_cx_in
-         * are called here with 3 arguments:
+         * the handlers hardcoded in the jump table are called here with 3
+         * arguments:
          *    r0 - MSP
          *    r1 - pc of SVCall
          *    r2 - immediate value in SVC opcode
@@ -143,18 +163,33 @@ static void UVISOR_NAKED __svc_irq(void)
          * changing this code make sure the same format is used or changed
          * accordingly
          **********************************************************************/
-        "lsr    r3, r2, #6\n"               // mode bits
+        "lsr    r3, r2, %[mode_bits]\n"     // mode bits
         "adr    r12, jump_table_priv\n"     // address of jump table
         "ldr    pc, [r12, r3, lsl #2]\n"    // branch to handler
         ".align 4\n"                        // the jump table must be aligned
     "jump_table_priv:\n"
         ".word  custom_table_priv\n"
         ".word  unvic_svc_cx_in\n"
+        ".word  __svc_not_implemented\n"
+        ".word  __svc_not_implemented\n"
+        ".word  __svc_not_implemented\n"
+        ".word  __svc_not_implemented\n"
+        ".word  __svc_not_implemented\n"
+        ".word  __svc_not_implemented\n"
+        ".word  __svc_not_implemented\n"
+        ".word  __svc_not_implemented\n"
+        ".word  __svc_not_implemented\n"
+        ".word  __svc_not_implemented\n"
+        ".word  __svc_not_implemented\n"
+        ".word  __svc_not_implemented\n"
+        ".word  __svc_not_implemented\n"
+        ".word  __svc_not_implemented\n"
+    "jump_table_priv_end:\n"
 
     ".thumb_func\n"                            // needed for correct referencing
     "custom_table_priv:\n"
-        /* there is no need to mask the lower 6 bits of the SVC# because
-         * custom_table_unpriv is only when SVC# <= 0x3F */
+        /* there is no need to mask the lower 4 bits of the SVC# because
+         * custom_table_unpriv is only when SVC# <= 0x0F */
         "cmp    r2, %[svc_hdlrs_num]\n"     // check SVC table overflow
         "ite    ls\n"                       // note: this ITE order speeds it up
         "ldrls  r1, =g_svc_vtor_tbl\n"      // fetch handler from table
@@ -171,7 +206,9 @@ static void UVISOR_NAKED __svc_irq(void)
     "svc_thunk_priv:\n"
         "str    r0, [sp, #4]\n"             // store result on stacked r0
         "pop    {pc}\n"                     // return from SVCall
-        :: [svc_hdlrs_num] "i" (SVC_HDLRS_IND)
+
+        :: [mode_bits]     "i" (UVISOR_SVC_CUSTOM_BITS),
+           [svc_hdlrs_num] "i" (SVC_HDLRS_IND)
     );
 }
 
@@ -187,5 +224,9 @@ void svc_init(void)
     ISR_SET(SVCall_IRQn, &__svc_irq);
 
     /* sanity checks */
+    assert((&jump_table_unpriv_end - &jump_table_unpriv) ==
+           (1 << UVISOR_SVC_FIXED_BITS));
+    assert((&jump_table_priv_end - &jump_table_priv) ==
+           (1 << UVISOR_SVC_FIXED_BITS));
     assert(SVC_HDLRS_NUM <= SVC_HDLRS_MAX);
 }

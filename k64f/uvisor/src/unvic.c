@@ -51,12 +51,12 @@ void unvic_isr_mux(void)
     /* handle IRQ with an unprivileged handler */
     DPRINTF("IRQ %d being served with vector 0x%08X\n\r", irqn, unvic_hdlr);
     asm volatile(
-        "svc  %[nonbasethrdena_in]\n"
+        "svc  %[unvic_in]\n"
         "blx  %[unvic_hdlr]\n"
-        "svc  %[nonbasethrdena_out]\n"
-        ::[nonbasethrdena_in]  "i" (SVC_MODE_PRIV_SVC_UNVIC_IN),
-          [nonbasethrdena_out] "i" (SVC_MODE_UNPRIV_SVC_UNVIC_OUT),
-          [unvic_hdlr]         "r" (unvic_hdlr)
+        "svc  %[unvic_out]\n"
+        ::[unvic_in]   "i" (UVISOR_SVC_ID_UNVIC_IN),
+          [unvic_out]  "i" (UVISOR_SVC_ID_UNVIC_OUT),
+          [unvic_hdlr] "r" (unvic_hdlr)
     );
 }
 
