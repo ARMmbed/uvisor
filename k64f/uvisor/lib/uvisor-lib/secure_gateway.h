@@ -22,15 +22,15 @@
         register uint32_t __r3  asm("r3") = a3;                                \
         register uint32_t __res asm("r0");                                     \
         asm volatile(                                                          \
-            "svc   %[svc_imm]\n"                                               \
+            "svc   %[svc_id]\n"                                                \
             "b.n   skip_args%=\n"                                              \
             ".word "UVISOR_TO_STRING(UVISOR_SVC_GW_MAGIC)"\n"                  \
             ".word "UVISOR_TO_STRING(dst_fn)"\n"                               \
             ".word "UVISOR_TO_STRING(dst_box)"_cfg_ptr\n"                      \
             "skip_args%=:\n"                                                   \
-            :           "=r" (__res)                                           \
-            : [svc_imm] "I"  (UVISOR_SVC_GW_OFFSET + 1),                       \
-                        "r"  (__r0), "r" (__r1), "r" (__r2), "r" (__r3)        \
+            :          "=r" (__res)                                            \
+            : [svc_id] "I"  (UVISOR_SVC_ID_SECURE_GATEWAY),                    \
+                       "r"  (__r0), "r" (__r1), "r" (__r2), "r" (__r3)         \
         );                                                                     \
         __res;                                                                 \
      })
