@@ -25,8 +25,8 @@ uint32_t  g_svc_cx_box_num;
 void __attribute__((naked)) svc_cx_thunk(void)
 {
     asm volatile(
-        "svc %[svc_imm]\n"
-        :: [svc_imm] "i" (SVC_MODE_UNPRIV_SVC_CX_OUT)
+        "svc %[svc_id]\n"
+        :: [svc_id] "i" (UVISOR_SVC_ID_CX_OUT)
     );
 }
 
@@ -54,7 +54,7 @@ uint32_t * UVISOR_NAKED svc_cx_validate_sf(uint32_t *sp)
 }
 
 void svc_cx_switch_in(uint32_t *svc_sp,  uint32_t svc_pc,
-                      uint8_t   svc_imm)
+                      uint8_t   svc_id)
 {
     uint8_t   src_id,  dst_id;
     uint32_t *src_sp, *dst_sp;

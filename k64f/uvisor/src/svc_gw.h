@@ -52,8 +52,8 @@ static inline uint8_t svc_gw_get_dst_id(TSecGw *svc_pc)
     return (uint8_t) (box_id & 0xFF);
 }
 
-static inline uint8_t svc_gw_oop_mode(uint8_t svc_imm)
+static inline uint8_t svc_gw_oop_mode(uint8_t svc_id)
 {
-    return svc_imm & SVC_GW_BOX_OOP_Msk;
+    return svc_id & SVC_GW_BOX_OOP_Msk;
 }
 #endif/*__SVC_GW_H__*/
