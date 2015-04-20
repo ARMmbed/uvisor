@@ -30,7 +30,7 @@ void __attribute__((naked)) svc_cx_thunk(void)
     );
 }
 
-uint32_t * UVISOR_NAKED svc_cx_validate_sf(uint32_t *sp)
+uint32_t *svc_cx_validate_sf(uint32_t *sp)
 {
     /* the box stack pointer is validated through direct access: if it has been
      * tampered with access is proihibited by the uvisor and a fault occurs;
@@ -38,19 +38,21 @@ uint32_t * UVISOR_NAKED svc_cx_validate_sf(uint32_t *sp)
      *   from sp[0] to sp[7] if the stack is double word aligned
      *   from sp[0] to sp[8] if the stack is not double word aligned */
     asm volatile(
-        "ldrt   r1, [r0]\n"                        /* test sp[0] */
-        "ldrt   r1, [r0, %[exc_sf_size]]\n"        /* test sp[7] */
-        "tst    r1, #0x4\n"                        /* test alignment */
+        "ldrt   r1, [%[sp]]\n"                        /* test sp[0] */
+        "ldrt   r1, [%[sp], %[exc_sf_size]]\n"        /* test sp[7] */
+        "tst    r1, #0x4\n"                           /* test alignment */
         "it     ne\n"
-        "ldrtne r1, [r0, %[max_exc_sf_size]]\n"    /* test sp[8] */
-        "bx     lr\n"
-        :: [exc_sf_size]     "i"  ((uint32_t) (sizeof(uint32_t) *
+        "ldrtne r1, [%[sp], %[max_exc_sf_size]]\n"    /* test sp[8] */
+        :: [sp]              "r"  (sp),
+           [exc_sf_size]     "i"  ((uint32_t) (sizeof(uint32_t) *
                                                (SVC_CX_EXC_SF_SIZE - 1))),
            [max_exc_sf_size] "i"  ((uint32_t) (sizeof(uint32_t) *
                                                (SVC_CX_EXC_SF_SIZE)))
+         : "r1"
     );
 
     /* the initial stack pointer, if validated, is returned unchanged */
+    return sp;
 }
 
 void svc_cx_switch_in(uint32_t *svc_sp,  uint32_t svc_pc,
