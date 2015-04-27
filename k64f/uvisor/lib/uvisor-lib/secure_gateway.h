@@ -13,14 +13,52 @@
 #ifndef __SECURE_GATEWAY_H__
 #define __SECURE_GATEWAY_H__
 
-/* FIXME the whole secure gateway will change */
-#define secure_gateway(dst_box, dst_fn, a0, a1, a2, a3)                        \
+/* this macro selects an overloaded macro (variable number of arguments) */
+#define SELECT_MACRO(_0, _1, _2, _3, _4, NAME, ...) NAME
+
+/* used to declare register values to hold the variable number of arguments */
+#define SELECT_ARGS(...)                                                       \
+     SELECT_MACRO(_0, ##__VA_ARGS__, SELECT_ARGS4,                             \
+                                     SELECT_ARGS3,                             \
+                                     SELECT_ARGS2,                             \
+                                     SELECT_ARGS1,                             \
+                                     SELECT_ARGS0)(__VA_ARGS__)                \
+
+#define SELECT_ARGS0()
+#define SELECT_ARGS1(a0)                                                       \
+        register uint32_t r0 asm("r0") = a0;
+#define SELECT_ARGS2(a0, a1)                                                   \
+        register uint32_t r0 asm("r0") = a0;                                   \
+        register uint32_t r1 asm("r1") = a1;
+#define SELECT_ARGS3(a0, a1, a2)                                               \
+        register uint32_t r0 asm("r0") = a0;                                   \
+        register uint32_t r1 asm("r1") = a1;                                   \
+        register uint32_t r2 asm("r2") = a2;
+#define SELECT_ARGS4(a0, a1, a2, a3)                                           \
+        register uint32_t r0 asm("r0") = a0;                                   \
+        register uint32_t r1 asm("r1") = a1;                                   \
+        register uint32_t r2 asm("r2") = a2;                                   \
+        register uint32_t r3 asm("r3") = a3;
+
+/* used to declare registers in the asm volatile to avoid compiler opt */
+#define SELECT_REGS(...) \
+     SELECT_MACRO(_0, ##__VA_ARGS__, SELECT_REGS4,                             \
+                                     SELECT_REGS3,                             \
+                                     SELECT_REGS2,                             \
+                                     SELECT_REGS1,                             \
+                                     SELECT_REGS0)(__VA_ARGS__)                \
+
+#define SELECT_REGS0()
+#define SELECT_REGS1(a0)             , "r" (r0)
+#define SELECT_REGS2(a0, a1)         , "r" (r0), "r" (r1)
+#define SELECT_REGS3(a0, a1, a2)     , "r" (r0), "r" (r1), "r" (r2)
+#define SELECT_REGS4(a0, a1, a2, a3) , "r" (r0), "r" (r1), "r" (r2), "r" (r3)
+
+/* the actual secure gateway */
+#define secure_gateway(dst_box, dst_fn, ...)                                   \
     ({                                                                         \
-        register uint32_t __r0  asm("r0") = a0;                                \
-        register uint32_t __r1  asm("r1") = a1;                                \
-        register uint32_t __r2  asm("r2") = a2;                                \
-        register uint32_t __r3  asm("r3") = a3;                                \
-        register uint32_t __res asm("r0");                                     \
+        SELECT_ARGS(__VA_ARGS__)                                               \
+        register uint32_t res asm("r0");                                       \
         asm volatile(                                                          \
             "svc   %[svc_id]\n"                                                \
             "b.n   skip_args%=\n"                                              \
@@ -28,11 +66,11 @@
             ".word "UVISOR_TO_STRING(dst_fn)"\n"                               \
             ".word "UVISOR_TO_STRING(dst_box)"_cfg_ptr\n"                      \
             "skip_args%=:\n"                                                   \
-            :          "=r" (__res)                                            \
-            : [svc_id] "I"  (UVISOR_SVC_ID_SECURE_GATEWAY),                    \
-                       "r"  (__r0), "r" (__r1), "r" (__r2), "r" (__r3)         \
+            :          "=r" (res)                                              \
+            : [svc_id] "I"  (UVISOR_SVC_ID_SECURE_GATEWAY)                     \
+                       SELECT_REGS(__VA_ARGS__)                                \
         );                                                                     \
-        __res;                                                                 \
+        res;                                                                   \
      })
 
 #endif/*__SECURE_GATEWAY_H__*/
