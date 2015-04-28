@@ -16,6 +16,10 @@
 /* this macro selects an overloaded macro (variable number of arguments) */
 #define SELECT_MACRO(_0, _1, _2, _3, _4, NAME, ...) NAME
 
+/* used to count macro arguments */
+#define NARGS(...)                                                             \
+     SELECT_MACRO(_0, ##__VA_ARGS__, 4, 3, 2, 1, 0)
+
 /* used to declare register values to hold the variable number of arguments */
 #define SELECT_ARGS(...)                                                       \
      SELECT_MACRO(_0, ##__VA_ARGS__, SELECT_ARGS4,                             \
@@ -67,7 +71,7 @@
             ".word "UVISOR_TO_STRING(dst_box)"_cfg_ptr\n"                      \
             "skip_args%=:\n"                                                   \
             :          "=r" (res)                                              \
-            : [svc_id] "I"  (UVISOR_SVC_ID_SECURE_GATEWAY)                     \
+            : [svc_id] "I"  (UVISOR_SVC_ID_SECURE_GATEWAY(NARGS(__VA_ARGS__))) \
                        SELECT_REGS(__VA_ARGS__)                                \
         );                                                                     \
         res;                                                                   \
