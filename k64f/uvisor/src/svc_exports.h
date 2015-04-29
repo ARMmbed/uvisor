@@ -15,13 +15,16 @@
 
 /* SVC takes a 8bit immediate, which is split as follows:
  *    bit 7 to bit UVISOR_SVC_CUSTOM_BITS: hardcoded table
- *    bit UVISOR_SVC_CUSTOM_BITS - 1 to bit 0: custom table */
+ *    bit UVISOR_SVC_CUSTOM_BITS - 1 to bit 0: custom table
+ * in addition, if the hardcoded table is used, the lower bits
+ *    bit UVISOR_SVC_CUSTOM_BITS - 1 to bit 0
+ * are used to pass the number of arguments of the SVC call (0 to 4) */
 #define UVISOR_SVC_CUSTOM_BITS     4
 #define UVISOR_SVC_FIXED_BITS      (8 - UVISOR_SVC_CUSTOM_BITS)
 #define UVISOR_SVC_CUSTOM_MSK      ((uint8_t) (0xFF >> UVISOR_SVC_FIXED_BITS))
 #define UVISOR_SVC_FIXED_MSK       ((uint8_t) ~UVISOR_SVC_CUSTOM_MSK)
 #define UVISOR_SVC_CUSTOM_TABLE(x) ((uint8_t)  (x) &  UVISOR_SVC_CUSTOM_MSK)
-#define UVISOR_SVC_FIXED_TABLE(x)  ((uint8_t) ((x) << UVISOR_SVC_CUSTOM_BITS) \
+#define UVISOR_SVC_FIXED_TABLE(x)  ((uint8_t) ((x) << UVISOR_SVC_CUSTOM_BITS)  \
                                                    &  UVISOR_SVC_FIXED_MSK)
 
 /* SVC immediate values for custom table */
@@ -42,6 +45,7 @@
 #define UVISOR_SVC_ID_UNVIC_IN       UVISOR_SVC_FIXED_TABLE(1)
 
 /* unprivileged code uses a secure gateway to switch context */
-#define UVISOR_SVC_ID_SECURE_GATEWAY UVISOR_SVC_ID_CX_IN
+#define UVISOR_SVC_ID_SECURE_GATEWAY(args)                                     \
+    ((UVISOR_SVC_ID_CX_IN) | (UVISOR_SVC_CUSTOM_TABLE(args)))
 
 #endif/*__SVC_EXPORTS_H__*/
