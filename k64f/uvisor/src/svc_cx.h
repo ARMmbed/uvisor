@@ -69,15 +69,7 @@ static void inline svc_cx_push_state(uint8_t src_id, uint32_t *src_sp,
     ++g_svc_cx_state_ptr;
 
     /* save curr stack pointer for the src box */
-    if(src_id != dst_id)
-    {
         g_svc_cx_curr_sp[src_id] = src_sp;
-    }
-    else
-    {
-        /* this only happens with interrupts */
-        g_svc_cx_curr_sp[src_id] = dst_sp;
-    }
 
     /* update current box id */
     g_svc_cx_curr_id = dst_id;
