@@ -217,10 +217,22 @@ void unvic_isr_mux(void)
 uint32_t UVISOR_NAKED unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
 {
     asm volatile(
+        "push {r4 - r11}\n"         /* store callee-saved regs on MSP (priv) */
         "push {lr}\n"               /* save lr for later */
         // r0 = svc_sp              /* 1st arg: SVC sp */
         // r1 = svc_pc              /* 1st arg: SVC pc */
         "bl   __unvic_svc_cx_in\n"  /* execute handler and return */
+        "cmp  r0, #0\n"             /* check return flag */
+        "beq  no_regs_clearing\n"
+        "mov  r4,  #0\n"            /* clear callee-saved regs on request */
+        "mov  r5,  #0\n"
+        "mov  r6,  #0\n"
+        "mov  r7,  #0\n"
+        "mov  r8,  #0\n"
+        "mov  r9,  #0\n"
+        "mov  r10, #0\n"
+        "mov  r11, #0\n"
+        "no_regs_clearing:\n"
         "pop  {lr}\n"               /* restore lr */
         "orr  lr, #0x1C\n"          /* return with PSP, 8 words */
         "bx   lr\n"
@@ -228,7 +240,7 @@ uint32_t UVISOR_NAKED unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
     );
 }
 
-void __unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
+uint32_t __unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
 {
     uint8_t   src_id,  dst_id;
     uint32_t *src_sp, *dst_sp;
@@ -286,6 +298,9 @@ void __unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
     /* de-privilege executionn */
     __set_PSP((uint32_t) dst_sp);
     __set_CONTROL(__get_CONTROL() | 3);
+
+    /* FIXME add support for privacy (triggers register clearing) */
+    return 0;
 }
 
 /* naked wrapper function needed to preserve MSP and LR */
@@ -294,9 +309,11 @@ void UVISOR_NAKED unvic_svc_cx_out(uint32_t *svc_sp)
     asm volatile(
         // r0 = svc_sp                  /* 1st arg: SVC sp */
         "mrs r1, MSP\n"                 /* 2nd arg: msp */
+        "add r1, #32\n"                 /* account for callee-saved registers */
         "push {lr}\n"                   /* save lr for later */
         "bl __unvic_svc_cx_out\n"       /* execute handler and return */
         "pop  {lr}\n"                   /* restore lr */
+        "pop  {r4-r11}\n"               /* restore callee-saved registers */
         "orr lr, #0x10\n"               /* return with MSP, 8 words */
         "bic lr, #0xC\n"
         "bx  lr\n"
