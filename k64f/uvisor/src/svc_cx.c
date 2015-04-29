@@ -55,8 +55,34 @@ uint32_t *svc_cx_validate_sf(uint32_t *sp)
     return sp;
 }
 
-void svc_cx_switch_in(uint32_t *svc_sp, uint32_t svc_pc,
-                      uint8_t   svc_id)
+uint32_t UVISOR_NAKED svc_cx_switch_in(uint32_t *svc_sp, uint32_t *svc_pc,
+                                       uint8_t   svc_id)
+{
+    asm volatile(
+        "push {r4 - r11}\n"         /* store callee-saved regs on MSP (priv) */
+        "push {lr}\n"
+        // r0 = svc_sp              /* 1st arg: SVC sp */
+        // r1 = svc_pc              /* 1st arg: SVC pc */
+        // r2 = svc_id              /* 1st arg: SVC number */
+        "bl   __svc_cx_switch_in\n" /* execute handler for context switch */
+        "cmp  r0, #0\n"             /* check return flag */
+        "beq  no_regs_clearing\n"
+        "mov  r4,  #0\n"            /* clear callee-saved regs on request */
+        "mov  r5,  #0\n"
+        "mov  r6,  #0\n"
+        "mov  r7,  #0\n"
+        "mov  r8,  #0\n"
+        "mov  r9,  #0\n"
+        "mov  r10, #0\n"
+        "mov  r11, #0\n"
+        "no_regs_clearing:\n"
+        "pop  {pc}\n"               /* callee-saved regs are not popped */
+        /* the destination function will be executed after this */
+    );
+}
+
+uint32_t __svc_cx_switch_in(uint32_t *svc_sp, uint32_t svc_pc,
+                            uint8_t   svc_id)
 {
     uint8_t   src_id,  dst_id;
     uint32_t *src_sp, *dst_sp;
@@ -103,9 +129,23 @@ void svc_cx_switch_in(uint32_t *svc_sp, uint32_t svc_pc,
     /* switch boxes */
     vmpu_switch(dst_id);
     __set_PSP((uint32_t) dst_sp);
+
+    /* FIXME add support for privacy (triggers register clearing) */
+    return 0;
 }
 
-void svc_cx_switch_out(uint32_t *svc_sp)
+void UVISOR_NAKED svc_cx_switch_out(uint32_t *svc_sp)
+{
+    asm volatile(
+        "push {lr}\n"
+        "bl  __svc_cx_switch_out\n"
+        "pop  {lr}\n"
+        "pop  {r4-r11}\n"
+        "bx   lr\n"
+    );
+}
+
+void __svc_cx_switch_out(uint32_t *svc_sp)
 {
     uint8_t   src_id,  dst_id;
     uint32_t *src_sp, *dst_sp;
