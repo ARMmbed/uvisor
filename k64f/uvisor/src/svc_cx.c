@@ -22,7 +22,7 @@ uint32_t *g_svc_cx_curr_sp[SVC_CX_MAX_BOXES];
 uint8_t   g_svc_cx_curr_id;
 uint32_t  g_svc_cx_box_num;
 
-void __attribute__((naked)) svc_cx_thunk(void)
+void UVISOR_NAKED svc_cx_thunk(void)
 {
     asm volatile(
         "svc %[svc_id]\n"
@@ -55,7 +55,7 @@ uint32_t *svc_cx_validate_sf(uint32_t *sp)
     return sp;
 }
 
-void svc_cx_switch_in(uint32_t *svc_sp,  uint32_t svc_pc,
+void svc_cx_switch_in(uint32_t *svc_sp, uint32_t svc_pc,
                       uint8_t   svc_id)
 {
     uint8_t   src_id,  dst_id;
@@ -94,7 +94,7 @@ void svc_cx_switch_in(uint32_t *svc_sp,  uint32_t svc_pc,
     dst_sp[7] = src_sp[7] | (dst_sp_align << 9);          /* xPSR - alignment */
 
     /* save the current state */
-    svc_cx_push_state(src_id, src_sp, dst_id, dst_sp);
+    svc_cx_push_state(src_id, src_sp, dst_id);
     DEBUG_CX_SWITCH_IN();
 
     /* switch boxes */

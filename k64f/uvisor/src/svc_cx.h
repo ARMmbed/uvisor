@@ -57,7 +57,7 @@ static inline uint8_t svc_cx_get_curr_id(void)
 }
 
 static void inline svc_cx_push_state(uint8_t src_id, uint32_t *src_sp,
-                                     uint8_t dst_id, uint32_t *dst_sp)
+                                     uint8_t dst_id)
 {
     /* check state stack overflow */
     if(g_svc_cx_state_ptr == SVC_CX_MAX_DEPTH)
