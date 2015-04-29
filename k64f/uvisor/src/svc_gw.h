@@ -18,7 +18,8 @@
 #include "svc_exports.h"
 #include "svc_gw_exports.h"
 
-#define UVISOR_SVC_GW_OPCODE (uint16_t) (0xDF00 + UVISOR_SVC_ID_SECURE_GATEWAY)
+#define UVISOR_SVC_GW_OPCODE (uint16_t) (0xDF00 +                              \
+                                         UVISOR_SVC_ID_SECURE_GATEWAY(0))
 
 typedef struct {
     uint16_t opcode;
@@ -33,7 +34,8 @@ static inline void svc_gw_check_magic(TSecGw *svc_pc)
     if(!VMPU_FLASH_ADDR(svc_pc))
         HALT_ERROR("secure gateway not in flash (0x%08X)", svc_pc);
 
-    if(svc_pc->opcode != UVISOR_SVC_GW_OPCODE)
+    if((svc_pc->opcode & ~((uint16_t) UVISOR_SVC_CUSTOM_MSK)) !=
+        UVISOR_SVC_GW_OPCODE)
         HALT_ERROR("secure gateway opcode invalid (0x%08X)\n", &svc_pc->opcode);
 
     if(svc_pc->magic != UVISOR_SVC_GW_MAGIC)
