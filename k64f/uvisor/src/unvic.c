@@ -29,37 +29,6 @@ void unvic_default_handler(void)
     HALT_ERROR("spurious IRQ (IPSR=%i)", (uint8_t)__get_IPSR());
 }
 
-/* ISR multiplexer to deprivilege execution of an interrupt routine */
-void unvic_isr_mux(void)
-{
-    TIsrVector unvic_hdlr;
-    uint32_t irqn;
-
-    /* ISR number */
-    irqn = (uint32_t)(uint8_t) __get_IPSR() - IRQn_OFFSET;
-    if(!NVIC_GetActive(irqn))
-    {
-        HALT_ERROR("unvic_isr_mux() executed with no active IRQ\n\r");
-    }
-
-    /* ISR vector */
-    if(!(unvic_hdlr = g_unvic_vector[irqn].hdlr))
-    {
-        HALT_ERROR("unprivileged handler for IRQ %d not found\n\r", irqn);
-    }
-
-    /* handle IRQ with an unprivileged handler */
-    DPRINTF("IRQ %d being served with vector 0x%08X\n\r", irqn, unvic_hdlr);
-    asm volatile(
-        "svc  %[unvic_in]\n"
-        "blx  %[unvic_hdlr]\n"
-        "svc  %[unvic_out]\n"
-        ::[unvic_in]   "i" (UVISOR_SVC_ID_UNVIC_IN),
-          [unvic_out]  "i" (UVISOR_SVC_ID_UNVIC_OUT),
-          [unvic_hdlr] "r" (unvic_hdlr)
-    );
-}
-
 /* FIXME check if allowed (ACL) */
 /* FIXME flag is currently not implemented */
 void unvic_set_isr(uint32_t irqn, uint32_t vector, uint32_t flag)
@@ -217,32 +186,63 @@ uint32_t unvic_get_priority(uint32_t irqn)
     }
 }
 
-/* naked wrapper function needed to preserve LR */
-void UVISOR_NAKED unvic_svc_cx_in(uint32_t *svc_sp)
+/* ISR multiplexer to deprivilege execution of an interrupt routine */
+void unvic_isr_mux(void)
 {
+    /* ISR number */
+    uint32_t irqn = (uint32_t)(uint8_t) __get_IPSR() - IRQn_OFFSET;
+    if(!NVIC_GetActive(irqn))
+    {
+        HALT_ERROR("unvic_isr_mux() executed with no active IRQ\n\r");
+    }
+
+    /* ISR vector */
+    if(!g_unvic_vector[irqn].hdlr)
+    {
+        HALT_ERROR("unprivileged handler for IRQ %d not found\n\r", irqn);
+    }
+
+    /* handle IRQ with an unprivileged handler */
+    DPRINTF("IRQ %d being served with vector 0x%08X\n\r", irqn,
+                                                          g_unvic_vector[irqn]);
     asm volatile(
-        "mov  r0, %[svc_sp]\n"                 /* 1st arg: svc_sp            */
-        "push {lr}\n"                          /* save lr for later          */
-        "bl   __unvic_svc_cx_in\n"             /* execute handler and return */
-        "pop  {lr}\n"                          /* restore lr                 */
-        "orr  lr, #0x1C\n"                     /* return with PSP, 8 words   */
-        "bx   lr\n"
-        :: [svc_sp] "r" (svc_sp)
+        "svc  %[unvic_in]\n"
+        "svc  %[unvic_out]\n"
+        ::[unvic_in]  "i" (UVISOR_SVC_ID_UNVIC_IN),
+          [unvic_out] "i" (UVISOR_SVC_ID_UNVIC_OUT)
     );
 }
 
-void __unvic_svc_cx_in(uint32_t *svc_sp)
+/* naked wrapper function needed to preserve LR */
+uint32_t UVISOR_NAKED unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
+{
+    asm volatile(
+        "push {lr}\n"               /* save lr for later */
+        // r0 = svc_sp              /* 1st arg: SVC sp */
+        // r1 = svc_pc              /* 1st arg: SVC pc */
+        "bl   __unvic_svc_cx_in\n"  /* execute handler and return */
+        "pop  {lr}\n"               /* restore lr */
+        "orr  lr, #0x1C\n"          /* return with PSP, 8 words */
+        "bx   lr\n"
+        /* the unprivileged interrupt handler will be executed after this */
+    );
+}
+
+void __unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
 {
     uint8_t   src_id,  dst_id;
     uint32_t *src_sp, *dst_sp;
+    uint32_t           dst_fn;
     uint32_t           dst_sp_align;
 
     /* this handler is always executed from privileged code */
     uint32_t *msp = svc_sp;
 
     /* gather information from IRQn */
-    uint32_t irqn = (uint32_t)(uint8_t) __get_IPSR();
+    uint32_t ipsr = msp[7];
+    uint32_t irqn = (ipsr & 0x1FF) - IRQn_OFFSET;
     dst_id = g_unvic_vector[irqn].id;
+    dst_fn = (uint32_t) g_unvic_vector[irqn].hdlr;
 
     /* gather information from current state */
     src_id = svc_cx_get_curr_id();
@@ -266,17 +266,21 @@ void __unvic_svc_cx_in(uint32_t *svc_sp)
     dst_sp_align = ((uint32_t) dst_sp & 0x4) ? 1 : 0;
     dst_sp      -= (SVC_CX_EXC_SF_SIZE - dst_sp_align);
 
-    /* copy stack frame for de-privileging the interrupt:
-     *   - all registers are copied
+    /* create stack frame for de-privileging the interrupt:
+     *   - all general purpose registers are ignored
+     *   - lr is the next SVCall
+     *   - the return address is the unprivileged handler
+     *   - xPSR is copied from the MSP
      *   - pending IRQs are cleared in iPSR
      *   - store alignment for future unstacking */
-    memcpy((void *) dst_sp, (void *) msp,
-           sizeof(uint32_t) * 8);                  /* r0 - r3, r12, lr, xPSR */
-    dst_sp[7] &= ~0x1FF;                           /* IPSR - clear IRQn      */
-    dst_sp[7] |= dst_sp_align << 9;                /* xPSR - alignment       */
+    dst_sp[5] = ((uint32_t) svc_pc + 2) | 1;             /* lr */
+    dst_sp[6] = dst_fn;                                  /* return address */
+    dst_sp[7] &= ipsr;                                   /* xPSR */
+    dst_sp[7] &= ~0x1FF;                                 /* IPSR - clear IRQn */
+    dst_sp[7] |= dst_sp_align << 9;                      /* xPSR - alignment */
 
     /* save the current state */
-    svc_cx_push_state(src_id, src_sp, dst_id, dst_sp);
+    svc_cx_push_state(src_id, src_sp, dst_id);
     DEBUG_CX_SWITCH_IN();
 
     /* de-privilege executionn */
@@ -288,15 +292,14 @@ void __unvic_svc_cx_in(uint32_t *svc_sp)
 void UVISOR_NAKED unvic_svc_cx_out(uint32_t *svc_sp)
 {
     asm volatile(
-        "mov r0, %[svc_sp]\n"                  /* 1st arg; svc_sp            */
-        "mrs r1, MSP\n"                        /* 2nd arg: msp               */
-        "push {lr}\n"                          /* save lr for later          */
-        "bl __unvic_svc_cx_out\n"              /* execute handler and return */
-        "pop  {lr}\n"                          /* restore lr                 */
-        "orr lr, #0x10\n"                      /* return with MSP, 8 words   */
+        // r0 = svc_sp                  /* 1st arg: SVC sp */
+        "mrs r1, MSP\n"                 /* 2nd arg: msp */
+        "push {lr}\n"                   /* save lr for later */
+        "bl __unvic_svc_cx_out\n"       /* execute handler and return */
+        "pop  {lr}\n"                   /* restore lr */
+        "orr lr, #0x10\n"               /* return with MSP, 8 words */
         "bic lr, #0xC\n"
         "bx  lr\n"
-        :: [svc_sp] "r" (svc_sp)
     );
 }
 
@@ -306,8 +309,8 @@ void __unvic_svc_cx_out(uint32_t *svc_sp, uint32_t *msp)
     uint32_t *src_sp, *dst_sp;
 
     /* gather information from current state */
-    dst_sp = svc_cx_validate_sf(svc_sp);
     dst_id = svc_cx_get_curr_id();
+    dst_sp = svc_cx_validate_sf(svc_sp);
 
     /* gather information from previous state */
     svc_cx_pop_state(dst_id, dst_sp);

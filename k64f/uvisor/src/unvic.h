@@ -34,4 +34,6 @@ extern uint32_t unvic_get_priority(uint32_t irqn);
 
 extern void unvic_init(void);
 
+void unvic_isr_mux(void);
+
 #endif/*__UNVIC_H__*/
