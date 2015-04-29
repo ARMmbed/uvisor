@@ -63,6 +63,9 @@ void svc_cx_switch_in(uint32_t *svc_sp, uint32_t svc_pc,
     uint32_t           dst_fn;
     uint32_t           dst_sp_align;
 
+    /* number of arguments to pass to the target function */
+    uint32_t args = (uint32_t) (svc_id & UVISOR_SVC_CUSTOM_MSK);
+
     /* gather information from secure gateway */
     svc_gw_check_magic((TSecGw *) svc_pc);
     dst_fn = svc_gw_get_dst_fn((TSecGw *) svc_pc);
@@ -87,7 +90,7 @@ void svc_cx_switch_in(uint32_t *svc_sp, uint32_t svc_pc,
      *   - lr is the thunk function to close the secure gateway
      *   - return address is the destination function */
     memcpy((void *) dst_sp, (void *) src_sp,
-           sizeof(uint32_t) * 4);                         /* r0 - r3          */
+           sizeof(uint32_t) * args);                      /* r0 - r3          */
     dst_sp[4] = 0;                                        /* r12              */
     dst_sp[5] = (uint32_t) svc_cx_thunk;                  /* lr               */
     dst_sp[6] = dst_fn;                                   /* return address   */
