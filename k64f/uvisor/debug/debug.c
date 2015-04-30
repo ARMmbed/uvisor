@@ -60,7 +60,8 @@ inline void debug_print_cx_state(int _indent)
     int i;
 
     /* generate indentation depending on nesting depth */
-    char _sp[SVC_CX_MAX_BOXES + 4];
+    char _sp[UVISOR_MAX_BOXES + 4];
+
     for (i = 0; i < _indent; i++)
     {
         _sp[i]     = ' ';

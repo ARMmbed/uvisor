@@ -10,11 +10,9 @@
  *  by a licensing agreement from ARM Limited.
  *
  ***************************************************************/
-#ifndef  __UVISOR_CONFIG_H__
+#ifndef __VMPU_AIPS_H__
+#define __VMPU_AIPS_H__
 
-#define UVISOR_MAGIC      0x2FE539A6
-#define UVISOR_FLASH_SIZE 0x6000
-#define UVISOR_SRAM_SIZE  0x2000
-#define UVISOR_MAX_BOXES  4U
+extern int vmpu_add_aips(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl);
 
-#endif /*__UVISOR_CONFIG_H__*/
+#endif/*__VMPU_APIS_H__*/
