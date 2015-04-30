@@ -12,13 +12,11 @@
  ***************************************************************/
 #include <uvisor.h>
 #include "vmpu.h"
+#include "vmpu_aips.h"
 #include "svc.h"
 #include "halt.h"
 #include "memory_map.h"
 #include "debug.h"
-
-#define AIPSx_SLOT_SIZE 0x1000UL
-#define AIPSx_SLOT_MAX 0xFE
 
 #ifndef MPU_MAX_PRIVATE_FUNCTIONS
 #define MPU_MAX_PRIVATE_FUNCTIONS 16
@@ -229,10 +227,6 @@ int vmpu_init_pre(void)
 
 static void vmpu_add_acl(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 {
-    int slot_count;
-    uint8_t aips_slot;
-    uint32_t base;
-
 #ifndef NDEBUG
     const MemMap *map;
 #endif/*NDEBUG*/
@@ -247,34 +241,8 @@ static void vmpu_add_acl(uint8_t box_id, void* start, uint32_t size, UvisorBoxAc
         ((map = memory_map_name((uint32_t)start))!=NULL) ? map->name : "unknown"
     );
 
-    if(    (((uint32_t)start)>=AIPS0_BASE) &&
-        (((uint32_t)start)<(AIPS0_BASE+(0xFEUL*(AIPSx_SLOT_SIZE)))) )
-    {
-        aips_slot = (uint8_t)(((uint32_t)start) >> 12);
-        if(aips_slot > AIPSx_SLOT_MAX)
-            HALT_ERROR("AIPS slot out of range (0xFF)");
-
-        /* calculate resulting APIS slot and base */
-        base = AIPS0_BASE | (((uint32_t)(aips_slot)) << 12);
-        DPRINTF("\t\tAPIS slot[%02i] for base 0x%08X\n",
-            aips_slot, base);
-
-        /* check if ACL base is equal to slot base */
-        if(base != (uint32_t)start)
-            HALT_ERROR("AIPS base (0x%08X) != ACL base (0x%08X)", base, start);
-
-        /* calculate slot count */
-        slot_count = (uint8_t)((base+size) >> 12);
-        if(slot_count>AIPSx_SLOT_MAX)
-            HALT_ERROR("AIPS slot size out of range (%i slots)", slot_count);
-        slot_count -= aips_slot;
-
-        /* ensure that ACL size can be rounded up to slot size */
-        if(((size % AIPSx_SLOT_SIZE) != 0) && ((acl & UVISOR_TACL_SIZE_ROUND_UP)==0))
-            HALT_ERROR("Use UVISOR_TACL_SIZE_ROUND_UP to round ACL size to AIPS slot size");
-
+    if(vmpu_add_aips(box_id, start, size, acl))
         return;
-    }
 
     if(    (((uint32_t*)start)>=__uvisor_config.secure_start) &&
         ((((uint32_t)start)+size)<=(uint32_t)__uvisor_config.secure_end) )
@@ -340,7 +308,7 @@ static void vmpu_load_boxes(void)
             );
 
         /* increment box counter */
-        if((box_id = g_svc_cx_box_num++)>=SVC_CX_MAX_BOXES)
+        if((box_id = g_svc_cx_box_num++)>=UVISOR_MAX_BOXES)
             HALT_ERROR("box number overflow\n");
 
         /* load box ACLs in table */

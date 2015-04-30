@@ -21,6 +21,7 @@ APP_SRC:=\
 	src/svc.c \
 	src/svc_cx.c \
 	src/vmpu.c \
+	src/vmpu_aips.c \
 	src/main.c \
 	debug/debug.c \
 	debug/memory_map.c \
