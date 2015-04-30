@@ -18,8 +18,9 @@
 #define UVISOR_TACL_EXECUTE         0x0004
 #define UVISOR_TACL_STACK           0x0008
 #define UVISOR_TACL_SIZE_ROUND_UP   0x0010
-#define UVISOR_TACL_PERIPHERAL      0x0020
 #define UVISOR_TACL_SIZE_ROUND_DOWN 0x0020
+#define UVISOR_TACL_PERIPHERAL      0x0040
+#define UVISOR_TACL_SHARED          0x0080
 
 #define UVISOR_TACLDEF_SECURE_BSS   (UVISOR_TACL_READ           |\
                                      UVISOR_TACL_WRITE          |\

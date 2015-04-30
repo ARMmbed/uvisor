@@ -18,7 +18,7 @@
 /* state variables */
 TBoxCx    g_svc_cx_state[SVC_CX_MAX_DEPTH];
 int       g_svc_cx_state_ptr;
-uint32_t *g_svc_cx_curr_sp[SVC_CX_MAX_BOXES];
+uint32_t *g_svc_cx_curr_sp[UVISOR_MAX_BOXES];
 uint8_t   g_svc_cx_curr_id;
 uint32_t  g_svc_cx_box_num;
 
