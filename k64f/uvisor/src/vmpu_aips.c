@@ -71,15 +71,21 @@ int vmpu_add_aips(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 
     i = aips_slot / 32;
     t = 1 << ( aips_slot % 32);
-    if( (g_aipsx_exc[i] & t) && ((acl & UVISOR_TACL_SHARED) == 0) )
+    if( (g_aipsx_exc[i] & t) ||
+        ((g_aipsx_all[i] & t) && ((acl & UVISOR_TACL_SHARED) == 0)) )
     {
         DPRINTF("AIPS slot %i already in use - redeclared at box %i",
             aips_slot, box_id);
         return 6;
     }
 
+    /* ensure we have a list of all peripherals */
     g_aipsx_all[i] |= t;
+    /* remember box-specific peripherals */
     g_aipsx_box[box_id][i] |= t;
+    /* remember exclusive peripherals */
+    if( (acl & UVISOR_TACL_SHARED) == 0 )
+        g_aipsx_exc[i] |= t;
 
     return 0;
 }
