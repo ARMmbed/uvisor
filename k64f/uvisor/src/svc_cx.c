@@ -55,8 +55,8 @@ uint32_t *svc_cx_validate_sf(uint32_t *sp)
     return sp;
 }
 
-uint32_t UVISOR_NAKED svc_cx_switch_in(uint32_t *svc_sp, uint32_t *svc_pc,
-                                       uint8_t   svc_id)
+void UVISOR_NAKED svc_cx_switch_in(uint32_t *svc_sp, uint32_t *svc_pc,
+                                   uint8_t   svc_id)
 {
     asm volatile(
         "push {r4 - r11}\n"         /* store callee-saved regs on MSP (priv) */
@@ -78,6 +78,7 @@ uint32_t UVISOR_NAKED svc_cx_switch_in(uint32_t *svc_sp, uint32_t *svc_pc,
         "no_regs_clearing:\n"
         "pop  {pc}\n"               /* callee-saved regs are not popped */
         /* the destination function will be executed after this */
+        :: "r" (svc_sp), "r" (svc_pc), "r" (svc_id)
     );
 }
 
@@ -142,6 +143,7 @@ void UVISOR_NAKED svc_cx_switch_out(uint32_t *svc_sp)
         "pop  {lr}\n"
         "pop  {r4-r11}\n"
         "bx   lr\n"
+        :: "r" (svc_sp)
     );
 }
 
