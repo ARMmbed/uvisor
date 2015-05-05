@@ -214,7 +214,7 @@ void unvic_isr_mux(void)
 }
 
 /* naked wrapper function needed to preserve LR */
-uint32_t UVISOR_NAKED unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
+void UVISOR_NAKED unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
 {
     asm volatile(
         "push {r4 - r11}\n"         /* store callee-saved regs on MSP (priv) */
@@ -237,6 +237,7 @@ uint32_t UVISOR_NAKED unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
         "orr  lr, #0x1C\n"          /* return with PSP, 8 words */
         "bx   lr\n"
         /* the unprivileged interrupt handler will be executed after this */
+        :: "r" (svc_sp), "r" (svc_pc)
     );
 }
 
@@ -317,6 +318,7 @@ void UVISOR_NAKED unvic_svc_cx_out(uint32_t *svc_sp)
         "orr lr, #0x10\n"               /* return with MSP, 8 words */
         "bic lr, #0xC\n"
         "bx  lr\n"
+        :: "r" (svc_sp)
     );
 }
 
