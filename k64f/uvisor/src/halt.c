@@ -13,31 +13,30 @@
 #include <uvisor.h>
 #include "halt.h"
 
-static void halt_putcp(void* p,char c)
+static void halt_putcp(void* p, char c)
 {
-    /* FIXME: if UART is enabled, print via UART */
     (void) p;
     default_putc(c);
 }
 
-static void halt_printf (const char *fmt, ...)
+static void halt_printf(const char *fmt, ...)
 {
     /* print message using our halt_putcp function */
     va_list va;
-    va_start (va, fmt);
-    tfp_format (NULL, halt_putcp, fmt, va);
-    va_end (va);
+    va_start(va, fmt);
+    tfp_format(NULL, halt_putcp, fmt, va);
+    va_end(va);
 }
 
-void halt_error (const char *fmt, ...)
+void halt_error(const char *fmt, ...)
 {
     halt_printf("HALT_ERROR: ");
 
     /* print actual error */
     va_list va;
-    va_start (va, fmt);
-    tfp_format (NULL, halt_putcp, fmt, va);
-    va_end (va);
+    va_start(va, fmt);
+    tfp_format(NULL, halt_putcp, fmt, va);
+    va_end(va);
 
     /* final line feed */
     default_putc('\n');
@@ -47,15 +46,15 @@ void halt_error (const char *fmt, ...)
         __WFI();
 }
 
-void halt_line (const char* file, uint32_t line, const char *fmt, ...)
+void halt_line(const char* file, uint32_t line, const char *fmt, ...)
 {
     halt_printf("HALT_ERROR(%s#%i): ", file, line);
 
     /* print actual error */
     va_list va;
-    va_start (va, fmt);
-    tfp_format (NULL, halt_putcp, fmt, va);
-    va_end (va);
+    va_start(va, fmt);
+    tfp_format(NULL, halt_putcp, fmt, va);
+    va_end(va);
 
     /* final line feed */
     default_putc('\n');
