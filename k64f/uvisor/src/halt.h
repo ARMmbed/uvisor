@@ -19,7 +19,7 @@
 #define HALT_ERROR(...) halt_line(__FILE__, __LINE__, __VA_ARGS__);
 #endif/*NDEBUG*/
 
-extern void halt_error (const char *fmt, ...);
-extern void halt_line (const char* file, uint32_t line, const char *fmt, ...);
+extern void halt_error(const char *fmt, ...);
+extern void halt_line(const char* file, uint32_t line, const char *fmt, ...);
 
 #endif/*__HALT_H__*/
