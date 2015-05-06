@@ -105,7 +105,7 @@ uint32_t __svc_cx_switch_in(uint32_t *svc_sp, uint32_t svc_pc,
 
     /* check src and dst IDs */
     if(src_id == dst_id)
-        HALT_ERROR("src_id == dst_id at box %i", src_id);
+        HALT_ERROR(NOT_ALLOWED, "src_id == dst_id at box %i", src_id);
 
     /* create exception stack frame */
     dst_sp_align = ((uint32_t) dst_sp & 0x4) ? 1 : 0;
