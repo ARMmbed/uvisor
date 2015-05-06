@@ -32,14 +32,17 @@ typedef struct {
 static inline void svc_gw_check_magic(TSecGw *svc_pc)
 {
     if(!VMPU_FLASH_ADDR(svc_pc))
-        HALT_ERROR("secure gateway not in flash (0x%08X)", svc_pc);
+        HALT_ERROR(SANITY_CHECK_FAILED,
+                   "secure gateway not in flash (0x%08X)", svc_pc);
 
     if((svc_pc->opcode & ~((uint16_t) UVISOR_SVC_CUSTOM_MSK)) !=
         UVISOR_SVC_GW_OPCODE)
-        HALT_ERROR("secure gateway opcode invalid (0x%08X)\n", &svc_pc->opcode);
+        HALT_ERROR(SANITY_CHECK_FAILED,
+                   "secure gateway opcode invalid (0x%08X)\n", &svc_pc->opcode);
 
     if(svc_pc->magic != UVISOR_SVC_GW_MAGIC)
-        HALT_ERROR("secure gateway magic invalid (0x%08X)\n", &svc_pc->magic);
+        HALT_ERROR(SANITY_CHECK_FAILED,
+                   "secure gateway magic invalid (0x%08X)\n", &svc_pc->magic);
 }
 
 static inline uint32_t svc_gw_get_dst_fn(TSecGw *svc_pc)
@@ -52,7 +55,7 @@ static inline uint8_t svc_gw_get_dst_id(TSecGw *svc_pc)
     uint32_t box_id = svc_pc->cfg_ptr - __uvisor_config.cfgtbl_start;
 
     if(box_id <= 0 || box_id >= g_svc_cx_box_num)
-        HALT_ERROR("box_id out of range (%i)", box_id);
+        HALT_ERROR(SANITY_CHECK_FAILED, "box_id out of range (%i)", box_id);
 
     return (uint8_t) (box_id & 0xFF);
 }
