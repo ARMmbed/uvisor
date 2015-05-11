@@ -13,8 +13,8 @@
 #include <uvisor.h>
 #include "halt.h"
 
-#define HALT_INTRA_PATTERN_DELAY 0x10000U
-#define HALT_INTER_PATTERN_DELAY 0x100000U
+#define HALT_INTRA_PATTERN_DELAY 0x200000U
+#define HALT_INTER_PATTERN_DELAY 0x1000000U
 
 void halt_led(THaltError reason)
 {
@@ -29,8 +29,8 @@ void halt_led(THaltError reason)
     /* enable output for PORTB pin 21/22 */
     PTB->PDDR |= (1UL << 22);
 
-    /* clear PORTB pin 22 */
-    PTB->PCOR = 1UL << 22;
+    /* initially set PORTB pin 22 (LED active low) */
+    PTB->PSOR = 1UL << 22;
 
     while(1)
     {
