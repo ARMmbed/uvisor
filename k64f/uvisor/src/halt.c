@@ -13,7 +13,7 @@
 #include <uvisor.h>
 #include "halt.h"
 
-#define HALT_INTRA_PATTERN_DELAY 0x200000U
+#define HALT_INTRA_PATTERN_DELAY 0x300000U
 #define HALT_INTER_PATTERN_DELAY 0x1000000U
 
 void halt_led(THaltError reason)
