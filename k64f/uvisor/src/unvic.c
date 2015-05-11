@@ -303,7 +303,7 @@ uint32_t __unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
      *   - store alignment for future unstacking */
     dst_sp[5] = ((uint32_t) svc_pc + 2) | 1;             /* lr */
     dst_sp[6] = dst_fn;                                  /* return address */
-    dst_sp[7] &= ipsr;                                   /* xPSR */
+    dst_sp[7] = ipsr;                                    /* xPSR */
     dst_sp[7] &= ~0x1FF;                                 /* IPSR - clear IRQn */
     dst_sp[7] |= dst_sp_align << 9;                      /* xPSR - alignment */
 
