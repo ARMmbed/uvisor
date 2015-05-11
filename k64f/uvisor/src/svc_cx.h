@@ -58,7 +58,7 @@ static void inline svc_cx_push_state(uint8_t src_id, uint32_t *src_sp,
 {
     /* check state stack overflow */
     if(g_svc_cx_state_ptr == SVC_CX_MAX_DEPTH)
-        HALT_ERROR("state stack overflow");
+        HALT_ERROR(SANITY_CHECK_FAILED, "state stack overflow");
 
     /* push state */
     g_svc_cx_state[g_svc_cx_state_ptr].src_id = src_id;
@@ -76,7 +76,7 @@ static inline void svc_cx_pop_state(uint8_t dst_id, uint32_t *dst_sp)
 {
     /* check state stack underflow */
     if(!g_svc_cx_state_ptr)
-        HALT_ERROR("state stack underflow");
+        HALT_ERROR(SANITY_CHECK_FAILED, "state stack underflow");
 
     /* pop state */
     --g_svc_cx_state_ptr;
