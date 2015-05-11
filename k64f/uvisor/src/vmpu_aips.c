@@ -85,6 +85,10 @@ int vmpu_add_aips(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
         return 7;
     }
 
+    /* initialize box[0] ACL's as background regions */
+    if(box_id)
+        memcpy(g_aipsx_box[box_id], g_aipsx_box[0], sizeof(g_aipsx_box[0]));
+
     /* ensure we have a list of all peripherals */
     g_aipsx_all[i] |= t;
     /* remember box-specific peripherals */
