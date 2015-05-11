@@ -58,7 +58,7 @@ static void vmpu_fault(int reason)
     DPRINTF("CFSR : 0x%08X\n\r", SCB->CFSR);
 
     /* doper over and die */
-    HALT_ERROR("fault reason %i", reason);
+    HALT_ERROR(reason, "fault reason %i", reason);
 }
 
 static void vmpu_fault_bus(void)
@@ -66,14 +66,14 @@ static void vmpu_fault_bus(void)
     DEBUG_FAULT_BUS();
     DPRINTF("Bus Fault\n\r");
     DPRINTF("BFAR : 0x%08X\n\r", SCB->BFAR);
-    vmpu_fault(MPU_FAULT_BUS);
+    vmpu_fault(FAULT_BUS);
 }
 
 static void vmpu_fault_usage(void)
 {
     DEBUG_FAULT_USAGE();
     DPRINTF("Usage Fault\n\r");
-    vmpu_fault(MPU_FAULT_USAGE);
+    vmpu_fault(FAULT_USAGE);
 }
 
 static void vmpu_fault_hard(void)
@@ -81,13 +81,13 @@ static void vmpu_fault_hard(void)
     DEBUG_FAULT_HARD();
     DPRINTF("Hard Fault\n\r");
     DPRINTF("HFSR : 0x%08X\n\r", SCB->HFSR);
-    vmpu_fault(MPU_FAULT_HARD);
+    vmpu_fault(FAULT_HARD);
 }
 
 static void vmpu_fault_debug(void)
 {
     DPRINTF("Debug Fault\n\r");
-    vmpu_fault(MPU_FAULT_DEBUG);
+    vmpu_fault(FAULT_DEBUG);
 }
 
 int vmpu_acl_dev(UvisorBoxAcl acl, uint16_t device_id)
@@ -120,11 +120,12 @@ static int vmpu_sanity_checks(void)
 {
     /* verify uvisor config structure */
     if(__uvisor_config.magic != UVISOR_MAGIC)
-        HALT_ERROR("config magic mismatch: &0x%08X = 0x%08X \
-                                 - exptected 0x%08X\n",
-                &__uvisor_config,
-                __uvisor_config.magic,
-                UVISOR_MAGIC);
+        HALT_ERROR(SANITY_CHECK_FAILED,
+            "config magic mismatch: &0x%08X = 0x%08X \
+                                  - exptected 0x%08X\n",
+            &__uvisor_config,
+            __uvisor_config.magic,
+            UVISOR_MAGIC);
 
     /* verify if configuration mode is inside flash memory */
     assert((uint32_t)__uvisor_config.mode >= FLASH_ORIGIN);
@@ -289,18 +290,22 @@ static void vmpu_load_boxes(void)
             VMPU_FLASH_ADDR(
                 ((uint8_t*)(*box_cfgtbl)) + (sizeof(**box_cfgtbl)-1)
             )))
-            HALT_ERROR("invalid address - *box_cfgtbl must point to flash (0x%08X)\n", *box_cfgtbl);
+            HALT_ERROR(SANITY_CHECK_FAILED,
+                "invalid address - \
+                *box_cfgtbl must point to flash (0x%08X)\n", *box_cfgtbl);
 
         /* check for magic value in box configuration */
         if(((*box_cfgtbl)->magic)!=UVISOR_BOX_MAGIC)
-            HALT_ERROR("box[%i] @0x%08X - invalid magic\n",
+            HALT_ERROR(SANITY_CHECK_FAILED,
+                "box[%i] @0x%08X - invalid magic\n",
                 g_svc_cx_box_num,
                 (uint32_t)(*box_cfgtbl)
             );
 
         /* check for magic value in box configuration */
         if(((*box_cfgtbl)->version)!=UVISOR_BOX_VERSION)
-            HALT_ERROR("box[%i] @0x%08X - invalid version (0x%04X!-0x%04X)\n",
+            HALT_ERROR(SANITY_CHECK_FAILED,
+                "box[%i] @0x%08X - invalid version (0x%04X!-0x%04X)\n",
                 g_svc_cx_box_num,
                 *box_cfgtbl,
                 (*box_cfgtbl)->version,
@@ -309,7 +314,7 @@ static void vmpu_load_boxes(void)
 
         /* increment box counter */
         if((box_id = g_svc_cx_box_num++)>=UVISOR_MAX_BOXES)
-            HALT_ERROR("box number overflow\n");
+            HALT_ERROR(SANITY_CHECK_FAILED, "box number overflow\n");
 
         /* load box ACLs in table */
         DPRINTF("box[%i] ACL list:\n", box_id);
@@ -321,7 +326,8 @@ static void vmpu_load_boxes(void)
             {
                 /* ensure that ACL resides in flash */
                 if(!VMPU_FLASH_ADDR(region))
-                    HALT_ERROR("box[%i]:acl[%i] must be in code section (@0x%08X)\n",
+                    HALT_ERROR(SANITY_CHECK_FAILED,
+                        "box[%i]:acl[%i] must be in code section (@0x%08X)\n",
                         g_svc_cx_box_num,
                         i,
                         *box_cfgtbl
@@ -349,7 +355,8 @@ static void vmpu_load_boxes(void)
             /* determine stack extent */
             sp_size = UVISOR_ROUND32_DOWN((*box_cfgtbl)->stack_size);
             if(sp_size <= (UVISOR_STACK_BAND_SIZE+4))
-                HALT_ERROR("box[%i] stack too small (%i)\n",
+                HALT_ERROR(SANITY_CHECK_FAILED,
+                    "box[%i] stack too small (%i)\n",
                     box_id,
                     sp_size
                 );
@@ -370,7 +377,8 @@ static void vmpu_load_boxes(void)
 
     /* check consistency between allocated and actual stack sizes */
     if(sp != (uint32_t)__uvisor_config.reserved_end)
-        HALT_ERROR("stack pointers didn't match up: 0x%X != 0x%X\n",
+        HALT_ERROR(SANITY_CHECK_FAILED,
+            "stack pointers didn't match up: 0x%X != 0x%X\n",
             sp,
             __uvisor_config.reserved_end
         );
