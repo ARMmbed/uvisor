@@ -13,6 +13,7 @@
 #include <uvisor.h>
 #include "vmpu.h"
 #include "vmpu_aips.h"
+#include "vmpu_mem.h"
 #include "svc.h"
 #include "halt.h"
 #include "memory_map.h"
@@ -228,10 +229,17 @@ int vmpu_init_pre(void)
 
 static void vmpu_add_acl(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 {
+    int res;
+
 #ifndef NDEBUG
     const MemMap *map;
 #endif/*NDEBUG*/
 
+    /* check for alignment to 32 bytes */
+    if(((uint32_t)start) & 0x1F)
+        HALT_ERROR(SANITY_CHECK_FAILED, "ACL start address is not aligned [0x%08X]\n", start);
+
+    /* round ACLs if needed */
     if(acl & UVISOR_TACL_SIZE_ROUND_DOWN)
         size = UVISOR_ROUND32_DOWN(size);
     else
@@ -242,29 +250,15 @@ static void vmpu_add_acl(uint8_t box_id, void* start, uint32_t size, UvisorBoxAc
         ((map = memory_map_name((uint32_t)start))!=NULL) ? map->name : "unknown"
     );
 
-    if(vmpu_add_aips(box_id, start, size, acl))
-        return;
+    /* check for peripheral memory, proceed with general memory */
+    if(!(res = vmpu_add_aips(box_id, start, size, acl)))
+        res = vmpu_add_mem(box_id, start, size, acl);
 
-    if(    (((uint32_t*)start)>=__uvisor_config.secure_start) &&
-        ((((uint32_t)start)+size)<=(uint32_t)__uvisor_config.secure_end) )
-    {
-        DPRINTF("FLASH\n");
-        return;
-    }
-
-    if(    (((uint32_t*)start)>=__uvisor_config.reserved_end) &&
-        ((((uint32_t)start)+size)<=(uint32_t)__uvisor_config.bss_start) )
-    {
-        DPRINTF("STACK\n");
-        return;
-    }
-
-    if(    (((uint32_t*)start)>=__uvisor_config.bss_start) &&
-        ((((uint32_t)start)+size)<=(uint32_t)__uvisor_config.bss_end) )
-    {
-        DPRINTF("BSS\n");
-        return;
-    }
+    if(!res)
+        HALT_ERROR(NOT_ALLOWED, "ACL in unhandled memory area\n");
+    else
+        if(res<0)
+            HALT_ERROR(SANITY_CHECK_FAILED, "ACL sanity check failed [%i]\n", res);
 }
 
 static void vmpu_load_boxes(void)

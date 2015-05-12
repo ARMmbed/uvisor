@@ -27,7 +27,6 @@
                                      UVISOR_TACL_SIZE_ROUND_UP)
 
 #define UVISOR_TACLDEF_SECURE_CONST (UVISOR_TACL_READ           |\
-                                     UVISOR_TACL_WRITE          |\
                                      UVISOR_TACL_SIZE_ROUND_UP)
 
 #define UVISOR_TACLDEF_DATA         (UVISOR_TACL_READ           |\
