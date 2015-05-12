@@ -283,7 +283,7 @@ uint32_t __unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
         dst_sp = svc_cx_get_curr_sp(dst_id);
 
         /* switch boxes */
-        vmpu_switch(dst_id);
+        vmpu_switch(src_id, dst_id);
     }
     else
     {
@@ -359,7 +359,7 @@ void __unvic_svc_cx_out(uint32_t *svc_sp, uint32_t *msp)
     if(src_id != dst_id)
     {
         /* switch ACls */
-        vmpu_switch(src_id);
+        vmpu_switch(dst_id, src_id);
     }
 
     /* re-privilege execution */

@@ -112,9 +112,15 @@ int vmpu_acl_bit(UvisorBoxAcl acl, uint32_t addr)
     return 1;
 }
 
-int vmpu_switch(uint8_t box)
+int vmpu_switch(uint8_t src_box, uint8_t dst_box)
 {
-    return -1;
+    /* switch ACLs for peripherals */
+    vmpu_aips_switch(src_box, dst_box);
+
+    /* switch ACLs for memory regions */
+    /* vmpu_mem_switch(src_box, dst_box); */
+
+    return 0;
 }
 
 static int vmpu_sanity_checks(void)
@@ -255,7 +261,9 @@ static void vmpu_add_acl(uint8_t box_id, void* start, uint32_t size, UvisorBoxAc
     );
 
     /* check for peripheral memory, proceed with general memory */
-    if(!(res = vmpu_add_aips(box_id, start, size, acl)))
+    if(acl & UVISOR_TACL_PERIPHERAL)
+        res = vmpu_add_aips(box_id, start, size, acl);
+    else
         res = vmpu_add_mem(box_id, start, size, acl);
 
     if(!res)
@@ -383,24 +391,6 @@ static void vmpu_load_boxes(void)
     DPRINTF("vmpu_load_boxes [DONE]\n");
 }
 
-static void vmpu_fixme(void)
-{
-    /* FIXME implement security context switch between main and
-     *       secure box - hardcoded for now, later using ACLs from
-     *       UVISOR_BOX_CONFIG */
-
-    /* the linker script creates a list of all box ACLs configuration
-     * pointers from __uvisor_cfgtbl_start to __uvisor_cfgtbl_end */
-
-    AIPS0->PACRM &= ~(1 << 14); // MCG_C1_CLKS (PACRM[15:12])
-    AIPS0->PACRN &= ~(1 << 22); // UART0       (PACRN[23:20])
-    AIPS0->PACRJ &= ~(1 << 30); // SIM_CLKDIV1 (PACRJ[31:28])
-    AIPS0->PACRJ &= ~(1 << 26); // PORTA mux   (PACRJ[27:24])
-    AIPS0->PACRJ &= ~(1 << 22); // PORTB mux   (PACRJ[23:20])
-    AIPS0->PACRJ &= ~(1 << 18); // PORTC mux   (PACRJ[19:16])
-    AIPS0->PACRG &= ~(1 << 2);  // PIT module  (PACRG[ 3: 0])
-}
-
 void vmpu_init_post(void)
 {
     /* setup security "bluescreen" exceptions */
@@ -420,6 +410,6 @@ void vmpu_init_post(void)
     /* load boxes */
     vmpu_load_boxes();
 
-    /* FIXME: remove once vmpu_load_boxes works */
-    vmpu_fixme();
+    /* load ACLs for box 0 */
+    vmpu_aips_switch(0, 0);
 }
