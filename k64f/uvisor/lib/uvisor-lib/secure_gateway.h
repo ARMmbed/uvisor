@@ -30,19 +30,19 @@
 
 #define SELECT_ARGS0()
 #define SELECT_ARGS1(a0)                                                       \
-        register uint32_t r0 asm("r0") = a0;
+        register uint32_t r0 asm("r0") = (uint32_t) a0;
 #define SELECT_ARGS2(a0, a1)                                                   \
-        register uint32_t r0 asm("r0") = a0;                                   \
-        register uint32_t r1 asm("r1") = a1;
+        register uint32_t r0 asm("r0") = (uint32_t) a0;                        \
+        register uint32_t r1 asm("r1") = (uint32_t) a1;
 #define SELECT_ARGS3(a0, a1, a2)                                               \
-        register uint32_t r0 asm("r0") = a0;                                   \
-        register uint32_t r1 asm("r1") = a1;                                   \
-        register uint32_t r2 asm("r2") = a2;
+        register uint32_t r0 asm("r0") = (uint32_t) a0;                        \
+        register uint32_t r1 asm("r1") = (uint32_t) a1;                        \
+        register uint32_t r2 asm("r2") = (uint32_t) a2;
 #define SELECT_ARGS4(a0, a1, a2, a3)                                           \
-        register uint32_t r0 asm("r0") = a0;                                   \
-        register uint32_t r1 asm("r1") = a1;                                   \
-        register uint32_t r2 asm("r2") = a2;                                   \
-        register uint32_t r3 asm("r3") = a3;
+        register uint32_t r0 asm("r0") = (uint32_t) a0;                        \
+        register uint32_t r1 asm("r1") = (uint32_t) a1;                        \
+        register uint32_t r2 asm("r2") = (uint32_t) a2;                        \
+        register uint32_t r3 asm("r3") = (uint32_t) a3;
 
 /* used to declare registers in the asm volatile to avoid compiler opt */
 #define SELECT_REGS(...) \
