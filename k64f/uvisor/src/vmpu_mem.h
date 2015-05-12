@@ -13,6 +13,10 @@
 #ifndef __VMPU_MEM_H__
 #define __VMPU_MEM_H__
 
+#ifndef UVISOR_MAX_ACLS
+#define UVISOR_MAX_ACLS 16
+#endif/*UVISOR_MAX_ACLS*/
+
 extern int vmpu_add_mem(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl);
 
 #endif/*__VMPU_APIS_H__*/
