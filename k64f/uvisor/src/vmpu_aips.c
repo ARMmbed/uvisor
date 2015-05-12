@@ -16,9 +16,10 @@
 #include "vmpu.h"
 #include "vmpu_aips.h"
 
-#define AIPSx_SLOT_SIZE 0x1000UL
-#define AIPSx_SLOT_MAX 0xFE
-#define AIPSx_DWORDS ((AIPSx_SLOT_MAX+31)/32)
+#define AIPSx_SLOT_SIZE    0x1000UL
+#define AIPSx_SLOT_MAX     0xFE
+#define AIPSx_DWORDS       ((AIPSx_SLOT_MAX+31)/32)
+#define PACRx_DEFAULT_MASK 0x44444444UL
 
 static uint32_t g_aipsx_box[UVISOR_MAX_BOXES][AIPSx_DWORDS];
 static uint32_t g_aipsx_all[AIPSx_DWORDS];
@@ -41,9 +42,9 @@ int vmpu_add_aips(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
         return -3;
     }
 
-    /* calculate resulting APIS slot and base */
+    /* calculate resulting AIPS slot and base */
     base = AIPS0_BASE | (((uint32_t)(aips_slot)) << 12);
-    DPRINTF("\t\tAPIS slot[%02i] for base 0x%08X\n",
+    DPRINTF("\t\tAIPS slot[%02i] for base 0x%08X\n",
         aips_slot, base);
 
     /* check if ACL base is equal to slot base */
@@ -92,4 +93,75 @@ int vmpu_add_aips(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
         g_aipsx_exc[i] |= t;
 
     return 1;
+}
+
+void vmpu_aips_switch(uint8_t src_box, uint8_t dst_box)
+{
+    int i, j, k;
+    uint8_t src_acl, dst_acl;
+    uint32_t src_acl_w, dst_acl_w;
+    uint32_t pacr, *pacr_ptr;
+
+    /* initialized once - t will be renewed through shifting at each iteration */
+    pacr = 0;
+
+    /* beginning of AIPS0 */
+    pacr_ptr = (uint32_t *) &AIPS0->PACRA;
+
+    /* parsing words in g_aipsx_box */
+    for(i = 0; i < AIPSx_DWORDS; i++)
+    {
+        /* if src and dst box are the same, the ACLs are applied without
+         * optimizations; this is used for example to initialize box 0 ACls */
+        if(src_box == dst_box)
+            src_acl_w = 0;
+        else
+            src_acl_w = g_aipsx_box[src_box][i];
+        dst_acl_w = g_aipsx_box[dst_box][i];
+
+        /* detect changes in ACLs */
+        if(src_acl_w != dst_acl_w)
+        {
+            /* parsing single PACRn registers (each configures 8 slots) */
+            for(j = 0; j < 4; j++)
+            {
+                src_acl = (uint8_t) src_acl_w;
+                dst_acl = (uint8_t) dst_acl_w;
+
+                /* detect changes in ACLs */
+                if(src_acl != dst_acl)
+                {
+                    /* turn 8bit flags in 32bit PACRn register */
+                    for(k = 0; k < 8; k++)
+                    {
+                        /* shift previously parsed slots */
+                        pacr <<= 4;
+                        /* write SP0 field in PACRn for current slot */
+                        pacr |= (dst_acl & 1) << 2;
+                        /* shift to next slot */
+                        dst_acl >>= 1;
+                        /* endiannesses for pacr and dst_acl are inverted! */
+                    }
+                    /* write masked PACRn to AIPSx->PACRn */
+                    *(pacr_ptr) = pacr ^ PACRx_DEFAULT_MASK;
+                }
+                /* go to next PACRn */
+                pacr_ptr++;
+                src_acl_w >>= 8;
+                dst_acl_w >>= 8;
+            }
+        }
+        else
+        {
+            /* skip 4 PACRn altogether */
+            pacr_ptr += 4;
+        }
+
+        /* this is needed due to the AIPSx->PACRn memory map in Freescale K20
+         * sub-family microcontrollers */
+        if(i == 0 || i == 4)
+            pacr_ptr += 4;
+        else if(i == 3)
+            pacr_ptr = (uint32_t *) &AIPS1->PACRA;
+    }
 }

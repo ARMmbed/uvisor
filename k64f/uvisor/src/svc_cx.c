@@ -128,7 +128,7 @@ uint32_t __svc_cx_switch_in(uint32_t *svc_sp, uint32_t svc_pc,
     DEBUG_CX_SWITCH_IN();
 
     /* switch boxes */
-    vmpu_switch(dst_id);
+    vmpu_switch(src_id, dst_id);
     __set_PSP((uint32_t) dst_sp);
 
     /* FIXME add support for privacy (triggers register clearing) */
@@ -168,6 +168,6 @@ void __svc_cx_switch_out(uint32_t *svc_sp)
      * corresponding stack pointer is not stored anywhere */
 
     /* switch ACls */
-    vmpu_switch(src_id);
+    vmpu_switch(dst_id, src_id);
     __set_PSP((uint32_t) src_sp);
 }
