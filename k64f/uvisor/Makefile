@@ -24,6 +24,7 @@ APP_SRC:=\
 	src/vmpu_aips.c \
 	src/vmpu_mem.c \
 	src/main.c \
+	src/benchmark.c \
 	debug/debug.c \
 	debug/memory_map.c \
 
