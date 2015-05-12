@@ -30,12 +30,6 @@ int vmpu_add_aips(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
     uint8_t aips_slot;
     uint32_t base, t;
 
-    if(box_id>=UVISOR_MAX_BOXES)
-    {
-        DPRINTF("box id out of range (%i => %i)", box_id, UVISOR_MAX_BOXES);
-        return -1;
-    }
-
     if(    !((((uint32_t)start)>=AIPS0_BASE) &&
         (((uint32_t)start)<(AIPS0_BASE+(0xFEUL*(AIPSx_SLOT_SIZE))))) )
         return 0;
