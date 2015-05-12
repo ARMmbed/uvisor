@@ -235,6 +235,10 @@ static void vmpu_add_acl(uint8_t box_id, void* start, uint32_t size, UvisorBoxAc
     const MemMap *map;
 #endif/*NDEBUG*/
 
+    /* check for maximum box ID */
+    if(box_id>=UVISOR_MAX_BOXES)
+        HALT_ERROR(SANITY_CHECK_FAILED, "box ID out of range (%i)\n", box_id);
+
     /* check for alignment to 32 bytes */
     if(((uint32_t)start) & 0x1F)
         HALT_ERROR(SANITY_CHECK_FAILED, "ACL start address is not aligned [0x%08X]\n", start);
