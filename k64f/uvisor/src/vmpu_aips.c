@@ -33,18 +33,18 @@ int vmpu_add_aips(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
     if(box_id>=UVISOR_MAX_BOXES)
     {
         DPRINTF("box id out of range (%i => %i)", box_id, UVISOR_MAX_BOXES);
-        return 1;
+        return -1;
     }
 
     if(    !((((uint32_t)start)>=AIPS0_BASE) &&
         (((uint32_t)start)<(AIPS0_BASE+(0xFEUL*(AIPSx_SLOT_SIZE))))) )
-        return 2;
+        return 0;
 
     aips_slot = (uint8_t)(((uint32_t)start) >> 12);
     if(aips_slot > AIPSx_SLOT_MAX)
     {
         DPRINTF("AIPS slot out of range (0xFF)");
-        return 3;
+        return -3;
     }
 
     /* calculate resulting APIS slot and base */
@@ -56,7 +56,7 @@ int vmpu_add_aips(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
     if(base != (uint32_t)start)
     {
         DPRINTF("AIPS base (0x%08X) != ACL base (0x%08X)", base, start);
-        return 4;
+        return -4;
     }
 
     /* calculate slot count */
@@ -64,7 +64,7 @@ int vmpu_add_aips(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
     if(slot_count>AIPSx_SLOT_MAX)
     {
         DPRINTF("AIPS slot size out of range (%i slots)", slot_count);
-        return 5;
+        return -5;
     }
     slot_count -= aips_slot;
 
@@ -72,7 +72,7 @@ int vmpu_add_aips(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
     if(((size % AIPSx_SLOT_SIZE) != 0) && ((acl & UVISOR_TACL_SIZE_ROUND_UP)==0))
     {
         DPRINTF("Use UVISOR_TACL_SIZE_ROUND_UP to round ACL size to AIPS slot size");
-        return 6;
+        return -6;
     }
 
     i = aips_slot / 32;
@@ -82,7 +82,7 @@ int vmpu_add_aips(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
     {
         DPRINTF("AIPS slot %i already in use - redeclared at box %i",
             aips_slot, box_id);
-        return 7;
+        return -7;
     }
 
     /* initialize box[0] ACL's as background regions */
@@ -97,5 +97,5 @@ int vmpu_add_aips(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
     if( (acl & UVISOR_TACL_SHARED) == 0 )
         g_aipsx_exc[i] |= t;
 
-    return 0;
+    return 1;
 }
