@@ -10,17 +10,11 @@
  *  by a licensing agreement from ARM Limited.
  *
  ***************************************************************/
-#ifndef __UVISOR_LIB_H__
-#define __UVISOR_LIB_H__
+#ifndef __BENCHMARK_H__
+#define __BENCHMARK_H__
 
-#include <uvisor-lib/uvisor_exports.h>
-#include <uvisor-lib/svc_exports.h>
-#include <uvisor-lib/svc_gw_exports.h>
-#include <uvisor-lib/vmpu_exports.h>
-#include <uvisor-lib/config.h>
-#include <uvisor-lib/interrupts.h>
-#include <uvisor-lib/secure_gateway.h>
-#include <uvisor-lib/bitband.h>
-#include <uvisor-lib/benchmark.h>
+void uvisor_benchmark_configure(void);
+void uvisor_benchmark_start(void);
+uint32_t uvisor_benchmark_stop(void);
 
-#endif/*__UVISOR_LIB_H__*/
+#endif/*__BENCHMARK_H__*/
