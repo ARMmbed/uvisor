@@ -18,7 +18,7 @@
 
 void halt_led(THaltError reason)
 {
-    volatile uint32_t toggle, delay;
+    uint32_t toggle, delay;
 
     /* enable clock for PORTB */
     SIM->SCGC5 |= SIM_SCGC5_PORTB_MASK;
