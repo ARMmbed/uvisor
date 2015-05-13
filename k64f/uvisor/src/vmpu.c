@@ -352,8 +352,8 @@ static void vmpu_load_boxes(void)
         }
 
         /* update stack pointers */
-        if(!(*box_cfgtbl)->stack_size)
-            g_svc_cx_curr_sp[box_id] = box_id ? 0 : *((uint32_t**)0);
+        if(!box_id)
+            g_svc_cx_curr_sp[0] = (uint32_t*)__get_PSP();
         else
         {
             /* set stack pointer to box stack size minus guard band */
