@@ -44,16 +44,18 @@ static int vmpu_add_mem_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
     if(!size)
         return 1;
 
+    /* check for integer overflow */
+    if( g_mem_acl_count >= UVISOR_MAX_ACLS )
+        return -1;
+
     /* initialize acl pointer */
     if(!box->acl)
         box->acl = &g_mem_acl[g_mem_acl_count];
 
-    /* check for integer overflow */
-    if( box->count < UVISOR_MAX_ACLS )
-        return -1;
-    /* check for precise overlow */
-    if( (&box->acl[box->count] - g_mem_acl)<=(UVISOR_MAX_ACLS-1) )
+    /* check for precise overflow */
+    if( (&box->acl[box->count] - g_mem_acl)>=(UVISOR_MAX_ACLS-1) )
         return -2;
+
     /* get mem ACL */
     mem = &box->acl[box->count];
     /* already populated - ensure to fill boxes unfragmented */
