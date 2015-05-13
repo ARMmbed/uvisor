@@ -13,12 +13,13 @@
 #include <uvisor.h>
 #include "halt.h"
 
-#define HALT_INTRA_PATTERN_DELAY 0x300000U
-#define HALT_INTER_PATTERN_DELAY 0x1000000U
+#define HALT_INTRA_PATTERN_DELAY 0x200000U
+#define HALT_INTER_PATTERN_DELAY (3*HALT_INTRA_PATTERN_DELAY)
 
 void halt_led(THaltError reason)
 {
-    uint32_t toggle, delay;
+    uint32_t toggle;
+    volatile uint32_t delay;
 
     /* enable clock for PORTB */
     SIM->SCGC5 |= SIM_SCGC5_PORTB_MASK;
