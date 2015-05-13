@@ -85,8 +85,7 @@ CFLAGS_PRE:=\
         -I$(DEVICE)/inc \
         -I$(LIB)/printf \
         -ffunction-sections \
-        -fdata-sections \
-        -fno-common
+        -fdata-sections
 
 CFLAGS:=$(FLAGS_CM3) $(CFLAGS_PRE)
 CPPFLAGS:=$(CFLAGS) -fno-exceptions
