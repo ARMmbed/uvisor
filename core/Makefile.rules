@@ -38,7 +38,7 @@ SOURCES:=$(SYSTEM)/src/isr.c \
          $(APP_SRC)
 
 DEBUG_HOST:=localhost:2331
-OPT:=-O3 -DNDEBUG
+OPT:=-Os -DNDEBUG
 DEBUG:=-g3
 WARNING:=-Wall -Werror
 CPU_LOWER:=$(shell tr '[:upper:]' '[:lower:]' <<< $(CPU))
