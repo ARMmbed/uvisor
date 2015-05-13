@@ -38,7 +38,7 @@ SOURCES:=$(SYSTEM)/src/isr.c \
          $(APP_SRC)
 
 DEBUG_HOST:=localhost:2331
-OPT:=-Os -DNDEBUG
+OPT:=-O3 -DNDEBUG
 DEBUG:=-g3
 WARNING:=-Wall -Werror
 CPU_LOWER:=$(shell tr '[:upper:]' '[:lower:]' <<< $(CPU))
@@ -59,9 +59,9 @@ else
 endif
 
 MEM_CONFIG:=$(CORE)/linker/$(CPU).h
-FLAGS_CM3:=-mcpu=cortex-m3 -mthumb
+FLAGS_CM4:=-mcpu=cortex-m4 -march=armv7e-m -mthumb
 
-LDFLAGS:=$(FLAGS_CM3) \
+LDFLAGS:=$(FLAGS_CM4) \
         -T$(PROJECT).linker \
         -nostartfiles \
         -nostdlib \
@@ -85,10 +85,9 @@ CFLAGS_PRE:=\
         -I$(DEVICE)/inc \
         -I$(LIB)/printf \
         -ffunction-sections \
-        -fdata-sections \
-        -fno-common
+        -fdata-sections
 
-CFLAGS:=$(FLAGS_CM3) $(CFLAGS_PRE)
+CFLAGS:=$(FLAGS_CM4) $(CFLAGS_PRE)
 CPPFLAGS:=$(CFLAGS) -fno-exceptions
 
 OBJS:=$(SOURCES:.cpp=.o)
