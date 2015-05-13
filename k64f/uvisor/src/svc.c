@@ -14,6 +14,7 @@
 #include "svc.h"
 #include "vmpu.h"
 #include "unvic.h"
+#include "benchmark.h"
 
 #define SVC_HDLRS_MAX (1 << UVISOR_SVC_CUSTOM_BITS)
 #define SVC_HDLRS_NUM (UVISOR_ARRAY_COUNT(g_svc_vtor_tbl))
@@ -49,6 +50,9 @@ __attribute__((section(".svc_vector"))) const void *g_svc_vtor_tbl[] = {
     unvic_disable_irq,       // 4
     unvic_set_priority,      // 5
     unvic_get_priority,      // 6
+    benchmark_configure,     // 7
+    benchmark_start,         // 8
+    benchmark_stop,          // 9
 };
 
 /*******************************************************************************
