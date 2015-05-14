@@ -22,14 +22,14 @@ void uvisor_benchmark_configure(void)
 	 *   - pass the computed overhead to the configuration routine for future
 	 *     measurements */
     __asm__ volatile(
-        "mov r0, #0\n"
-        "svc %[svc_id_benchmark_cfg]\n"
-        "svc %[svc_id_benchmark_rst]\n"
-        "svc %[svc_id_benchmark_stop]\n"
-        "svc %[svc_id_benchmark_cfg]\n"
-        :: [svc_id_benchmark_cfg]  "i" (UVISOR_SVC_ID_BENCHMARK_CFG),
-           [svc_id_benchmark_rst]  "i" (UVISOR_SVC_ID_BENCHMARK_RST),
-           [svc_id_benchmark_stop] "i" (UVISOR_SVC_ID_BENCHMARK_STOP)
+        "push {lr}\n"
+        "mov  r0, #0\n"
+        "svc  %[svc_id_benchmark_cfg]\n"
+        "bl   uvisor_benchmark_start\n"
+        "bl   uvisor_benchmark_stop\n"
+        "svc  %[svc_id_benchmark_cfg]\n"
+        "pop  {pc}\n"
+        :: [svc_id_benchmark_cfg]  "i" (UVISOR_SVC_ID_BENCHMARK_CFG)
          : "r0"
     );
 }
