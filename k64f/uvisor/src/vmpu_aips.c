@@ -54,43 +54,51 @@ int vmpu_add_aips(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
         return -4;
     }
 
-    /* calculate slot count */
-    slot_count = (uint8_t)((base+size) >> 12);
-    if(slot_count>AIPSx_SLOT_MAX)
-    {
-        DPRINTF("AIPS slot size out of range (%i slots)", slot_count);
-        return -5;
-    }
-    slot_count -= aips_slot;
-
     /* ensure that ACL size can be rounded up to slot size */
     if(((size % AIPSx_SLOT_SIZE) != 0) && ((acl & UVISOR_TACL_SIZE_ROUND_UP)==0))
     {
         DPRINTF("Use UVISOR_TACL_SIZE_ROUND_UP to round ACL size to AIPS slot size");
-        return -6;
+        return -5;
     }
 
-    i = aips_slot / 32;
-    t = 1UL << ( aips_slot % 32);
-    if( (g_aipsx_exc[i] & t) ||
-        ((g_aipsx_all[i] & t) && ((acl & UVISOR_TACL_SHARED) == 0)) )
+    /* calculate slot count - round up */
+    slot_count = (uint8_t)((base+size+4095) >> 12);
+    if(slot_count>AIPSx_SLOT_MAX)
     {
-        DPRINTF("AIPS slot %i already in use - redeclared at box %i",
-            aips_slot, box_id);
-        return -7;
+        DPRINTF("AIPS slot size out of range (%i slots)", slot_count);
+        return -6;
     }
+    slot_count -= aips_slot;
+
 
     /* initialize box[0] ACL's as background regions */
     if(box_id)
         memcpy(g_aipsx_box[box_id], g_aipsx_box[0], sizeof(g_aipsx_box[0]));
 
-    /* ensure we have a list of all peripherals */
-    g_aipsx_all[i] |= t;
-    /* remember box-specific peripherals */
-    g_aipsx_box[box_id][i] |= t;
-    /* remember exclusive peripherals */
-    if( (acl & UVISOR_TACL_SHARED) == 0 )
-        g_aipsx_exc[i] |= t;
+    /* iterate through all slots */
+    while(slot_count--)
+    {
+        i = aips_slot / 32;
+        t = 1UL << ( aips_slot % 32);
+        if( (g_aipsx_exc[i] & t) ||
+            ((g_aipsx_all[i] & t) && ((acl & UVISOR_TACL_SHARED) == 0)) )
+        {
+            DPRINTF("AIPS slot %i already in use - redeclared at box %i",
+                aips_slot, box_id);
+            return -7;
+        }
+
+        /* ensure we have a list of all peripherals */
+        g_aipsx_all[i] |= t;
+        /* remember box-specific peripherals */
+        g_aipsx_box[box_id][i] |= t;
+        /* remember exclusive peripherals */
+        if( (acl & UVISOR_TACL_SHARED) == 0 )
+            g_aipsx_exc[i] |= t;
+
+        /* process next slot */
+        aips_slot++;
+    }
 
     return 1;
 }
