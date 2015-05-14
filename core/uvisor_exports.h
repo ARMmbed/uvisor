@@ -26,6 +26,7 @@
 #define UVISOR_LINKTO(f) __attribute__((alias (#f)))
 #define UVISOR_NORETURN  __attribute__((noreturn))
 #define UVISOR_NAKED     __attribute__((naked))
+#define UVISOR_RAMFUNC   __attribute__ ((section (".ramfunc"), noinline))
 
 /* array count macro */
 #define UVISOR_ARRAY_COUNT(x) (sizeof(x)/sizeof(x[0]))
