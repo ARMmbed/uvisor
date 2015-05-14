@@ -71,7 +71,7 @@ int vmpu_add_aips(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
     }
 
     i = aips_slot / 32;
-    t = 1 << ( aips_slot % 32);
+    t = 1UL << ( aips_slot % 32);
     if( (g_aipsx_exc[i] & t) ||
         ((g_aipsx_all[i] & t) && ((acl & UVISOR_TACL_SHARED) == 0)) )
     {
@@ -98,70 +98,71 @@ int vmpu_add_aips(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 void vmpu_aips_switch(uint8_t src_box, uint8_t dst_box)
 {
     int i, j, k;
-    uint8_t src_acl, dst_acl;
-    uint32_t src_acl_w, dst_acl_w;
-    uint32_t pacr, *pacr_ptr;
-
-    /* initialized once - t will be renewed through shifting at each iteration */
-    pacr = 0;
+    uint32_t *psrc_acl, *pdst_acl;
+    uint32_t src_acl, dst_acl, mod_acl;
+    uint32_t pacr;
+    volatile uint32_t *ppacr;
 
     /* beginning of AIPS0 */
-    pacr_ptr = (uint32_t *) &AIPS0->PACRA;
+    ppacr = &AIPS0->PACRA;
+    /* initialize destination box pointer */
+    psrc_acl = g_aipsx_box[src_box];
+    pdst_acl = g_aipsx_box[dst_box];
 
-    /* parsing words in g_aipsx_box */
-    for(i = 0; i < AIPSx_DWORDS; i++)
+    for(i=0; i<AIPSx_DWORDS; i++)
     {
-        /* if src and dst box are the same, the ACLs are applied without
-         * optimizations; this is used for example to initialize box 0 ACls */
-        if(src_box == dst_box)
-            src_acl_w = 0;
-        else
-            src_acl_w = g_aipsx_box[src_box][i];
-        dst_acl_w = g_aipsx_box[dst_box][i];
+        dst_acl = *pdst_acl++;
+        src_acl = *psrc_acl++;
 
-        /* detect changes in ACLs */
-        if(src_acl_w != dst_acl_w)
+        /* skip reserved words */
+        switch(i)
         {
-            /* parsing single PACRn registers (each configures 8 slots) */
-            for(j = 0; j < 4; j++)
-            {
-                src_acl = (uint8_t) src_acl_w;
-                dst_acl = (uint8_t) dst_acl_w;
+            case 1:
+            case 5:
+                ppacr += 4;
+                break;
+            case 4:
+                ppacr = &AIPS1->PACRA;
+                break;
+        }
 
-                /* detect changes in ACLs */
-                if(src_acl != dst_acl)
-                {
-                    /* turn 8bit flags in 32bit PACRn register */
-                    for(k = 0; k < 8; k++)
-                    {
-                        /* shift previously parsed slots */
-                        pacr <<= 4;
-                        /* write SP0 field in PACRn for current slot */
-                        pacr |= (dst_acl & 1) << 2;
-                        /* shift to next slot */
-                        dst_acl >>= 1;
-                        /* endiannesses for pacr and dst_acl are inverted! */
-                    }
-                    /* write masked PACRn to AIPSx->PACRn */
-                    *(pacr_ptr) = pacr ^ PACRx_DEFAULT_MASK;
-                }
-                /* go to next PACRn */
-                pacr_ptr++;
-                src_acl_w >>= 8;
-                dst_acl_w >>= 8;
+        /* if src_box == dst_box, then initialize all fields */
+        if(src_box == dst_box)
+            mod_acl = 0xFFFFFFFF;
+        else
+        {
+            mod_acl = src_acl ^ dst_acl;
+            /* skip 4 PACRn altogether */
+            if(!mod_acl)
+            {
+                ppacr += 4;
+                continue;
             }
         }
-        else
-        {
-            /* skip 4 PACRn altogether */
-            pacr_ptr += 4;
-        }
 
-        /* this is needed due to the AIPSx->PACRn memory map in Freescale K20
-         * sub-family microcontrollers */
-        if(i == 0 || i == 4)
-            pacr_ptr += 4;
-        else if(i == 3)
-            pacr_ptr = (uint32_t *) &AIPS1->PACRA;
+        /* run through 4 PACRn's */
+        for(j = 0; j < 4; j++)
+        {
+            /* modified byte ? */
+            if((uint8_t)mod_acl)
+            {
+                pacr = 0;
+
+                for(k = 0; k < 8; k++)
+                {
+                    pacr <<= 4;
+                    pacr |= (dst_acl & 1) << 2;
+                    dst_acl >>= 1;
+                }
+
+                pacr ^= PACRx_DEFAULT_MASK;
+                *ppacr = pacr;
+            }
+            else
+                dst_acl >>= 8;
+
+            mod_acl >>= 8;
+            ppacr++;
+        }
     }
 }
