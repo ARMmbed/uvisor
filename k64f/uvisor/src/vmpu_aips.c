@@ -103,7 +103,7 @@ int vmpu_aips_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
     return 1;
 }
 
-void UVISOR_RAMFUNC vmpu_aips_switch(uint8_t src_box, uint8_t dst_box)
+void vmpu_aips_switch(uint8_t src_box, uint8_t dst_box)
 {
     int i, j, k;
     uint32_t *psrc_acl, *pdst_acl;
