@@ -262,9 +262,9 @@ static void vmpu_add_acl(uint8_t box_id, void* start, uint32_t size, UvisorBoxAc
 
     /* check for peripheral memory, proceed with general memory */
     if(acl & UVISOR_TACL_PERIPHERAL)
-        res = vmpu_add_aips(box_id, start, size, acl);
+        res = vmpu_aips_add(box_id, start, size, acl);
     else
-        res = vmpu_add_mem(box_id, start, size, acl);
+        res = vmpu_mem_add(box_id, start, size, acl);
 
     if(!res)
         HALT_ERROR(NOT_ALLOWED, "ACL in unhandled memory area\n");
@@ -407,6 +407,9 @@ void vmpu_init_post(void)
     /* exceptions can now return to thread mode regardless their origin
      * (supervisor or thread mode); the opposite is not true */
     SCB->CCR |= 1;
+
+    /* init memory protection */
+    vmpu_mem_init();
 
     /* load boxes */
     vmpu_load_boxes();
