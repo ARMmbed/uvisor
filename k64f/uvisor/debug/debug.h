@@ -20,6 +20,7 @@ void debug_fault_usage(uint32_t lr);
 void debug_fault_hard(uint32_t lr);
 void debug_cx_switch_in(void);
 void debug_cx_switch_out(void);
+void debug_print_mpu_config(void);
 void debug_init(void);
 
 #ifdef  NDEBUG
@@ -29,6 +30,7 @@ void debug_init(void);
 #define DEBUG_FAULT_HARD(...)    {}
 #define DEBUG_CX_SWITCH_IN(...)  {}
 #define DEBUG_CX_SWITCH_OUT(...) {}
+#define DEBUG_PRINT_MPU_CFG(...) {}
 #define DEBUG_INIT(...)          {}
 #else /*NDEBUG*/
 
@@ -64,6 +66,8 @@ void debug_init(void);
 
 #define DEBUG_CX_SWITCH_IN  debug_cx_switch_in
 #define DEBUG_CX_SWITCH_OUT debug_cx_switch_out
+
+#define DEBUG_PRINT_MPU_CFG debug_print_mpu_config
 
 #define DEBUG_INIT debug_init
 
