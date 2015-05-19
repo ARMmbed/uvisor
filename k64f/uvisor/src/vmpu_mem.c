@@ -36,7 +36,7 @@ static TBoxACL g_mem_box[UVISOR_MAX_BOXES];
 
 int vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
 {
-    uint32_t t,u;
+    uint32_t t,src_count, dst_count;
     TBoxACL *box;
     TMemACL *rgd;
 
@@ -45,32 +45,19 @@ int vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
         return -1;
     box = &g_mem_box[dst_box];
 
-    /* disable previous ACL */
-    if(src_box!=dst_box)
-    {
-        if((u = g_mem_box[src_box].count)==0)
-            return -2;
-
-        u += g_mem_acl_user;
-        if(u>MPU_MAX_REGIONS)
-            return -3;
-
-        t=g_mem_acl_count;
-        while(t<u)
-        {
-            MPU->WORD[t][3] = 0;
-            t++;
-        }
-    }
-
-    /* get mem ACL */
-    rgd = &box->acl[box->count];
     /* already populated - ensure to fill boxes unfragmented */
+    rgd = &box->acl;
     if(!rgd)
         return -4;
 
+    src_count = g_mem_box[src_box].count;
+    dst_count = g_mem_box[dst_box].count;
+//    if(!src_count || !dst_count)
+
+
     /* copy and enable MPU region */
-    for(t=g_mem_acl_user; t<g_mem_acl_count; t++)
+    while(dst_count
+    for(t=g_mem_acl_user; t<g_mem_acl_count; t++m rgd++)
     {
         memcpy(MPU->WORD, rgd->word, sizeof(rgd->word));
         rgd->word[3] = 1;
