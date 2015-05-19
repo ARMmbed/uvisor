@@ -16,6 +16,8 @@
 #include "vmpu.h"
 #include "vmpu_mem.h"
 
+#define MPU_MAX_REGIONS 12
+
 typedef struct
 {
     uint32_t word[3];
@@ -34,6 +36,49 @@ static TBoxACL g_mem_box[UVISOR_MAX_BOXES];
 
 int vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
 {
+    uint32_t t,u;
+    TBoxACL *box;
+    TMemACL *rgd;
+
+    /* get box config */
+    if((dst_box >= UVISOR_MAX_BOXES)||(src_box >= UVISOR_MAX_BOXES))
+        return -1;
+    box = &g_mem_box[dst_box];
+
+    /* disable previous ACL */
+    if(src_box!=dst_box)
+    {
+        if((u = g_mem_box[src_box].count)==0)
+            return -2;
+
+        u += g_mem_acl_user;
+        if(u>MPU_MAX_REGIONS)
+            return -3;
+
+        t=g_mem_acl_count;
+        while(t<u)
+        {
+            MPU->WORD[t][3] = 0;
+            t++;
+        }
+    }
+
+    /* get mem ACL */
+    rgd = &box->acl[box->count];
+    /* already populated - ensure to fill boxes unfragmented */
+    if(!rgd)
+        return -4;
+
+    /* copy and enable MPU region */
+    for(t=g_mem_acl_user; t<g_mem_acl_count; t++)
+    {
+        memcpy(MPU->WORD, rgd->word, sizeof(rgd->word));
+        rgd->word[3] = 1;
+    }
+
+    DPRINTF("DONE\n");
+    while(1);
+
     return -1;
 }
 
@@ -198,12 +243,12 @@ int vmpu_mem_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 void vmpu_mem_init(void)
 {
     /* uvisor SRAM only accessible to uvisor */
-    vmpu_mem_add(0, (void*)SRAM_ORIGIN, UVISOR_SRAM_SIZE,
+    vmpu_mem_add_int(0, (void*)SRAM_ORIGIN, UVISOR_SRAM_SIZE,
         UVISOR_TACL_SREAD|
         UVISOR_TACL_SWRITE);
 
-    /* rest of SRAM, accessible to mbed */
-    vmpu_mem_add(0, (void*)(SRAM_ORIGIN+UVISOR_SRAM_SIZE), SRAM_LENGTH-UVISOR_SRAM_SIZE,
+    /* rest of SRAM, accessible to mbed - non-executable for uvisor */
+    vmpu_mem_add_int(0, (void*)(SRAM_ORIGIN+UVISOR_SRAM_SIZE), SRAM_LENGTH-UVISOR_SRAM_SIZE,
         UVISOR_TACL_SREAD|
         UVISOR_TACL_SWRITE|
         UVISOR_TACL_UREAD|
@@ -213,7 +258,7 @@ void vmpu_mem_init(void)
         );
 
     /* enable read access to unsecure flash regions - allow execution */
-    vmpu_mem_add(0, (void*)FLASH_ORIGIN, ((uint32_t)__uvisor_config.secure_start)-FLASH_ORIGIN,
+    vmpu_mem_add_int(0, (void*)FLASH_ORIGIN, ((uint32_t)__uvisor_config.secure_start)-FLASH_ORIGIN,
         UVISOR_TACL_SREAD|
         UVISOR_TACL_SEXECUTE|
         UVISOR_TACL_UREAD|
@@ -221,7 +266,7 @@ void vmpu_mem_init(void)
         UVISOR_TACL_USER);
 
     /* uvisor SRAM only accessible to uvisor */
-    vmpu_mem_add(0, (void*)SRAM_ORIGIN, UVISOR_SRAM_SIZE,
+    vmpu_mem_add_int(0, (void*)SRAM_ORIGIN, UVISOR_SRAM_SIZE,
         UVISOR_TACL_SREAD|
         UVISOR_TACL_SWRITE);
 
