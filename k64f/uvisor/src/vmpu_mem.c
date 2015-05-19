@@ -20,7 +20,7 @@
 
 typedef struct
 {
-    uint32_t word[4];
+    uint32_t word[3];
     uint32_t acl;
 } TMemACL;
 
@@ -77,7 +77,7 @@ int vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
         word[0] = rgd->word[0];
         word[1] = rgd->word[1];
         word[2] = rgd->word[2];
-        word[3] = rgd->word[3];
+        word[3] = 1;
         rgd++;
     }
 
@@ -210,9 +210,6 @@ static int vmpu_mem_add_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
                 return -7;
         }
     rgd->word[2] = perm;
-
-    /* enable ACL by default */
-    rgd->word[3] = 1;
 
     /* increment ACL count */
     box->count++;
