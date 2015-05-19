@@ -125,7 +125,7 @@ static int vmpu_mem_add_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
                 size = UVISOR_ROUND32_UP(size);
             else
                 {
-                    DPRINTF("Use UVISOR_TACL_SIZE_ROUND_UP/*_DOWN to round ACL size");
+                    DPRINTF("Use UVISOR_TACL_SIZE_ROUND_UP/*_DOWN to round ACL size\n");
                     return -21;
                 }
     }
@@ -133,7 +133,7 @@ static int vmpu_mem_add_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
     /* ensure that ACL base is a multiple of 32 */
     if((((uint32_t)start) % 32) != 0)
     {
-        DPRINTF("start address needs to be aligned on a 32 bytes border");
+        DPRINTF("start address needs to be aligned on a 32 bytes border\n");
         return -22;
     }
 
@@ -161,7 +161,7 @@ static int vmpu_mem_add_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
     for(t=0; t<g_mem_acl_count; t++, rgd++)
         if(vmpu_mem_overlap((uint32_t) start, end, rgd->word[0], rgd->word[1]))
         {
-            DPRINTF("Detected overlap with ACL %i (0x%08X-0x%08X)",
+            DPRINTF("Detected overlap with ACL %i (0x%08X-0x%08X)\n",
                 t, rgd->word[0], rgd->word[1]);
 
             /* handle permitted overlaps */
