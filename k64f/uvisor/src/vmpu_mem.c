@@ -52,7 +52,7 @@ static int vmpu_add_mem_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
             else
                 {
                     DPRINTF("Use UVISOR_TACL_SIZE_ROUND_UP/*_DOWN to round ACL size");
-                    return -1;
+                    return -21;
                 }
     }
 
@@ -60,12 +60,12 @@ static int vmpu_add_mem_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
     if((((uint32_t)start) % 32) != 0)
     {
         DPRINTF("start address needs to be aligned on a 32 bytes border");
-        return -2;
+        return -22;
     }
 
     /* get box config */
     if(box_id >= UVISOR_MAX_ACLS)
-        return -3;
+        return -23;
     box = &g_mem_box[box_id];
 
     /* initialize acl pointer */
@@ -73,19 +73,19 @@ static int vmpu_add_mem_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
     {
         /* check for integer overflow */
         if( g_mem_acl_count >= UVISOR_MAX_ACLS )
-            return -4;
+            return -24;
         box->acl = &g_mem_acl[g_mem_acl_count];
     }
 
     /* check for precise overflow */
     if( (&box->acl[box->count] - g_mem_acl)>=(UVISOR_MAX_ACLS-1) )
-        return -5;
+        return -25;
 
     /* get mem ACL */
     rgd = &box->acl[box->count];
     /* already populated - ensure to fill boxes unfragmented */
     if(rgd->word[0])
-        return -6;
+        return -26;
 
     /* start address, aligned tro 32 bytes */
     rgd->word[0] = (uint32_t) start;
@@ -142,6 +142,10 @@ int vmpu_add_mem(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
         ((((uint32_t)start)+size)<=(uint32_t)__uvisor_config.bss_start) )
     {
         DPRINTF("\t\tSTACK\n");
+
+        /* disallow user to provide stack region ACL's */
+        if(acl & UVISOR_TACL_USER)
+            return -1;
 
         return vmpu_add_mem_int(box_id, start, size, (acl & UVISOR_TACLDEF_STACK)|UVISOR_TACL_STACK);
     }

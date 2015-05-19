@@ -339,11 +339,12 @@ static void vmpu_load_boxes(void)
                         *box_cfgtbl
                     );
 
+                /* add ACL, and force entry as user-provided */
                 vmpu_add_acl(
                     box_id,
                     region->start,
                     region->length,
-                    region->acl
+                    region->acl | UVISOR_TACL_USER
                 );
 
                 /* proceed to next ACL */
