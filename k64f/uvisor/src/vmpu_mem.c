@@ -31,9 +31,20 @@ uint32_t g_mem_acl_count;
 static TMemACL g_mem_acl[UVISOR_MAX_ACLS];
 static TBoxACL g_mem_box[UVISOR_MAX_BOXES];
 
+static int vmpu_overlap(uint32_t s1, uint32_t e1, uint32_t s2, uint32_t e2)
+{
+    return (
+        (s1>e1)                ||
+        (s2>e2)                || /* punish messing with overlap */
+        ((s1<=s2) && (e1>=s2)) ||
+        ((s1<=e2) && (e1>=e2)) ||
+        ((s1>=e2) && (e1<=e2))
+        );
+}
+
 static int vmpu_add_mem_int(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 {
-    uint32_t perm;
+    uint32_t perm, end, t;
     TBoxACL *box;
     TMemACL *rgd;
 
@@ -87,10 +98,21 @@ static int vmpu_add_mem_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
     if(rgd->word[0])
         return -26;
 
+    /* check if region overlaps */
+    end = ((uint32_t) start) + size;
+    rgd = g_mem_acl;
+    for(t=0; t<g_mem_acl_count; t++, rgd++)
+        if(vmpu_overlap((uint32_t) start, end, rgd->word[0], rgd->word[1]))
+        {
+            DPRINTF("Detected overlap with ACL %i (0x%08X-0x%08X)",
+                t, rgd->word[0], rgd->word[1]);
+            return -27;
+        }
+
     /* start address, aligned tro 32 bytes */
     rgd->word[0] = (uint32_t) start;
     /* end address, aligned tro 32 bytes */
-    rgd->word[1] = ((uint32_t) start) + size;
+    rgd->word[1] = end;
 
     /* handle user permissions */
     perm = (acl & UVISOR_TACL_USER) ?  acl & UVISOR_TACL_UACL : 0;
