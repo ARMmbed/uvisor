@@ -16,8 +16,13 @@
 #include <uvisor.h>
 
 #define MEMORY_MAP_NUM              90
+#define MEMORY_MAP_SRAM_START       ((uint32_t) 0x1FFF0000)
+#define MEMORY_MAP_SRAM_END         ((uint32_t) (MEMORY_MAP_SRAM_START + \
+                                                 TOTAL_SRAM_SIZE))
 #define MEMORY_MAP_PERIPH_START     ((uint32_t) 0x40000000)
 #define MEMORY_MAP_PERIPH_END       ((uint32_t) 0x400FEFFF)
+#define MEMORY_MAP_GPIO_START       ((uint32_t) 0x400FF000)
+#define MEMORY_MAP_GPIO_END         ((uint32_t) 0x400F0000)
 #define MEMORY_MAP_BITBANDING_START ((uint32_t) 0x42000000)
 #define MEMORY_MAP_BITBANDING_END   ((uint32_t) 0x43FFFFFF)
 
