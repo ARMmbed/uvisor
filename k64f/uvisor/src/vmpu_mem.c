@@ -16,7 +16,7 @@
 #include "vmpu.h"
 #include "vmpu_mem.h"
 
-#define MPU_MAX_REGIONS 12
+#define MPU_MAX_REGIONS 11
 
 typedef struct
 {
@@ -36,7 +36,7 @@ static TBoxACL g_mem_box[UVISOR_MAX_BOXES];
 
 int vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
 {
-    uint32_t t, src_count, dst_count;
+    uint32_t t, u, src_count, dst_count;
     volatile uint32_t* word;
     TBoxACL *box;
     TMemACL *rgd;
@@ -46,11 +46,6 @@ int vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
         return -1;
     box = &g_mem_box[dst_box];
 
-    /* already populated - ensure to fill boxes unfragmented */
-    rgd = box->acl;
-    if(!rgd)
-        return -2;
-
     /* for box zero, just disable private ACL's */
     src_count = g_mem_box[src_box].count;
     if(!dst_box)
@@ -58,20 +53,26 @@ int vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
         /* disable private regions */
         if(src_count)
         {
-            t = g_mem_acl_user;
+            t = g_mem_acl_user + 1;
             while(src_count--)
                 MPU->WORD[t][3] = 0;
         }
-        return 0;
+        return 1;
     }
 
     dst_count = g_mem_box[dst_box].count;
     if(!dst_count)
+        return -2;
+
+    /* already populated - ensure to fill boxes unfragmented */
+    rgd = box->acl;
+    if(!rgd)
         return -3;
 
     /* update MPU regions */
-    t = g_mem_acl_user;
-    while(dst_count--)
+    t = g_mem_acl_user + 1;
+    u = dst_count;
+    while(u--)
     {
         word = MPU->WORD[t++];
         word[0] = rgd->word[0];
@@ -88,10 +89,7 @@ int vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
         dst_count++;
     }
 
-    DPRINTF("DONE\n");
-    while(1);
-
-    return -1;
+    return 0;
 }
 
 static int vmpu_mem_overlap(uint32_t s1, uint32_t e1, uint32_t s2, uint32_t e2)
