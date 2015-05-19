@@ -19,6 +19,7 @@
 typedef struct
 {
     uint32_t word[3];
+    uint32_t acl;
 } TMemACL;
 
 typedef struct
@@ -106,9 +107,15 @@ static int vmpu_add_mem_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
         {
             DPRINTF("Detected overlap with ACL %i (0x%08X-0x%08X)",
                 t, rgd->word[0], rgd->word[1]);
-            return -27;
+
+            /* handle permitted overlaps */
+            if(!((rgd->acl & UVISOR_TACL_SHARED) &&
+                (acl & UVISOR_TACL_SHARED)))
+                return -27;
         }
 
+    /* remember original ACL */
+    rgd->acl = acl;
     /* start address, aligned tro 32 bytes */
     rgd->word[0] = (uint32_t) start;
     /* end address, aligned tro 32 bytes */
