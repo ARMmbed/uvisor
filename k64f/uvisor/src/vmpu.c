@@ -372,7 +372,7 @@ static void vmpu_load_boxes(void)
                 box_id,
                 (void*)(sp + UVISOR_STACK_BAND_SIZE),
                 sp_size - UVISOR_STACK_BAND_SIZE,
-                UVISOR_TACL_STACK
+                UVISOR_TACLDEF_STACK
             );
         }
         DPRINTF("box[%i] stack pointer = 0x%08X\n",
