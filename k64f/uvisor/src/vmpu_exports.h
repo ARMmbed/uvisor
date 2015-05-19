@@ -13,34 +13,53 @@
 #ifndef __VMPU_EXPORTS_H__
 #define __VMPU_EXPORTS_H__
 
-#define UVISOR_TACL_READ            0x0001
-#define UVISOR_TACL_WRITE           0x0002
-#define UVISOR_TACL_EXECUTE         0x0004
-#define UVISOR_TACL_STACK           0x0008
-#define UVISOR_TACL_SIZE_ROUND_UP   0x0010
-#define UVISOR_TACL_SIZE_ROUND_DOWN 0x0020
-#define UVISOR_TACL_PERIPHERAL      0x0040
-#define UVISOR_TACL_SHARED          0x0080
+/* supervisor user access modes */
+#define UVISOR_TACL_UREAD           0x0001UL
+#define UVISOR_TACL_UWRITE          0x0002UL
+#define UVISOR_TACL_UEXECUTE        0x0004UL
+#define UVISOR_TACL_UACL            (UVISOR_TACL_UREAD          |\
+                                     UVISOR_TACL_UWRITE         |\
+                                     UVISOR_TACL_UEXECUTE)
 
-#define UVISOR_TACLDEF_SECURE_BSS   (UVISOR_TACL_READ           |\
-                                     UVISOR_TACL_WRITE          |\
+/* supervisor access modes */
+#define UVISOR_TACL_SREAD           0x0008UL
+#define UVISOR_TACL_SWRITE          0x0010UL
+#define UVISOR_TACL_SEXECUTE        0x0020UL
+#define UVISOR_TACL_SACL            (UVISOR_TACL_SREAD          |\
+                                     UVISOR_TACL_SWRITE         |\
+                                     UVISOR_TACL_SEXECUTE)
+
+/* various modes */
+#define UVISOR_TACL_STACK           0x0040UL
+#define UVISOR_TACL_SIZE_ROUND_UP   0x0080UL
+#define UVISOR_TACL_SIZE_ROUND_DOWN 0x0100UL
+#define UVISOR_TACL_PERIPHERAL      0x0200UL
+#define UVISOR_TACL_SHARED          0x0400UL
+
+#define UVISOR_TACLDEF_SECURE_BSS   (UVISOR_TACL_UREAD          |\
+                                     UVISOR_TACL_UWRITE         |\
+                                     UVISOR_TACL_SREAD          |\
+                                     UVISOR_TACL_SWRITE         |\
                                      UVISOR_TACL_SIZE_ROUND_UP)
 
-#define UVISOR_TACLDEF_SECURE_CONST (UVISOR_TACL_READ           |\
+#define UVISOR_TACLDEF_SECURE_CONST (UVISOR_TACL_UREAD          |\
+                                     UVISOR_TACL_UEXECUTE       |\
+                                     UVISOR_TACL_SREAD          |\
+                                     UVISOR_TACL_SEXECUTE       |\
                                      UVISOR_TACL_SIZE_ROUND_UP)
 
-#define UVISOR_TACLDEF_DATA         (UVISOR_TACL_READ           |\
-                                     UVISOR_TACL_WRITE          |\
-                                     UVISOR_TACL_SIZE_ROUND_UP)
+#define UVISOR_TACLDEF_DATA         UVISOR_TACLDEF_SECURE_BSS
 
 #define UVISOR_TACLDEF_PERIPH       (UVISOR_TACL_PERIPHERAL     |\
-                                     UVISOR_TACL_READ           |\
-                                     UVISOR_TACL_WRITE          |\
+                                     UVISOR_TACL_UREAD          |\
+                                     UVISOR_TACL_UWRITE         |\
                                      UVISOR_TACL_SIZE_ROUND_UP)
 
 #define UVISOR_TACLDEF_STACK        (UVISOR_TACL_STACK          |\
-                                     UVISOR_TACL_READ           |\
-                                     UVISOR_TACL_WRITE)
+                                     UVISOR_TACL_UREAD          |\
+                                     UVISOR_TACL_UWRITE         |\
+                                     UVISOR_TACL_SREAD          |\
+                                     UVISOR_TACL_SWRITE)
 
 #define UVISOR_TO_STR(x)            #x
 #define UVISOR_TO_STRING(x)         UVISOR_TO_STR(x)
