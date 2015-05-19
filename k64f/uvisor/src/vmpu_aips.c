@@ -25,7 +25,7 @@ static uint32_t g_aipsx_box[UVISOR_MAX_BOXES][AIPSx_DWORDS];
 static uint32_t g_aipsx_all[AIPSx_DWORDS];
 static uint32_t g_aipsx_exc[AIPSx_DWORDS];
 
-int vmpu_add_aips(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
+int vmpu_aips_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 {
     int i, slot_count;
     uint8_t aips_slot;
