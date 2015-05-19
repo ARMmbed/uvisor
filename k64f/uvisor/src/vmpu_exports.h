@@ -35,6 +35,7 @@
 #define UVISOR_TACL_SIZE_ROUND_DOWN 0x0100UL
 #define UVISOR_TACL_PERIPHERAL      0x0200UL
 #define UVISOR_TACL_SHARED          0x0400UL
+#define UVISOR_TACL_USER            0x0800UL
 
 #define UVISOR_TACLDEF_SECURE_BSS   (UVISOR_TACL_UREAD          |\
                                      UVISOR_TACL_UWRITE         |\
