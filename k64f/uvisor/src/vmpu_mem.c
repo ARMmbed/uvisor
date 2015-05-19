@@ -38,7 +38,7 @@ static int vmpu_add_mem_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
     TMemACL *rgd;
 
     /* handle empty or fully protected regions */
-    if((!size) || (!acl))
+    if(!size || !(acl & (UVISOR_TACL_UACL|UVISOR_TACL_SACL)))
         return 1;
 
     /* ensure that ACL size can be rounded up to slot size */
@@ -93,7 +93,7 @@ static int vmpu_add_mem_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
     rgd->word[1] = ((uint32_t) start) + size;
 
     /* handle user permissions */
-    perm = acl & UVISOR_TACL_UACL;
+    perm = (acl & UVISOR_TACL_USER) ?  acl & UVISOR_TACL_UACL : 0;
 
     /* if S-perms are identical to U-perms, refer from S to U */
     if(((acl & UVISOR_TACL_SACL)>>3) == perm)
