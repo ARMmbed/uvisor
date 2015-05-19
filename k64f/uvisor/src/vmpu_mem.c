@@ -20,7 +20,7 @@
 
 typedef struct
 {
-    uint32_t word[3];
+    uint32_t word[4];
     uint32_t acl;
 } TMemACL;
 
@@ -36,7 +36,8 @@ static TBoxACL g_mem_box[UVISOR_MAX_BOXES];
 
 int vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
 {
-    uint32_t t,src_count, dst_count;
+    uint32_t t, src_count, dst_count;
+    volatile uint32_t* word;
     TBoxACL *box;
     TMemACL *rgd;
 
@@ -46,21 +47,45 @@ int vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
     box = &g_mem_box[dst_box];
 
     /* already populated - ensure to fill boxes unfragmented */
-    rgd = &box->acl;
+    rgd = box->acl;
     if(!rgd)
-        return -4;
+        return -2;
 
+    /* for box zero, just disable private ACL's */
     src_count = g_mem_box[src_box].count;
-    dst_count = g_mem_box[dst_box].count;
-//    if(!src_count || !dst_count)
-
-
-    /* copy and enable MPU region */
-    while(dst_count
-    for(t=g_mem_acl_user; t<g_mem_acl_count; t++m rgd++)
+    if(!dst_box)
     {
-        memcpy(MPU->WORD, rgd->word, sizeof(rgd->word));
-        rgd->word[3] = 1;
+        /* disable private regions */
+        if(src_count)
+        {
+            t = g_mem_acl_user;
+            while(src_count--)
+                MPU->WORD[t][3] = 0;
+        }
+        return 0;
+    }
+
+    dst_count = g_mem_box[dst_box].count;
+    if(!dst_count)
+        return -3;
+
+    /* update MPU regions */
+    t = g_mem_acl_user;
+    while(dst_count--)
+    {
+        word = MPU->WORD[t++];
+        word[0] = rgd->word[0];
+        word[1] = rgd->word[1];
+        word[2] = rgd->word[2];
+        word[3] = rgd->word[3];
+        rgd++;
+    }
+
+    /* delete regions beyon updated regions */
+    while(src_count>dst_count)
+    {
+        MPU->WORD[t++][3] = 0;
+        dst_count++;
     }
 
     DPRINTF("DONE\n");
@@ -185,6 +210,9 @@ static int vmpu_mem_add_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
                 return -7;
         }
     rgd->word[2] = perm;
+
+    /* enable ACL by default */
+    rgd->word[3] = 1;
 
     /* increment ACL count */
     box->count++;
