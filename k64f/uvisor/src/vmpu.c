@@ -324,6 +324,36 @@ static void vmpu_load_boxes(void)
 
         /* load box ACLs in table */
         DPRINTF("box[%i] ACL list:\n", box_id);
+
+        /* update stack pointers */
+        if(!box_id)
+            g_svc_cx_curr_sp[0] = (uint32_t*)__get_PSP();
+        else
+        {
+            /* set stack pointer to box stack size minus guard band */
+            g_svc_cx_curr_sp[box_id] = (uint32_t*)sp;
+            /* determine stack extent */
+            sp_size = UVISOR_ROUND32_DOWN((*box_cfgtbl)->stack_size);
+            if(sp_size <= (UVISOR_STACK_BAND_SIZE+4))
+                HALT_ERROR(SANITY_CHECK_FAILED,
+                    "box[%i] stack too small (%i)\n",
+                    box_id,
+                    sp_size
+                );
+            sp -= sp_size;
+            /* add stack ACL to list */
+            vmpu_add_acl(
+                box_id,
+                (void*)(sp + UVISOR_STACK_BAND_SIZE),
+                sp_size - UVISOR_STACK_BAND_SIZE,
+                UVISOR_TACLDEF_STACK
+            );
+        }
+        DPRINTF("\tbox[%i] stack pointer = 0x%08X\n",
+            box_id,
+            g_svc_cx_curr_sp[box_id]
+        );
+
         region = (*box_cfgtbl)->acl_list;
         if(region)
         {
@@ -351,35 +381,6 @@ static void vmpu_load_boxes(void)
                 region++;
             }
         }
-
-        /* update stack pointers */
-        if(!box_id)
-            g_svc_cx_curr_sp[0] = (uint32_t*)__get_PSP();
-        else
-        {
-            /* set stack pointer to box stack size minus guard band */
-            g_svc_cx_curr_sp[box_id] = (uint32_t*)sp;
-            /* determine stack extent */
-            sp_size = UVISOR_ROUND32_DOWN((*box_cfgtbl)->stack_size);
-            if(sp_size <= (UVISOR_STACK_BAND_SIZE+4))
-                HALT_ERROR(SANITY_CHECK_FAILED,
-                    "box[%i] stack too small (%i)\n",
-                    box_id,
-                    sp_size
-                );
-            sp -= sp_size;
-            /* add stack ACL to list */
-            vmpu_add_acl(
-                box_id,
-                (void*)(sp + UVISOR_STACK_BAND_SIZE),
-                sp_size - UVISOR_STACK_BAND_SIZE,
-                UVISOR_TACLDEF_STACK
-            );
-        }
-        DPRINTF("box[%i] stack pointer = 0x%08X\n",
-            box_id,
-            g_svc_cx_curr_sp[box_id]
-        );
     }
 
     /* check consistency between allocated and actual stack sizes */
