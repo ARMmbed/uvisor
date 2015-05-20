@@ -34,61 +34,35 @@
 #error "MPU_MAX_PRIVATE_FUNCTIONS needs to be lower/equal to 0x100"
 #endif
 
-#define MPU_FAULT_USAGE  0x00
-#define MPU_FAULT_MEMORY 0x01
-#define MPU_FAULT_BUS    0x02
-#define MPU_FAULT_HARD   0x03
-#define MPU_FAULT_DEBUG  0x04
-
-static void vmpu_fault(int reason)
-{
-    uint32_t sperr,t;
-
-    /* print slave port details */
-    DPRINTF("CESR : 0x%08X\n\r", MPU->CESR);
-    sperr = (MPU->CESR >> 27);
-    for(t=0; t<5; t++)
-    {
-        if(sperr & 0x10)
-            DPRINTF("  SLAVE_PORT[%i]: @0x%08X (Detail 0x%08X)\n\r",
-                t,
-                MPU->SP[t].EAR,
-                MPU->SP[t].EDR);
-        sperr <<= 1;
-    }
-    DPRINTF("CFSR : 0x%08X\n\r", SCB->CFSR);
-
-    /* doper over and die */
-    HALT_ERROR(reason, "fault reason %i", reason);
-}
-
 static void vmpu_fault_bus(void)
 {
-    DEBUG_FAULT_BUS();
-    DPRINTF("Bus Fault\n\r");
-    DPRINTF("BFAR : 0x%08X\n\r", SCB->BFAR);
-    vmpu_fault(FAULT_BUS);
+    DEBUG_FAULT(FAULT_BUS);
+
+    /* if an MPU fault is detected, a different error pattern is used */
+    /* Note: since we are halting execution we don't bother clearing the SPERR
+     *       bit in the MPU->CESR register */
+    if(MPU->CESR >> 27)
+        halt_led(NOT_ALLOWED);
+    else
+        halt_led(FAULT_BUS);
 }
 
 static void vmpu_fault_usage(void)
 {
-    DEBUG_FAULT_USAGE();
-    DPRINTF("Usage Fault\n\r");
-    vmpu_fault(FAULT_USAGE);
+    DEBUG_FAULT(FAULT_USAGE);
+    halt_led(FAULT_USAGE);
 }
 
 static void vmpu_fault_hard(void)
 {
-    DEBUG_FAULT_HARD();
-    DPRINTF("Hard Fault\n\r");
-    DPRINTF("HFSR : 0x%08X\n\r", SCB->HFSR);
-    vmpu_fault(FAULT_HARD);
+    DEBUG_FAULT(FAULT_HARD);
+    halt_led(FAULT_HARD);
 }
 
 static void vmpu_fault_debug(void)
 {
-    DPRINTF("Debug Fault\n\r");
-    vmpu_fault(FAULT_DEBUG);
+    DEBUG_FAULT(FAULT_DEBUG);
+    halt_led(FAULT_DEBUG);
 }
 
 int vmpu_acl_dev(UvisorBoxAcl acl, uint16_t device_id)

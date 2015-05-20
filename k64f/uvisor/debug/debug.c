@@ -12,6 +12,7 @@
  ***************************************************************/
 #include <uvisor.h>
 #include "debug.h"
+#include "halt.h"
 #include "svc.h"
 #include "memory_map.h"
 
@@ -279,17 +280,88 @@ inline void debug_fault_bus(uint32_t lr)
     DEBUG_PRINT_END();
 }
 
-inline void debug_fault_usage(uint32_t lr)
+inline void debug_mpu_fault(void)
 {
-    DEBUG_PRINT_HEAD("USAGE FAULT");
-    debug_print_unpriv_exc_sf(lr);
-    debug_print_mpu_config();
-    DEBUG_PRINT_END();
+    uint32_t cesr = MPU->CESR;
+    uint32_t sperr = cesr >> 27;
+    uint32_t edr, ear, eacd;
+    int s, r, i, found;
+
+    if(sperr)
+    {
+        for(s = 4; s >= 0; s--)
+        {
+            if(sperr & (1 << s))
+            {
+                edr = MPU->SP[4 - s].EDR;
+                ear = MPU->SP[4 - s].EAR;
+                eacd = edr >> 20;
+
+                dprintf("* MPU FAULT:\n\r");
+                dprintf("  Slave port:       %d\n\r", 4 - s);
+                dprintf("  Address:          0x%08X\n\r", ear);
+                dprintf("  Faulting regions: ");
+                found = 0;
+                for(r = 11; r >= 0; r--)
+                {
+                    if(eacd & (1 << r))
+                    {
+                        if(!found)
+                        {
+                            dprintf("\n\r");
+                            found = 1;
+                        }
+                        dprintf("    R%02d:", 11 - r);
+                        for (i = 0; i < 4; i++) {
+                            dprintf(" 0x%08X", MPU->WORD[11 - r][i]);
+                        }
+                        dprintf("\n\r");
+                    }
+                }
+                if(!found)
+                    dprintf("[none]\n\r");
+                dprintf("  Master port:      %d\n\r", (edr >> 4) & 0xF);
+                dprintf("  Error attribute:  %s %s (%s mode)\n\r",
+                        edr & 0x2 ? "Data" : "Instruction",
+                        edr & 0x1 ? "WRITE" : "READ",
+                        edr & 0x4 ? "supervisor" : "user");
+                break;
+            }
+        }
+    }
+    else
+        dprintf("No MPU violation found\n\r");
+    dprintf("\n\r");
 }
 
-inline void debug_fault_hard(uint32_t lr)
+inline void debug_fault(THaltError reason, uint32_t lr)
 {
-    DEBUG_PRINT_HEAD("HARD FAULT");
+    /* fault-specific code */
+    switch(reason)
+    {
+        case FAULT_BUS:
+            DEBUG_PRINT_HEAD("BUS FAULT");
+            debug_mpu_fault();
+            debug_map_addr_to_periph(SCB->BFAR);
+            dprintf("* CFSR : 0x%08X\n\r\n\r", SCB->CFSR);
+            break;
+        case FAULT_USAGE:
+            DEBUG_PRINT_HEAD("USAGE FAULT");
+            dprintf("* CFSR : 0x%08X\n\r\n\r", SCB->CFSR);
+            break;
+        case FAULT_HARD:
+            DEBUG_PRINT_HEAD("HARD FAULT");
+            dprintf("* HFSR : 0x%08X\n\r\n\r", SCB->HFSR);
+            break;
+        case FAULT_DEBUG:
+            DEBUG_PRINT_HEAD("DEBUG FAULT");
+            dprintf("* DFSR : 0x%08X\n\r\n\r", SCB->DFSR);
+            break;
+        default:
+            dprintf("No fault occurred\n\r");
+    }
+
+    /* blue screen */
     debug_print_unpriv_exc_sf(lr);
     debug_print_mpu_config();
     DEBUG_PRINT_END();
@@ -297,8 +369,6 @@ inline void debug_fault_hard(uint32_t lr)
 
 inline void debug_init(void)
 {
-    g_buffer_pos = 0;
-
     /* debugging bus faults requires them to be precise, so write buffering is
      * disabled; note: it slows down execution */
     SCnSCB->ACTLR |= 0x2;
