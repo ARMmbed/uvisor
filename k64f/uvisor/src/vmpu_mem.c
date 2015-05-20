@@ -34,7 +34,7 @@ uint32_t g_mem_acl_count, g_mem_acl_user;
 static TMemACL g_mem_acl[UVISOR_MAX_ACLS];
 static TBoxACL g_mem_box[UVISOR_MAX_BOXES];
 
-int vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
+void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
 {
     uint32_t t, u, src_count, dst_count;
     volatile uint32_t* word;
@@ -42,8 +42,9 @@ int vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
     TMemACL *rgd;
 
     /* get box config */
-    if((dst_box >= UVISOR_MAX_BOXES)||(src_box >= UVISOR_MAX_BOXES))
-        return -1;
+    assert(dst_box < UVISOR_MAX_BOXES);
+    assert(src_box < UVISOR_MAX_BOXES);
+
     box = &g_mem_box[dst_box];
 
     /* for box zero, just disable private ACL's */
@@ -57,17 +58,15 @@ int vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
             while(src_count--)
                 MPU->WORD[t][3] = 0;
         }
-        return 1;
+        return;
     }
 
     dst_count = g_mem_box[dst_box].count;
-    if(!dst_count)
-        return -2;
+    assert(dst_count);
 
     /* already populated - ensure to fill boxes unfragmented */
     rgd = box->acl;
-    if(!rgd)
-        return -3;
+    assert(rgd);
 
     /* update MPU regions */
     t = g_mem_acl_user + 1;
@@ -88,8 +87,6 @@ int vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
         MPU->WORD[t++][3] = 0;
         dst_count++;
     }
-
-    return 0;
 }
 
 static int vmpu_mem_overlap(uint32_t s1, uint32_t e1, uint32_t s2, uint32_t e2)
@@ -287,9 +284,7 @@ void vmpu_mem_init(void)
         HALT_ERROR(SANITY_CHECK_FAILED, "failed setting up box FLASH (%i)\n", res);
 
     /* initial primary box ACL's */
-    res = vmpu_mem_switch(0, 0);
-    if( res<0 )
-        HALT_ERROR(SANITY_CHECK_FAILED, "failed switching on box zero (%i)\n", res);
+    vmpu_mem_switch(0, 0);
 
     /* mark all primary box ACL's as static */
     g_mem_acl_user = g_mem_acl_count;

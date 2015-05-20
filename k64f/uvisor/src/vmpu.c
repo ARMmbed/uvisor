@@ -118,7 +118,7 @@ int vmpu_switch(uint8_t src_box, uint8_t dst_box)
     vmpu_aips_switch(src_box, dst_box);
 
     /* switch ACLs for memory regions */
-    /* vmpu_mem_switch(src_box, dst_box); */
+    vmpu_mem_switch(src_box, dst_box);
 
     return 0;
 }
