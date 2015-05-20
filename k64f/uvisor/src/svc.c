@@ -20,6 +20,11 @@
 #define SVC_HDLRS_NUM (UVISOR_ARRAY_COUNT(g_svc_vtor_tbl))
 #define SVC_HDLRS_IND (SVC_HDLRS_NUM - 1)
 
+/* bitbanded address from regular address and bit position */
+#define BITBAND_ADDRESS(Reg,Bit) ((uint32_t volatile*)(0x42000000u +\
+    (32u*((uint32_t)(Reg) - (uint32_t)0x40000000u))                +\
+    (4u*((uint32_t)(Bit)))))
+
 /* these symbols are linked in this scope from the ASM code in __svc_irq and
  * are needed for sanity checks */
 UVISOR_EXTERN const uint32_t jump_table_unpriv;
@@ -37,8 +42,17 @@ void __svc_not_implemented(void)
  *       against a box's ACLs */
 static void svc_write_bitband(uint32_t *addr, uint32_t val)
 {
-    DPRINTF("Executed privileged bitband access to 0x%08X\n\r", addr);
-    *addr = val;
+    /* FIXME addresses for bitbanding are now hardcoded and will be replaced by
+     * a system-wide API for bitband access */
+    if(addr >= BITBAND_ADDRESS(&SIM->SCGC1, 0) &&
+       addr <= BITBAND_ADDRESS(&SIM->SCGC7, 31))
+    {
+        DPRINTF("Executed privileged bitband access to 0x%08X\n\r", addr);
+        *addr = val;
+    }
+    else
+        HALT_ERROR(NOT_ALLOWED, "Bitband access currently only limited to\
+                                 SIM->SCGCn registers\n\r");
 }
 
 /* SVC handlers */
