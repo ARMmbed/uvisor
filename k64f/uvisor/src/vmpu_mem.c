@@ -49,7 +49,7 @@ void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
 
     /* for box zero, just disable private ACL's */
     src_count = g_mem_box[src_box].count;
-    if(!dst_box)
+    if(src_box && !dst_box)
     {
         /* disable private regions */
         if(src_count)
@@ -224,7 +224,8 @@ int vmpu_mem_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
     {
         DPRINTF("\t\tSECURE_FLASH\n");
 
-        return vmpu_mem_add_int(box_id, start, size, acl & UVISOR_TACLDEF_SECURE_CONST);
+        return vmpu_mem_add_int(box_id, start, size,
+                                (acl & UVISOR_TACLDEF_SECURE_CONST) | UVISOR_TACL_USER);
     }
 
     if(    (((uint32_t*)start)>=__uvisor_config.reserved_end) &&
@@ -236,7 +237,8 @@ int vmpu_mem_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
         if(acl & UVISOR_TACL_USER)
             return -1;
 
-        return vmpu_mem_add_int(box_id, start, size, (acl & UVISOR_TACLDEF_STACK)|UVISOR_TACL_STACK|UVISOR_TACL_USER);
+        return vmpu_mem_add_int(box_id, start, size,
+                                (acl & UVISOR_TACLDEF_STACK) | UVISOR_TACL_STACK | UVISOR_TACL_USER);
     }
 
     if(    (((uint32_t*)start)>=__uvisor_config.bss_start) &&
@@ -244,7 +246,8 @@ int vmpu_mem_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
     {
         DPRINTF("\t\tSECURE_BSS\n");
 
-        return vmpu_mem_add_int(box_id, start, size, acl & UVISOR_TACLDEF_SECURE_BSS);
+        return vmpu_mem_add_int(box_id, start, size,
+                                (acl & UVISOR_TACLDEF_SECURE_BSS) | UVISOR_TACL_USER);
     }
 
     return 0;
@@ -288,4 +291,9 @@ void vmpu_mem_init(void)
 
     /* mark all primary box ACL's as static */
     g_mem_acl_user = g_mem_acl_count;
+
+    /* MPU background region permission mask
+     *   this mask must be set as last one, since the background region gives no
+     *   executable privileges to neither user nor supervisor modes */
+    MPU->RGDAAC[0] = UVISOR_TACL_BACKGROUND;
 }
