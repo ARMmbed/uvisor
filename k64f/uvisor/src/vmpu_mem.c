@@ -236,7 +236,7 @@ int vmpu_mem_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
         if(acl & UVISOR_TACL_USER)
             return -1;
 
-        return vmpu_mem_add_int(box_id, start, size, (acl & UVISOR_TACLDEF_STACK)|UVISOR_TACL_STACK);
+        return vmpu_mem_add_int(box_id, start, size, (acl & UVISOR_TACLDEF_STACK)|UVISOR_TACL_STACK|UVISOR_TACL_USER);
     }
 
     if(    (((uint32_t*)start)>=__uvisor_config.bss_start) &&
