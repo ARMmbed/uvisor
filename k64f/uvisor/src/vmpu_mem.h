@@ -18,7 +18,7 @@
 #endif/*UVISOR_MAX_ACLS*/
 
 extern int vmpu_mem_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl);
-extern int vmpu_mem_switch(uint8_t src_box, uint8_t dst_box);
+extern void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box);
 extern void vmpu_mem_init(void);
 
 #endif/*__VMPU_APIS_H__*/
