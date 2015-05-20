@@ -14,17 +14,17 @@
 #define __VMPU_EXPORTS_H__
 
 /* supervisor user access modes */
-#define UVISOR_TACL_UREAD           0x0001UL
+#define UVISOR_TACL_UEXECUTE        0x0001UL
 #define UVISOR_TACL_UWRITE          0x0002UL
-#define UVISOR_TACL_UEXECUTE        0x0004UL
+#define UVISOR_TACL_UREAD           0x0004UL
 #define UVISOR_TACL_UACL            (UVISOR_TACL_UREAD          |\
                                      UVISOR_TACL_UWRITE         |\
                                      UVISOR_TACL_UEXECUTE)
 
 /* supervisor access modes */
-#define UVISOR_TACL_SREAD           0x0008UL
+#define UVISOR_TACL_SEXECUTE        0x0008UL
 #define UVISOR_TACL_SWRITE          0x0010UL
-#define UVISOR_TACL_SEXECUTE        0x0020UL
+#define UVISOR_TACL_SREAD           0x0020UL
 #define UVISOR_TACL_SACL            (UVISOR_TACL_SREAD          |\
                                      UVISOR_TACL_SWRITE         |\
                                      UVISOR_TACL_SEXECUTE)
@@ -44,9 +44,7 @@
                                      UVISOR_TACL_SIZE_ROUND_UP)
 
 #define UVISOR_TACLDEF_SECURE_CONST (UVISOR_TACL_UREAD          |\
-                                     UVISOR_TACL_UEXECUTE       |\
                                      UVISOR_TACL_SREAD          |\
-                                     UVISOR_TACL_SEXECUTE       |\
                                      UVISOR_TACL_SIZE_ROUND_UP)
 
 #define UVISOR_TACLDEF_DATA         UVISOR_TACLDEF_SECURE_BSS
