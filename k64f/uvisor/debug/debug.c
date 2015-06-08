@@ -228,6 +228,10 @@ inline void debug_map_addr_to_periph(uint32_t address)
         {
             dprintf("    Before bitband:  0x%08X\n",
                     (aips_addr = debug_aips_addr_from_alias(address)));
+            map = memory_map_name(aips_addr);
+            dprintf("    Alias:           %s\n", map->name);
+            dprintf("      Base address:  0x%08X\n", map->base);
+            dprintf("      End address:   0x%08X\n", map->end);
             dprintf("    Accessed bit:    %d\n",
                      debug_aips_bitn_from_alias(address, aips_addr));
             dprintf("    AIPS slot:       %d\n",
