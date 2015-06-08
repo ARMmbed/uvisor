@@ -13,7 +13,7 @@
 #include <mbed/mbed.h>
 #include <uvisor-lib/uvisor-lib.h>
 
-void __uvisor_set_isr(uint32_t irqn, uint32_t vector, uint32_t flag)
+void __uvisor_isr_set(uint32_t irqn, uint32_t vector, uint32_t flag)
 {
     register uint32_t __r0 __asm__("r0") = irqn;
     register uint32_t __r1 __asm__("r1") = vector;
@@ -28,7 +28,7 @@ void __uvisor_set_isr(uint32_t irqn, uint32_t vector, uint32_t flag)
     );
 }
 
-uint32_t __uvisor_get_isr(uint32_t irqn)
+uint32_t __uvisor_isr_get(uint32_t irqn)
 {
     register uint32_t __r0  __asm__("r0") = irqn;
     register uint32_t __res __asm__("r0");
@@ -41,7 +41,7 @@ uint32_t __uvisor_get_isr(uint32_t irqn)
     return __res;
 }
 
-void __uvisor_enable_irq(uint32_t irqn)
+void __uvisor_irq_enable(uint32_t irqn)
 {
     register uint32_t __r0 __asm__("r0") = irqn;
     __asm__ volatile(
@@ -52,7 +52,7 @@ void __uvisor_enable_irq(uint32_t irqn)
     );
 }
 
-void __uvisor_disable_irq(uint32_t irqn)
+void __uvisor_irq_disable(uint32_t irqn)
 {
     register uint32_t __r0 __asm__("r0") = irqn;
     __asm__ volatile(
@@ -63,7 +63,7 @@ void __uvisor_disable_irq(uint32_t irqn)
     );
 }
 
-void __uvisor_set_priority(uint32_t irqn, uint32_t priority)
+void __uvisor_priority_set(uint32_t irqn, uint32_t priority)
 {
     register uint32_t __r0 __asm__("r0") = irqn;
     register uint32_t __r1 __asm__("r1") = priority;
@@ -76,7 +76,7 @@ void __uvisor_set_priority(uint32_t irqn, uint32_t priority)
     );
 }
 
-uint32_t __uvisor_get_priority(uint32_t irqn)
+uint32_t __uvisor_priority_get(uint32_t irqn)
 {
     register uint32_t __r0  __asm__("r0") = irqn;
     register uint32_t __res __asm__("r0");
