@@ -57,16 +57,18 @@ static void svc_write_bitband(uint32_t *addr, uint32_t val)
 
 /* SVC handlers */
 __attribute__((section(".svc_vector"))) const void *g_svc_vtor_tbl[] = {
-    svc_write_bitband,       // 0
-    unvic_isr_set,           // 1
-    unvic_isr_get,           // 2
-    unvic_irq_enable,        // 3
-    unvic_irq_disable,       // 4
-    unvic_priority_set,      // 5
-    unvic_priority_get,      // 6
-    benchmark_configure,     // 7
-    benchmark_start,         // 8
-    benchmark_stop,          // 9
+    svc_write_bitband,       //  0
+    unvic_isr_set,           //  1
+    unvic_isr_get,           //  2
+    unvic_irq_enable,        //  3
+    unvic_irq_disable,       //  4
+    unvic_irq_clear_pending, //  5
+    unvic_irq_set_pending,   //  6
+    unvic_priority_set,      //  7
+    unvic_priority_get,      //  8
+    benchmark_configure,     //  9
+    benchmark_start,         // 10
+    benchmark_stop,          // 11
 };
 
 /*******************************************************************************

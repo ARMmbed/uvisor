@@ -144,6 +144,66 @@ void unvic_irq_disable(uint32_t irqn)
     NVIC_DisableIRQ(irqn);
 }
 
+/* FIXME check if allowed (ACL) */
+void unvic_irq_clear_pending(uint32_t irqn)
+{
+    /* check IRQn */
+    if(irqn >= IRQ_VECTORS)
+    {
+        HALT_ERROR(NOT_ALLOWED,
+                   "IRQ %d out of range (%d to %d)\n\r", irqn, 0, IRQ_VECTORS);
+    }
+
+    /* check if ISR has been set for this IRQn slot */
+    if(ISR_GET(irqn) == (TIsrVector) &unvic_default_handler)
+    {
+        HALT_ERROR(NOT_ALLOWED,
+                   "no ISR set yet for IRQ %d\n\r", irqn);
+    }
+
+    /* check if the same box that registered the ISR is enabling it */
+    if(svc_cx_get_curr_id() != g_unvic_vector[irqn].id)
+    {
+        HALT_ERROR(PERMISSION_DENIED,
+                   "access denied: IRQ %d is owned by box %d\n\r", irqn,
+                                               g_unvic_vector[irqn].id);
+    }
+
+    /* enable IRQ */
+    DPRINTF("IRQ %d pending status cleared\n\r", irqn);
+    NVIC_ClearPendingIRQ(irqn);
+}
+
+/* FIXME check if allowed (ACL) */
+void unvic_irq_set_pending(uint32_t irqn)
+{
+    /* check IRQn */
+    if(irqn >= IRQ_VECTORS)
+    {
+        HALT_ERROR(NOT_ALLOWED,
+                   "IRQ %d out of range (%d to %d)\n\r", irqn, 0, IRQ_VECTORS);
+    }
+
+    /* check if ISR has been set for this IRQn slot */
+    if(ISR_GET(irqn) == (TIsrVector) &unvic_default_handler)
+    {
+        HALT_ERROR(NOT_ALLOWED,
+                   "no ISR set yet for IRQ %d\n\r", irqn);
+    }
+
+    /* check if the same box that registered the ISR is enabling it */
+    if(svc_cx_get_curr_id() != g_unvic_vector[irqn].id)
+    {
+        HALT_ERROR(PERMISSION_DENIED,
+                   "access denied: IRQ %d is owned by box %d\n\r", irqn,
+                                               g_unvic_vector[irqn].id);
+    }
+
+    /* enable IRQ */
+    DPRINTF("IRQ %d set active (will be served as soon as possible)\n\r", irqn);
+    NVIC_SetPendingIRQ(irqn);
+}
+
 void unvic_priority_set(uint32_t irqn, uint32_t priority)
 {
     /* unprivileged code cannot set priorities for system interrupts */
