@@ -73,6 +73,15 @@ UVISOR_EXTERN uint32_t __uvisor_priority_get(uint32_t irqn);
         }                                                                      \
     })
 
+/* FIXME implement this API (planned with IRQ re-factoring (call gateway) */
+#define uvisor_irq_clear_pending(irqn)                                         \
+    ({                                                                         \
+        if(__uvisor_mode == 0)                                                 \
+        {                                                                      \
+            NVIC_ClearPendingIRQ(irqn);                                        \
+        }                                                                      \
+    })
+
 #define uvisor_priority_set(irqn, priority)                                    \
     ({                                                                         \
         if(__uvisor_mode == 0)                                                 \

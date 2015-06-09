@@ -26,12 +26,12 @@ void isr_default_handler(void) UVISOR_LINKTO(unvic_default_handler);
 /* unprivileged default handler */
 void unvic_default_handler(void)
 {
-    HALT_ERROR(NOT_ALLOWED, "spurious IRQ (IPSR=%i)", (uint8_t)__get_IPSR());
+    HALT_ERROR(NOT_ALLOWED, "spurious IRQ (IPSR = %i)", (uint8_t) __get_IPSR());
 }
 
 /* FIXME check if allowed (ACL) */
 /* FIXME flag is currently not implemented */
-void unvic_set_isr(uint32_t irqn, uint32_t vector, uint32_t flag)
+void unvic_isr_set(uint32_t irqn, uint32_t vector, uint32_t flag)
 {
     uint32_t curr_id;
 
@@ -69,7 +69,7 @@ void unvic_set_isr(uint32_t irqn, uint32_t vector, uint32_t flag)
              irqn, svc_cx_get_curr_id(), vector);
 }
 
-uint32_t unvic_get_isr(uint32_t irqn)
+uint32_t unvic_isr_get(uint32_t irqn)
 {
     /* check IRQn */
     if(irqn >= IRQ_VECTORS)
@@ -86,7 +86,7 @@ uint32_t unvic_get_isr(uint32_t irqn)
 }
 
 /* FIXME check if allowed (ACL) */
-void unvic_enable_irq(uint32_t irqn)
+void unvic_irq_enable(uint32_t irqn)
 {
     /* check IRQn */
     if(irqn >= IRQ_VECTORS)
@@ -115,7 +115,7 @@ void unvic_enable_irq(uint32_t irqn)
     NVIC_EnableIRQ(irqn);
 }
 
-void unvic_disable_irq(uint32_t irqn)
+void unvic_irq_disable(uint32_t irqn)
 {
     /* check IRQn */
     if(irqn >= IRQ_VECTORS)
@@ -144,7 +144,7 @@ void unvic_disable_irq(uint32_t irqn)
     NVIC_DisableIRQ(irqn);
 }
 
-void unvic_set_priority(uint32_t irqn, uint32_t priority)
+void unvic_priority_set(uint32_t irqn, uint32_t priority)
 {
     /* unprivileged code cannot set priorities for system interrupts */
     if((int32_t) irqn < 0)
@@ -177,7 +177,7 @@ void unvic_set_priority(uint32_t irqn, uint32_t priority)
 
 }
 
-uint32_t unvic_get_priority(uint32_t irqn)
+uint32_t unvic_priority_get(uint32_t irqn)
 {
     /* unprivileged code only see a default 0-priority for system interrupts */
     if((int32_t) irqn < 0)
