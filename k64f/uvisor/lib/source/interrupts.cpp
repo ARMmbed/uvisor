@@ -24,7 +24,7 @@ void __uvisor_isr_set(uint32_t irqn, uint32_t vector, uint32_t flag)
         : [r0]     "r" (__r0),
           [r1]     "r" (__r1),
           [r2]     "r" (__r2),
-          [svc_id] "i" (UVISOR_SVC_ID_SET_ISR)
+          [svc_id] "i" (UVISOR_SVC_ID_ISR_SET)
     );
 }
 
@@ -36,7 +36,7 @@ uint32_t __uvisor_isr_get(uint32_t irqn)
         "svc %[svc_id]\n"
         : [res]    "=r" (__res)
         : [r0]     "r"  (__r0),
-          [svc_id] "i"  (UVISOR_SVC_ID_GET_ISR)
+          [svc_id] "i"  (UVISOR_SVC_ID_ISR_GET)
     );
     return __res;
 }
@@ -48,7 +48,7 @@ void __uvisor_irq_enable(uint32_t irqn)
         "svc %[svc_id]\n"
         :
         : [r0]     "r" (__r0),
-          [svc_id] "i" (UVISOR_SVC_ID_ENABLE_IRQ)
+          [svc_id] "i" (UVISOR_SVC_ID_IRQ_ENABLE)
     );
 }
 
@@ -59,7 +59,7 @@ void __uvisor_irq_disable(uint32_t irqn)
         "svc %[svc_id]\n"
         :
         : [r0]     "r" (__r0),
-          [svc_id] "i" (UVISOR_SVC_ID_DISABLE_IRQ)
+          [svc_id] "i" (UVISOR_SVC_ID_IRQ_DISABLE)
     );
 }
 
@@ -72,7 +72,7 @@ void __uvisor_priority_set(uint32_t irqn, uint32_t priority)
         :
         : [r0]     "r" (__r0),
           [r1]     "r" (__r1),
-          [svc_id] "i" (UVISOR_SVC_ID_SET_PRIORITY)
+          [svc_id] "i" (UVISOR_SVC_ID_PRIORITY_SET)
     );
 }
 
@@ -84,7 +84,7 @@ uint32_t __uvisor_priority_get(uint32_t irqn)
         "svc %[svc_id]\n"
         : [res]    "=r" (__res)
         : [r0]     "r"  (__r0),
-          [svc_id] "i"  (UVISOR_SVC_ID_GET_PRIORITY)
+          [svc_id] "i"  (UVISOR_SVC_ID_PRIORITY_GET)
     );
     return __res;
 }
