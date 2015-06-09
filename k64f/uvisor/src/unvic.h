@@ -28,6 +28,8 @@ extern uint32_t unvic_isr_get(uint32_t irqn);
 
 extern void unvic_irq_enable(uint32_t irqn);
 extern void unvic_irq_disable(uint32_t irqn);
+extern void unvic_irq_clear_pending(uint32_t irqn);
+extern void unvic_irq_set_pending(uint32_t irqn);
 
 extern void     unvic_priority_set(uint32_t irqn, uint32_t priority);
 extern uint32_t unvic_priority_get(uint32_t irqn);
