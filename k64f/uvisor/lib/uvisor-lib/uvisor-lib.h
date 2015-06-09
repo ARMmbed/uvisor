@@ -13,6 +13,7 @@
 #ifndef __UVISOR_LIB_H__
 #define __UVISOR_LIB_H__
 
+#include <stdint.h>
 #include <uvisor-lib/uvisor_exports.h>
 #include <uvisor-lib/svc_exports.h>
 #include <uvisor-lib/svc_gw_exports.h>
