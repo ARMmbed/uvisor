@@ -63,29 +63,29 @@ void __uvisor_irq_disable(uint32_t irqn)
     );
 }
 
-void __uvisor_irq_clear_pending(uint32_t irqn)
+void __uvisor_irq_pending_clr(uint32_t irqn)
 {
     register uint32_t __r0 __asm__("r0") = irqn;
     __asm__ volatile(
         "svc %[svc_id]\n"
         :
         : [r0]     "r" (__r0),
-          [svc_id] "i" (UVISOR_SVC_ID_IRQ_CLR_PEND)
+          [svc_id] "i" (UVISOR_SVC_ID_IRQ_PEND_CLR)
     );
 }
 
-void __uvisor_irq_set_pending(uint32_t irqn)
+void __uvisor_irq_pending_set(uint32_t irqn)
 {
     register uint32_t __r0 __asm__("r0") = irqn;
     __asm__ volatile(
         "svc %[svc_id]\n"
         :
         : [r0]     "r" (__r0),
-          [svc_id] "i" (UVISOR_SVC_ID_IRQ_SET_PEND)
+          [svc_id] "i" (UVISOR_SVC_ID_IRQ_PEND_SET)
     );
 }
 
-void __uvisor_priority_set(uint32_t irqn, uint32_t priority)
+void __uvisor_irq_priority_set(uint32_t irqn, uint32_t priority)
 {
     register uint32_t __r0 __asm__("r0") = irqn;
     register uint32_t __r1 __asm__("r1") = priority;
@@ -94,11 +94,11 @@ void __uvisor_priority_set(uint32_t irqn, uint32_t priority)
         :
         : [r0]     "r" (__r0),
           [r1]     "r" (__r1),
-          [svc_id] "i" (UVISOR_SVC_ID_PRIORITY_SET)
+          [svc_id] "i" (UVISOR_SVC_ID_IRQ_PRIO_SET)
     );
 }
 
-uint32_t __uvisor_priority_get(uint32_t irqn)
+uint32_t __uvisor_irq_priority_get(uint32_t irqn)
 {
     register uint32_t __r0  __asm__("r0") = irqn;
     register uint32_t __res __asm__("r0");
@@ -106,7 +106,7 @@ uint32_t __uvisor_priority_get(uint32_t irqn)
         "svc %[svc_id]\n"
         : [res]    "=r" (__res)
         : [r0]     "r"  (__r0),
-          [svc_id] "i"  (UVISOR_SVC_ID_PRIORITY_GET)
+          [svc_id] "i"  (UVISOR_SVC_ID_IRQ_PRIO_GET)
     );
     return __res;
 }

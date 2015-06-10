@@ -26,13 +26,12 @@ extern TIsrUVector g_unvic_vector[IRQ_VECTORS];
 extern void     unvic_isr_set(uint32_t irqn, uint32_t vector, uint32_t flag);
 extern uint32_t unvic_isr_get(uint32_t irqn);
 
-extern void unvic_irq_enable(uint32_t irqn);
-extern void unvic_irq_disable(uint32_t irqn);
-extern void unvic_irq_clear_pending(uint32_t irqn);
-extern void unvic_irq_set_pending(uint32_t irqn);
-
-extern void     unvic_priority_set(uint32_t irqn, uint32_t priority);
-extern uint32_t unvic_priority_get(uint32_t irqn);
+extern void     unvic_irq_enable(uint32_t irqn);
+extern void     unvic_irq_disable(uint32_t irqn);
+extern void     unvic_irq_pending_clr(uint32_t irqn);
+extern void     unvic_irq_pending_set(uint32_t irqn);
+extern void     unvic_irq_priority_set(uint32_t irqn, uint32_t priority);
+extern uint32_t unvic_irq_priority_get(uint32_t irqn);
 
 extern void unvic_init(void);
 
