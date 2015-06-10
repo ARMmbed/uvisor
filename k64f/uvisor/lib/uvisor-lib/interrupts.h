@@ -17,13 +17,13 @@ UVISOR_EXTERN void     __uvisor_isr_set(uint32_t irqn, uint32_t vector,
                                         uint32_t flag);
 UVISOR_EXTERN uint32_t __uvisor_isr_get(uint32_t irqn);
 
-UVISOR_EXTERN void __uvisor_irq_enable(uint32_t irqn);
-UVISOR_EXTERN void __uvisor_irq_disable(uint32_t irqn);
-UVISOR_EXTERN void __uvisor_irq_clear_pending(uint32_t irqn);
-UVISOR_EXTERN void __uvisor_irq_set_pending(uint32_t irqn);
-
-UVISOR_EXTERN void     __uvisor_priority_set(uint32_t irqn, uint32_t priority);
-UVISOR_EXTERN uint32_t __uvisor_priority_get(uint32_t irqn);
+UVISOR_EXTERN void     __uvisor_irq_enable(uint32_t irqn);
+UVISOR_EXTERN void     __uvisor_irq_disable(uint32_t irqn);
+UVISOR_EXTERN void     __uvisor_irq_pending_clr(uint32_t irqn);
+UVISOR_EXTERN void     __uvisor_irq_pending_set(uint32_t irqn);
+UVISOR_EXTERN void     __uvisor_irq_priority_set(uint32_t irqn,
+                                                 uint32_t priority);
+UVISOR_EXTERN uint32_t __uvisor_irq_priority_get(uint32_t irqn);
 
 #define uvisor_isr_set(irqn, vector, flag)                                     \
     ({                                                                         \
@@ -76,7 +76,7 @@ UVISOR_EXTERN uint32_t __uvisor_priority_get(uint32_t irqn);
         }                                                                      \
     })
 
-#define uvisor_irq_clear_pending(irqn)                                         \
+#define uvisor_irq_pending_clr(irqn)                                           \
     ({                                                                         \
         if(__uvisor_mode == 0)                                                 \
         {                                                                      \
@@ -84,11 +84,11 @@ UVISOR_EXTERN uint32_t __uvisor_priority_get(uint32_t irqn);
         }                                                                      \
         else                                                                   \
         {                                                                      \
-            __uvisor_irq_clear_pending((uint32_t) (irqn));                     \
+            __uvisor_irq_pending_clr((uint32_t) (irqn));                       \
         }                                                                      \
     })
 
-#define uvisor_irq_set_pending(irqn)                                           \
+#define uvisor_irq_pending_set(irqn)                                           \
     ({                                                                         \
         if(__uvisor_mode == 0)                                                 \
         {                                                                      \
@@ -96,11 +96,11 @@ UVISOR_EXTERN uint32_t __uvisor_priority_get(uint32_t irqn);
         }                                                                      \
         else                                                                   \
         {                                                                      \
-            __uvisor_irq_set_pending((uint32_t) (irqn));                       \
+            __uvisor_irq_pending_set((uint32_t) (irqn));                       \
         }                                                                      \
     })
 
-#define uvisor_priority_set(irqn, priority)                                    \
+#define uvisor_irq_priority_set(irqn, priority)                                \
     ({                                                                         \
         if(__uvisor_mode == 0)                                                 \
         {                                                                      \
@@ -108,11 +108,12 @@ UVISOR_EXTERN uint32_t __uvisor_priority_get(uint32_t irqn);
         }                                                                      \
         else                                                                   \
         {                                                                      \
-            __uvisor_priority_set((uint32_t) (irqn), (uint32_t) (priority));   \
+            __uvisor_irq_priority_set((uint32_t) (irqn),                       \
+                                      (uint32_t) (priority));                  \
         }                                                                      \
     })
 
-#define uvisor_priority_get(irqn)                                              \
+#define uvisor_irq_priority_get(irqn)                                          \
     ({                                                                         \
         uint32_t res;                                                          \
         if(__uvisor_mode == 0)                                                 \
@@ -121,7 +122,7 @@ UVISOR_EXTERN uint32_t __uvisor_priority_get(uint32_t irqn);
         }                                                                      \
         else                                                                   \
         {                                                                      \
-            res =  __uvisor_priority_get((uint32_t) (irqn));                   \
+            res =  __uvisor_irq_priority_get((uint32_t) (irqn));               \
         }                                                                      \
         res;                                                                   \
     })

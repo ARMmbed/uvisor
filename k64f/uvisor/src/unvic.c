@@ -145,7 +145,7 @@ void unvic_irq_disable(uint32_t irqn)
 }
 
 /* FIXME check if allowed (ACL) */
-void unvic_irq_clear_pending(uint32_t irqn)
+void unvic_irq_pending_clr(uint32_t irqn)
 {
     /* check IRQn */
     if(irqn >= IRQ_VECTORS)
@@ -175,7 +175,7 @@ void unvic_irq_clear_pending(uint32_t irqn)
 }
 
 /* FIXME check if allowed (ACL) */
-void unvic_irq_set_pending(uint32_t irqn)
+void unvic_irq_pending_set(uint32_t irqn)
 {
     /* check IRQn */
     if(irqn >= IRQ_VECTORS)
@@ -204,7 +204,7 @@ void unvic_irq_set_pending(uint32_t irqn)
     NVIC_SetPendingIRQ(irqn);
 }
 
-void unvic_priority_set(uint32_t irqn, uint32_t priority)
+void unvic_irq_priority_set(uint32_t irqn, uint32_t priority)
 {
     /* unprivileged code cannot set priorities for system interrupts */
     if((int32_t) irqn < 0)
@@ -237,7 +237,7 @@ void unvic_priority_set(uint32_t irqn, uint32_t priority)
 
 }
 
-uint32_t unvic_priority_get(uint32_t irqn)
+uint32_t unvic_irq_priority_get(uint32_t irqn)
 {
     /* unprivileged code only see a default 0-priority for system interrupts */
     if((int32_t) irqn < 0)
