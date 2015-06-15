@@ -204,6 +204,28 @@ void unvic_irq_pending_set(uint32_t irqn)
     NVIC_SetPendingIRQ(irqn);
 }
 
+uint32_t unvic_irq_pending_get(uint32_t irqn)
+{
+    /* unprivileged code only see a default 0-priority for system interrupts */
+    if((int32_t) irqn < 0)
+    {
+        return 0;
+    }
+    else
+    {
+        /* check IRQn */
+        if(irqn >= IRQ_VECTORS)
+        {
+            HALT_ERROR(NOT_ALLOWED,
+                       "IRQ %d out of range (%d to %d)\n\r",
+                       irqn, 0, IRQ_VECTORS);
+        }
+
+        /* get priority for device specific interrupts  */
+        return NVIC_GetPendingIRQ(irqn);
+    }
+}
+
 void unvic_irq_priority_set(uint32_t irqn, uint32_t priority)
 {
     /* unprivileged code cannot set priorities for system interrupts */
