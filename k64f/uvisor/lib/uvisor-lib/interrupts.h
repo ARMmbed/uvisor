@@ -21,6 +21,7 @@ UVISOR_EXTERN void     __uvisor_irq_enable(uint32_t irqn);
 UVISOR_EXTERN void     __uvisor_irq_disable(uint32_t irqn);
 UVISOR_EXTERN void     __uvisor_irq_pending_clr(uint32_t irqn);
 UVISOR_EXTERN void     __uvisor_irq_pending_set(uint32_t irqn);
+UVISOR_EXTERN uint32_t __uvisor_irq_pending_get(uint32_t irqn);
 UVISOR_EXTERN void     __uvisor_irq_priority_set(uint32_t irqn,
                                                  uint32_t priority);
 UVISOR_EXTERN uint32_t __uvisor_irq_priority_get(uint32_t irqn);
@@ -98,6 +99,20 @@ UVISOR_EXTERN uint32_t __uvisor_irq_priority_get(uint32_t irqn);
         {                                                                      \
             __uvisor_irq_pending_set((uint32_t) (irqn));                       \
         }                                                                      \
+    })
+
+#define uvisor_irq_pending_get(irqn)                                           \
+    ({                                                                         \
+        uint32_t res;                                                          \
+        if(__uvisor_mode == 0)                                                 \
+        {                                                                      \
+            res = NVIC_GetPendingIRQ((IRQn_Type) (irqn));                      \
+        }                                                                      \
+        else                                                                   \
+        {                                                                      \
+            res =  __uvisor_irq_pending_get((uint32_t) (irqn));                \
+        }                                                                      \
+        res;                                                                   \
     })
 
 #define uvisor_irq_priority_set(irqn, priority)                                \
