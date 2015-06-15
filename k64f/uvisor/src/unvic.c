@@ -254,7 +254,7 @@ void unvic_irq_priority_set(uint32_t irqn, uint32_t priority)
         }
 
         /* set priority for device specific interrupts */
-        NVIC->IP[irqn] = ((priority << (8 - __NVIC_PRIO_BITS)) & 0xff);
+        NVIC_SetPriority(irqn, priority);
     }
 
 }
@@ -277,7 +277,7 @@ uint32_t unvic_irq_priority_get(uint32_t irqn)
         }
 
         /* get priority for device specific interrupts  */
-        return (uint32_t) (NVIC->IP[irqn] >> (8 - __NVIC_PRIO_BITS));
+        return NVIC_GetPriority(irqn);
     }
 }
 
