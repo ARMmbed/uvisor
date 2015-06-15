@@ -64,11 +64,12 @@ __attribute__((section(".svc_vector"))) const void *g_svc_vtor_tbl[] = {
     unvic_irq_disable,       //  4
     unvic_irq_pending_clr,   //  5
     unvic_irq_pending_set,   //  6
-    unvic_irq_priority_set,  //  7
-    unvic_irq_priority_get,  //  8
-    benchmark_configure,     //  9
-    benchmark_start,         // 10
-    benchmark_stop,          // 11
+    unvic_irq_pending_get,   //  7
+    unvic_irq_priority_set,  //  8
+    unvic_irq_priority_get,  //  9
+    benchmark_configure,     // 10
+    benchmark_start,         // 11
+    benchmark_stop,          // 12
 };
 
 /*******************************************************************************

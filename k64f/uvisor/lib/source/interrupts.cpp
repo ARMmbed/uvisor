@@ -85,6 +85,19 @@ void __uvisor_irq_pending_set(uint32_t irqn)
     );
 }
 
+uint32_t __uvisor_irq_pending_get(uint32_t irqn)
+{
+    register uint32_t __r0  __asm__("r0") = irqn;
+    register uint32_t __res __asm__("r0");
+    __asm__ volatile(
+        "svc %[svc_id]\n"
+        : [res]    "=r" (__res)
+        : [r0]     "r"  (__r0),
+          [svc_id] "i"  (UVISOR_SVC_ID_IRQ_PEND_GET)
+    );
+    return __res;
+}
+
 void __uvisor_irq_priority_set(uint32_t irqn, uint32_t priority)
 {
     register uint32_t __r0 __asm__("r0") = irqn;
