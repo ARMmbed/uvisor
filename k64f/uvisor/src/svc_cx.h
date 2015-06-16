@@ -18,7 +18,6 @@
 #include "vmpu.h"
 
 #define SVC_CX_EXC_SF_SIZE 8
-#define SVC_CX_MAX_DEPTH   0x10
 
 typedef struct {
     uint8_t   rfu[3];  /* for 32 bit alignment */
@@ -27,7 +26,7 @@ typedef struct {
 } UVISOR_PACKED TBoxCx;
 
 /* state variables */
-extern TBoxCx    g_svc_cx_state[SVC_CX_MAX_DEPTH];
+extern TBoxCx    g_svc_cx_state[UVISOR_SVC_CONTEXT_MAX_DEPTH];
 extern int       g_svc_cx_state_ptr;
 extern uint32_t *g_svc_cx_curr_sp[UVISOR_MAX_BOXES];
 extern uint8_t   g_svc_cx_curr_id;
@@ -57,7 +56,7 @@ static void inline svc_cx_push_state(uint8_t src_id, uint32_t *src_sp,
                                      uint8_t dst_id)
 {
     /* check state stack overflow */
-    if(g_svc_cx_state_ptr == SVC_CX_MAX_DEPTH)
+    if(g_svc_cx_state_ptr == UVISOR_SVC_CONTEXT_MAX_DEPTH)
         HALT_ERROR(SANITY_CHECK_FAILED, "state stack overflow");
 
     /* push state */
