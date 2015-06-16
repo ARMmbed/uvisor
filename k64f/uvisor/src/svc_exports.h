@@ -13,6 +13,11 @@
 #ifndef __SVC_EXPORTS_H__
 #define __SVC_EXPORTS_H__
 
+/* maximum depth of nested context switches
+ * this includes both IRQn and secure gateways, as they use the same state stack
+ * for their context switches */
+#define UVISOR_SVC_CONTEXT_MAX_DEPTH 0x10
+
 /* SVC takes a 8bit immediate, which is split as follows:
  *    bit 7 to bit UVISOR_SVC_CUSTOM_BITS: hardcoded table
  *    bit UVISOR_SVC_CUSTOM_BITS - 1 to bit 0: custom table

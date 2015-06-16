@@ -16,7 +16,7 @@
 #include "debug.h"
 
 /* state variables */
-TBoxCx    g_svc_cx_state[SVC_CX_MAX_DEPTH];
+TBoxCx    g_svc_cx_state[UVISOR_SVC_CONTEXT_MAX_DEPTH];
 int       g_svc_cx_state_ptr;
 uint32_t *g_svc_cx_curr_sp[UVISOR_MAX_BOXES];
 uint8_t   g_svc_cx_curr_id;

@@ -31,4 +31,7 @@
 /* array count macro */
 #define UVISOR_ARRAY_COUNT(x) (sizeof(x)/sizeof(x[0]))
 
+/* maximum number of boxes allowed: 1 is the minimum (unprivileged box) */
+#define UVISOR_MAX_BOXES 5U
+
 #endif/*__UVISOR_EXPORTS_H__*/
