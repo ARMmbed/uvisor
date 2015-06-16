@@ -65,8 +65,10 @@ void unvic_isr_set(uint32_t irqn, uint32_t vector, uint32_t flag)
     /* set default priority (SVC must always be higher) */
     NVIC_SetPriority(irqn, UNVIC_MIN_PRIORITY);
 
-    DPRINTF("IRQ %d is now registered to box %d with vector 0x%08X\n\r",
-             irqn, svc_cx_get_curr_id(), vector);
+    DPRINTF("IRQ %d %s box %d\n\r",
+            irqn,
+            vector ? "registered to" : "released by",
+            svc_cx_get_curr_id());
 }
 
 uint32_t unvic_isr_get(uint32_t irqn)
@@ -111,7 +113,7 @@ void unvic_irq_enable(uint32_t irqn)
     }
 
     /* enable IRQ */
-    DPRINTF("IRQ %d is now active\n\r", irqn);
+    DPRINTF("IRQ %d enabled\n\r", irqn);
     NVIC_EnableIRQ(irqn);
 }
 
@@ -139,8 +141,8 @@ void unvic_irq_disable(uint32_t irqn)
                                                g_unvic_vector[irqn].id);
     }
 
-    DPRINTF("IRQ %d is now disabled, but still owned by box %d\n\r", irqn,
-                                                 g_unvic_vector[irqn].id);
+    DPRINTF("IRQ %d disabled, but still owned by box %d\n\r", irqn,
+                                          g_unvic_vector[irqn].id);
     NVIC_DisableIRQ(irqn);
 }
 
@@ -161,7 +163,7 @@ void unvic_irq_pending_clr(uint32_t irqn)
                    "no ISR set yet for IRQ %d\n\r", irqn);
     }
 
-    /* check if the same box that registered the ISR is enabling it */
+    /* check if the same box that registered the ISR is clearing the IRQn */
     if(svc_cx_get_curr_id() != g_unvic_vector[irqn].id)
     {
         HALT_ERROR(PERMISSION_DENIED,
@@ -191,7 +193,7 @@ void unvic_irq_pending_set(uint32_t irqn)
                    "no ISR set yet for IRQ %d\n\r", irqn);
     }
 
-    /* check if the same box that registered the ISR is enabling it */
+    /* check if the same box that registered the ISR is setting the IRQn */
     if(svc_cx_get_curr_id() != g_unvic_vector[irqn].id)
     {
         HALT_ERROR(PERMISSION_DENIED,
@@ -200,13 +202,14 @@ void unvic_irq_pending_set(uint32_t irqn)
     }
 
     /* enable IRQ */
-    DPRINTF("IRQ %d set active (will be served as soon as possible)\n\r", irqn);
+    DPRINTF("IRQ %d pending status set "
+            "(will be served as soon as possible)\n\r", irqn);
     NVIC_SetPendingIRQ(irqn);
 }
 
 uint32_t unvic_irq_pending_get(uint32_t irqn)
 {
-    /* unprivileged code only see a default 0-priority for system interrupts */
+    /* unprivileged code never sees pending status of system interrupts */
     if((int32_t) irqn < 0)
     {
         return 0;
@@ -232,8 +235,8 @@ void unvic_irq_priority_set(uint32_t irqn, uint32_t priority)
     if((int32_t) irqn < 0)
     {
         HALT_ERROR(PERMISSION_DENIED,
-                   "access denied: IRQ %d is a system interrupt and is owned\
-                    by uVisor\n\r", irqn);
+                   "access denied: IRQ %d is a system interrupt and is owned "
+                   "by uVisor\n\r", irqn);
     }
     else
     {
@@ -300,8 +303,8 @@ void unvic_isr_mux(void)
     }
 
     /* handle IRQ with an unprivileged handler */
-    DPRINTF("IRQ %d being served with vector 0x%08X\n\r", irqn,
-                                                          g_unvic_vector[irqn]);
+    DPRINTF("IRQ %d served with vector 0x%08X\n\r", irqn,
+                                                    g_unvic_vector[irqn]);
     asm volatile(
         "svc  %[unvic_in]\n"
         "svc  %[unvic_out]\n"
