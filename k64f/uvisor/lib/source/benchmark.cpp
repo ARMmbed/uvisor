@@ -10,8 +10,8 @@
  *  by a licensing agreement from ARM Limited.
  *
  ***************************************************************/
-#include <mbed/mbed.h>
-#include <uvisor-lib/uvisor-lib.h>
+#include "mbed/mbed.h"
+#include "uvisor-lib/uvisor-lib.h"
 
 void uvisor_benchmark_configure(void)
 {
