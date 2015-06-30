@@ -14,17 +14,12 @@
 #include "svc.h"
 #include "vmpu.h"
 #include "unvic.h"
+#include "bitband.h"
 #include "benchmark.h"
 
 #define SVC_HDLRS_MAX (1 << UVISOR_SVC_CUSTOM_BITS)
 #define SVC_HDLRS_NUM (UVISOR_ARRAY_COUNT(g_svc_vtor_tbl))
 #define SVC_HDLRS_IND (SVC_HDLRS_NUM - 1)
-
-/* FIXME change defines with hw-specific ones */
-/* bitbanded address from regular address and bit position */
-#define BITBAND_ADDRESS(Reg,Bit) ((uint32_t volatile*)(0x42000000u +\
-	(32u*((uint32_t)(Reg) - (uint32_t)0x40000000u))                +\
-	(4u*((uint32_t)(Bit)))))
 
 /* these symbols are linked in this scope from the ASM code in __svc_irq and
  * are needed for sanity checks */
@@ -39,18 +34,9 @@ void __svc_not_implemented(void)
 	HALT_ERROR(NOT_IMPLEMENTED, "function not implemented\n\r");
 }
 
-/* FIXME this function is temporary. Writes to an address should be checked
- *       against a box's ACLs */
-static void svc_write_bitband(uint32_t *addr, uint32_t val)
-{
-	/* not implemented for STM32: currently user code does not need access to
-	 * privileged peripherals */
-	return;
-}
-
 /* SVC handlers */
 __attribute__((section(".svc_vector"))) const void *g_svc_vtor_tbl[] = {
-	svc_write_bitband,       //  0
+	bitband_write,           //  0
 	unvic_isr_set,           //  1
 	unvic_isr_get,           //  2
 	unvic_irq_enable,        //  3

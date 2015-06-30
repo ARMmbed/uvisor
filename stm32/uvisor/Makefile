@@ -22,6 +22,7 @@ APP_SRC:=\
 	src/svc_cx.c \
 	src/vmpu.c \
 	src/main.c \
+	src/bitband.c \
 	src/benchmark.c \
 	debug/debug.c \
 	debug/memory_map.c \
