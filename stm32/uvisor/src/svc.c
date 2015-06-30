@@ -43,8 +43,9 @@ void __svc_not_implemented(void)
  *       against a box's ACLs */
 static void svc_write_bitband(uint32_t *addr, uint32_t val)
 {
-	/* FIXME add hw-specific code here */
-	*addr = val;
+	/* not implemented for STM32: currently user code does not need access to
+	 * privileged peripherals */
+	return;
 }
 
 /* SVC handlers */
