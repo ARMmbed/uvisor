@@ -16,22 +16,39 @@
 #include <uvisor.h>
 #include "halt.h"
 
-void debug_fault(THaltError reason, uint32_t lr);
+void debug_init(void);
 void debug_cx_switch_in(void);
 void debug_cx_switch_out(void);
-void debug_print_mpu_config(void);
-void debug_init(void);
+void debug_exc_sf(uint32_t lr);
+void debug_fault_memmanage(void);
+void debug_fault_bus(void);
+void debug_fault_usage(void);
+void debug_fault_hard(void);
+void debug_fault_debug(void);
+void debug_fault(THaltError reason, uint32_t lr);
+void debug_mpu_config(void);
+void debug_mpu_fault(void);
+void debug_map_addr_to_periph(uint32_t address);
+
+#define DEBUG_PRINT_HEAD(x) {\
+    DPRINTF("\n***********************************************************\n");\
+    DPRINTF("                    "x"\n");\
+    DPRINTF("***********************************************************\n\n");\
+}
+#define DEBUG_PRINT_END()   {\
+    DPRINTF("***********************************************************\n\n");\
+}
 
 #ifdef  NDEBUG
 
+#define DEBUG_INIT(...)          {}
 #define DEBUG_FAULT(...)         {}
 #define DEBUG_CX_SWITCH_IN(...)  {}
 #define DEBUG_CX_SWITCH_OUT(...) {}
-#define DEBUG_PRINT_MPU_CFG(...) {}
-#define DEBUG_INIT(...)          {}
 
 #else /*NDEBUG*/
 
+#define DEBUG_INIT debug_init
 #define DEBUG_FAULT(reason) {\
     /************************************************************************/\
     /* lr is used to check execution mode before exception                  */\
@@ -43,8 +60,6 @@ void debug_init(void);
 }
 #define DEBUG_CX_SWITCH_IN  debug_cx_switch_in
 #define DEBUG_CX_SWITCH_OUT debug_cx_switch_out
-#define DEBUG_PRINT_MPU_CFG debug_print_mpu_config
-#define DEBUG_INIT debug_init
 
 #endif/*NDEBUG*/
 
