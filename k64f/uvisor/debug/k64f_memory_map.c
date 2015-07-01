@@ -12,8 +12,9 @@
  ***************************************************************/
 #include <uvisor.h>
 #include "memory_map.h"
+#include "k64f_memory_map.h"
 
-const MemMap g_mem_map[MEMORY_MAP_NUM] = {
+const MemMap g_mem_map[] = {
     {"Flash",      0x00000000, 0x000FFFFF}, /* available Flash               */
     {">FlexBus",   0x08000000, 0x0FFFFFFF}, /* (alias) FlexBus               */
     {"Acc. RAM",   0x14000000, 0x14000FFF}, /* Programming acceleration RAM  */
@@ -113,7 +114,7 @@ const MemMap* memory_map_name(uint32_t addr)
 
     /* find system memory region */
     map = g_mem_map;
-    for(i = 0; i < MEMORY_MAP_NUM; i++)
+    for(i = 0; i < UVISOR_ARRAY_COUNT(g_mem_map); i++)
         if((addr >= map->base) && (addr <= map->end))
             return map;
         else
