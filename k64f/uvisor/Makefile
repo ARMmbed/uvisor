@@ -25,8 +25,8 @@ APP_SRC:=\
 	src/vmpu_mem.c \
 	src/main.c \
 	src/benchmark.c \
-	debug/debug.c \
-	debug/memory_map.c \
+	debug/k64f_debug.c \
+	debug/k64f_memory_map.c \
 
 include ../../core/Makefile.rules
 
