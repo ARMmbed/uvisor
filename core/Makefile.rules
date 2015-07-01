@@ -3,7 +3,7 @@
 #  This confidential and  proprietary  software may be used only
 #  as authorised  by  a licensing  agreement  from  ARM  Limited
 #
-#             (C) COPYRIGHT 2013-2014 ARM Limited
+#             (C) COPYRIGHT 2013-2015 ARM Limited
 #                    ALL RIGHTS RESERVED
 #
 #   The entire notice above must be reproduced on all authorised
@@ -27,14 +27,18 @@ JLINK_SWO_PARAM:=
 
 CORE:=../../core
 
-SYSTEM:=$(CORE)/system
-LIB:=$(CORE)/lib
 SYSLIBS:=-lgcc -lc -lnosys
-DEVICE:=$(CORE)/arch/$(ARCH)
-SOURCES:=$(SYSTEM)/src/isr.c \
-         $(SYSTEM)/src/stdlib.c \
-         $(LIB)/printf/tfp_printf.c \
-         $(DEVICE)/src/system.c \
+CMSIS_DIR:=$(CORE)/cmsis
+SYSTEM_DIR:=$(CORE)/system
+DEBUG_DIR:=$(CORE)/debug
+LIB_DIR:=$(CORE)/lib
+DEVICE_DIR:=$(CORE)/arch/$(ARCH)
+SOURCES:=$(SYSTEM_DIR)/src/isr.c \
+         $(SYSTEM_DIR)/src/stdlib.c \
+         $(DEBUG_DIR)/src/debug.c \
+         $(DEBUG_DIR)/src/memory_map.c \
+         $(LIB_DIR)/printf/tfp_printf.c \
+         $(DEVICE_DIR)/src/system.c \
          $(APP_SRC)
 
 DEBUG_HOST:=localhost:2331
@@ -80,10 +84,11 @@ CFLAGS_PRE:=\
         $(APP_CFLAGS) \
         -include $(MEM_CONFIG) \
         -I$(CORE) \
-        -I$(CORE)/cmsis/inc \
-        -I$(SYSTEM)/inc \
-        -I$(DEVICE)/inc \
-        -I$(LIB)/printf \
+        -I$(CMSIS_DIR)/inc \
+        -I$(SYSTEM_DIR)/inc \
+        -I$(DEVICE_DIR)/inc \
+        -I$(DEBUG_DIR)/inc \
+        -I$(LIB_DIR)/printf \
         -ffunction-sections \
         -fdata-sections
 
