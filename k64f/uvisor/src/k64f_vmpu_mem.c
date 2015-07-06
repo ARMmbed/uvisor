@@ -10,11 +10,10 @@
  *  by a licensing agreement from ARM Limited.
  *
  ***************************************************************/
-
 #include <uvisor.h>
 #include "svc.h"
 #include "vmpu.h"
-#include "vmpu_mem.h"
+#include "k64f_vmpu_mem.h"
 
 #define MPU_MAX_REGIONS 11
 
