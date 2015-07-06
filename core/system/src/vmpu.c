@@ -12,8 +12,6 @@
  ***************************************************************/
 #include <uvisor.h>
 #include "vmpu.h"
-#include "vmpu_aips.h"
-#include "vmpu_mem.h"
 #include "svc.h"
 #include "halt.h"
 #include "memory_map.h"
@@ -33,69 +31,6 @@
 #if (MPU_MAX_PRIVATE_FUNCTIONS>0x100UL)
 #error "MPU_MAX_PRIVATE_FUNCTIONS needs to be lower/equal to 0x100"
 #endif
-
-static void vmpu_fault_bus(void)
-{
-    DEBUG_FAULT(FAULT_BUS);
-
-    /* if an MPU fault is detected, a different error pattern is used */
-    /* Note: since we are halting execution we don't bother clearing the SPERR
-     *       bit in the MPU->CESR register */
-    if(MPU->CESR >> 27)
-        halt_led(NOT_ALLOWED);
-    else
-        halt_led(FAULT_BUS);
-}
-
-static void vmpu_fault_usage(void)
-{
-    DEBUG_FAULT(FAULT_USAGE);
-    halt_led(FAULT_USAGE);
-}
-
-static void vmpu_fault_hard(void)
-{
-    DEBUG_FAULT(FAULT_HARD);
-    halt_led(FAULT_HARD);
-}
-
-static void vmpu_fault_debug(void)
-{
-    DEBUG_FAULT(FAULT_DEBUG);
-    halt_led(FAULT_DEBUG);
-}
-
-int vmpu_acl_dev(UvisorBoxAcl acl, uint16_t device_id)
-{
-    return 1;
-}
-
-int vmpu_acl_mem(UvisorBoxAcl acl, uint32_t addr, uint32_t size)
-{
-    return 1;
-}
-
-int vmpu_acl_reg(UvisorBoxAcl acl, uint32_t addr, uint32_t rmask,
-                 uint32_t wmask)
-{
-    return 1;
-}
-
-int vmpu_acl_bit(UvisorBoxAcl acl, uint32_t addr)
-{
-    return 1;
-}
-
-int vmpu_switch(uint8_t src_box, uint8_t dst_box)
-{
-    /* switch ACLs for peripherals */
-    vmpu_aips_switch(src_box, dst_box);
-
-    /* switch ACLs for memory regions */
-    vmpu_mem_switch(src_box, dst_box);
-
-    return 0;
-}
 
 static int vmpu_sanity_checks(void)
 {
@@ -177,76 +112,6 @@ static int vmpu_sanity_checks(void)
         return 0;
 }
 
-int vmpu_init_pre(void)
-{
-    DPRINTF("erasing BSS at 0x%08X (%u bytes)\n",
-        __uvisor_config.bss_start,
-        VMPU_REGION_SIZE(__uvisor_config.bss_start, __uvisor_config.bss_end)
-    );
-
-    /* reset uninitialized secured box data sections */
-    memset(
-        __uvisor_config.bss_start,
-        0,
-        VMPU_REGION_SIZE(__uvisor_config.bss_start, __uvisor_config.bss_end)
-    );
-
-    DPRINTF("copying .data from 0x%08X to 0x%08X (%u bytes)\n",
-        __uvisor_config.data_src,
-        __uvisor_config.data_start,
-        VMPU_REGION_SIZE(__uvisor_config.data_start, __uvisor_config.data_end)
-    );
-
-    /* initialize secured box data sections */
-    memcpy(
-        __uvisor_config.data_start,
-        __uvisor_config.data_src,
-        VMPU_REGION_SIZE(__uvisor_config.data_start, __uvisor_config.data_end)
-    );
-
-    return vmpu_sanity_checks();
-}
-
-static void vmpu_add_acl(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
-{
-    int res;
-
-#ifndef NDEBUG
-    const MemMap *map;
-#endif/*NDEBUG*/
-
-    /* check for maximum box ID */
-    if(box_id>=UVISOR_MAX_BOXES)
-        HALT_ERROR(SANITY_CHECK_FAILED, "box ID out of range (%i)\n", box_id);
-
-    /* check for alignment to 32 bytes */
-    if(((uint32_t)start) & 0x1F)
-        HALT_ERROR(SANITY_CHECK_FAILED, "ACL start address is not aligned [0x%08X]\n", start);
-
-    /* round ACLs if needed */
-    if(acl & UVISOR_TACL_SIZE_ROUND_DOWN)
-        size = UVISOR_ROUND32_DOWN(size);
-    else
-        if(acl & UVISOR_TACL_SIZE_ROUND_UP)
-            size = UVISOR_ROUND32_UP(size);
-
-    DPRINTF("\t@0x%08X size=%06i acl=0x%04X [%s]\n", start, size, acl,
-        ((map = memory_map_name((uint32_t)start))!=NULL) ? map->name : "unknown"
-    );
-
-    /* check for peripheral memory, proceed with general memory */
-    if(acl & UVISOR_TACL_PERIPHERAL)
-        res = vmpu_aips_add(box_id, start, size, acl);
-    else
-        res = vmpu_mem_add(box_id, start, size, acl);
-
-    if(!res)
-        HALT_ERROR(NOT_ALLOWED, "ACL in unhandled memory area\n");
-    else
-        if(res<0)
-            HALT_ERROR(SANITY_CHECK_FAILED, "ACL sanity check failed [%i]\n", res);
-}
-
 static void vmpu_load_boxes(void)
 {
     int i, count;
@@ -256,7 +121,8 @@ static void vmpu_load_boxes(void)
     uint8_t box_id;
 
     /* stack region grows from bss_start downwards */
-    sp = UVISOR_ROUND32_DOWN(((uint32_t)__uvisor_config.bss_start) - UVISOR_STACK_BAND_SIZE);
+    sp = UVISOR_ROUND32_DOWN(((uint32_t)__uvisor_config.bss_start) -
+         UVISOR_STACK_BAND_SIZE);
 
     /* enumerate and initialize boxes */
     g_svc_cx_box_num = 0;
@@ -316,7 +182,7 @@ static void vmpu_load_boxes(void)
                 );
             sp -= sp_size;
             /* add stack ACL to list */
-            vmpu_add_acl(
+            vmpu_acl_add(
                 box_id,
                 (void*)(sp + UVISOR_STACK_BAND_SIZE),
                 sp_size - UVISOR_STACK_BAND_SIZE,
@@ -344,7 +210,7 @@ static void vmpu_load_boxes(void)
                     );
 
                 /* add ACL, and force entry as user-provided */
-                vmpu_add_acl(
+                vmpu_acl_add(
                     box_id,
                     region->start,
                     region->length,
@@ -367,9 +233,114 @@ static void vmpu_load_boxes(void)
     DPRINTF("vmpu_load_boxes [DONE]\n");
 }
 
+void UVISOR_WEAK vmpu_fault_memmanage(void)
+{
+    DEBUG_FAULT(FAULT_MEMMANAGE);
+    halt_led(FAULT_MEMMANAGE);
+}
+
+void UVISOR_WEAK vmpu_fault_bus(void)
+{
+    DEBUG_FAULT(FAULT_BUS);
+    halt_led(FAULT_BUS);
+}
+
+void UVISOR_WEAK vmpu_fault_usage(void)
+{
+    DEBUG_FAULT(FAULT_USAGE);
+    halt_led(FAULT_USAGE);
+}
+
+void UVISOR_WEAK vmpu_fault_hard(void)
+{
+    DEBUG_FAULT(FAULT_HARD);
+    halt_led(FAULT_HARD);
+}
+
+void UVISOR_WEAK vmpu_fault_debug(void)
+{
+    DEBUG_FAULT(FAULT_DEBUG);
+    halt_led(FAULT_DEBUG);
+}
+
+int UVISOR_WEAK vmpu_acl_dev(UvisorBoxAcl acl, uint16_t device_id)
+{
+    HALT_ERROR(NOT_IMPLEMENTED, "vmpu_acl_dev not implemented yet\n\r");
+    return 1;
+}
+
+int UVISOR_WEAK vmpu_acl_mem(UvisorBoxAcl acl, uint32_t addr, uint32_t size)
+{
+    HALT_ERROR(NOT_IMPLEMENTED, "vmpu_acl_mem not implemented yet\n\r");
+    return 1;
+}
+
+int UVISOR_WEAK vmpu_acl_reg(UvisorBoxAcl acl, uint32_t addr, uint32_t rmask,
+                             uint32_t wmask)
+{
+    HALT_ERROR(NOT_IMPLEMENTED, "vmpu_acl_reg not implemented yet\n\r");
+    return 1;
+}
+
+int UVISOR_WEAK vmpu_acl_bit(UvisorBoxAcl acl, uint32_t addr)
+{
+    HALT_ERROR(NOT_IMPLEMENTED, "vmpu_acl_bit not implemented yet\n\r");
+    return 1;
+}
+
+void UVISOR_WEAK vmpu_acl_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
+{
+    HALT_ERROR(NOT_IMPLEMENTED,
+               "vmpu_add_acl needs hw-specific implementation\n\r");
+}
+
+int UVISOR_WEAK vmpu_switch(uint8_t src_box, uint8_t dst_box)
+{
+    HALT_ERROR(NOT_IMPLEMENTED,
+               "vmpu_switch needs hw-specific implementation\n\r");
+    return 1;
+}
+
+void UVISOR_WEAK vmpu_init_protection(void)
+{
+    HALT_ERROR(NOT_IMPLEMENTED,
+               "vmpu_init_protection needs hw-specific implementation\n\r");
+}
+
+int vmpu_init_pre(void)
+{
+    DPRINTF("erasing BSS at 0x%08X (%u bytes)\n",
+        __uvisor_config.bss_start,
+        VMPU_REGION_SIZE(__uvisor_config.bss_start, __uvisor_config.bss_end)
+    );
+
+    /* reset uninitialized secured box data sections */
+    memset(
+        __uvisor_config.bss_start,
+        0,
+        VMPU_REGION_SIZE(__uvisor_config.bss_start, __uvisor_config.bss_end)
+    );
+
+    DPRINTF("copying .data from 0x%08X to 0x%08X (%u bytes)\n",
+        __uvisor_config.data_src,
+        __uvisor_config.data_start,
+        VMPU_REGION_SIZE(__uvisor_config.data_start, __uvisor_config.data_end)
+    );
+
+    /* initialize secured box data sections */
+    memcpy(
+        __uvisor_config.data_start,
+        __uvisor_config.data_src,
+        VMPU_REGION_SIZE(__uvisor_config.data_start, __uvisor_config.data_end)
+    );
+
+    return vmpu_sanity_checks();
+}
+
 void vmpu_init_post(void)
 {
     /* setup security "bluescreen" exceptions */
+    ISR_SET(MemoryManagement_IRQn, &vmpu_fault_memmanage);
     ISR_SET(BusFault_IRQn,         &vmpu_fault_bus);
     ISR_SET(UsageFault_IRQn,       &vmpu_fault_usage);
     ISR_SET(HardFault_IRQn,        &vmpu_fault_hard);
@@ -383,12 +354,9 @@ void vmpu_init_post(void)
      * (supervisor or thread mode); the opposite is not true */
     SCB->CCR |= 1;
 
-    /* init memory protection */
-    vmpu_mem_init();
-
     /* load boxes */
     vmpu_load_boxes();
 
-    /* load ACLs for box 0 */
-    vmpu_aips_switch(0, 0);
+    /* init memory protection */
+    vmpu_init_protection();
 }
