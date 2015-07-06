@@ -170,7 +170,7 @@ gdb: gdb.script
 	$(GDB) -x $<
 
 gdbtui: gdb.script
-	$(GDB)tui -x $<
+	$(GDB) -tui -x $<
 
 ctags: source.c.tags
 
