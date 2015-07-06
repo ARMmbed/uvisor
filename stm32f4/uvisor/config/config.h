@@ -19,8 +19,8 @@
 #define HW_IRQ_VECTORS 90
 
 /* memory not to be used by uVisor linker script */
-#define RESERVED_FLASH 0x400
-#define RESERVED_SRAM  0x1AC
+#define RESERVED_FLASH 0x0
+#define RESERVED_SRAM  0x0
 
 /* maximum memory used by uVisor */
 #define USE_FLASH_SIZE UVISOR_FLASH_SIZE
