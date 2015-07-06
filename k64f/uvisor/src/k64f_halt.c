@@ -13,9 +13,6 @@
 #include <uvisor.h>
 #include "halt.h"
 
-#define HALT_INTRA_PATTERN_DELAY 0x200000U
-#define HALT_INTER_PATTERN_DELAY (3*HALT_INTRA_PATTERN_DELAY)
-
 void halt_led(THaltError reason)
 {
     uint32_t toggle;
@@ -43,54 +40,4 @@ void halt_led(THaltError reason)
         }
         for(delay = 0; delay < HALT_INTER_PATTERN_DELAY; delay++);
     }
-}
-
-static void halt_putcp(void* p, char c)
-{
-    (void) p;
-    default_putc(c);
-}
-
-static void halt_printf(const char *fmt, ...)
-{
-    /* print message using our halt_putcp function */
-    va_list va;
-    va_start(va, fmt);
-    tfp_format(NULL, halt_putcp, fmt, va);
-    va_end(va);
-}
-
-void halt_error(THaltError reason, const char *fmt, ...)
-{
-    halt_printf("HALT_ERROR: ");
-
-    /* print actual error */
-    va_list va;
-    va_start(va, fmt);
-    tfp_format(NULL, halt_putcp, fmt, va);
-    va_end(va);
-
-    /* final line feed */
-    default_putc('\n');
-
-    /* blink & die */
-    halt_led(reason);
-}
-
-void halt_line(const char *file, uint32_t line, THaltError reason,
-               const char *fmt, ...)
-{
-    halt_printf("HALT_ERROR(%s#%i): ", file, line);
-
-    /* print actual error */
-    va_list va;
-    va_start(va, fmt);
-    tfp_format(NULL, halt_putcp, fmt, va);
-    va_end(va);
-
-    /* final line feed */
-    default_putc('\n');
-
-    /* blink & die */
-    halt_led(reason);
 }

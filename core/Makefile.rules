@@ -25,16 +25,39 @@ JLINK_PARAM:=-Device $(CPU) -if SWD
 AUXHFRCO_FREQ:=0
 JLINK_SWO_PARAM:=
 
-CORE:=../../core
+ROOT_DIR:=../..
+CORE_DIR:=$(ROOT_DIR)/core
 
 SYSLIBS:=-lgcc -lc -lnosys
-CMSIS_DIR:=$(CORE)/cmsis
-SYSTEM_DIR:=$(CORE)/system
-DEBUG_DIR:=$(CORE)/debug
-LIB_DIR:=$(CORE)/lib
-DEVICE_DIR:=$(CORE)/arch/$(ARCH)
-SOURCES:=$(SYSTEM_DIR)/src/isr.c \
+
+# system paths
+CMSIS_DIR:=$(CORE_DIR)/cmsis
+SYSTEM_DIR:=$(CORE_DIR)/system
+MBED_DIR:=$(CORE_DIR)/mbed
+DEBUG_DIR:=$(CORE_DIR)/debug
+LIB_DIR:=$(CORE_DIR)/lib
+DEVICE_DIR:=$(CORE_DIR)/arch/$(ARCH)
+
+# mbed release paths
+RELEASE_DIR:=$(ROOT_DIR)/release
+RELEASE_SRC:=$(RELEASE_DIR)/source
+RELEASE_SRC_HW:=$(RELEASE_SRC)/$(CPU)
+RELEASE_INC:=$(RELEASE_DIR)/uvisor-lib
+RELEASE_ASM:=$(RELEASE_SRC_HW)/uvisor-GCC_ARM.s
+RELEASE_BIN_NAME:=uvisor-$(CPU).box
+RELEASE_BIN:=$(RELEASE_SRC_HW)/$(RELEASE_BIN_NAME)
+RELEASE_VER:=$(RELEASE_SRC_HW)/version.txt
+
+SOURCES:=\
+         $(SYSTEM_DIR)/src/benchmark.c \
+         $(SYSTEM_DIR)/src/halt.c \
+         $(SYSTEM_DIR)/src/isr.c \
+         $(SYSTEM_DIR)/src/main.c \
          $(SYSTEM_DIR)/src/stdlib.c \
+         $(SYSTEM_DIR)/src/svc.c \
+         $(SYSTEM_DIR)/src/svc_cx.c \
+         $(SYSTEM_DIR)/src/unvic.c \
+         $(SYSTEM_DIR)/src/vmpu.c \
          $(DEBUG_DIR)/src/debug.c \
          $(DEBUG_DIR)/src/memory_map.c \
          $(LIB_DIR)/printf/tfp_printf.c \
@@ -56,16 +79,17 @@ ifeq ("$(PROGRAM_VERSION)","")
 endif
 
 # read UVISOR_FLASH_SIZE from uVisor config file
-ifeq ("$(wildcard  $(CORE)/uvisor-config.h)","")
+ifeq ("$(wildcard  $(CORE_DIR)/uvisor-config.h)","")
 	UVISOR_FLASH_SIZE:=0
 else
-	UVISOR_FLASH_SIZE:=$(shell grep UVISOR_FLASH_SIZE $(CORE)/uvisor-config.h | sed -E 's/^.* (0x[0-9A-Fa-f]+).*$\/\1/')
+	UVISOR_FLASH_SIZE:=$(shell grep UVISOR_FLASH_SIZE $(CORE_DIR)/uvisor-config.h | sed -E 's/^.* (0x[0-9A-Fa-f]+).*$\/\1/')
 endif
 
-MEM_CONFIG:=$(CORE)/linker/$(CPU).h
+MEM_CONFIG:=$(CORE_DIR)/linker/$(CPU).h
 FLAGS_CM4:=-mcpu=cortex-m4 -march=armv7e-m -mthumb
 
-LDFLAGS:=$(FLAGS_CM4) \
+LDFLAGS:=\
+        $(FLAGS_CM4) \
         -T$(PROJECT).linker \
         -nostartfiles \
         -nostdlib \
@@ -83,7 +107,7 @@ CFLAGS_PRE:=\
         -DCPU=$(CPU) \
         $(APP_CFLAGS) \
         -include $(MEM_CONFIG) \
-        -I$(CORE) \
+        -I$(CORE_DIR) \
         -I$(CMSIS_DIR)/inc \
         -I$(SYSTEM_DIR)/inc \
         -I$(DEVICE_DIR)/inc \
@@ -100,7 +124,7 @@ OBJS:=$(OBJS:.c=.o)
 
 .PHONY: debug gdb gdbtui flash erase reset ctags source.c.tags swo
 
-include $(CORE)/Makefile.scripts
+include $(CORE_DIR)/Makefile.scripts
 
 all: $(PROJECT).bin
 
@@ -111,8 +135,23 @@ $(PROJECT).elf: $(OBJS) $(PROJECT).linker
 $(PROJECT).bin: $(PROJECT).elf
 	$(OBJCOPY) $< -O binary $@
 
-$(PROJECT).linker: $(MEM_CONFIG) $(CORE)/linker/default.h
-	$(CPP) -w -P -I$(CORE) $(APP_CFLAGS) -D$(CPU) -D$(ARCH) -include $^ -o $@
+$(PROJECT).linker: $(MEM_CONFIG) $(CORE_DIR)/linker/default.h
+	$(CPP) -w -P -I$(CORE_DIR) $(APP_CFLAGS) -D$(CPU) -D$(ARCH) -include $^ -o $@
+
+release: $(MBED_DIR)/source/uvisor-gcc-input.S $(PROJECT).bin
+	rm  -f $(RELEASE_INC)/*.h
+	rm  -f $(RELEASE_SRC)/*.cpp
+	rm -rf $(RELEASE_SRC_HW)
+	mkdir -p $(RELEASE_SRC_HW)
+	echo "$(PROGRAM_VERSION)" > $(RELEASE_VER)
+	cp $(PROJECT).bin $(RELEASE_BIN)
+	cp $(MBED_DIR)/uvisor-lib/*.h $(RELEASE_INC)/
+	cp $(MBED_DIR)/source/*.cpp   $(RELEASE_SRC)/
+	find ../.. -name "*_exports.h" -not -path "$(RELEASE_DIR)/*"\
+	     -exec cp {} $(RELEASE_INC)/ \;
+	cp -f $(MBED_DIR)/source/uvisor-gcc-header.S $(RELEASE_ASM)
+	$(CPP) -w -P -I$(CORE_DIR) $(APP_CFLAGS) -DP-D$(CPU) -D$(ARCH)\
+	       -DRELEASE_BIN=\"$(RELEASE_BIN_NAME)\" $< >> $(RELEASE_ASM)
 
 swo:
 	$(JLINK_VIEWER) $(JLINK_PARAM) $(APP_JLINK_PARAM) -itmmask $(JLINK_VIEWER_MASK) $(JLINK_SWO_PARAM)
@@ -144,5 +183,8 @@ reset:
 	@echo "$$__SCRIPT_RESET" | $(JLINK) $(JLINK_PARAM) $(APP_JLINK_PARAM)
 
 clean:
-	rm -f $(PROJECT).map $(PROJECT).elf $(PROJECT).bin $(PROJECT).asm  $(PROJECT).linker gdb.script source.c.tags JLink.log $(APP_CLEAN)
-	find . $(CORE) -iname '*.o' -exec rm -f \{\} \;
+	rm -f $(PROJECT).map $(PROJECT).elf $(PROJECT).bin $(PROJECT).asm\
+	      $(PROJECT).linker gdb.script source.c.tags JLink.log\
+	      $(RELEASE_ASM) $(RELEASE_BIN) $(RELEASE_VER)
+	      $(APP_CLEAN)
+	find . $(CORE_DIR) -iname '*.o' -exec rm -f \{\} \;
