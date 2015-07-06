@@ -17,6 +17,8 @@
 #  include <em_device.h>
 #elif defined(MK64F)
 #  include <MK64F12.h>
+#elif defined(STM32F4)
+#  include <stm32f4xx.h>
 #else
 #  error "unknown ARCH in Makefile"
 #endif
