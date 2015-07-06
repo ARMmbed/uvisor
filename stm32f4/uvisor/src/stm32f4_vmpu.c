@@ -2,7 +2,7 @@
  * This confidential and  proprietary  software may be used only
  * as authorised  by  a licensing  agreement  from  ARM  Limited
  *
- *             (C) COPYRIGHT 2013-2014 ARM Limited
+ *             (C) COPYRIGHT 2013-2015 ARM Limited
  *                      ALL RIGHTS RESERVED
  *
  *  The entire notice above must be reproduced on all authorised
@@ -10,17 +10,21 @@
  *  by a licensing agreement from ARM Limited.
  *
  ***************************************************************/
-#ifndef __UVISOR_DEVICE_H__
-#define __UVISOR_DEVICE_H__
+#include <uvisor.h>
+#include "vmpu.h"
+#include "halt.h"
+#include "memory_map.h"
+#include "debug.h"
 
-#if   defined(EFM32GG)
-#  include <em_device.h>
-#elif defined(MK64F)
-#  include <MK64F12.h>
-#elif defined(STM32F4)
-#  include <stm32f4xx.h>
-#else
-#  error "unknown ARCH in Makefile"
-#endif
+void vmpu_acl_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
+{
+}
 
-#endif/*__UVISOR_DEVICE_H__*/
+int vmpu_switch(uint8_t src_box, uint8_t dst_box)
+{
+    return 1;
+}
+
+void vmpu_init_protection(void)
+{
+}
