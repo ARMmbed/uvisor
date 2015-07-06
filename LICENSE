@@ -17,7 +17,7 @@ License Exceptions:
  - 3-clause BSD License (see LICENSE-BSD.txt):
 
     - core/cmsis/inc:
-      Copyright (c) 2009-2013 ARM Limited
+      Copyright (c) 2009-2015 ARM Limited
 
     - core/arch/MK64F:
       Copyright (c) 1997-2014 Freescale Semiconductor, Inc
