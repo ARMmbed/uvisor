@@ -22,6 +22,9 @@ License Exceptions:
     - core/arch/MK64F:
       Copyright (c) 1997-2014 Freescale Semiconductor, Inc
 
+    - core/arch/STM32F4:
+      Copyright (c) 2015 STMicroelectronics
+
     - core/lib/printf:
       Copyright (c) 2004, 2012 Kustaa Nyholm / SpareTimeLabs
 
