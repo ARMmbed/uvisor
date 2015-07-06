@@ -14,6 +14,7 @@
 define __SCRIPT_GDB
 	target remote $(DEBUG_HOST)
 	monitor endian little
+	monitor reset
 	monitor halt
 	monitor semihosting enable
 	monitor speed 1000
@@ -22,7 +23,7 @@ define __SCRIPT_GDB
 	monitor flash device = $(CPU)
 	load $(PROJECT).elf
 	file $(PROJECT).elf
-	monitor reset
+	$(GDB_DEBUG_UVISOR)
 	b main_entry
 	b isr_default_handler
 endef
