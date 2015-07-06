@@ -22,7 +22,7 @@ define __SCRIPT_GDB
 	file $(PROJECT).elf
 	monitor reset
 	b main_entry
-	b default_handler
+	b isr_default_handler
 endef
 export __SCRIPT_GDB
 
