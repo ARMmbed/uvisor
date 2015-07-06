@@ -60,9 +60,4 @@ static inline uint8_t svc_gw_get_dst_id(TSecGw *svc_pc)
     return (uint8_t) (box_id & 0xFF);
 }
 
-static inline uint8_t svc_gw_oop_mode(uint8_t svc_id)
-{
-    /* FIXME not implemented */
-    return 0;
-}
 #endif/*__SVC_GW_H__*/

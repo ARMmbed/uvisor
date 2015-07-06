@@ -25,6 +25,9 @@ typedef enum {
     FAULT_DEBUG
 } THaltError;
 
+#define HALT_INTRA_PATTERN_DELAY 0x200000U
+#define HALT_INTER_PATTERN_DELAY (3*HALT_INTRA_PATTERN_DELAY)
+
 #ifdef  NDEBUG
 #define HALT_ERROR(reason, ...) halt_led(reason)
 #else /*NDEBUG*/

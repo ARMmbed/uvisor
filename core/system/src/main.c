@@ -67,9 +67,9 @@ void main_entry(void)
         /* finish initialization */
         uvisor_init_post();
 
-        /* switch to unprivileged mode; this is possible as uvisor code is readable
-         * by unprivileged code and only the key-value database is protected from
-         * the unprivileged mode */
+        /* switch to unprivileged mode; this is possible as uvisor code is
+         * readable by unprivileged code and only the key-value database is
+         * protected from the unprivileged mode */
         __set_CONTROL(__get_CONTROL() | 3);
         __ISB();
         __DSB();

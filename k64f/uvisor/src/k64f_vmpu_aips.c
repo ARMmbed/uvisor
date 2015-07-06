@@ -14,7 +14,7 @@
 #include <uvisor.h>
 #include "svc.h"
 #include "vmpu.h"
-#include "vmpu_aips.h"
+#include "k64f_vmpu_aips.h"
 
 #define AIPSx_SLOT_SIZE    0x1000UL
 #define AIPSx_SLOT_MAX     0xFE
