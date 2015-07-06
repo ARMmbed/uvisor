@@ -22,6 +22,6 @@ typedef struct mem_map {
 } MemMap;
 
 extern const MemMap g_mem_map[];
-const MemMap* memory_map_name(uint32_t addr);
+extern const MemMap* memory_map_name(uint32_t addr);
 
 #endif/*__MEMORY_MAP_H__*/
