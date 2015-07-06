@@ -21,7 +21,6 @@ JLINK:=$(SEGGER)JLinkExe
 JLINK_SERVER:=$(SEGGER)JLinkGDBServer
 JLINK_VIEWER:=$(SEGGER)JLinkSWOViewer
 JLINK_VIEWER_MASK:=0x7
-JLINK_PARAM:=-Device $(CPU) -if SWD
 AUXHFRCO_FREQ:=0
 JLINK_SWO_PARAM:=
 
@@ -77,6 +76,14 @@ PROGRAM_VERSION:=$(shell git describe --tags --abbrev=4 --dirty 2>/dev/null | se
 ifeq ("$(PROGRAM_VERSION)","")
          PROGRAM_VERSION:='unknown'
 endif
+
+# allow overriding of JLink debug CPU from application Makefile
+ifeq ("$(CPU_JLINK)","")
+	DEBUG_CPU:=$(CPU)
+else
+	DEBUG_CPU:=$(CPU_JLINK)
+endif
+JLINK_PARAM:=-Device $(DEBUG_CPU) -if SWD
 
 # read UVISOR_FLASH_SIZE from uVisor config file
 ifeq ("$(wildcard  $(CORE_DIR)/uvisor-config.h)","")
