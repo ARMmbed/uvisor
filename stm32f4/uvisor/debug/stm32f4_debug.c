@@ -2,7 +2,7 @@
  * This confidential and  proprietary  software may be used only
  * as authorised  by  a licensing  agreement  from  ARM  Limited
  *
- *             (C) COPYRIGHT 2013-2014 ARM Limited
+ *             (C) COPYRIGHT 2013-2015 ARM Limited
  *                      ALL RIGHTS RESERVED
  *
  *  The entire notice above must be reproduced on all authorised
@@ -10,17 +10,21 @@
  *  by a licensing agreement from ARM Limited.
  *
  ***************************************************************/
-#ifndef __UVISOR_DEVICE_H__
-#define __UVISOR_DEVICE_H__
+#include <uvisor.h>
+#include "debug.h"
+#include "halt.h"
+#include "svc.h"
+#include "memory_map.h"
+#include "stm32f4_memory_map.h"
 
-#if   defined(EFM32GG)
-#  include <em_device.h>
-#elif defined(MK64F)
-#  include <MK64F12.h>
-#elif defined(STM32F4)
-#  include <stm32f4xx.h>
-#else
-#  error "unknown ARCH in Makefile"
-#endif
+void debug_mpu_config(void)
+{
+}
 
-#endif/*__UVISOR_DEVICE_H__*/
+void debug_mpu_fault(void)
+{
+}
+
+void debug_map_addr_to_periph(uint32_t address)
+{
+}
