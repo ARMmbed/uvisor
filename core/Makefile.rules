@@ -55,13 +55,15 @@ endif
 # ARMv7-M MPU driver
 ifeq ("$(ARCH_MPU)","ARMv7_M")
 MPU_SRC:=\
-         $(SYSTEM_DIR)/src/mpu/vmpu_armv7m.c
+         $(SYSTEM_DIR)/src/mpu/vmpu_armv7m.c \
+         $(SYSTEM_DIR)/src/mpu/vmpu_armv7m_debug.c
 endif
 
 # Freescale K64 MPU driver
 ifeq ("$(ARCH_MPU)","FREESCALE_K64")
 MPU_SRC:=\
          $(SYSTEM_DIR)/src/mpu/vmpu_freescale_k64.c \
+         $(SYSTEM_DIR)/src/mpu/vmpu_freescale_k64_debug.c \
          $(SYSTEM_DIR)/src/mpu/vmpu_freescale_k64_aips.c \
          $(SYSTEM_DIR)/src/mpu/vmpu_freescale_k64_mem.c
 endif
@@ -75,11 +77,11 @@ SOURCES:=\
          $(SYSTEM_DIR)/src/svc.c \
          $(SYSTEM_DIR)/src/svc_cx.c \
          $(SYSTEM_DIR)/src/unvic.c \
-         $(SYSTEM_DIR)/src/vmpu.c \
          $(DEBUG_DIR)/src/debug.c \
          $(DEBUG_DIR)/src/memory_map.c \
          $(LIB_DIR)/printf/tfp_printf.c \
          $(DEVICE_DIR)/src/system.c \
+         $(SYSTEM_DIR)/src/mpu/vmpu.c \
          $(MPU_SRC) \
          $(APP_SRC)
 

@@ -80,18 +80,6 @@ uint8_t vmpu_bits(uint32_t size)
     return bits;
 }
 
-void vmpu_dump_settings(void)
-{
-    uint8_t r;
-    DPRINTF("MPU region dump:\r\n");
-    for(r=0; r<ARMv7M_MPU_REGIONS; r++)
-    {
-        MPU->RNR = r;
-        DPRINTF("\tR:%i RBAR=0x%08X RASR=0x%08X\r\n", r, MPU->RBAR, MPU->RASR);
-    }
-    DPRINTF("\tCTRL=0x%08X\r\n", MPU->CTRL);
-}
-
 void vmpu_init_protection(void)
 {
     /* reset MPU */

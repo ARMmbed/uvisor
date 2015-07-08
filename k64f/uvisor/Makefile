@@ -9,7 +9,6 @@ APP_CFLAGS:=-DUVISOR $(CONFIG) -Iconfig -Isrc -Ilib -Idebug
 APP_SRC:=\
 	src/k64f_halt.c \
 	src/k64f_svc.c \
-	debug/k64f_debug.c \
 	debug/k64f_memory_map.c \
 
 include ../../core/Makefile.rules
