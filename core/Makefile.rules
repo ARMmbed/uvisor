@@ -130,7 +130,7 @@ CFLAGS_PRE:=\
         $(OPT) \
         $(DEBUG) \
         $(WARNING) \
-        -D$(ARCH) \
+        -DARCH_$(ARCH) \
         -D$(CPU) \
         -DPROGRAM_VERSION=\"$(PROGRAM_VERSION)\" \
         -DCPU=$(CPU) \
@@ -166,7 +166,7 @@ $(PROJECT).bin: $(PROJECT).elf
 	$(OBJCOPY) $< -O binary $@
 
 $(PROJECT).linker: $(MEM_CONFIG) $(CORE_DIR)/linker/default.h
-	$(CPP) -w -P -I$(CORE_DIR) $(APP_CFLAGS) -D$(CPU) -D$(ARCH) -include $^ -o $@
+	$(CPP) -w -P -I$(CORE_DIR) $(APP_CFLAGS) -D$(CPU) -DARCH_$(ARCH) -include $^ -o $@
 
 release: $(MBED_DIR)/source/uvisor-gcc-input.S $(PROJECT).bin
 	rm  -f $(RELEASE_INC)/*.h
@@ -180,7 +180,7 @@ release: $(MBED_DIR)/source/uvisor-gcc-input.S $(PROJECT).bin
 	find ../.. -name "*_exports.h" -not -path "$(RELEASE_DIR)/*"\
 	     -exec cp {} $(RELEASE_INC)/ \;
 	cp -f $(MBED_DIR)/source/uvisor-gcc-header.S $(RELEASE_ASM)
-	$(CPP) -w -P -I$(CORE_DIR) $(APP_CFLAGS) -DP-D$(CPU) -D$(ARCH)\
+	$(CPP) -w -P -I$(CORE_DIR) $(APP_CFLAGS) -DP-D$(CPU) -DARCH_$(ARCH)\
 	       -DRELEASE_BIN=\"$(RELEASE_BIN_NAME)\" $< >> $(RELEASE_ASM)
 
 swo:
