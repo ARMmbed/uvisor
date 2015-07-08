@@ -32,6 +32,8 @@ extern int  vmpu_acl_bit(UvisorBoxAcl acl, uint32_t addr);
 
 extern int  vmpu_switch(uint8_t src_box, uint8_t dst_box);
 
+extern void vmpu_load_box(uint8_t box_id);
+
 extern void vmpu_init_protection(void);
 extern int  vmpu_init_pre(void);
 extern void vmpu_init_post(void);
