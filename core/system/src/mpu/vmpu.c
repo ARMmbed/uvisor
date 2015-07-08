@@ -230,7 +230,17 @@ static void vmpu_load_boxes(void)
             sp,
             __uvisor_config.reserved_end
         );
+
+    /* load box 0 */
+    vmpu_load_box(0);
+
     DPRINTF("vmpu_load_boxes [DONE]\n");
+}
+
+void UVISOR_WEAK vmpu_load_box(uint8_t box_id)
+{
+    HALT_ERROR(NOT_IMPLEMENTED,
+               "vmpu_load_box needs hw-specific implementation\n\r");
 }
 
 int UVISOR_WEAK vmpu_acl_dev(UvisorBoxAcl acl, uint16_t device_id)
@@ -261,7 +271,7 @@ int UVISOR_WEAK vmpu_acl_bit(UvisorBoxAcl acl, uint32_t addr)
 void UVISOR_WEAK vmpu_acl_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 {
     HALT_ERROR(NOT_IMPLEMENTED,
-               "vmpu_add_acl needs hw-specific implementation\n\r");
+               "vmpu_acl_add needs hw-specific implementation\n\r");
 }
 
 int UVISOR_WEAK vmpu_switch(uint8_t src_box, uint8_t dst_box)
@@ -319,5 +329,4 @@ void vmpu_init_post(void)
 
     /* load boxes */
     vmpu_load_boxes();
-
 }
