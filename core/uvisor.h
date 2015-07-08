@@ -61,13 +61,6 @@ typedef void (*UnprivilegedBoxEntry)(void);
 /* system wide error codes  */
 #include <iot-error.h>
 
-/* MPU definitions */
-#ifdef  EFM32GG
-#if (__MPU_PRESENT == 1)
-#define MPU_REGIONS 8
-#endif
-#endif/*EFM32GG*/
-
 /* IOT-OS specific includes */
 #include <isr.h>
 #include <linker.h>
