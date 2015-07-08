@@ -11,10 +11,9 @@
  *
  ***************************************************************/
 #include <uvisor.h>
-#include "memory_map.h"
-#include "stm32f4_memory_map.h"
+#include <memory_map.h>
 
-const MemMap g_mem_map[] = {
+static const MemMap g_mem_map[] = {
 };
 
 const MemMap* memory_map_name(uint32_t addr)
