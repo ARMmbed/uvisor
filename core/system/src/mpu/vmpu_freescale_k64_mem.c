@@ -11,9 +11,8 @@
  *
  ***************************************************************/
 #include <uvisor.h>
-#include "svc.h"
-#include "vmpu.h"
-#include "k64f_vmpu_mem.h"
+#include <vmpu.h>
+#include "vmpu_freescale_k64_mem.h"
 
 #define MPU_MAX_REGIONS 11
 
