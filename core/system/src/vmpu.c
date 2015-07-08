@@ -233,36 +233,6 @@ static void vmpu_load_boxes(void)
     DPRINTF("vmpu_load_boxes [DONE]\n");
 }
 
-void UVISOR_WEAK vmpu_fault_memmanage(void)
-{
-    DEBUG_FAULT(FAULT_MEMMANAGE);
-    halt_led(FAULT_MEMMANAGE);
-}
-
-void UVISOR_WEAK vmpu_fault_bus(void)
-{
-    DEBUG_FAULT(FAULT_BUS);
-    halt_led(FAULT_BUS);
-}
-
-void UVISOR_WEAK vmpu_fault_usage(void)
-{
-    DEBUG_FAULT(FAULT_USAGE);
-    halt_led(FAULT_USAGE);
-}
-
-void UVISOR_WEAK vmpu_fault_hard(void)
-{
-    DEBUG_FAULT(FAULT_HARD);
-    halt_led(FAULT_HARD);
-}
-
-void UVISOR_WEAK vmpu_fault_debug(void)
-{
-    DEBUG_FAULT(FAULT_DEBUG);
-    halt_led(FAULT_DEBUG);
-}
-
 int UVISOR_WEAK vmpu_acl_dev(UvisorBoxAcl acl, uint16_t device_id)
 {
     HALT_ERROR(NOT_IMPLEMENTED, "vmpu_acl_dev not implemented yet\n\r");
@@ -339,24 +309,15 @@ int vmpu_init_pre(void)
 
 void vmpu_init_post(void)
 {
-    /* setup security "bluescreen" exceptions */
-    ISR_SET(MemoryManagement_IRQn, &vmpu_fault_memmanage);
-    ISR_SET(BusFault_IRQn,         &vmpu_fault_bus);
-    ISR_SET(UsageFault_IRQn,       &vmpu_fault_usage);
-    ISR_SET(HardFault_IRQn,        &vmpu_fault_hard);
-    ISR_SET(DebugMonitor_IRQn,     &vmpu_fault_debug);
-
-    /* enable mem, bus and usage faults */
-    SCB->SHCSR |= 0x70000;
-
     /* enable non-base thread mode */
     /* exceptions can now return to thread mode regardless their origin
      * (supervisor or thread mode); the opposite is not true */
     SCB->CCR |= 1;
 
+    /* init memory protection */
+    vmpu_init_protection();
+
     /* load boxes */
     vmpu_load_boxes();
 
-    /* init memory protection */
-    vmpu_init_protection();
 }
