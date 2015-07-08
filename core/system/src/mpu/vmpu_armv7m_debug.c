@@ -11,11 +11,9 @@
  *
  ***************************************************************/
 #include <uvisor.h>
-#include "debug.h"
-#include "halt.h"
-#include "svc.h"
-#include "memory_map.h"
-#include "stm32f4_memory_map.h"
+#include <debug.h>
+#include <halt.h>
+#include <memory_map.h>
 
 void debug_mpu_config(void)
 {

@@ -10,10 +10,8 @@
  *  by a licensing agreement from ARM Limited.
  *
  ***************************************************************/
-#ifndef __K64F_MEMORY_MAP_H__
-#define __K64F_MEMORY_MAP_H__
-
-#include <uvisor.h>
+#ifndef __VMPU_FREESCALE_K64_MAP_H__
+#define __VMPU_FREESCALE_K64_MAP_H__
 
 #define MEMORY_MAP_SRAM_START       ((uint32_t) SRAM_ORIGIN)
 #define MEMORY_MAP_SRAM_END         ((uint32_t) (SRAM_ORIGIN + SRAM_LENGTH))
@@ -24,4 +22,4 @@
 #define MEMORY_MAP_BITBANDING_START ((uint32_t) 0x42000000)
 #define MEMORY_MAP_BITBANDING_END   ((uint32_t) 0x43FFFFFF)
 
-#endif/*__K64F_MEMORY_MAP_H__*/
+#endif/*__VMPU_FREESCALE_K64_MAP_H__*/

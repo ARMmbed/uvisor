@@ -11,10 +11,9 @@
  *
  ***************************************************************/
 #include <uvisor.h>
-#include "memory_map.h"
-#include "k64f_memory_map.h"
+#include <memory_map.h>
 
-const MemMap g_mem_map[] = {
+static const MemMap g_mem_map[] = {
     {"Flash",      0x00000000, 0x000FFFFF}, /* available Flash               */
     {">FlexBus",   0x08000000, 0x0FFFFFFF}, /* (alias) FlexBus               */
     {"Acc. RAM",   0x14000000, 0x14000FFF}, /* Programming acceleration RAM  */
