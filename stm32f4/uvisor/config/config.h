@@ -30,4 +30,7 @@
 #define STACK_SIZE       2048
 #define STACK_GUARD_BAND  128
 
+/* set MPU region count for this specific CPU */
+#define MPU_REGIONS 8
+
 #endif/*__CONFIG_H__*/
