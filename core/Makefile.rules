@@ -47,6 +47,25 @@ RELEASE_BIN_NAME:=uvisor-$(CPU).box
 RELEASE_BIN:=$(RELEASE_SRC_HW)/$(RELEASE_BIN_NAME)
 RELEASE_VER:=$(RELEASE_SRC_HW)/version.txt
 
+# make ARMv7-M MPU driver the default
+ifeq ("$(ARCH_MPU)","")
+ARCH_MPU:=ARMv7_M
+endif
+
+# ARMv7-M MPU driver
+ifeq ("$(ARCH_MPU)","ARMv7_M")
+MPU_SRC:=\
+         $(SYSTEM_DIR)/src/mpu/vmpu_armv7m.c
+endif
+
+# Freescale K64 MPU driver
+ifeq ("$(ARCH_MPU)","FREESCALE_K64")
+MPU_SRC:=\
+         $(SYSTEM_DIR)/src/mpu/vmpu_freescale_k64.c \
+         $(SYSTEM_DIR)/src/mpu/vmpu_freescale_k64_aips.c \
+         $(SYSTEM_DIR)/src/mpu/vmpu_freescale_k64_mem.c
+endif
+
 SOURCES:=\
          $(SYSTEM_DIR)/src/benchmark.c \
          $(SYSTEM_DIR)/src/halt.c \
@@ -61,6 +80,7 @@ SOURCES:=\
          $(DEBUG_DIR)/src/memory_map.c \
          $(LIB_DIR)/printf/tfp_printf.c \
          $(DEVICE_DIR)/src/system.c \
+         $(MPU_SRC) \
          $(APP_SRC)
 
 DEBUG_HOST:=localhost:2331
@@ -117,6 +137,7 @@ CFLAGS_PRE:=\
         -I$(CORE_DIR) \
         -I$(CMSIS_DIR)/inc \
         -I$(SYSTEM_DIR)/inc \
+        -I$(SYSTEM_DIR)/inc/mpu \
         -I$(DEVICE_DIR)/inc \
         -I$(DEBUG_DIR)/inc \
         -I$(LIB_DIR)/printf \
