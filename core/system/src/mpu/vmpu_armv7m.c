@@ -11,10 +11,10 @@
  *
  ***************************************************************/
 #include <uvisor.h>
-#include "vmpu.h"
-#include "halt.h"
-#include "memory_map.h"
-#include "debug.h"
+#include <vmpu.h>
+#include <halt.h>
+#include <debug.h>
+#include <memory_map.h>
 
 void vmpu_acl_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 {
