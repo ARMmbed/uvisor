@@ -11,12 +11,12 @@
  *
  ***************************************************************/
 #include <uvisor.h>
-#include "vmpu.h"
-#include "k64f_vmpu_aips.h"
-#include "k64f_vmpu_mem.h"
-#include "halt.h"
-#include "memory_map.h"
-#include "debug.h"
+#include <vmpu.h>
+#include <halt.h>
+#include <debug.h>
+#include <memory_map.h>
+#include "vmpu_freescale_k64_aips.h"
+#include "vmpu_freescale_k64_mem.h"
 
 void vmpu_fault_bus(void)
 {

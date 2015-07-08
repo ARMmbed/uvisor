@@ -10,10 +10,10 @@
  *  by a licensing agreement from ARM Limited.
  *
  ***************************************************************/
-#ifndef __VMPU_AIPS_H__
-#define __VMPU_AIPS_H__
+#ifndef __VMPU_FREESCALE_K64_AIPS_H__
+#define __VMPU_FREESCALE_K64_AIPS_H__
 
 extern int vmpu_aips_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl);
 extern void vmpu_aips_switch(uint8_t src_box, uint8_t dst_box);
 
-#endif/*__VMPU_AIPS_H__*/
+#endif/*__VMPU_FREESCALE_K64_AIPS_H__*/

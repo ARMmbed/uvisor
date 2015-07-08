@@ -10,8 +10,8 @@
  *  by a licensing agreement from ARM Limited.
  *
  ***************************************************************/
-#ifndef __VMPU_MEM_H__
-#define __VMPU_MEM_H__
+#ifndef __VMPU_FREESCALE_K64_MEM_H__
+#define __VMPU_FREESCALE_K64_MEM_H__
 
 #ifndef UVISOR_MAX_ACLS
 #define UVISOR_MAX_ACLS 16
@@ -33,4 +33,4 @@ extern int vmpu_mem_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl
 extern void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box);
 extern void vmpu_mem_init(void);
 
-#endif/*__VMPU_MEM_H__*/
+#endif/*__VMPU_FREESCALE_K64_MEM_H__*/
