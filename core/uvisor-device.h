@@ -13,11 +13,11 @@
 #ifndef __UVISOR_DEVICE_H__
 #define __UVISOR_DEVICE_H__
 
-#if   defined(EFM32GG)
+#if   defined(ARCH_EFM32GG)
 #  include <em_device.h>
-#elif defined(MK64F)
+#elif defined(ARCH_MK64F)
 #  include <MK64F12.h>
-#elif defined(STM32F4)
+#elif defined(ARCH_STM32F4)
 #  include <stm32f4xx.h>
 #else
 #  error "unknown ARCH in Makefile"
