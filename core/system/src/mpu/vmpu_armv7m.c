@@ -21,11 +21,33 @@
 #define ARMv7M_MPU_REGIONS 8
 #endif/*ARMv7M_MPU_REGIONS*/
 
-/* minimum region address alignment */
+/* set default minimum region address alignment */
 #ifndef ARMv7M_MPU_ALIGNMENT_BITS
 #define ARMv7M_MPU_ALIGNMENT_BITS 5
 #endif/*ARMv7M_MPU_ALIGNMENT_BITS*/
-#define ARMv7M_MPU_ALIGNMENT_MASK ((1UL<<ARMv7M_MPU_ALIGNMENT_BITS)-1)
+
+/* derieved region alignment settings */
+#define ARMv7M_MPU_ALIGNMENT (1UL<<ARMv7M_MPU_ALIGNMENT_BITS)
+#define ARMv7M_MPU_ALIGNMENT_MASK (ARMv7M_MPU_ALIGNMENT-1)
+
+/* MPU helper macros */
+#define MPU_RBAR(region,addr)   (((uint32_t)(region))|MPU_RBAR_VALID_Msk|addr)
+#define MPU_RBAR_RNR(addr)     (addr)
+#define MPU_STACK_GUARD_BAND_SIZE (UVISOR_SRAM_SIZE/8)
+
+/* various MPU flags */
+#define MPU_RASR_AP_PNO_UNO (0x00UL<<MPU_RASR_AP_Pos)
+#define MPU_RASR_AP_PRW_UNO (0x01UL<<MPU_RASR_AP_Pos)
+#define MPU_RASR_AP_PRW_URO (0x02UL<<MPU_RASR_AP_Pos)
+#define MPU_RASR_AP_PRW_URW (0x03UL<<MPU_RASR_AP_Pos)
+#define MPU_RASR_AP_PRO_UNO (0x05UL<<MPU_RASR_AP_Pos)
+#define MPU_RASR_AP_PRO_URO (0x06UL<<MPU_RASR_AP_Pos)
+#define MPU_RASR_XN         (0x01UL<<MPU_RASR_XN_Pos)
+#define MPU_RASR_CB_NOCACHE (0x00UL<<MPU_RASR_B_Pos)
+#define MPU_RASR_CB_WB_WRA  (0x01UL<<MPU_RASR_B_Pos)
+#define MPU_RASR_CB_WT      (0x02UL<<MPU_RASR_B_Pos)
+#define MPU_RASR_CB_WB      (0x03UL<<MPU_RASR_B_Pos)
+#define MPU_RASR_SRD(x)     (((uint32_t)(x))<<MPU_RASR_SRD_Pos)
 
 static uint32_t g_vmpu_aligment_mask;
 
@@ -68,7 +90,7 @@ static void vmpu_fault_debug(void)
     halt_led(FAULT_DEBUG);
 }
 
-uint8_t vmpu_bits(uint32_t size)
+static uint8_t vmpu_bits(uint32_t size)
 {
     uint8_t bits=0;
     /* find highest bit */
@@ -82,6 +104,111 @@ uint8_t vmpu_bits(uint32_t size)
 
 void vmpu_load_box(uint8_t box_id)
 {
+}
+
+/* returns RASR register setting */
+static uint32_t vmpu_rasr(void* base, uint32_t size, uint32_t flags)
+{
+    uint32_t bits, mask, size_rounded;
+
+    /* enforce minimum size */
+    if(size>ARMv7M_MPU_ALIGNMENT)
+        bits = vmpu_bits(size);
+    else
+    {
+        size = ARMv7M_MPU_ALIGNMENT;
+        bits = ARMv7M_MPU_ALIGNMENT_BITS;
+    }
+
+    /* verify region alignment */
+    size_rounded = 1UL << bits;
+    /* check for correctly aligned base address */
+    mask = size_rounded-1;
+    if(((uint32_t)base) & mask)
+        return 0;
+
+    /* return MPU RASR register settings */
+    return MPU_RASR_ENABLE_Msk | ((bits-1)<<MPU_RASR_SIZE_Pos) | flags;
+}
+
+/* returns rounded MPU section alignment bit count */
+int vmpu_set(uint8_t region, void* base, uint32_t size, uint32_t flags)
+{
+    uint32_t rasr;
+
+    /* caclulate MPU RASR register */
+    if(!(rasr = vmpu_rasr(base, size, flags)))
+        return E_PARAM;
+
+    /* update MPU */
+    MPU->RBAR = MPU_RBAR(region,(uint32_t)base);
+    MPU->RASR = rasr;
+
+    return E_SUCCESS;
+}
+
+int vmpu_init_static_regions(void)
+{
+    int res;
+    uint32_t t, stack_start;
+
+    /* calculate stack start according to linker file */
+    stack_start = ((uint32_t)&__stack_start__) - SRAM_ORIGIN;
+    /* round stack start to next stack guard band size */
+    t = (stack_start+(MPU_STACK_GUARD_BAND_SIZE-1)) & ~(MPU_STACK_GUARD_BAND_SIZE-1);
+
+    /* FIXME: sanity check of stack size & pointer */
+
+    /* configure MPU */
+
+    /* calculate guard bands */
+    t = (1<<(t/MPU_STACK_GUARD_BAND_SIZE)) | 0x80;
+
+    /* protect uvisor RAM, punch holes for guard bands above the stack
+     * and below the stack */
+    res = vmpu_set(7,
+        (void*)SRAM_ORIGIN,
+        UVISOR_SRAM_SIZE,
+        MPU_RASR_AP_PRW_UNO|MPU_RASR_CB_WB_WRA|MPU_RASR_XN|MPU_RASR_SRD(t)
+    );
+
+    /* set uvisor RAM guard bands to RO & inaccessible to all code */
+    res|= vmpu_set(6,
+        (void*)SRAM_ORIGIN,
+        UVISOR_SRAM_SIZE,
+        MPU_RASR_AP_PNO_UNO|MPU_RASR_CB_WB_WRA|MPU_RASR_XN
+    );
+
+    /* protect uvisor flash-data from unprivileged code,
+     * poke holes for code, only protect remaining data blocks,
+     * set XN for stored data */
+    res|= vmpu_set(5,
+        (void*)FLASH_ORIGIN,
+        UVISOR_FLASH_SIZE,
+        MPU_RASR_AP_PRO_UNO|MPU_RASR_CB_WB_WRA|MPU_RASR_XN
+    );
+
+    /* allow access to flash */
+    res|= vmpu_set(4,
+        (void*)FLASH_ORIGIN,
+        FLASH_LENGTH,
+        MPU_RASR_AP_PRO_URO|MPU_RASR_CB_WT
+    );
+
+    /* allow access to unprivileged user SRAM */
+    res|= vmpu_set(3,
+        (void*)SRAM_ORIGIN,
+        SRAM_LENGTH,
+        MPU_RASR_AP_PRW_URW|MPU_RASR_CB_WB_WRA
+    );
+
+    debug_mpu_config();
+
+    /* finally enable MPU */
+    if(!res)
+        MPU->CTRL = MPU_CTRL_ENABLE_Msk|MPU_CTRL_PRIVDEFENA_Msk;
+
+    return res ? E_ALIGN:E_SUCCESS;
 }
 
 void vmpu_init_protection(void)

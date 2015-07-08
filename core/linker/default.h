@@ -121,5 +121,6 @@ SECTIONS
         *(.heap)
         *(.heap.*)
         __heap_end__ = ALIGN(32);
+        __stack_start__ = .;
     } > RAM
 }
