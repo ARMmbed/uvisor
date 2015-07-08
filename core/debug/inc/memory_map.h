@@ -14,7 +14,7 @@
 #define __MEMORY_MAP_H__
 
 typedef struct mem_map {
-    char name[15];
+    char name[10];
     uint32_t base;
     uint32_t end;
 } MemMap;
