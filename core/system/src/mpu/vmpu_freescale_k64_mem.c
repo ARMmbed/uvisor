@@ -11,6 +11,7 @@
  *
  ***************************************************************/
 #include <uvisor.h>
+#include <halt.h>
 #include <vmpu.h>
 #include "vmpu_freescale_k64_mem.h"
 
