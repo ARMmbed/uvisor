@@ -16,6 +16,17 @@
 #include <debug.h>
 #include <memory_map.h>
 
+/* set default MPU region count */
+#ifndef ARMv7M_MPU_REGIONS
+#define ARMv7M_MPU_REGIONS 8
+#endif/*ARMv7M_MPU_REGIONS*/
+
+/* minimum region address alignment */
+#ifndef ARMv7M_MPU_ALIGNMENT_BITS
+#define ARMv7M_MPU_ALIGNMENT_BITS 5
+#endif/*ARMv7M_MPU_ALIGNMENT_BITS*/
+#define ARMv7M_MPU_ALIGNMENT_MASK ((1UL<<ARMv7M_MPU_ALIGNMENT_BITS)-1)
+
 static uint32_t g_vmpu_aligment_mask;
 
 void vmpu_acl_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
@@ -57,27 +68,23 @@ static void vmpu_fault_debug(void)
     halt_led(FAULT_DEBUG);
 }
 
-/* calculate rounded section alignment */
-uint8_t vmpu_region_bits(uint32_t size)
+uint8_t vmpu_bits(uint32_t size)
 {
     uint8_t bits=0;
-
     /* find highest bit */
     while(size)
     {
         size>>=1;
         bits++;
     }
-
-    /* smallest region is 256 bytes for subregion support */
-    return (bits<=8)?8:bits;
+    return bits;
 }
 
 void vmpu_dump_settings(void)
 {
     uint8_t r;
     DPRINTF("MPU region dump:\r\n");
-    for(r=0; r<MPU_REGIONS; r++)
+    for(r=0; r<ARMv7M_MPU_REGIONS; r++)
     {
         MPU->RNR = r;
         DPRINTF("\tR:%i RBAR=0x%08X RASR=0x%08X\r\n", r, MPU->RBAR, MPU->RASR);
@@ -97,10 +104,11 @@ void vmpu_init_protection(void)
     /* show basic mpu settings */
     DPRINTF("MPU.REGIONS=%i\r\n", (uint8_t)(MPU->TYPE >> MPU_TYPE_DREGION_Pos));
     DPRINTF("MPU.ALIGNMENT=0x%08X\r\n", g_vmpu_aligment_mask);
-    DPRINTF("MPU.ALIGNMENT_BITS=%i\r\n", vmpu_region_bits(g_vmpu_aligment_mask));
+    DPRINTF("MPU.ALIGNMENT_BITS=%i\r\n", vmpu_bits(g_vmpu_aligment_mask));
 
     /* sanity checks */
-    assert(MPU_REGIONS == ((MPU->TYPE >> MPU_TYPE_DREGION_Pos) & 0xFF));
+    assert(ARMv7M_MPU_REGIONS == ((MPU->TYPE >> MPU_TYPE_DREGION_Pos) & 0xFF));
+    assert(ARMv7M_MPU_ALIGNMENT_BITS == vmpu_bits(g_vmpu_aligment_mask));
 
     /* setup security "bluescreen" exceptions */
     ISR_SET(MemoryManagement_IRQn, &vmpu_fault_memmanage);
