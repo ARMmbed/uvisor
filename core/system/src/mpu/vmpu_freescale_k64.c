@@ -107,6 +107,16 @@ int vmpu_switch(uint8_t src_box, uint8_t dst_box)
     return 0;
 }
 
+void vmpu_load_box(uint8_t box_id)
+{
+    if(box_id != 0)
+    {
+        HALT_ERROR(NOT_IMPLEMENTED, "currently only box 0 can be loaded");
+    }
+    vmpu_aips_switch(box_id, box_id);
+    DPRINTF("%d  box %d loaded \n\r", box_id);
+}
+
 void vmpu_init_protection(void)
 {
     /* setup security "bluescreen" exceptions */
@@ -121,7 +131,4 @@ void vmpu_init_protection(void)
 
     /* init memory protection */
     vmpu_mem_init();
-
-    /* load ACLs for box 0 */
-    vmpu_aips_switch(0, 0);
 }

@@ -80,6 +80,10 @@ uint8_t vmpu_bits(uint32_t size)
     return bits;
 }
 
+void vmpu_load_box(uint8_t box_id)
+{
+}
+
 void vmpu_init_protection(void)
 {
     /* reset MPU */
