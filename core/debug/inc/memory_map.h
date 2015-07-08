@@ -13,15 +13,12 @@
 #ifndef __MEMORY_MAP_H__
 #define __MEMORY_MAP_H__
 
-#include <uvisor.h>
-
 typedef struct mem_map {
     char name[15];
     uint32_t base;
     uint32_t end;
 } MemMap;
 
-extern const MemMap g_mem_map[];
 extern const MemMap* memory_map_name(uint32_t addr);
 
 #endif/*__MEMORY_MAP_H__*/
