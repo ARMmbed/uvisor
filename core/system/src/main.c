@@ -61,7 +61,7 @@ void main_entry(void)
         /* swap stack pointers*/
         __disable_irq();
         __set_PSP(__get_MSP());
-        __set_MSP(((uint32_t) &__stack_end__) - STACK_GUARD_BAND);
+        __set_MSP((uint32_t)&__stack_top__);
         __enable_irq();
 
         /* finish initialization */

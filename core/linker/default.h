@@ -49,16 +49,14 @@ ENTRY(reset_handler)
 #define STACK_SIZE 1024
 #endif/*STACK_SIZE*/
 
-#define STACK_SECTION_SIZE ((2*STACK_GUARD_BAND)+STACK_SIZE)
-
 MEMORY
 {
   FLASH (rx) : ORIGIN = (FLASH_ORIGIN + RESERVED_FLASH),
                LENGTH = USE_FLASH_SIZE - RESERVED_FLASH
   RAM   (rwx): ORIGIN = (SRAM_ORIGIN + RESERVED_SRAM),
-               LENGTH = USE_SRAM_SIZE - STACK_SECTION_SIZE - RESERVED_SRAM
-  STACK (rw) : ORIGIN = (SRAM_ORIGIN + USE_SRAM_SIZE - STACK_SECTION_SIZE),
-               LENGTH = STACK_SECTION_SIZE
+               LENGTH = USE_SRAM_SIZE - RESERVED_SRAM - STACK_SIZE
+  STACK (rw) : ORIGIN = (SRAM_ORIGIN + USE_SRAM_SIZE - STACK_SIZE),
+               LENGTH = STACK_SIZE
 }
 
 SECTIONS
@@ -77,6 +75,7 @@ SECTIONS
         PROVIDE(__data_start_src__ = LOADADDR(.data));
         PROVIDE(__uvisor_config = LOADADDR(.data) + SIZEOF(.data));
         PROVIDE(__stack_start__ = ORIGIN(STACK));
+        PROVIDE(__stack_top__ = ORIGIN(STACK) + LENGTH(STACK) - STACK_GUARD_BAND);
         PROVIDE(__stack_end__ = ORIGIN(STACK) + LENGTH(STACK));
         . = ALIGN(16);
         __code_end__ = .;
