@@ -24,7 +24,7 @@
       <td>__stack_end__</td>
       <td>points to the end of the privileged uViisor stack</td>
       <td>stack needs to be 2^n size > 256</td>
-      <td>aligned to 32 bytes</td>
+      <td>aligned to 32 bytes - ensure space for two protection bands on top and bottom, each eat least 32 bytes</td>
     </tr>
   </tbody>
 </table>
