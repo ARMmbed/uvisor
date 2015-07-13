@@ -28,6 +28,6 @@
 
 /* stack configuration */
 #define STACK_SIZE       2048
-#define STACK_GUARD_BAND  128
+#define STACK_GUARD_BAND  (STACK_SIZE / 8)
 
 #endif/*__CONFIG_H__*/
