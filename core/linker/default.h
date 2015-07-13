@@ -76,6 +76,7 @@ SECTIONS
         *(.rodata*)
         PROVIDE(__data_start_src__ = LOADADDR(.data));
         PROVIDE(__uvisor_config = LOADADDR(.data) + SIZEOF(.data));
+        PROVIDE(__stack_start__ = ORIGIN(STACK));
         PROVIDE(__stack_end__ = ORIGIN(STACK) + LENGTH(STACK));
         . = ALIGN(16);
         __code_end__ = .;
