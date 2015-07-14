@@ -21,6 +21,8 @@ UVISOR_EXTERN void uvisor_init(void);
  ******************************************************************************/
 
 /* bitband.h */
+UVISOR_EXTERN const uint32_t __uvisor_mode;
+
 #define uvisor_write_bitband(addr, val) *((uint32_t *) (addr)) = (uint32_t) (val)
 
 /* config.h */
@@ -61,6 +63,6 @@ UVISOR_EXTERN void uvisor_init(void);
 #define secure_gateway(dst_box, dst_fn, ...) dst_fn(__VA_ARGS__)
 
 /* svc_exports.h */
-#define UVISOR_SVC_CONTEXT_MAX_DEPTH 100 /* secure gateways are refular function calls anyways */
+#define UVISOR_SVC_CONTEXT_MAX_DEPTH 100 /* secure gateways are regular function calls anyways */
 
 #endif/*__UNSUPPORTED_H__*/
