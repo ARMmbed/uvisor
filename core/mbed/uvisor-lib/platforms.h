@@ -15,8 +15,7 @@
 
 /* list of supported platforms */
 #if defined(TARGET_LIKE_FRDM_K64F_GCC)         || \
-    defined(TARGET_LIKE_STM32F429I_DISCO__GCC) || \
-    defined(TARGET_LIKE_STM32F439I_GCC)
+    defined(TARGET_LIKE_STM32F429I_DISCO_GCC)
 
 #define UVISOR_PRESENT
 
