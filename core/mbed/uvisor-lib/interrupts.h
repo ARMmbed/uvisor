@@ -26,7 +26,7 @@ UVISOR_EXTERN void     __uvisor_irq_priority_set(uint32_t irqn,
                                                  uint32_t priority);
 UVISOR_EXTERN uint32_t __uvisor_irq_priority_get(uint32_t irqn);
 
-#define vIRQ_SetVector(irqn, vector, flag)                                     \
+#define vIRQ_SetVectorX(irqn, vector, flag)                                    \
     ({                                                                         \
         if(__uvisor_mode == 0)                                                 \
         {                                                                      \
@@ -38,6 +38,8 @@ UVISOR_EXTERN uint32_t __uvisor_irq_priority_get(uint32_t irqn);
                              (uint32_t) (flag));                               \
         }                                                                      \
     })
+
+#define vIRQ_SetVector(irqn, vector) vIRQ_SetVectorX(irqn, vector, 0)
 
 #define vIRQ_GetVector(irqn)                                                   \
     ({                                                                         \
