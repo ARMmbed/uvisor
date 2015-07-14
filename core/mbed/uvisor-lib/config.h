@@ -15,6 +15,10 @@
 
 UVISOR_EXTERN const uint32_t __uvisor_mode;
 
+#define UVISOR_DISABLED   0
+#define UVISOR_PERMISSIVE 1
+#define UVISOR_ENABLED    2
+
 #define UVISOR_SET_MODE(mode) \
     UVISOR_SET_MODE_ACL_COUNT(mode, NULL, 0);
 
