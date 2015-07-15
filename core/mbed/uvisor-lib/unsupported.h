@@ -41,8 +41,8 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
     UVISOR_SECURE_CONST void *main_acl = acl_list;
 
 #define UVISOR_SECURE_CONST const volatile
-#define UVISOR_SECURE_BSS   {}
-#define UVISOR_SECURE_DATA  {}
+#define UVISOR_SECURE_BSS
+#define UVISOR_SECURE_DATA
 
 #define UVISOR_BOX_CONFIG(box_name, acl_list, stack_size) \
     UVISOR_SECURE_CONST void *box_acl_ ## box_name = acl_list;
@@ -61,8 +61,5 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 
 /* secure_gateway.h */
 #define secure_gateway(dst_box, dst_fn, ...) dst_fn(__VA_ARGS__)
-
-/* svc_exports.h */
-#define UVISOR_SVC_CONTEXT_MAX_DEPTH 100 /* secure gateways are regular function calls anyways */
 
 #endif/*__UNSUPPORTED_H__*/
