@@ -10,8 +10,8 @@
  *  by a licensing agreement from ARM Limited.
  *
  ***************************************************************/
-#ifndef __CONFIG_H__
-#define __CONFIG_H__
+#ifndef __BOX_CONFIG_H__
+#define __BOX_CONFIG_H__
 
 UVISOR_EXTERN const uint32_t __uvisor_mode;
 
@@ -66,4 +66,4 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
     const __attribute__((section(".uvisor.cfgtbl"), aligned(4))) \
           volatile void* box_name ## _cfg_ptr  =  & box_name ## _cfg;
 
-#endif/*__CONFIG_H__*/
+#endif/*__BOX_CONFIG_H__*/

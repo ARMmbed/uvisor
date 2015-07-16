@@ -27,7 +27,7 @@
 
 #include "uvisor-lib/benchmark.h"
 #include "uvisor-lib/bitband.h"
-#include "uvisor-lib/config.h"
+#include "uvisor-lib/box_config.h"
 #include "uvisor-lib/interrupts.h"
 #include "uvisor-lib/secure_gateway.h"
 #include "uvisor-lib/svc_exports.h"
