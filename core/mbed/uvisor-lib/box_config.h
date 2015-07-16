@@ -15,15 +15,24 @@
 
 UVISOR_EXTERN const uint32_t __uvisor_mode;
 
+/* pretend that the box state pointer is constant so developers won't
+ * acciidentally change it. The uVisor will switch the box context
+ * pointer on overy context switch.
+ *
+ * writing to the context pointer by an attacker will only affect
+ * the current box temporary - it won't affect other boxes.
+ */
+UVISOR_EXTERN void* const __uvisor_box_context;
+
 #define UVISOR_DISABLED   0
 #define UVISOR_PERMISSIVE 1
 #define UVISOR_ENABLED    2
 
 #define UVISOR_SET_MODE(mode) \
-    UVISOR_SET_MODE_ACL_COUNT(mode, NULL, 0);
+    UVISOR_SET_MODE_ACL_COUNT(mode, NULL, 0)
 
 #define UVISOR_SET_MODE_ACL(mode, acl_list) \
-    UVISOR_SET_MODE_ACL_COUNT(mode, acl_list, UVISOR_ARRAY_COUNT(acl_list));
+    UVISOR_SET_MODE_ACL_COUNT(mode, acl_list, UVISOR_ARRAY_COUNT(acl_list))
 
 #define UVISOR_SET_MODE_ACL_COUNT(mode, acl_list, acl_list_count) \
     uint8_t __attribute__((section(".uvisor.bss.stack"), aligned(32))) \
@@ -33,6 +42,7 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
     static UVISOR_SECURE_CONST UvisorBoxConfig main_cfg = { \
         UVISOR_BOX_MAGIC, \
         UVISOR_BOX_VERSION, \
+        0, \
         0, \
         acl_list, \
         acl_list_count \
@@ -51,14 +61,20 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
     __attribute__((section(".uvisor.data"), aligned(32)))
 
 #define UVISOR_BOX_CONFIG(box_name, acl_list, stack_size) \
+    UVISOR_BOX_CONTEXT(box_name, acl_list, stack_size, 0)
+
+#define UVISOR_BOX_CONTEXT(box_name, acl_list, stack_size, context_size) \
     \
     uint8_t __attribute__((section(".uvisor.bss.stack"), aligned(32))) \
-        box_name ## _stack[UVISOR_STACK_SIZE_ROUND(stack_size)];\
+        box_name ## _reserved[UVISOR_MEM_SIZE_ROUND( \
+        UVISOR_STACK_SIZE_ROUND(stack_size) + state_size + \
+        UVISOR_STACK_BAND_SIZE)]; \
     \
     static UVISOR_SECURE_CONST UvisorBoxConfig box_name ## _cfg = { \
         UVISOR_BOX_MAGIC, \
         UVISOR_BOX_VERSION, \
         sizeof(box_name ## _stack), \
+        context_size, \
         acl_list, \
         UVISOR_ARRAY_COUNT(acl_list) \
     }; \
