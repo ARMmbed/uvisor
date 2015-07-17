@@ -67,13 +67,13 @@ UVISOR_EXTERN void* const __uvisor_box_context;
     \
     uint8_t __attribute__((section(".uvisor.bss.stack"), aligned(32))) \
         box_name ## _reserved[UVISOR_MEM_SIZE_ROUND( \
-        UVISOR_STACK_SIZE_ROUND(stack_size) + state_size + \
+        UVISOR_STACK_SIZE_ROUND(stack_size) + (context_size) + \
         UVISOR_STACK_BAND_SIZE)]; \
     \
     static UVISOR_SECURE_CONST UvisorBoxConfig box_name ## _cfg = { \
         UVISOR_BOX_MAGIC, \
         UVISOR_BOX_VERSION, \
-        sizeof(box_name ## _stack), \
+        sizeof(box_name ## _reserved), \
         context_size, \
         acl_list, \
         UVISOR_ARRAY_COUNT(acl_list) \
