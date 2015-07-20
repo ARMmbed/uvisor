@@ -14,7 +14,7 @@
 
 .globl uvisor_init
 .globl uvisor_config
-.globl __uvisor_box_context
+.globl uvisor_box_context
 .type  uvisor_init, %function
 .weak  __uvisor_mode
 
@@ -74,7 +74,7 @@ __uvisor_mode:
     .align 5
 
 .section .bss,"awM",@nobits
-__uvisor_box_context:
+uvisor_box_context:
     .long 0
 
 .section .uvisor.bss.main,"awM",@nobits
