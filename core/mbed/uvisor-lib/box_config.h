@@ -15,15 +15,6 @@
 
 UVISOR_EXTERN const uint32_t __uvisor_mode;
 
-/* pretend that the box state pointer is constant so developers won't
- * acciidentally change it. The uVisor will switch the box context
- * pointer on overy context switch.
- *
- * writing to the context pointer by an attacker will only affect
- * the current box temporary - it won't affect other boxes.
- */
-UVISOR_EXTERN void* const __uvisor_box_context;
-
 #define UVISOR_DISABLED   0
 #define UVISOR_PERMISSIVE 1
 #define UVISOR_ENABLED    2
@@ -60,10 +51,10 @@ UVISOR_EXTERN void* const __uvisor_box_context;
 #define UVISOR_SECURE_DATA \
     __attribute__((section(".uvisor.data"), aligned(32)))
 
-#define UVISOR_BOX_CONFIG(box_name, acl_list, stack_size) \
-    UVISOR_BOX_CONTEXT(box_name, acl_list, stack_size, 0)
+/* this macro selects an overloaded macro (variable number of arguments) */
+#define __UVISOR_BOX_MACRO(_1, _2, _3, _4, NAME, ...) NAME
 
-#define UVISOR_BOX_CONTEXT(box_name, acl_list, stack_size, context_size) \
+#define __UVISOR_BOX_CONFIG(box_name, acl_list, stack_size, context_size) \
     \
     uint8_t __attribute__((section(".uvisor.bss.stack"), aligned(32))) \
         box_name ## _reserved[UVISOR_MEM_SIZE_ROUND( \
@@ -80,6 +71,17 @@ UVISOR_EXTERN void* const __uvisor_box_context;
     }; \
     \
     const __attribute__((section(".uvisor.cfgtbl"), aligned(4))) \
-          volatile void* box_name ## _cfg_ptr  =  & box_name ## _cfg;
+          volatile void *box_name ## _cfg_ptr  =  & box_name ## _cfg;
+
+#define __UVISOR_BOX_CONFIG_NOCONTEXT(box_name, acl_list, stack_size) \
+    __UVISOR_BOX_CONFIG(box_name, acl_list, stack_size, 0) \
+
+#define __UVISOR_BOX_CONFIG_CONTEXT(box_name, acl_list, stack_size, context_type) \
+    __UVISOR_BOX_CONFIG(box_name, acl_list, stack_size, sizeof(context_type)) \
+    UVISOR_EXTERN context_type * const uvisor_box_context;
+
+#define UVISOR_BOX_CONFIG(...) \
+    __UVISOR_BOX_MACRO(__VA_ARGS__, __UVISOR_BOX_CONFIG_CONTEXT, \
+                                    __UVISOR_BOX_CONFIG_NOCONTEXT)(__VA_ARGS__)
 
 #endif/*__BOX_CONFIG_H__*/
