@@ -22,7 +22,7 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
  * writing to the context pointer by an attacker will only affect
  * the current box temporary - it won't affect other boxes.
  */
-UVISOR_EXTERN void* const __uvisor_box_context;
+UVISOR_EXTERN void * const uvisor_box_context;
 
 #define UVISOR_DISABLED   0
 #define UVISOR_PERMISSIVE 1
