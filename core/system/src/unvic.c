@@ -367,6 +367,9 @@ uint32_t __unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
         /* gather information from current state */
         dst_sp = svc_cx_get_curr_sp(dst_id);
 
+        /* set the context stack pointer for the dst box */
+        g_uvisor_box_context = g_svc_cx_context_sp[dst_id];
+
         /* switch boxes */
         vmpu_switch(src_id, dst_id);
     }
@@ -443,6 +446,9 @@ void __unvic_svc_cx_out(uint32_t *svc_sp, uint32_t *msp)
 
     if(src_id != dst_id)
     {
+        /* set the context stack pointer back to the one of the src box */
+        g_uvisor_box_context = g_svc_cx_context_sp[src_id];
+
         /* switch ACls */
         vmpu_switch(dst_id, src_id);
     }

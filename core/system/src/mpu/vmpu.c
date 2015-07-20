@@ -32,6 +32,8 @@
 #error "MPU_MAX_PRIVATE_FUNCTIONS needs to be lower/equal to 0x100"
 #endif
 
+void *g_uvisor_box_context;
+
 static int vmpu_sanity_checks(void)
 {
     /* verify uvisor config structure */
@@ -319,6 +321,9 @@ void vmpu_init_post(void)
     /* exceptions can now return to thread mode regardless their origin
      * (supervisor or thread mode); the opposite is not true */
     SCB->CCR |= 1;
+
+    /* read address of context stack pointer from memory */
+    g_uvisor_box_context = (void *) __uvisor_config.context_sp;
 
     /* init memory protection */
     vmpu_init_protection();
