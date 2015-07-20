@@ -14,6 +14,7 @@
 
 .globl uvisor_init
 .globl uvisor_config
+.globl __uvisor_box_context
 .globl uvisor_box_context
 .type  uvisor_init, %function
 .weak  __uvisor_mode
@@ -67,13 +68,16 @@ uvisor_config:
     .long __uvisor_reserved_start
     .long __uvisor_reserved_end
 
+    /* pointer to uvisor_box_context */
+    .long __uvisor_box_context
+
     /* uvisor default mode - user can override weak reference */
 __uvisor_mode:
     .long 0
 
     .align 5
 
-.section .bss,"awM",@nobits
+.section .bss
 uvisor_box_context:
     .long 0
 
