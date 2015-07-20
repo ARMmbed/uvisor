@@ -14,6 +14,7 @@
 #define __BOX_CONFIG_H__
 
 UVISOR_EXTERN const uint32_t __uvisor_mode;
+UVISOR_EXTERN void *uvisor_box_context;
 
 #define UVISOR_DISABLED   0
 #define UVISOR_PERMISSIVE 1
@@ -28,7 +29,10 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 #define UVISOR_SET_MODE_ACL_COUNT(mode, acl_list, acl_list_count) \
     uint8_t __attribute__((section(".uvisor.bss.stack"), aligned(32))) \
         __reserved_stack[UVISOR_STACK_BAND_SIZE]; \
+    \
     UVISOR_EXTERN const uint32_t __uvisor_mode = (mode); \
+    \
+    UVISOR_EXTERN void ** const __uvisor_box_context = &uvisor_box_context; \
     \
     static UVISOR_SECURE_CONST UvisorBoxConfig main_cfg = { \
         UVISOR_BOX_MAGIC, \
