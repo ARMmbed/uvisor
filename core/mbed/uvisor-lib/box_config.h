@@ -14,7 +14,6 @@
 #define __BOX_CONFIG_H__
 
 UVISOR_EXTERN const uint32_t __uvisor_mode;
-UVISOR_EXTERN void *uvisor_box_context;
 
 #define UVISOR_DISABLED   0
 #define UVISOR_PERMISSIVE 1
@@ -31,8 +30,6 @@ UVISOR_EXTERN void *uvisor_box_context;
         __reserved_stack[UVISOR_STACK_BAND_SIZE]; \
     \
     UVISOR_EXTERN const uint32_t __uvisor_mode = (mode); \
-    \
-    UVISOR_EXTERN void ** const __uvisor_box_context = &uvisor_box_context; \
     \
     static UVISOR_SECURE_CONST UvisorBoxConfig main_cfg = { \
         UVISOR_BOX_MAGIC, \
@@ -82,7 +79,7 @@ UVISOR_EXTERN void *uvisor_box_context;
 
 #define __UVISOR_BOX_CONFIG_CONTEXT(box_name, acl_list, stack_size, context_type) \
     __UVISOR_BOX_CONFIG(box_name, acl_list, stack_size, sizeof(context_type)) \
-    UVISOR_EXTERN context_type * const uvisor_box_context;
+    UVISOR_EXTERN context_type * const uvisor_ctx;
 
 #define UVISOR_BOX_CONFIG(...) \
     __UVISOR_BOX_MACRO(__VA_ARGS__, __UVISOR_BOX_CONFIG_CONTEXT, \
