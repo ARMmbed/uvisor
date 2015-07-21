@@ -19,6 +19,7 @@
 TBoxCx    g_svc_cx_state[UVISOR_SVC_CONTEXT_MAX_DEPTH];
 int       g_svc_cx_state_ptr;
 uint32_t *g_svc_cx_curr_sp[UVISOR_MAX_BOXES];
+void     *g_svc_cx_context_ptr[UVISOR_MAX_BOXES];
 uint8_t   g_svc_cx_curr_id;
 uint32_t  g_svc_cx_box_num;
 
@@ -127,6 +128,9 @@ uint32_t __svc_cx_switch_in(uint32_t *svc_sp, uint32_t svc_pc,
     svc_cx_push_state(src_id, src_sp, dst_id);
     DEBUG_CX_SWITCH_IN();
 
+    /* set the context stack pointer for the dst box */
+    __uvisor_box_context = g_svc_cx_context_ptr[dst_id];
+
     /* switch boxes */
     vmpu_switch(src_id, dst_id);
     __set_PSP((uint32_t) dst_sp);
@@ -166,6 +170,9 @@ void __svc_cx_switch_out(uint32_t *svc_sp)
     src_sp[0] = dst_sp[0];
     /* the destination stack frame gets discarded automatically since the
      * corresponding stack pointer is not stored anywhere */
+
+    /* set the context stack pointer back to the one of the src box */
+    __uvisor_box_context = g_svc_cx_context_ptr[src_id];
 
     /* switch ACls */
     vmpu_switch(dst_id, src_id);

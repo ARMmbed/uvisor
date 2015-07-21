@@ -25,8 +25,6 @@ UVISOR_EXTERN uint32_t __data_start__;
 UVISOR_EXTERN uint32_t __data_end__;
 UVISOR_EXTERN const uint32_t __data_start_src__;
 
-UVISOR_EXTERN void * const uvisor_box_context;
-
 typedef struct {
     uint32_t magic;
     uint32_t version;
@@ -46,6 +44,9 @@ typedef struct {
 
     /* memory reserved for uvisor */
     uint32_t *reserved_start, *reserved_end;
+
+    /* address of __uvisor_box_context */
+    uint32_t *uvisor_box_context;
 } UVISOR_PACKED UvisorConfig;
 
 UVISOR_EXTERN const UvisorConfig __uvisor_config;
