@@ -32,7 +32,7 @@
 #error "MPU_MAX_PRIVATE_FUNCTIONS needs to be lower/equal to 0x100"
 #endif
 
-void *g_uvisor_box_context;
+void *__uvisor_box_context;
 
 static int vmpu_sanity_checks(void)
 {
@@ -323,7 +323,7 @@ void vmpu_init_post(void)
     SCB->CCR |= 1;
 
     /* read address of context stack pointer from memory */
-    g_uvisor_box_context = (void *) __uvisor_config.context_sp;
+    __uvisor_box_context = (void *) __uvisor_config.uvisor_box_context;
 
     /* init memory protection */
     vmpu_init_protection();
