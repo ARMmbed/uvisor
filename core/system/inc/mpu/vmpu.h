@@ -22,7 +22,7 @@
 #define VMPU_REGION_SIZE(p1, p2) ((p1 >= p2) ? 0 : \
                                              ((uint32_t) (p2) - (uint32_t) (p1)))
 
-extern void *g_uvisor_box_context;
+extern void *__uvisor_box_context;
 
 extern void vmpu_acl_add(uint8_t box_id, void *start,
                          uint32_t size, UvisorBoxAcl acl);
