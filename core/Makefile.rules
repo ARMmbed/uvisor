@@ -71,7 +71,6 @@ endif
 SOURCES:=\
          $(SYSTEM_DIR)/src/benchmark.c \
          $(SYSTEM_DIR)/src/halt.c \
-         $(SYSTEM_DIR)/src/isr.c \
          $(SYSTEM_DIR)/src/main.c \
          $(SYSTEM_DIR)/src/stdlib.c \
          $(SYSTEM_DIR)/src/svc.c \
