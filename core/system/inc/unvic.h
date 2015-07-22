@@ -16,6 +16,12 @@
 
 #define UNVIC_MIN_PRIORITY (uint32_t) 1
 
+#define IRQn_OFFSET            16
+#define IRQ_VECTORS            HW_IRQ_VECTORS
+#define ISR_VECTORS            (IRQn_OFFSET + IRQ_VECTORS)
+
+typedef void (*TIsrVector)(void);
+
 typedef struct {
     TIsrVector hdlr;
     uint8_t    id;
