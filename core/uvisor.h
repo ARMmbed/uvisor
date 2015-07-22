@@ -62,7 +62,6 @@ typedef void (*UnprivilegedBoxEntry)(void);
 #include <iot-error.h>
 
 /* IOT-OS specific includes */
-#include <isr.h>
 #include <linker.h>
 
 #endif/*__UVISOR_H__*/

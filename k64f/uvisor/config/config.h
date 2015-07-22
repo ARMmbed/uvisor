@@ -18,13 +18,6 @@
 /* number of NVIC vectors (IRQ vectors, hardware specific) */
 #define HW_IRQ_VECTORS 86
 
-#ifdef  NOSYSTEM
-#define RESERVED_FLASH 0x420
-#define RESERVED_SRAM 0x200
-#else
-#define NV_CONFIG_OFFSET 0x400
-#endif/*NOSYSTEM*/
-
 #define XTAL_FREQUENCY 48000000UL
 
 #define USE_FLASH_SIZE UVISOR_FLASH_SIZE
