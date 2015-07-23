@@ -51,7 +51,7 @@
 
 static uint32_t g_vmpu_aligment_mask;
 
-void vmpu_acl_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
+void vmpu_acl_add(uint8_t box_id, void* param1, uint32_t param2, UvisorBoxAcl acl)
 {
 }
 
