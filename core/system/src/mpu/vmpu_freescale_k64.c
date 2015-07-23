@@ -18,13 +18,13 @@
 #include "vmpu_freescale_k64_aips.h"
 #include "vmpu_freescale_k64_mem.h"
 
-static void vmpu_fault_memmanage(void)
+void MemoryManagement_IRQn_Handler(void)
 {
     DEBUG_FAULT(FAULT_MEMMANAGE);
     halt_led(FAULT_MEMMANAGE);
 }
 
-static void vmpu_fault_bus(void)
+void BusFault_IRQn_Handler(void)
 {
     DEBUG_FAULT(FAULT_BUS);
 
@@ -38,19 +38,19 @@ static void vmpu_fault_bus(void)
         halt_led(FAULT_BUS);
 }
 
-static void vmpu_fault_usage(void)
+void UsageFault_IRQn_Handler(void)
 {
     DEBUG_FAULT(FAULT_USAGE);
     halt_led(FAULT_USAGE);
 }
 
-static void vmpu_fault_hard(void)
+void HardFault_IRQn_Handler(void)
 {
     DEBUG_FAULT(FAULT_HARD);
     halt_led(FAULT_HARD);
 }
 
-static void vmpu_fault_debug(void)
+void DebugMonitor_IRQn_Handler(void)
 {
     DEBUG_FAULT(FAULT_DEBUG);
     halt_led(FAULT_DEBUG);
@@ -119,13 +119,6 @@ void vmpu_load_box(uint8_t box_id)
 
 void vmpu_init_protection(void)
 {
-    /* setup security "bluescreen" exceptions */
-    ISR_SET(MemoryManagement_IRQn, &vmpu_fault_memmanage);
-    ISR_SET(BusFault_IRQn,         &vmpu_fault_bus);
-    ISR_SET(UsageFault_IRQn,       &vmpu_fault_usage);
-    ISR_SET(HardFault_IRQn,        &vmpu_fault_hard);
-    ISR_SET(DebugMonitor_IRQn,     &vmpu_fault_debug);
-
     /* enable mem, bus and usage faults */
     SCB->SHCSR |= 0x70000;
 
