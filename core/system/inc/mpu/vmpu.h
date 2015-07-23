@@ -24,8 +24,8 @@
 
 extern void *__uvisor_box_context;
 
-extern void vmpu_acl_add(uint8_t box_id, void *start,
-                         uint32_t size, UvisorBoxAcl acl);
+extern void vmpu_acl_add(uint8_t box_id, void *param1,
+                         uint32_t param2, UvisorBoxAcl acl);
 extern int  vmpu_acl_dev(UvisorBoxAcl acl, uint16_t device_id);
 extern int  vmpu_acl_mem(UvisorBoxAcl acl, uint32_t addr, uint32_t size);
 extern int  vmpu_acl_reg(UvisorBoxAcl acl, uint32_t addr, uint32_t rmask,
