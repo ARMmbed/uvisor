@@ -208,12 +208,15 @@ static void vmpu_load_boxes(void)
                     );
 
                 /* add ACL, and force entry as user-provided */
-                vmpu_acl_add(
-                    box_id,
-                    region->param1,
-                    region->param2,
-                    region->acl | UVISOR_TACL_USER
-                );
+                if(region->acl & UVISOR_TACL_IRQ)
+                    vmpu_acl_irq(box_id, region->param1, region->param2);
+                else
+                    vmpu_acl_add(
+                        box_id,
+                        region->param1,
+                        region->param2,
+                        region->acl | UVISOR_TACL_USER
+                    );
 
                 /* proceed to next ACL */
                 region++;
@@ -264,6 +267,12 @@ int UVISOR_WEAK vmpu_acl_bit(UvisorBoxAcl acl, uint32_t addr)
 {
     HALT_ERROR(NOT_IMPLEMENTED, "vmpu_acl_bit not implemented yet\n\r");
     return 1;
+}
+
+void UVISOR_WEAK vmpu_acl_irq(uint8_t box_id, void* function, uint32_t isr_id)
+{
+    HALT_ERROR(NOT_IMPLEMENTED,
+               "vmpu_acl_irq needs hw-specific implementation\n\r");
 }
 
 void UVISOR_WEAK vmpu_acl_add(uint8_t box_id, void* param1, uint32_t param2, UvisorBoxAcl acl)

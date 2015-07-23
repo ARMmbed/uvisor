@@ -21,12 +21,15 @@ TIsrUVector g_unvic_vector[HW_IRQ_VECTORS];
 
 /* isr_default_handler to unvic_default_handler */
 void isr_default_handler(void) UVISOR_LINKTO(unvic_isr_mux);
+/* vmpu_acl_irq to unvic_acl_irq */
+void isr_acl_irq(uint8_t box_id, void *function,
+    uint32_t isr_id) UVISOR_LINKTO(unvic_acl_irq);
 
 static void unvic_check_acl(int irqn)
 {
     /* don't allow to modify uVisor-owned IRQs */
     if(!unvic_default(irqn))
-        HALT_ERROR(PERMISSION_DENIED,
+        HALT_ERROR(NOT_ALLOWED,
                    "access denied: IRQ %d is not multiplexed\n\r", irqn);
 
     /* check if the same box that registered the ISR is modifying it */
@@ -326,6 +329,31 @@ void __unvic_svc_cx_out(uint32_t *svc_sp, uint32_t *msp)
     /* re-privilege execution */
     __set_PSP((uint32_t) src_sp);
     __set_CONTROL(__get_CONTROL() & ~2);
+}
+
+void unvic_acl_irq(uint8_t box_id, void *function, uint32_t isr_id)
+{
+    TIsrUVector *uv;
+
+    /* don't allow to modify uVisor-owned IRQs */
+    if(!unvic_default(isr_id))
+        HALT_ERROR(NOT_ALLOWED,
+                   "access denied: IRQ %d is not multiplexed\n\r", isr_id);
+
+    /* get vector entry */
+    uv = &g_unvic_vector[isr_id];
+
+    /* check if IRQ entry is populated */
+    if(uv->id || uv->hdlr)
+    {
+        HALT_ERROR(PERMISSION_DENIED,
+                   "access denied: IRQ %d is owned by box %d\n\r", isr_id,
+                                               uv->id);
+    }
+
+    /* save settings, function handler is optional */
+    uv->id = box_id;
+    uv->hdlr = function;
 }
 
 int unvic_default(uint32_t isr_id)
