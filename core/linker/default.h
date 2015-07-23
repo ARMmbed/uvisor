@@ -88,12 +88,6 @@ SECTIONS
     } > FLASH
     __exidx_end = .;
 
-    .isr (NOLOAD):
-    {
-        . = ALIGN(128);
-        *(.isr_vector)
-    } > RAM
-
     .data :
     {
         . = ALIGN(4);
