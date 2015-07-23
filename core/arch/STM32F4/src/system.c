@@ -117,7 +117,7 @@ void UVISOR_ALIAS(isr_default_handler) LTDC_ER_IRQn_Handler(void);
 void UVISOR_ALIAS(isr_default_handler) DMA2D_IRQn_Handler(void);
 
 /* vector table; it will be placed in Flash */
-__attribute__((section(".isr_vector"), aligned(256)))
+__attribute__((aligned(256)))
 const TIsrVector g_isr_vector[ISR_VECTORS] =
 {
 	/* initial stack pointer */
