@@ -63,15 +63,11 @@ SECTIONS
 {
     .text :
     {
-        KEEP(*(.isr_vector_tmp))
-#ifdef  NV_CONFIG_OFFSET
-        . = (FLASH_ORIGIN + NV_CONFIG_OFFSET);
-        KEEP(*(.nv_config))
-#endif/*NV_CONFIG_OFFSET*/
         *(.text.main_entry)
-        *(.svc_vector*)
         *(.text*)
         *(.rodata*)
+        . = ALIGN(256);
+        *(.isr*)
         PROVIDE(__data_start_src__ = LOADADDR(.data));
         PROVIDE(__uvisor_config = LOADADDR(.data) + SIZEOF(.data));
         PROVIDE(__stack_start__ = ORIGIN(STACK));
