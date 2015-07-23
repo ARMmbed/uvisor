@@ -25,6 +25,11 @@ UVISOR_EXTERN uint32_t __data_start__;
 UVISOR_EXTERN uint32_t __data_end__;
 UVISOR_EXTERN const uint32_t __data_start_src__;
 
+UVISOR_EXTERN void main_entry(void);
+UVISOR_EXTERN void isr_default_sys_handler(void);
+UVISOR_EXTERN void isr_default_handler(void);
+UVISOR_EXTERN int isr_default(uint32_t isr_id);
+
 typedef struct {
     uint32_t magic;
     uint32_t version;

@@ -12,7 +12,7 @@
  ***************************************************************/
 #include <config.h>
 
-ENTRY(reset_handler)
+ENTRY(main_entry)
 
 #ifndef RESERVED_FLASH
 #define RESERVED_FLASH 0x0
@@ -68,7 +68,7 @@ SECTIONS
         . = (FLASH_ORIGIN + NV_CONFIG_OFFSET);
         KEEP(*(.nv_config))
 #endif/*NV_CONFIG_OFFSET*/
-        *(.text.reset_handler)
+        *(.text.main_entry)
         *(.svc_vector*)
         *(.text*)
         *(.rodata*)

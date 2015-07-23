@@ -11,18 +11,20 @@
  *
  ***************************************************************/
 #include <uvisor.h>
+#include "halt.h"
+#include "unvic.h"
 #include "system.h"
 
 /* all ISRs by default are weakly linked to the default handler */
-void UVISOR_ALIAS(isr_default_handler) NoMaskableInt_IRQn_Handler(void);
-void UVISOR_ALIAS(isr_default_handler) HardFault_IRQn_Handler(void);
-void UVISOR_ALIAS(isr_default_handler) MemoryManagement_IRQn_Handler(void);
-void UVISOR_ALIAS(isr_default_handler) BusFault_IRQn_Handler(void);
-void UVISOR_ALIAS(isr_default_handler) UsageFault_IRQn_Handler(void);
-void UVISOR_ALIAS(isr_default_handler) SVCall_IRQn_Handler(void);
-void UVISOR_ALIAS(isr_default_handler) DebugMonitor_IRQn_Handler(void);
-void UVISOR_ALIAS(isr_default_handler) PendSV_IRQn_Handler(void);
-void UVISOR_ALIAS(isr_default_handler) SysTick_IRQn_Handler(void);
+void UVISOR_ALIAS(isr_default_sys_handler) NoMaskableInt_IRQn_Handler(void);
+void UVISOR_ALIAS(isr_default_sys_handler) HardFault_IRQn_Handler(void);
+void UVISOR_ALIAS(isr_default_sys_handler) MemoryManagement_IRQn_Handler(void);
+void UVISOR_ALIAS(isr_default_sys_handler) BusFault_IRQn_Handler(void);
+void UVISOR_ALIAS(isr_default_sys_handler) UsageFault_IRQn_Handler(void);
+void UVISOR_ALIAS(isr_default_sys_handler) SVCall_IRQn_Handler(void);
+void UVISOR_ALIAS(isr_default_sys_handler) DebugMonitor_IRQn_Handler(void);
+void UVISOR_ALIAS(isr_default_sys_handler) PendSV_IRQn_Handler(void);
+void UVISOR_ALIAS(isr_default_sys_handler) SysTick_IRQn_Handler(void);
 void UVISOR_ALIAS(isr_default_handler) WWDG_IRQn_Handler(void);
 void UVISOR_ALIAS(isr_default_handler) PVD_IRQn_Handler(void);
 void UVISOR_ALIAS(isr_default_handler) TAMP_STAMP_IRQn_Handler(void);
@@ -116,18 +118,29 @@ void UVISOR_ALIAS(isr_default_handler) DMA2D_IRQn_Handler(void);
 
 /* vector table; it will be placed in Flash */
 __attribute__((section(".isr_vector"), aligned(256)))
-void (*const g_isr_vector[])(void) = {
-	__stack_top__,
-	reset_handler,
+const TIsrVector g_isr_vector[ISR_VECTORS] =
+{
+	/* initial stack pointer */
+	(TIsrVector)&__stack_top__,
+
+	/* system interrupts */
+	&main_entry,                         /* -15 */
 	NoMaskableInt_IRQn_Handler,          /* -14 */
 	HardFault_IRQn_Handler,              /* -13 */
 	MemoryManagement_IRQn_Handler,       /* -12 */
 	BusFault_IRQn_Handler,               /* -11 */
 	UsageFault_IRQn_Handler,             /* -10 */
+	isr_default_sys_handler,             /*  -9 */
+	isr_default_sys_handler,             /*  -8 */
+	isr_default_sys_handler,             /*  -7 */
+	isr_default_sys_handler,             /*  -6 */
 	SVCall_IRQn_Handler,                 /* - 5 */
 	DebugMonitor_IRQn_Handler,           /* - 4 */
+	isr_default_sys_handler,             /*  -3 */
 	PendSV_IRQn_Handler,                 /* - 2 */
 	SysTick_IRQn_Handler,                /* - 1 */
+
+	/* peripheral interrupts */
 	WWDG_IRQn_Handler,                   /*   0 */
 	PVD_IRQn_Handler,                    /*   1 */
 	TAMP_STAMP_IRQn_Handler,             /*   2 */
@@ -207,7 +220,7 @@ void (*const g_isr_vector[])(void) = {
 	OTG_HS_WKUP_IRQn_Handler,            /*  76 */
 	OTG_HS_IRQn_Handler,                 /*  77 */
 	DCMI_IRQn_Handler,                   /*  78 */
-	0,                                   /*  79 */
+	isr_default_handler,                 /*  79 */
 	HASH_RNG_IRQn_Handler,               /*  80 */
 	FPU_IRQn_Handler,                    /*  81 */
 	UART7_IRQn_Handler,                  /*  82 */
@@ -221,6 +234,12 @@ void (*const g_isr_vector[])(void) = {
 	DMA2D_IRQn_Handler,                  /*  90 */
 };
 
-void SystemInit(void)
+UVISOR_WEAK void isr_default_sys_handler(void)
 {
+	HALT_ERROR(NOT_IMPLEMENTED, "function not implemented\n\r");
+}
+
+UVISOR_WEAK void isr_default_handler(void)
+{
+	HALT_ERROR(NOT_IMPLEMENTED, "function not implemented\n\r");
 }

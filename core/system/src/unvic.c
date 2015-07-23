@@ -11,22 +11,31 @@
  *
  ***************************************************************/
 #include <uvisor.h>
-#include <isr.h>
 #include "halt.h"
 #include "unvic.h"
 #include "svc.h"
 #include "debug.h"
 
 /* unprivileged vector table */
-TIsrUVector g_unvic_vector[IRQ_VECTORS];
+TIsrUVector g_unvic_vector[HW_IRQ_VECTORS];
 
 /* isr_default_handler to unvic_default_handler */
-void isr_default_handler(void) UVISOR_LINKTO(unvic_default_handler);
+void isr_default_handler(void) UVISOR_LINKTO(unvic_isr_mux);
 
-/* unprivileged default handler */
-void unvic_default_handler(void)
+static void unvic_check_acl(int irqn)
 {
-    HALT_ERROR(NOT_ALLOWED, "spurious IRQ (IPSR = %i)", (uint8_t) __get_IPSR());
+    /* don't allow to modify uVisor-owned IRQs */
+    if(!unvic_default(irqn))
+        HALT_ERROR(PERMISSION_DENIED,
+                   "access denied: IRQ %d is not multiplexed\n\r", irqn);
+
+    /* check if the same box that registered the ISR is modifying it */
+    if(svc_cx_get_curr_id() != g_unvic_vector[irqn].id)
+    {
+        HALT_ERROR(PERMISSION_DENIED,
+                   "access denied: IRQ %d is owned by box %d\n\r", irqn,
+                                               g_unvic_vector[irqn].id);
+    }
 }
 
 /* FIXME check if allowed (ACL) */
@@ -35,32 +44,16 @@ void unvic_isr_set(uint32_t irqn, uint32_t vector, uint32_t flag)
 {
     uint32_t curr_id;
 
-    /* check IRQn */
-    if(irqn >= IRQ_VECTORS)
-    {
-        HALT_ERROR(NOT_ALLOWED,
-                   "IRQ %d out of range (%d to %d)\n\r", irqn, 0, IRQ_VECTORS);
-    }
+    /* verify IRQ access privileges */
+    unvic_check_acl(irqn);
 
     /* get current ID to check ownership of the IRQn slot */
     curr_id = svc_cx_get_curr_id();
 
-    /* check if the same box that registered the ISR is modifying it */
-    if(ISR_GET(irqn) != (TIsrVector) &unvic_default_handler &&
-       svc_cx_get_curr_id() != g_unvic_vector[irqn].id)
-    {
-        HALT_ERROR(PERMISSION_DENIED,
-                   "access denied: IRQ %d is owned by box %d\n\r", irqn,
-                                               g_unvic_vector[irqn].id);
-    }
-
     /* save unprivileged handler (unvic_default_handler if 0) */
     g_unvic_vector[irqn].hdlr = vector ? (TIsrVector) vector :
-                                         &unvic_default_handler;
-    g_unvic_vector[irqn].id   = curr_id;
-
-    /* set privileged handler to unprivleged mux */
-    ISR_SET(irqn, &unvic_isr_mux);
+                                         &unvic_isr_mux;
+    g_unvic_vector[irqn].id   = vector ? curr_id : 0;
 
     /* set default priority (SVC must always be higher) */
     NVIC_SetPriority(irqn, UNVIC_MIN_PRIORITY);
@@ -73,44 +66,17 @@ void unvic_isr_set(uint32_t irqn, uint32_t vector, uint32_t flag)
 
 uint32_t unvic_isr_get(uint32_t irqn)
 {
-    /* check IRQn */
-    if(irqn >= IRQ_VECTORS)
-    {
-        HALT_ERROR(NOT_ALLOWED,
-                   "IRQ %d out of range (%d to %d)\n\r", irqn, 0, IRQ_VECTORS);
-    }
+    /* verify IRQ access privileges */
+    unvic_check_acl(irqn);
 
-    /* if the vector is unregistered return 0, otherwise the vector */
-    if(ISR_GET(irqn) == (TIsrVector) &unvic_default_handler)
-        return 0;
-    else
-        return (uint32_t) g_unvic_vector[irqn].hdlr;
+    return (uint32_t)g_unvic_vector[irqn].hdlr;
 }
 
 /* FIXME check if allowed (ACL) */
 void unvic_irq_enable(uint32_t irqn)
 {
-    /* check IRQn */
-    if(irqn >= IRQ_VECTORS)
-    {
-        HALT_ERROR(NOT_ALLOWED,
-                   "IRQ %d out of range (%d to %d)\n\r", irqn, 0, IRQ_VECTORS);
-    }
-
-    /* check if ISR has been set for this IRQn slot */
-    if(ISR_GET(irqn) == (TIsrVector) &unvic_default_handler)
-    {
-        HALT_ERROR(NOT_ALLOWED,
-                   "no ISR set yet for IRQ %d\n\r", irqn);
-    }
-
-    /* check if the same box that registered the ISR is enabling it */
-    if(svc_cx_get_curr_id() != g_unvic_vector[irqn].id)
-    {
-        HALT_ERROR(PERMISSION_DENIED,
-                   "access denied: IRQ %d is owned by box %d\n\r", irqn,
-                                               g_unvic_vector[irqn].id);
-    }
+    /* verify IRQ access privileges */
+    unvic_check_acl(irqn);
 
     /* enable IRQ */
     DPRINTF("IRQ %d enabled\n\r", irqn);
@@ -119,27 +85,8 @@ void unvic_irq_enable(uint32_t irqn)
 
 void unvic_irq_disable(uint32_t irqn)
 {
-    /* check IRQn */
-    if(irqn >= IRQ_VECTORS)
-    {
-        HALT_ERROR(NOT_ALLOWED,
-                   "IRQ %d out of range (%d to %d)\n\r", irqn, 0, IRQ_VECTORS);
-    }
-
-    /* check if ISR has been set for this IRQn slot */
-    if(ISR_GET(irqn) == (TIsrVector) &unvic_default_handler)
-    {
-        HALT_ERROR(NOT_ALLOWED,
-                   "no ISR set yet for IRQ %d\n\r", irqn);
-    }
-
-    /* check if the same box that registered the ISR is disabling it */
-    if(svc_cx_get_curr_id() != g_unvic_vector[irqn].id)
-    {
-        HALT_ERROR(PERMISSION_DENIED,
-                   "access denied: IRQ %d is owned by box %d\n\r", irqn,
-                                               g_unvic_vector[irqn].id);
-    }
+    /* verify IRQ access privileges */
+    unvic_check_acl(irqn);
 
     DPRINTF("IRQ %d disabled, but still owned by box %d\n\r", irqn,
                                           g_unvic_vector[irqn].id);
@@ -149,27 +96,8 @@ void unvic_irq_disable(uint32_t irqn)
 /* FIXME check if allowed (ACL) */
 void unvic_irq_pending_clr(uint32_t irqn)
 {
-    /* check IRQn */
-    if(irqn >= IRQ_VECTORS)
-    {
-        HALT_ERROR(NOT_ALLOWED,
-                   "IRQ %d out of range (%d to %d)\n\r", irqn, 0, IRQ_VECTORS);
-    }
-
-    /* check if ISR has been set for this IRQn slot */
-    if(ISR_GET(irqn) == (TIsrVector) &unvic_default_handler)
-    {
-        HALT_ERROR(NOT_ALLOWED,
-                   "no ISR set yet for IRQ %d\n\r", irqn);
-    }
-
-    /* check if the same box that registered the ISR is clearing the IRQn */
-    if(svc_cx_get_curr_id() != g_unvic_vector[irqn].id)
-    {
-        HALT_ERROR(PERMISSION_DENIED,
-                   "access denied: IRQ %d is owned by box %d\n\r", irqn,
-                                               g_unvic_vector[irqn].id);
-    }
+    /* verify IRQ access privileges */
+    unvic_check_acl(irqn);
 
     /* enable IRQ */
     DPRINTF("IRQ %d pending status cleared\n\r", irqn);
@@ -179,27 +107,8 @@ void unvic_irq_pending_clr(uint32_t irqn)
 /* FIXME check if allowed (ACL) */
 void unvic_irq_pending_set(uint32_t irqn)
 {
-    /* check IRQn */
-    if(irqn >= IRQ_VECTORS)
-    {
-        HALT_ERROR(NOT_ALLOWED,
-                   "IRQ %d out of range (%d to %d)\n\r", irqn, 0, IRQ_VECTORS);
-    }
-
-    /* check if ISR has been set for this IRQn slot */
-    if(ISR_GET(irqn) == (TIsrVector) &unvic_default_handler)
-    {
-        HALT_ERROR(NOT_ALLOWED,
-                   "no ISR set yet for IRQ %d\n\r", irqn);
-    }
-
-    /* check if the same box that registered the ISR is setting the IRQn */
-    if(svc_cx_get_curr_id() != g_unvic_vector[irqn].id)
-    {
-        HALT_ERROR(PERMISSION_DENIED,
-                   "access denied: IRQ %d is owned by box %d\n\r", irqn,
-                                               g_unvic_vector[irqn].id);
-    }
+    /* verify IRQ access privileges */
+    unvic_check_acl(irqn);
 
     /* enable IRQ */
     DPRINTF("IRQ %d pending status set "
@@ -209,86 +118,47 @@ void unvic_irq_pending_set(uint32_t irqn)
 
 uint32_t unvic_irq_pending_get(uint32_t irqn)
 {
-    /* unprivileged code never sees pending status of system interrupts */
-    if((int32_t) irqn < 0)
-    {
-        return 0;
-    }
-    else
-    {
-        /* check IRQn */
-        if(irqn >= IRQ_VECTORS)
-        {
-            HALT_ERROR(NOT_ALLOWED,
-                       "IRQ %d out of range (%d to %d)\n\r",
-                       irqn, 0, IRQ_VECTORS);
-        }
+    /* verify IRQ access privileges */
+    unvic_check_acl(irqn);
 
-        /* get priority for device specific interrupts  */
-        return NVIC_GetPendingIRQ(irqn);
-    }
+    /* get priority for device specific interrupts  */
+    return NVIC_GetPendingIRQ(irqn);
 }
 
 void unvic_irq_priority_set(uint32_t irqn, uint32_t priority)
 {
-    /* unprivileged code cannot set priorities for system interrupts */
-    if((int32_t) irqn < 0)
-    {
-        HALT_ERROR(PERMISSION_DENIED,
-                   "access denied: IRQ %d is a system interrupt and is owned "
-                   "by uVisor\n\r", irqn);
-    }
-    else
-    {
-        /* check IRQn */
-        if(irqn >= IRQ_VECTORS)
-        {
-            HALT_ERROR(NOT_ALLOWED,
-                       "IRQ %d out of range (%d to %d)\n\r",
-                       irqn, 0, IRQ_VECTORS);
-        }
+    /* verify IRQ access privileges */
+    unvic_check_acl(irqn);
 
-        /* check priority */
-        if(priority < UNVIC_MIN_PRIORITY)
-        {
-            HALT_ERROR(PERMISSION_DENIED,
-                       "access denied: mimimum allowed priority is %d\n\r",
-                       UNVIC_MIN_PRIORITY);
-        }
+    /* check priority */
+    if(priority < UNVIC_MIN_PRIORITY)
+        priority = UNVIC_MIN_PRIORITY;
 
-        /* set priority for device specific interrupts */
-        NVIC_SetPriority(irqn, priority);
-    }
-
+    /* set priority for device specific interrupts */
+    NVIC_SetPriority(irqn, priority);
 }
 
 uint32_t unvic_irq_priority_get(uint32_t irqn)
 {
-    /* unprivileged code only see a default 0-priority for system interrupts */
-    if((int32_t) irqn < 0)
-    {
-        return 0;
-    }
-    else
-    {
-        /* check IRQn */
-        if(irqn >= IRQ_VECTORS)
-        {
-            HALT_ERROR(NOT_ALLOWED,
-                       "IRQ %d out of range (%d to %d)\n\r",
-                       irqn, 0, IRQ_VECTORS);
-        }
+    /* verify IRQ access privileges */
+    unvic_check_acl(irqn);
 
-        /* get priority for device specific interrupts  */
-        return NVIC_GetPriority(irqn);
-    }
+    /* get priority for device specific interrupts  */
+    return NVIC_GetPriority(irqn);
 }
 
 /* ISR multiplexer to deprivilege execution of an interrupt routine */
 void unvic_isr_mux(void)
 {
     /* ISR number */
-    uint32_t irqn = (uint32_t)(uint8_t) __get_IPSR() - IRQn_OFFSET;
+    int irqn = (int)(uint8_t)__get_IPSR() - IRQn_OFFSET;
+
+    if((irqn<0) || (irqn>=HW_IRQ_VECTORS))
+    {
+        HALT_ERROR(NOT_ALLOWED,
+                   "unvic_isr_mux() IRQ out of range [%i]\n\r", irqn);
+    }
+
     if(!NVIC_GetActive(irqn))
     {
         HALT_ERROR(NOT_ALLOWED,
@@ -299,11 +169,11 @@ void unvic_isr_mux(void)
     if(!g_unvic_vector[irqn].hdlr)
     {
         HALT_ERROR(NOT_ALLOWED,
-                   "unprivileged handler for IRQ %d not found\n\r", irqn);
+                   "unprivileged handler for IRQ %i not found\n\r", irqn);
     }
 
     /* handle IRQ with an unprivileged handler */
-    DPRINTF("IRQ %d served with vector 0x%08X\n\r", irqn,
+    DPRINTF("IRQ %i served with vector 0x%08X\n\r", irqn,
                                                     g_unvic_vector[irqn]);
     asm volatile(
         "svc  %[unvic_in]\n"
@@ -458,8 +328,14 @@ void __unvic_svc_cx_out(uint32_t *svc_sp, uint32_t *msp)
     __set_CONTROL(__get_CONTROL() & ~2);
 }
 
+int unvic_default(uint32_t isr_id)
+{
+    if( isr_id>=(HW_IRQ_VECTORS) )
+        return 0;
+
+    return g_isr_vector[isr_id+IRQn_OFFSET] == isr_default_handler;
+}
+
 void unvic_init(void)
 {
-    /* call original ISR initialization */
-    isr_init();
 }
