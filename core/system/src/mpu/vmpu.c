@@ -210,8 +210,8 @@ static void vmpu_load_boxes(void)
                 /* add ACL, and force entry as user-provided */
                 vmpu_acl_add(
                     box_id,
-                    region->start,
-                    region->length,
+                    region->param1,
+                    region->param2,
                     region->acl | UVISOR_TACL_USER
                 );
 
@@ -266,7 +266,7 @@ int UVISOR_WEAK vmpu_acl_bit(UvisorBoxAcl acl, uint32_t addr)
     return 1;
 }
 
-void UVISOR_WEAK vmpu_acl_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
+void UVISOR_WEAK vmpu_acl_add(uint8_t box_id, void* param1, uint32_t param2, UvisorBoxAcl acl)
 {
     HALT_ERROR(NOT_IMPLEMENTED,
                "vmpu_acl_add needs hw-specific implementation\n\r");

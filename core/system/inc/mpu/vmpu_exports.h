@@ -36,6 +36,7 @@
 #define UVISOR_TACL_PERIPHERAL      0x0200UL
 #define UVISOR_TACL_SHARED          0x0400UL
 #define UVISOR_TACL_USER            0x0800UL
+#define UVISOR_TACL_IRQ             0x1000UL
 
 #define UVISOR_TACLDEF_SECURE_BSS   (UVISOR_TACL_UREAD          |\
                                      UVISOR_TACL_UWRITE         |\
@@ -80,8 +81,8 @@ typedef uint32_t UvisorBoxAcl;
 
 typedef struct
 {
-    void* start;
-    uint32_t length;
+    void* param1;
+    uint32_t param2;
     UvisorBoxAcl acl;
 } UVISOR_PACKED UvisorBoxAclItem;
 
