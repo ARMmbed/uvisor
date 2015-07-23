@@ -15,8 +15,7 @@
 
 #include <uvisor-config.h>
 
-/* number of NVIC vectors (IRQ vectors, hardware specific) */
-#define HW_IRQ_VECTORS 86
+#define RESERVED_FLASH 0x420
 
 #define XTAL_FREQUENCY 48000000UL
 
