@@ -15,9 +15,6 @@
 
 #include <uvisor-config.h>
 
-/* number of NVIC vectors (IRQ vectors, hardware specific) */
-#define HW_IRQ_VECTORS 90
-
 /* memory not to be used by uVisor linker script */
 #define RESERVED_FLASH 0x400
 
