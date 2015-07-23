@@ -16,6 +16,8 @@
 #include "unvic.h"
 #include "debug.h"
 
+TIsrVector g_isr_vector_prev;
+
 UVISOR_NOINLINE void uvisor_init_pre(void)
 {
     /* reset uvisor BSS */
@@ -58,10 +60,18 @@ void main_entry(void)
     /* run basic sanity checks */
     if(vmpu_init_pre() == 0)
     {
-        /* swap stack pointers*/
+        /* disable IRQ's to perform atomic swaps */
         __disable_irq();
+
+        /* remember previous VTOR table */
+        g_isr_vector_prev = (TIsrVector)SCB->VTOR;
+        /* swap vector tables */
+        SCB->VTOR = (uint32_t)&g_isr_vector;
+        /* swap stack pointers*/
         __set_PSP(__get_MSP());
         __set_MSP((uint32_t)&__stack_top__);
+
+        /* enable IRQ's after swapping */
         __enable_irq();
 
         /* finish initialization */

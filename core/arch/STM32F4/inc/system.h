@@ -10,8 +10,10 @@
  *  by a licensing agreement from ARM Limited.
  *
  ***************************************************************/
-#ifndef __STM32F4_SYSTEM_H__
-#define __STM32F4_SYSTEM_H__
+#ifndef __SYSTEM_H__
+#define __SYSTEM_H__
+
+#define HW_IRQ_VECTORS 91
 
 /* all ISRs by default are weakly linked to the default handler */
 extern void NoMaskableInt_IRQn_Handler(void);
@@ -114,4 +116,4 @@ extern void LTDC_IRQn_Handler(void);
 extern void LTDC_ER_IRQn_Handler(void);
 extern void DMA2D_IRQn_Handler(void);
 
-#endif/*__STM32F4_SYSTEM_H__*/
+#endif/*__SYSTEM_H__*/

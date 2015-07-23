@@ -17,8 +17,7 @@
 #define UNVIC_MIN_PRIORITY (uint32_t) 1
 
 #define IRQn_OFFSET            16
-#define IRQ_VECTORS            HW_IRQ_VECTORS
-#define ISR_VECTORS            (IRQn_OFFSET + IRQ_VECTORS)
+#define ISR_VECTORS            ((IRQn_OFFSET) + (HW_IRQ_VECTORS))
 
 typedef void (*TIsrVector)(void);
 
@@ -27,7 +26,10 @@ typedef struct {
     uint8_t    id;
 } TIsrUVector;
 
-extern TIsrUVector g_unvic_vector[IRQ_VECTORS];
+/* defined in system-specific system.h */
+extern const TIsrVector g_isr_vector[ISR_VECTORS];
+/* unprivileged interrupts */
+extern TIsrUVector g_unvic_vector[HW_IRQ_VECTORS];
 
 extern void     unvic_isr_set(uint32_t irqn, uint32_t vector, uint32_t flag);
 extern uint32_t unvic_isr_get(uint32_t irqn);
@@ -39,6 +41,7 @@ extern void     unvic_irq_pending_set(uint32_t irqn);
 extern uint32_t unvic_irq_pending_get(uint32_t irqn);
 extern void     unvic_irq_priority_set(uint32_t irqn, uint32_t priority);
 extern uint32_t unvic_irq_priority_get(uint32_t irqn);
+extern int      unvic_default(uint32_t isr_id);
 
 extern void unvic_init(void);
 

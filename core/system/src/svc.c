@@ -82,7 +82,7 @@ __attribute__((section(".svc_vector"))) const void *g_svc_vtor_tbl[] = {
  ******************************************************************************/
 /* FIXME add register clearing */
 /* FIXME add support for floating point in context switches */
-static void UVISOR_NAKED __svc_irq(void)
+void UVISOR_NAKED SVCall_IRQn_Handler(void)
 {
     asm volatile(
         "tst    lr, #4\n"                   // privileged/unprivileged mode
@@ -230,9 +230,6 @@ static void UVISOR_NAKED __svc_irq(void)
  ******************************************************************************/
 void svc_init(void)
 {
-    /* register SVC handler */
-    ISR_SET(SVCall_IRQn, &__svc_irq);
-
     /* sanity checks */
     assert((&jump_table_unpriv_end - &jump_table_unpriv) ==
            (1 << UVISOR_SVC_FIXED_BITS));
