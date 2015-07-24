@@ -49,10 +49,43 @@
 #define MPU_RASR_CB_WB      (0x03UL<<MPU_RASR_B_Pos)
 #define MPU_RASR_SRD(x)     (((uint32_t)(x))<<MPU_RASR_SRD_Pos)
 
+/* MPU region count */
+#ifndef MPU_REGION_COUNT
+#define MPU_REGION_COUNT 64
+#endif/*MPU_REGION_COUNT*/
+
+typedef struct {
+    uint32_t rbar;
+    uint32_t rasr;
+} TMpuRegion;
+
+typedef struct {
+    TMpuRegion *region;
+    uint32_t count;
+} TMpuBox;
+
+uint32_t g_mpu_region_count;
+TMpuRegion g_mpu_list[MPU_REGION_COUNT];
+TMpuBox g_mpu_box[UVISOR_MAX_BOXES];
+
 static uint32_t g_vmpu_aligment_mask;
 
-void vmpu_acl_add(uint8_t box_id, void* param1, uint32_t param2, UvisorBoxAcl acl)
+void vmpu_acl_add(uint8_t box_id, void* addr, uint32_t size, UvisorBoxAcl acl)
 {
+    TMpuBox *box;
+
+    if(g_mpu_region_count>=MPU_REGION_COUNT)
+        HALT_ERROR(SANITY_CHECK_FAILED, "vmpu_acl_add ran out of regions\n\r");
+
+    if(box_id>=UVISOR_MAX_BOXES)
+        HALT_ERROR(SANITY_CHECK_FAILED, "vmpu_acl_add \n\r");
+
+    /* assign box region pointer */
+    box = &g_mpu_box[box_id];
+    if(!box->region)
+        box->region = &g_mpu_list[g_mpu_region_count];
+
+    /* FIXME: add MPU region to g_mpu_box */
 }
 
 int vmpu_switch(uint8_t src_box, uint8_t dst_box)

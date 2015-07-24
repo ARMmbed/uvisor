@@ -275,7 +275,7 @@ void UVISOR_WEAK vmpu_acl_irq(uint8_t box_id, void* function, uint32_t isr_id)
                "vmpu_acl_irq needs hw-specific implementation\n\r");
 }
 
-void UVISOR_WEAK vmpu_acl_add(uint8_t box_id, void* param1, uint32_t param2, UvisorBoxAcl acl)
+void UVISOR_WEAK vmpu_acl_add(uint8_t box_id, void* addr, uint32_t size, UvisorBoxAcl acl)
 {
     HALT_ERROR(NOT_IMPLEMENTED,
                "vmpu_acl_add needs hw-specific implementation\n\r");
