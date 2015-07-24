@@ -43,7 +43,7 @@ void UVISOR_WEAK svc_write_bitband(uint32_t *addr, uint32_t val)
 }
 
 /* SVC handlers */
-__attribute__((section(".svc_vector"))) const void *g_svc_vtor_tbl[] = {
+const void *g_svc_vtor_tbl[] = {
     svc_write_bitband,       //  0
     unvic_isr_set,           //  1
     unvic_isr_get,           //  2
