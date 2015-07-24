@@ -29,6 +29,9 @@
                                      UVISOR_TACL_SWRITE         |\
                                      UVISOR_TACL_SEXECUTE)
 
+/* all possible access control flags */
+#define UVISOR_TACL_ACCESS          (UVISOR_TACL_UACL | UVISOR_TACL_SACL)
+
 /* various modes */
 #define UVISOR_TACL_STACK           0x0040UL
 #define UVISOR_TACL_SIZE_ROUND_UP   0x0080UL
