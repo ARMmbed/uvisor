@@ -16,7 +16,7 @@
 #include "system.h"
 
 /* all ISRs by default are weakly linked to the default handler */
-void UVISOR_ALIAS(isr_default_sys_handler) NoMaskableInt_IRQn_Handler(void);
+void UVISOR_ALIAS(isr_default_sys_handler) NonMaskableInt_IRQn_Handler(void);
 void UVISOR_ALIAS(isr_default_sys_handler) HardFault_IRQn_Handler(void);
 void UVISOR_ALIAS(isr_default_sys_handler) MemoryManagement_IRQn_Handler(void);
 void UVISOR_ALIAS(isr_default_sys_handler) BusFault_IRQn_Handler(void);
@@ -121,7 +121,7 @@ const TIsrVector g_isr_vector[ISR_VECTORS] =
 
 	/* system interrupts */
 	&main_entry,                           /* -15 */
-	NoMaskableInt_IRQn_Handler,            /* -14 */
+	NonMaskableInt_IRQn_Handler,           /* -14 */
 	HardFault_IRQn_Handler,                /* -13 */
 	MemoryManagement_IRQn_Handler,         /* -12 */
 	BusFault_IRQn_Handler,                 /* -11 */
