@@ -16,7 +16,7 @@
 #define HW_IRQ_VECTORS 91
 
 /* all ISRs by default are weakly linked to the default handler */
-extern void NoMaskableInt_IRQn_Handler(void);
+extern void NonMaskableInt_IRQn_Handler(void);
 extern void HardFault_IRQn_Handler(void);
 extern void MemoryManagement_IRQn_Handler(void);
 extern void BusFault_IRQn_Handler(void);
