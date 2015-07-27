@@ -19,11 +19,9 @@
 /* unprivileged vector table */
 TIsrUVector g_unvic_vector[HW_IRQ_VECTORS];
 
-/* isr_default_handler to unvic_default_handler */
-void isr_default_handler(void) UVISOR_LINKTO(unvic_isr_mux);
-/* vmpu_acl_irq to unvic_acl_irq */
-void isr_acl_irq(uint8_t box_id, void *function,
-    uint32_t isr_id) UVISOR_LINKTO(unvic_acl_irq);
+/* vmpu_acl_irq to unvic_acl_add */
+void vmpu_acl_irq(uint8_t box_id, void *function, uint32_t irqn)
+     UVISOR_LINKTO(unvic_acl_irq);
 
 static void unvic_check_acl(int irqn)
 {
@@ -54,8 +52,7 @@ void unvic_isr_set(uint32_t irqn, uint32_t vector, uint32_t flag)
     curr_id = svc_cx_get_curr_id();
 
     /* save unprivileged handler (unvic_default_handler if 0) */
-    g_unvic_vector[irqn].hdlr = vector ? (TIsrVector) vector :
-                                         &unvic_isr_mux;
+    g_unvic_vector[irqn].hdlr = (TIsrVector) vector;
     g_unvic_vector[irqn].id   = vector ? curr_id : 0;
 
     /* set default priority (SVC must always be higher) */
@@ -150,42 +147,6 @@ uint32_t unvic_irq_priority_get(uint32_t irqn)
     return NVIC_GetPriority(irqn);
 }
 
-/* ISR multiplexer to deprivilege execution of an interrupt routine */
-void unvic_isr_mux(void)
-{
-    /* ISR number */
-    int irqn = (int)(uint8_t)__get_IPSR() - IRQn_OFFSET;
-
-    if((irqn<0) || (irqn>=HW_IRQ_VECTORS))
-    {
-        HALT_ERROR(NOT_ALLOWED,
-                   "unvic_isr_mux() IRQ out of range [%i]\n\r", irqn);
-    }
-
-    if(!NVIC_GetActive(irqn))
-    {
-        HALT_ERROR(NOT_ALLOWED,
-                   "unvic_isr_mux() executed with no active IRQ\n\r");
-    }
-
-    /* ISR vector */
-    if(!g_unvic_vector[irqn].hdlr)
-    {
-        HALT_ERROR(NOT_ALLOWED,
-                   "unprivileged handler for IRQ %i not found\n\r", irqn);
-    }
-
-    /* handle IRQ with an unprivileged handler */
-    DPRINTF("IRQ %i served with vector 0x%08X\n\r", irqn,
-                                                    g_unvic_vector[irqn]);
-    asm volatile(
-        "svc  %[unvic_in]\n"
-        "svc  %[unvic_out]\n"
-        ::[unvic_in]  "i" (UVISOR_SVC_ID_UNVIC_IN),
-          [unvic_out] "i" (UVISOR_SVC_ID_UNVIC_OUT)
-    );
-}
-
 /* naked wrapper function needed to preserve LR */
 void UVISOR_NAKED unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
 {
@@ -227,8 +188,19 @@ uint32_t __unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
     /* gather information from IRQn */
     uint32_t ipsr = msp[7];
     uint32_t irqn = (ipsr & 0x1FF) - IRQn_OFFSET;
+
+    /* verify IRQ access privileges */
+    unvic_check_acl(irqn);
+
     dst_id = g_unvic_vector[irqn].id;
     dst_fn = (uint32_t) g_unvic_vector[irqn].hdlr;
+
+    /* check ISR vector */
+    if(!dst_fn)
+    {
+        HALT_ERROR(NOT_ALLOWED,
+                   "Unprivileged handler for IRQ %i not found\n\r", irqn);
+    }
 
     /* gather information from current state */
     src_id = svc_cx_get_curr_id();

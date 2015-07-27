@@ -14,6 +14,8 @@
 #ifndef __UNVIC_H__
 #define __UNVIC_H__
 
+#include "svc.h"
+
 #define UNVIC_MIN_PRIORITY (uint32_t) 1
 
 #define IRQn_OFFSET            16
@@ -45,6 +47,19 @@ extern int      unvic_default(uint32_t isr_id);
 
 extern void unvic_init(void);
 
-void unvic_isr_mux(void);
+static inline void unvic_isr_mux(void)
+{
+    /* handle IRQ with an unprivileged handler serving an IRQn in un-privileged
+     * mode is achieved by mean of two SVCalls; the first one de-previliges
+     * execution, the second one re-privileges it note: NONBASETHRDENA (in SCB)
+     * must be set to 1 for this to work */
+    asm volatile(
+        "svc  %[unvic_in]\n"
+        "svc  %[unvic_out]\n"
+        ::[unvic_in]  "i" (UVISOR_SVC_ID_UNVIC_IN),
+          [unvic_out] "i" (UVISOR_SVC_ID_UNVIC_OUT)
+    );
+}
+
 
 #endif/*__UNVIC_H__*/
