@@ -23,7 +23,7 @@ TIsrUVector g_unvic_vector[HW_IRQ_VECTORS];
 void vmpu_acl_irq(uint8_t box_id, void *function, uint32_t irqn)
      UVISOR_LINKTO(unvic_acl_add);
 
-void unvic_default_check(uint32_t irqn)
+static void unvic_default_check(uint32_t irqn)
 {
     /* IRQn goes from 0 to (HW_IRQ_VECTORS - 1) */
     if(irqn >= HW_IRQ_VECTORS)
