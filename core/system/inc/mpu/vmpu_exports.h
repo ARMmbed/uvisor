@@ -56,6 +56,8 @@
 #define UVISOR_TACLDEF_PERIPH       (UVISOR_TACL_PERIPHERAL     |\
                                      UVISOR_TACL_UREAD          |\
                                      UVISOR_TACL_UWRITE         |\
+                                     UVISOR_TACL_SREAD          |\
+                                     UVISOR_TACL_SWRITE         |\
                                      UVISOR_TACL_SIZE_ROUND_UP)
 
 #define UVISOR_TACLDEF_STACK        (UVISOR_TACL_STACK          |\
@@ -67,15 +69,26 @@
 #define UVISOR_TO_STR(x)            #x
 #define UVISOR_TO_STRING(x)         UVISOR_TO_STR(x)
 #define UVISOR_ARRAY_COUNT(x)       (sizeof(x)/sizeof(x[0]))
-#define UVISOR_ROUND32_DOWN(x)      ((x) & ~0x1FUL)
-#define UVISOR_ROUND32_UP(x)        UVISOR_ROUND32_DOWN((x)+31UL)
 #define UVISOR_PAD32(x)             (32 - (sizeof(x) & ~0x1FUL))
 #define UVISOR_BOX_MAGIC            0x42CFB66FUL
 #define UVISOR_BOX_VERSION          100
 #define UVISOR_STACK_BAND_SIZE      128
-#define UVISOR_MEM_SIZE_ROUND(x)    UVISOR_ROUND32_UP(x)
+#define UVISOR_MEM_SIZE_ROUND(x)    UVISOR_REGION_ROUND_UP(x)
+
+#define UVISOR_MIN_STACK_SIZE       ((UVISOR_STACK_BAND_SIZE)*4)
+
+#ifdef  ARCH_MK64F
+#define UVISOR_REGION_ROUND_DOWN(x) ((x) & ~0x1FUL)
+#define UVISOR_REGION_ROUND_UP(x)   UVISOR_ROUND32_DOWN((x)+31UL)
 #define UVISOR_STACK_SIZE_ROUND(x)  UVISOR_MEM_SIZE_ROUND((x) + \
                                     (UVISOR_STACK_BAND_SIZE * 2))
+#else /*ARCH_MK64F*/
+#define UVISOR_REGION_ROUND_DOWN(x) ((x) & ~((1UL<<UVISOR_REGION_BITS(x))-1))
+#define UVISOR_REGION_ROUND_UP(x)   (1UL<<UVISOR_REGION_BITS(x))
+#define UVISOR_STACK_SIZE_ROUND(x)  UVISOR_MEM_SIZE_ROUND(x)
+#endif/*ARCH_MK64F*/
+
+
 #ifndef UVISOR_BOX_STACK_SIZE
 #define UVISOR_BOX_STACK_SIZE 1024
 #endif/*UVISOR_BOX_STACK*/

@@ -21,7 +21,6 @@ int       g_svc_cx_state_ptr;
 uint32_t *g_svc_cx_curr_sp[UVISOR_MAX_BOXES];
 void     *g_svc_cx_context_ptr[UVISOR_MAX_BOXES];
 uint8_t   g_svc_cx_curr_id;
-uint32_t  g_svc_cx_box_num;
 
 void UVISOR_NAKED svc_cx_thunk(void)
 {
