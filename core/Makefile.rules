@@ -146,7 +146,7 @@ CFLAGS_PRE:=\
         -fdata-sections
 
 CFLAGS:=$(FLAGS_CM4) $(CFLAGS_PRE)
-CPPFLAGS:=$(CFLAGS) -fno-exceptions
+CPPFLAGS:=-fno-exceptions
 
 OBJS:=$(SOURCES:.cpp=.o)
 OBJS:=$(OBJS:.c=.o)
