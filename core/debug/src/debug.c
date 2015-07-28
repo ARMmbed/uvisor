@@ -84,17 +84,17 @@ static void debug_cx_state(int _indent)
 
     /* print current stack pointers for all boxes */
     dprintf("%s     ", _sp);
-    for (i = 0; i < g_svc_cx_box_num; i++)
+    for (i = 0; i < g_vmpu_box_count; i++)
     {
         dprintf("------------ ");
     }
     dprintf("\n%sSP: |", _sp);
-    for (i = 0; i < g_svc_cx_box_num; i++)
+    for (i = 0; i < g_vmpu_box_count; i++)
     {
         dprintf(" 0x%08X |", g_svc_cx_curr_sp[i]);
     }
     dprintf("\n%s     ", _sp);
-    for (i = 0; i < g_svc_cx_box_num; i++)
+    for (i = 0; i < g_vmpu_box_count; i++)
     {
         dprintf("------------ ");
     }
