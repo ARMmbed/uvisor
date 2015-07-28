@@ -33,6 +33,7 @@
 #endif
 
 void *__uvisor_box_context;
+uint32_t  g_vmpu_box_count;
 
 static int vmpu_sanity_checks(void)
 {
@@ -113,17 +114,14 @@ static int vmpu_sanity_checks(void)
 static void vmpu_load_boxes(void)
 {
     int i, count;
-    uint32_t sp, sp_size;
+
     const UvisorBoxAclItem *region;
     const UvisorBoxConfig **box_cfgtbl;
+    TBoxMemorySize box_size[UVISOR_MAX_BOXES], *bm;
     uint8_t box_id;
 
-    /* stack region grows from bss_start downwards */
-    sp = UVISOR_ROUND32_DOWN(((uint32_t)__uvisor_config.bss_start) -
-         UVISOR_STACK_BAND_SIZE);
-
     /* enumerate and initialize boxes */
-    g_svc_cx_box_num = 0;
+    g_vmpu_box_count = 0;
     for(box_cfgtbl = (const UvisorBoxConfig**) __uvisor_config.cfgtbl_start;
         box_cfgtbl < (const UvisorBoxConfig**) __uvisor_config.cfgtbl_end;
         box_cfgtbl++
@@ -142,7 +140,7 @@ static void vmpu_load_boxes(void)
         if(((*box_cfgtbl)->magic)!=UVISOR_BOX_MAGIC)
             HALT_ERROR(SANITY_CHECK_FAILED,
                 "box[%i] @0x%08X - invalid magic\n",
-                g_svc_cx_box_num,
+                g_vmpu_box_count,
                 (uint32_t)(*box_cfgtbl)
             );
 
@@ -150,47 +148,36 @@ static void vmpu_load_boxes(void)
         if(((*box_cfgtbl)->version)!=UVISOR_BOX_VERSION)
             HALT_ERROR(SANITY_CHECK_FAILED,
                 "box[%i] @0x%08X - invalid version (0x%04X!-0x%04X)\n",
-                g_svc_cx_box_num,
+                g_vmpu_box_count,
                 *box_cfgtbl,
                 (*box_cfgtbl)->version,
                 UVISOR_BOX_VERSION
             );
 
         /* increment box counter */
-        if((box_id = g_svc_cx_box_num++)>=UVISOR_MAX_BOXES)
+        if((box_id = g_vmpu_box_count++)>=UVISOR_MAX_BOXES)
             HALT_ERROR(SANITY_CHECK_FAILED, "box number overflow\n");
 
         /* load box ACLs in table */
         DPRINTF("box[%i] ACL list:\n", box_id);
 
         /* update stack pointers */
+        bm = &box_size[box_id];
         if(!box_id)
-            g_svc_cx_curr_sp[0] = (uint32_t*)__get_PSP();
+        {
+            bm->stack   =  0;
+            bm->context =  0;
+        }
         else
         {
-            /* set stack pointer to box stack size minus guard band */
-            g_svc_cx_curr_sp[box_id] = (uint32_t*)sp;
-            /* determine stack extent */
-            sp_size = UVISOR_ROUND32_DOWN((*box_cfgtbl)->stack_size);
-            if(sp_size <= (UVISOR_STACK_BAND_SIZE+4))
-                HALT_ERROR(SANITY_CHECK_FAILED,
-                    "box[%i] stack too small (%i)\n",
-                    box_id,
-                    sp_size
-                );
-            sp -= sp_size;
-            /* add stack ACL to list */
-            vmpu_acl_add(
-                box_id,
-                (void*)(sp + UVISOR_STACK_BAND_SIZE),
-                sp_size - UVISOR_STACK_BAND_SIZE,
-                UVISOR_TACLDEF_STACK
-            );
+            /* update box memories list */
+            if((*box_cfgtbl)->stack_size <= UVISOR_MIN_STACK_SIZE)
+                bm->stack = UVISOR_MIN_STACK_SIZE;
+            else
+                bm->stack   =  (*box_cfgtbl)->stack_size;
+
+            bm->context =  (*box_cfgtbl)->context_size;
         }
-        DPRINTF("\tbox[%i] stack pointer = 0x%08X\n",
-            box_id,
-            g_svc_cx_curr_sp[box_id]
-        );
 
         region = (*box_cfgtbl)->acl_list;
         if(region)
@@ -202,7 +189,7 @@ static void vmpu_load_boxes(void)
                 if(!VMPU_FLASH_ADDR(region))
                     HALT_ERROR(SANITY_CHECK_FAILED,
                         "box[%i]:acl[%i] must be in code section (@0x%08X)\n",
-                        g_svc_cx_box_num,
+                        box_id,
                         i,
                         *box_cfgtbl
                     );
@@ -224,18 +211,43 @@ static void vmpu_load_boxes(void)
         }
     }
 
-    /* check consistency between allocated and actual stack sizes */
-    if(sp != (uint32_t)__uvisor_config.reserved_end)
-        HALT_ERROR(SANITY_CHECK_FAILED,
-            "stack pointers didn't match up: 0x%X != 0x%X\n",
-            sp,
-            __uvisor_config.reserved_end
+    /* initialize box stacks within stack segment */
+    vmpu_initialize_stacks(
+        box_size,
+        __uvisor_config.reserved_end,
+        __uvisor_config.bss_start
         );
 
     /* load box 0 */
     vmpu_load_box(0);
 
     DPRINTF("vmpu_load_boxes [DONE]\n");
+}
+
+int vmpu_bits(uint32_t size)
+{
+    uint8_t bits=0;
+    /* find highest bit */
+    while(size)
+    {
+        size>>=1;
+        bits++;
+    }
+    return bits;
+}
+
+int vmpu_bits_region(uint32_t size)
+{
+    int bits;
+
+    bits = vmpu_bits(size)-1;
+    if(bits<5)
+        bits=5;
+
+    if((1UL << bits) != size)
+        bits++;
+
+    return bits;
 }
 
 void UVISOR_WEAK vmpu_load_box(uint8_t box_id)

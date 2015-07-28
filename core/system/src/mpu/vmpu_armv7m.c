@@ -12,6 +12,7 @@
  ***************************************************************/
 #include <uvisor.h>
 #include <vmpu.h>
+#include <svc.h>
 #include <halt.h>
 #include <debug.h>
 #include <memory_map.h>
@@ -107,18 +108,6 @@ void DebugMonitor_IRQn_Handler(void)
     halt_led(FAULT_DEBUG);
 }
 
-static uint8_t vmpu_bits(uint32_t size)
-{
-    uint8_t bits=0;
-    /* find highest bit */
-    while(size)
-    {
-        size>>=1;
-        bits++;
-    }
-    return bits;
-}
-
 void vmpu_load_box(uint8_t box_id)
 {
 }
@@ -182,7 +171,7 @@ static uint32_t vmpu_map_acl(UvisorBoxAcl acl)
 
     /* check if we meet the expected ACL's */
     if( (acl_res) != (acl & UVISOR_TACL_ACCESS) )
-        HALT_ERROR(SANITY_CHECK_FAILED, "inferred ACL's (0x%04X) don't match exptected ACL's (0x%04X)\n\r", acl_res, acl);
+        HALT_ERROR(SANITY_CHECK_FAILED, "inferred ACL's (0x%04X) don't match exptected ACL's (0x%04X)\n\r", acl_res, (acl & UVISOR_TACL_ACCESS));
 
     return flags;
 }
@@ -272,6 +261,29 @@ void vmpu_init_static_regions(void)
 
     /* finally enable MPU */
     MPU->CTRL = MPU_CTRL_ENABLE_Msk|MPU_CTRL_PRIVDEFENA_Msk;
+}
+
+void vmpu_initialize_stacks(
+    const TBoxMemorySize* box,
+    void *stack_start, void *stack_end)
+{
+    int i;
+
+    DPRINTF("\n\rbox stack segment start=0x%08X end=0x%08X (length=%i)\n\r",
+        stack_start, stack_end,
+        ((uint32_t)stack_end)-((uint32_t)stack_start));
+
+    /* assign main box stack pointer to existing
+     * unprivileged stack pointer */
+    g_svc_cx_curr_sp[0] = (uint32_t*)__get_PSP();
+
+    for(i=0; i<g_vmpu_box_count; i++)
+    {
+        DPRINTF("\tbox[%i] stack=%i context=%i\n\r" , i, box->stack, box->context);
+        box++;
+    }
+
+    DPRINTF("\n\r");
 }
 
 void vmpu_init_protection(void)
