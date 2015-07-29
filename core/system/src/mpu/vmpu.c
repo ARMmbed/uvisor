@@ -167,8 +167,8 @@ static void vmpu_load_boxes(void)
             (*box_cfgtbl)->stack_size
         );
 
-        region = (*box_cfgtbl)->acl_list;
-        if(region)
+        /* enumerate box ACLs */
+        if( (region = (*box_cfgtbl)->acl_list)!=NULL )
         {
             count = (*box_cfgtbl)->acl_count;
             for(i=0; i<count; i++)
