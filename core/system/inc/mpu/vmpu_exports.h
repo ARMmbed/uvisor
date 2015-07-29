@@ -82,7 +82,7 @@
 #define UVISOR_REGION_ROUND_UP(x)   UVISOR_ROUND32_DOWN((x)+31UL)
 #define UVISOR_STACK_SIZE_ROUND(x)  UVISOR_MEM_SIZE_ROUND((x) + \
                                     (UVISOR_STACK_BAND_SIZE * 2))
-#else /*ARCH_MK64F*/
+#else /*ARM MPU*/
 #define UVISOR_REGION_ROUND_DOWN(x) ((x) & ~((1UL<<UVISOR_REGION_BITS(x))-1))
 #define UVISOR_REGION_ROUND_UP(x)   (1UL<<UVISOR_REGION_BITS(x))
 #define UVISOR_STACK_SIZE_ROUND(x)  UVISOR_MEM_SIZE_ROUND(x)
@@ -112,5 +112,49 @@ typedef struct
     const UvisorBoxAclItem* const acl_list;
     uint32_t acl_count;
 } UVISOR_PACKED UvisorBoxConfig;
+
+/*
+ * only use this macro for rounding const values during compile time:
+ * for variables please use uvisor_region_bits(x) instead
+ */
+#define UVISOR_REGION_BITS(x)       (((x)<=32UL)?5:(((x)<=64UL)?\
+    6:(((x)<=128UL)?7:(((x)<=256UL)?8:(((x)<=512UL)?9:(((x)<=1024UL)?\
+    10:(((x)<=2048UL)?11:(((x)<=4096UL)?12:(((x)<=8192UL)?\
+    13:(((x)<=16384UL)?14:(((x)<=32768UL)?15:(((x)<=65536UL)?\
+    16:(((x)<=131072UL)?17:(((x)<=262144UL)?18:(((x)<=524288UL)?\
+    19:(((x)<=1048576UL)?20:(((x)<=2097152UL)?21:(((x)<=4194304UL)?\
+    22:(((x)<=8388608UL)?23:(((x)<=16777216UL)?24:(((x)<=33554432UL)?\
+    25:(((x)<=67108864UL)?26:(((x)<=134217728UL)?27:(((x)<=268435456UL)?\
+    28:(((x)<=536870912UL)?29:(((x)<=1073741824UL)?30:(((x)<=2147483648UL)?\
+    31:32)))))))))))))))))))))))))))
+
+static inline int vmpu_bits(uint32_t size)
+{
+    int bits=0;
+    /* find highest bit */
+    while(size)
+    {
+        size>>=1;
+        bits++;
+    }
+    return bits;
+}
+
+static inline int vmpu_region_bits(uint32_t size)
+{
+    int bits;
+
+    bits = vmpu_bits(size)-1;
+
+    /* minimum region size is 32 bytes */
+    if(bits<5)
+        bits=5;
+
+    /* round up if needed */
+    if((1UL << bits) != size)
+        bits++;
+
+    return bits;
+}
 
 #endif/*__VMPU_EXPORTS_H__*/

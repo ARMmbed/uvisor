@@ -43,9 +43,6 @@ extern int  vmpu_switch(uint8_t src_box, uint8_t dst_box);
 
 extern void vmpu_load_box(uint8_t box_id);
 
-extern int  vmpu_bits(uint32_t size);
-extern int  vmpu_bits_region(uint32_t size);
-extern uint32_t vmpu_region_size(uint32_t size);
 extern void vmpu_initialize_stacks(
     const TBoxMemorySize* box, void *stack_start, void *stack_end);
 
