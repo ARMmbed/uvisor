@@ -268,6 +268,7 @@ void vmpu_initialize_stacks(
     void *stack_start, void *stack_end)
 {
     int i;
+    uint32_t size;
 
     DPRINTF("\n\rbox stack segment start=0x%08X end=0x%08X (length=%i)\n\r",
         stack_start, stack_end,
@@ -279,7 +280,9 @@ void vmpu_initialize_stacks(
 
     for(i=0; i<g_vmpu_box_count; i++)
     {
-        DPRINTF("\tbox[%i] stack=%i context=%i\n\r" , i, box->stack, box->context);
+        size = 1UL << vmpu_region_bits(((box->stack + box->context)*8)/7);
+
+        DPRINTF("\tbox[%i] stack=%i context=%i (res=%i)\n\r" , i, box->stack, box->context, size);
         box++;
     }
 

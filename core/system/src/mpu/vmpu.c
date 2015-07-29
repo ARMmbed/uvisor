@@ -224,32 +224,6 @@ static void vmpu_load_boxes(void)
     DPRINTF("vmpu_load_boxes [DONE]\n");
 }
 
-int vmpu_bits(uint32_t size)
-{
-    uint8_t bits=0;
-    /* find highest bit */
-    while(size)
-    {
-        size>>=1;
-        bits++;
-    }
-    return bits;
-}
-
-int vmpu_bits_region(uint32_t size)
-{
-    int bits;
-
-    bits = vmpu_bits(size)-1;
-    if(bits<5)
-        bits=5;
-
-    if((1UL << bits) != size)
-        bits++;
-
-    return bits;
-}
-
 void UVISOR_WEAK vmpu_load_box(uint8_t box_id)
 {
     HALT_ERROR(NOT_IMPLEMENTED,
