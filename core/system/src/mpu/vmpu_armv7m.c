@@ -267,8 +267,8 @@ void vmpu_initialize_stacks(
     const TBoxMemorySize* box,
     void *stack_start, void *stack_end)
 {
-    int i;
-    uint32_t size;
+    int box_id, bits, slots_ctx, slots_stack;
+    uint32_t size, block_size, stack_size, stack_addr;
 
     DPRINTF("\n\rbox stack segment start=0x%08X end=0x%08X (length=%i)\n\r",
         stack_start, stack_end,
@@ -277,13 +277,64 @@ void vmpu_initialize_stacks(
     /* assign main box stack pointer to existing
      * unprivileged stack pointer */
     g_svc_cx_curr_sp[0] = (uint32_t*)__get_PSP();
+    g_svc_cx_context_ptr[0] = NULL;
+    box++;
 
-    for(i=0; i<g_vmpu_box_count; i++)
+    /* process remaining boxes */
+    stack_addr = (uint32_t)stack_start;
+    for(box_id=1; box_id<g_vmpu_box_count; box_id++)
     {
-        size = 1UL << vmpu_region_bits(((box->stack + box->context)*8)/7);
+        /* ensure that box stack is at least UVISOR_BOX_STACK_SIZE */
+        stack_size = (box->stack<=UVISOR_BOX_STACK_SIZE) ?
+            UVISOR_BOX_STACK_SIZE : box->stack;
 
-        DPRINTF("\tbox[%i] stack=%i context=%i (res=%i)\n\r" , i, box->stack, box->context, size);
+        /* ensure that 2/8th are available for protecting stack from
+         * context - include rounding error margin */
+        bits = vmpu_region_bits(((stack_size + box->context)*8)/6);
+
+        /* ensure MPU region size of at least 256 bytes for
+         * subregion support */
+        if(bits<8)
+            bits = 8;
+        size = 1UL << bits;
+        block_size = size/8;
+
+        DPRINTF("\tbox[%i] stack=%i context=%i rounded=%i " , box_id,
+            box->stack, box->context, size);
+
+        /* check for correct context address alignment:
+         * alignment needs to be a muiltiple of the size */
+        if((stack_addr & (size-1))!=0)
+            stack_addr = (stack_addr & ~(size-1)) + size;
+
+        /* check if we have enough memory left */
+        if((stack_addr + size)>(uint32_t)stack_end)
+            HALT_ERROR(SANITY_CHECK_FAILED,
+                "memory overflow - increase uvisor memory "
+                "allocation\n\r");
+
+        /* round context sizes, leave one free slot */
+        slots_ctx = (box->context + block_size - 1)/block_size;
+        slots_stack = 8-slots_ctx-1;
+
+        /* final sanity checks */
+        if((slots_ctx * block_size)<box->context)
+            HALT_ERROR(SANITY_CHECK_FAILED, "slots_ctx underrun\n\r");
+        if((slots_stack * block_size)<stack_size)
+            HALT_ERROR(SANITY_CHECK_FAILED, "slots_stack underrun\n\r");
+
+        /* allocate context pointer */
+        g_svc_cx_context_ptr[box_id] = (uint32_t*)stack_addr;
+        /* ensure stack band on top for stack underflow dectection */
+        g_svc_cx_curr_sp[box_id] =
+            (uint32_t*)(stack_addr + size - UVISOR_STACK_BAND_SIZE);
+        /* debug stack & context allocation */
+        DPRINTF("ctx=0x%08X sp=0x%08X\n\r",
+            g_svc_cx_context_ptr[box_id],
+            g_svc_cx_curr_sp[box_id]);
+
         box++;
+        stack_addr+=size;
     }
 
     DPRINTF("\n\r");
