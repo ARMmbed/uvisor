@@ -58,12 +58,12 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 #define __UVISOR_BOX_CONFIG(box_name, acl_list, stack_size, context_size) \
     \
     uint8_t __attribute__((section(".uvisor.bss.stack"), aligned(32))) \
-        box_name ## _reserved[UVISOR_STACK_SIZE_ROUND((((stack_size) + (context_size))*8)/6)]; \
+        box_name ## _reserved[UVISOR_STACK_SIZE_ROUND(((UVISOR_MIN_STACK(stack_size) + (context_size))*8)/6)]; \
     \
     static UVISOR_SECURE_CONST UvisorBoxConfig box_name ## _cfg = { \
         UVISOR_BOX_MAGIC, \
         UVISOR_BOX_VERSION, \
-        stack_size, \
+        UVISOR_MIN_STACK(stack_size), \
         context_size, \
         acl_list, \
         UVISOR_ARRAY_COUNT(acl_list) \

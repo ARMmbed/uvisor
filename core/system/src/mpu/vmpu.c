@@ -114,10 +114,8 @@ static int vmpu_sanity_checks(void)
 static void vmpu_load_boxes(void)
 {
     int i, count;
-
     const UvisorBoxAclItem *region;
     const UvisorBoxConfig **box_cfgtbl;
-    TBoxMemorySize box_size[UVISOR_MAX_BOXES], *bm;
     uint8_t box_id;
 
     /* enumerate and initialize boxes */
@@ -161,23 +159,13 @@ static void vmpu_load_boxes(void)
         /* load box ACLs in table */
         DPRINTF("box[%i] ACL list:\n", box_id);
 
-        /* update stack pointers */
-        bm = &box_size[box_id];
-        if(!box_id)
-        {
-            bm->stack   =  0;
-            bm->context =  0;
-        }
-        else
-        {
-            /* update box memories list */
-            if((*box_cfgtbl)->stack_size <= UVISOR_MIN_STACK_SIZE)
-                bm->stack = UVISOR_MIN_STACK_SIZE;
-            else
-                bm->stack   =  (*box_cfgtbl)->stack_size;
-
-            bm->context =  (*box_cfgtbl)->context_size;
-        }
+        /* add ACL's for all box stacks, the actual start addesses and
+         * sizes are resolved later in vmpu_initialize_stacks */
+        vmpu_acl_stack(
+            box_id,
+            (*box_cfgtbl)->context_size,
+            (*box_cfgtbl)->stack_size
+        );
 
         region = (*box_cfgtbl)->acl_list;
         if(region)
@@ -211,73 +199,10 @@ static void vmpu_load_boxes(void)
         }
     }
 
-    /* initialize box stacks within stack segment */
-    vmpu_initialize_stacks(
-        box_size,
-        __uvisor_config.reserved_end,
-        __uvisor_config.bss_start
-        );
-
     /* load box 0 */
     vmpu_load_box(0);
 
     DPRINTF("vmpu_load_boxes [DONE]\n");
-}
-
-void UVISOR_WEAK vmpu_load_box(uint8_t box_id)
-{
-    HALT_ERROR(NOT_IMPLEMENTED,
-               "vmpu_load_box needs hw-specific implementation\n\r");
-}
-
-int UVISOR_WEAK vmpu_acl_dev(UvisorBoxAcl acl, uint16_t device_id)
-{
-    HALT_ERROR(NOT_IMPLEMENTED, "vmpu_acl_dev not implemented yet\n\r");
-    return 1;
-}
-
-int UVISOR_WEAK vmpu_acl_mem(UvisorBoxAcl acl, uint32_t addr, uint32_t size)
-{
-    HALT_ERROR(NOT_IMPLEMENTED, "vmpu_acl_mem not implemented yet\n\r");
-    return 1;
-}
-
-int UVISOR_WEAK vmpu_acl_reg(UvisorBoxAcl acl, uint32_t addr, uint32_t rmask,
-                             uint32_t wmask)
-{
-    HALT_ERROR(NOT_IMPLEMENTED, "vmpu_acl_reg not implemented yet\n\r");
-    return 1;
-}
-
-int UVISOR_WEAK vmpu_acl_bit(UvisorBoxAcl acl, uint32_t addr)
-{
-    HALT_ERROR(NOT_IMPLEMENTED, "vmpu_acl_bit not implemented yet\n\r");
-    return 1;
-}
-
-void UVISOR_WEAK vmpu_acl_irq(uint8_t box_id, void* function, uint32_t isr_id)
-{
-    HALT_ERROR(NOT_IMPLEMENTED,
-               "vmpu_acl_irq needs hw-specific implementation\n\r");
-}
-
-void UVISOR_WEAK vmpu_acl_add(uint8_t box_id, void* addr, uint32_t size, UvisorBoxAcl acl)
-{
-    HALT_ERROR(NOT_IMPLEMENTED,
-               "vmpu_acl_add needs hw-specific implementation\n\r");
-}
-
-int UVISOR_WEAK vmpu_switch(uint8_t src_box, uint8_t dst_box)
-{
-    HALT_ERROR(NOT_IMPLEMENTED,
-               "vmpu_switch needs hw-specific implementation\n\r");
-    return 1;
-}
-
-void UVISOR_WEAK vmpu_init_protection(void)
-{
-    HALT_ERROR(NOT_IMPLEMENTED,
-               "vmpu_init_protection needs hw-specific implementation\n\r");
 }
 
 int vmpu_init_pre(void)
@@ -321,7 +246,7 @@ void vmpu_init_post(void)
     __uvisor_box_context = (void *) __uvisor_config.uvisor_box_context;
 
     /* init memory protection */
-    vmpu_init_protection();
+    vmpu_arch_init();
 
     /* load boxes */
     vmpu_load_boxes();

@@ -15,12 +15,6 @@
 
 #include "vmpu_exports.h"
 
-typedef struct
-{
-    uint32_t stack;
-    uint32_t context;
-} TBoxMemorySize;
-
 #define VMPU_FLASH_ADDR_MASK  (~(((uint32_t)(FLASH_LENGTH)) - 1))
 #define VMPU_FLASH_ADDR(addr) ((VMPU_FLASH_ADDR_MASK & (uint32_t)(addr)) == \
                                (FLASH_ORIGIN & VMPU_FLASH_ADDR_MASK))
@@ -43,10 +37,9 @@ extern int  vmpu_switch(uint8_t src_box, uint8_t dst_box);
 
 extern void vmpu_load_box(uint8_t box_id);
 
-extern void vmpu_initialize_stacks(
-    const TBoxMemorySize* box, void *stack_start, void *stack_end);
+extern void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size);
 
-extern void vmpu_init_protection(void);
+extern void vmpu_arch_init(void);
 extern int  vmpu_init_pre(void);
 extern void vmpu_init_post(void);
 
