@@ -72,6 +72,42 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include "uvisor-lib/uvisor-lib.h"
+
+/*
+ * Fallback macros for write/read operations
+ */
+#ifndef ADDRESS_READ32
+#define ADDRESS_READ32(addr) *((uint32_t volatile *) (addr))
+#endif
+#ifndef ADDRESS_READ16
+#define ADDRESS_READ16(addr) *((uint16_t volatile *) (addr))
+#endif
+#ifndef ADDRESS_READ8
+#define ADDRESS_READ8(addr)  *((uint8_t  volatile *) (addr))
+#endif
+
+#ifndef ADDRESS_WRITE32
+#define ADDRESS_WRITE32(addr, val) (*((uint32_t volatile *) (addr)) = (val))
+#endif
+#ifndef ADDRESS_WRITE16
+#define ADDRESS_WRITE16(addr, val) (*((uint16_t volatile *) (addr)) = (val))
+#endif
+#ifndef ADDRESS_WRITE8
+#define ADDRESS_WRITE8(addr, val)  (*((uint8_t  volatile *) (addr)) = (val))
+#endif
+
+#ifndef UNION_READ_FS
+#define UNION_READ_FS(addr, type, field) ((*((__IO type ## _t *) (addr))).field)
+#endif
+
+/*
+ * Macros to translate a pair of regular address and bit to their bit band alias
+ */
+#define BITBAND_ADDRESS(Reg,Bit)   (0x42000000u + (32u*((uint32_t)(Reg) - (uint32_t)0x40000000u)) + (4u*((uint32_t)(Bit))))
+#define BITBAND_ADDRESS32(Reg,Bit) ((uint32_t volatile*)BITBAND_ADDRESS(Reg,Bit))
+#define BITBAND_ADDRESS16(Reg,Bit) ((uint16_t volatile*)BITBAND_ADDRESS(Reg,Bit))
+#define BITBAND_ADDRESS8(Reg,Bit)  ((uint8_t  volatile*)BITBAND_ADDRESS(Reg,Bit))
 
 /**
  * @brief Macro to access a single bit of a 32-bit peripheral register (bit band region
@@ -80,7 +116,7 @@
  * @param Bit Bit number to access.
  * @return Value of the targeted bit in the bit band region.
  */
-#define BITBAND_ACCESS32(Reg,Bit) (*((uint32_t volatile*)(0x42000000u + (32u*((uint32_t)(Reg) - (uint32_t)0x40000000u)) + (4u*((uint32_t)(Bit))))))
+#define BITBAND_ACCESS32(Reg,Bit) (*BITBAND_ADDRESS32(Reg,Bit))
 
 /**
  * @brief Macro to access a single bit of a 16-bit peripheral register (bit band region
@@ -89,7 +125,7 @@
  * @param Bit Bit number to access.
  * @return Value of the targeted bit in the bit band region.
  */
-#define BITBAND_ACCESS16(Reg,Bit) (*((uint16_t volatile*)(0x42000000u + (32u*((uint32_t)(Reg) - (uint32_t)0x40000000u)) + (4u*((uint32_t)(Bit))))))
+#define BITBAND_ACCESS16(Reg,Bit) (*BITBAND_ADDRESS16(Reg,Bit))
 
 /**
  * @brief Macro to access a single bit of an 8-bit peripheral register (bit band region
@@ -98,7 +134,7 @@
  * @param Bit Bit number to access.
  * @return Value of the targeted bit in the bit band region.
  */
-#define BITBAND_ACCESS8(Reg,Bit) (*((uint8_t volatile*)(0x42000000u + (32u*((uint32_t)(Reg) - (uint32_t)0x40000000u)) + (4u*((uint32_t)(Bit))))))
+#define BITBAND_ACCESS8(Reg,Bit) (*BITBAND_ADDRESS8(Reg,Bit))
 
 /*
  * Macros for single instance registers
