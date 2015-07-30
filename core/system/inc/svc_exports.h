@@ -33,7 +33,7 @@
                                                    &  UVISOR_SVC_FIXED_MSK)
 
 /* SVC immediate values for custom table */
-#define UVISOR_SVC_ID_WRITE_BITBAND  UVISOR_SVC_CUSTOM_TABLE(0)
+#define UVISOR_SVC_ID_WRITE32        UVISOR_SVC_CUSTOM_TABLE(0)
 #define UVISOR_SVC_ID_ISR_SET        UVISOR_SVC_CUSTOM_TABLE(1)
 #define UVISOR_SVC_ID_ISR_GET        UVISOR_SVC_CUSTOM_TABLE(2)
 #define UVISOR_SVC_ID_IRQ_ENABLE     UVISOR_SVC_CUSTOM_TABLE(3)
