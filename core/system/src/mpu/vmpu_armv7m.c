@@ -178,7 +178,7 @@ static uint32_t vmpu_map_acl(UvisorBoxAcl acl)
 
 static void vmpu_acl_update_box_region(TMpuRegion *region, uint8_t box_id, void* base, uint32_t size, UvisorBoxAcl acl)
 {
-    uint32_t flags, bits, mask, size_rounded;
+    uint32_t flags, bits, mask, size_rounded, subregions;
 
     DPRINTF("\tbox[%i] acl[%02i]={0x%08X,size=%05i,acl=0x%04X,",
         box_id, g_mpu_region_count, base, size, acl);
@@ -217,8 +217,16 @@ static void vmpu_acl_update_box_region(TMpuRegion *region, uint8_t box_id, void*
     /* map generic ACL's to internal ACL's */
     flags = vmpu_map_acl(acl);
 
+    /* calculate subregions from ACL */
+    subregions =
+        ((acl>>UVISOR_TACL_SUBREGIONS_POS) << MPU_RASR_SRD_Pos) &
+        MPU_RASR_SRD_Msk;
+
     /* enable region & add size */
-    region->rasr = flags | MPU_RASR_ENABLE_Msk | ((uint32_t)(bits-1)<<MPU_RASR_SIZE_Pos);
+    region->rasr =
+        flags | MPU_RASR_ENABLE_Msk |
+        ((uint32_t)(bits-1)<<MPU_RASR_SIZE_Pos) |
+        subregions;
     region->base = (uint32_t)base;
     region->size = size_rounded;
     region->faults = 0;
