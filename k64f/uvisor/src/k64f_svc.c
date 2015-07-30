@@ -16,14 +16,16 @@
 
 /* FIXME this function is temporary. Writes to an address should be checked
  *       against a box's ACLs */
-void svc_write_bitband(uint32_t *addr, uint32_t val)
+void svc_write32(uint32_t *addr, uint32_t val)
 {
     /* FIXME addresses for bitbanding are now hardcoded and will be replaced by
      * a system-wide API for bitband access */
-    if(addr >= BITBAND_ADDRESS(&SIM->SCGC1, 0) &&
-       addr <= BITBAND_ADDRESS(&SIM->SCGC7, 31))
+    if((addr >= BITBAND_ADDRESS(&SIM->SCGC1, 0) &&
+        addr <= BITBAND_ADDRESS(&SIM->SCGC7, 31))   ||
+       (addr >= &SIM->SOPT1 &&
+        addr <= &SIM->SOPT1 + sizeof(SIM->SOPT1)))
     {
-        DPRINTF("Executed privileged bitband access to 0x%08X\n\r", addr);
+        DPRINTF("Executed privileged access to 0x%08X\n\r", addr);
         *addr = val;
     }
     else

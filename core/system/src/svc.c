@@ -36,15 +36,15 @@ void __svc_not_implemented(void)
 
 /* FIXME this function is temporary. Writes to an address should be checked
  *       against a box's ACLs */
-void UVISOR_WEAK svc_write_bitband(uint32_t *addr, uint32_t val)
+void UVISOR_WEAK svc_write32(uint32_t *addr, uint32_t val)
 {
     HALT_ERROR(NOT_IMPLEMENTED,
-               "svc_write_bitband needs hw-specific implementation\n\r");
+               "svc_write32 needs hw-specific implementation\n\r");
 }
 
 /* SVC handlers */
 const void *g_svc_vtor_tbl[] = {
-    svc_write_bitband,       //  0
+    svc_write32,             //  0
     unvic_isr_set,           //  1
     unvic_isr_get,           //  2
     unvic_irq_enable,        //  3
