@@ -78,6 +78,8 @@ int vmpu_switch(uint8_t src_box, uint8_t dst_box)
     return 1;
 }
 
+/* FIXME check if fault came from ldr/str instruction, check ACL and, if
+ * allowed, perform operation and return to regular execution */
 void MemoryManagement_IRQn_Handler(void)
 {
     DEBUG_FAULT(FAULT_MEMMANAGE);

@@ -34,29 +34,20 @@ void __svc_not_implemented(void)
     HALT_ERROR(NOT_IMPLEMENTED, "function not implemented\n\r");
 }
 
-/* FIXME this function is temporary. Writes to an address should be checked
- *       against a box's ACLs */
-void UVISOR_WEAK svc_write32(uint32_t *addr, uint32_t val)
-{
-    HALT_ERROR(NOT_IMPLEMENTED,
-               "svc_write32 needs hw-specific implementation\n\r");
-}
-
 /* SVC handlers */
 const void *g_svc_vtor_tbl[] = {
-    svc_write32,             //  0
-    unvic_isr_set,           //  1
-    unvic_isr_get,           //  2
-    unvic_irq_enable,        //  3
-    unvic_irq_disable,       //  4
-    unvic_irq_pending_clr,   //  5
-    unvic_irq_pending_set,   //  6
-    unvic_irq_pending_get,   //  7
-    unvic_irq_priority_set,  //  8
-    unvic_irq_priority_get,  //  9
-    benchmark_configure,     // 10
-    benchmark_start,         // 11
-    benchmark_stop,          // 12
+    unvic_isr_set,           //  0
+    unvic_isr_get,           //  1
+    unvic_irq_enable,        //  2
+    unvic_irq_disable,       //  3
+    unvic_irq_pending_clr,   //  4
+    unvic_irq_pending_set,   //  5
+    unvic_irq_pending_get,   //  6
+    unvic_irq_priority_set,  //  7
+    unvic_irq_priority_get,  //  8
+    benchmark_configure,     //  9
+    benchmark_start,         // 10
+    benchmark_stop,          // 11
 };
 
 /*******************************************************************************
