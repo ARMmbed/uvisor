@@ -147,21 +147,4 @@ static inline int vmpu_bits(uint32_t size)
     return bits;
 }
 
-static inline int vmpu_region_bits(uint32_t size)
-{
-    int bits;
-
-    bits = vmpu_bits(size)-1;
-
-    /* minimum region size is 32 bytes */
-    if(bits<5)
-        bits=5;
-
-    /* round up if needed */
-    if((1UL << bits) != size)
-        bits++;
-
-    return bits;
-}
-
 #endif/*__VMPU_EXPORTS_H__*/
