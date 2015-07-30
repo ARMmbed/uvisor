@@ -87,7 +87,7 @@
 
 #ifdef  ARCH_MPU_MK64F
 #define UVISOR_REGION_ROUND_DOWN(x) ((x) & ~0x1FUL)
-#define UVISOR_REGION_ROUND_UP(x)   UVISOR_ROUND32_DOWN((x)+31UL)
+#define UVISOR_REGION_ROUND_UP(x)   UVISOR_REGION_ROUND_DOWN((x)+31UL)
 #define UVISOR_STACK_SIZE_ROUND(x)  UVISOR_REGION_ROUND_UP((x) + \
                                     (UVISOR_STACK_BAND_SIZE * 2))
 #else /*ARCH_MPU_ARMv7M*/

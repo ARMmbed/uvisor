@@ -116,10 +116,10 @@ static int vmpu_mem_add_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
     if(size % 32)
     {
         if(acl & UVISOR_TACL_SIZE_ROUND_DOWN)
-            size = UVISOR_ROUND32_DOWN(size);
+            size = UVISOR_REGION_ROUND_DOWN(size);
         else
             if(acl & UVISOR_TACL_SIZE_ROUND_UP)
-                size = UVISOR_ROUND32_UP(size);
+                size = UVISOR_REGION_ROUND_UP(size);
             else
                 {
                     DPRINTF("use UVISOR_TACL_SIZE_ROUND_UP/*_DOWN to round ACL size\n");

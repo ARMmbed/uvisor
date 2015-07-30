@@ -74,10 +74,10 @@ void vmpu_acl_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 
     /* round ACLs if needed */
     if(acl & UVISOR_TACL_SIZE_ROUND_DOWN)
-        size = UVISOR_ROUND32_DOWN(size);
+        size = UVISOR_REGION_ROUND_DOWN(size);
     else
         if(acl & UVISOR_TACL_SIZE_ROUND_UP)
-            size = UVISOR_ROUND32_UP(size);
+            size = UVISOR_REGION_ROUND_UP(size);
 
     DPRINTF("\t@0x%08X size=%06i acl=0x%04X [%s]\n", start, size, acl,
         ((map = memory_map_name((uint32_t)start))!=NULL) ? map->name : "unknown"
@@ -94,6 +94,11 @@ void vmpu_acl_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
     else
         if(res<0)
             HALT_ERROR(SANITY_CHECK_FAILED, "ACL sanity check failed [%i]\n", res);
+}
+
+void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
+{
+    HALT_ERROR(NOT_IMPLEMENTED, "not implemented\n");
 }
 
 int vmpu_switch(uint8_t src_box, uint8_t dst_box)
@@ -117,7 +122,7 @@ void vmpu_load_box(uint8_t box_id)
     DPRINTF("%d  box %d loaded \n\r", box_id);
 }
 
-void vmpu_init_protection(void)
+void vmpu_arch_init(void)
 {
     /* enable mem, bus and usage faults */
     SCB->SHCSR |= 0x70000;
