@@ -16,6 +16,8 @@
 
 /* FIXME this function is temporary. Writes to an address should be checked
  *       against a box's ACLs */
-void svc_write_bitband(uint32_t *addr, uint32_t val)
+void svc_write32(uint32_t *addr, uint32_t val)
 {
+    HALT_ERROR(NOT_IMPLEMENTED,
+               "svc_write32 is not yet supported on this platform\n\r");
 }
