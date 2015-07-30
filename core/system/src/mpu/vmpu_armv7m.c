@@ -112,6 +112,23 @@ void vmpu_load_box(uint8_t box_id)
 {
 }
 
+static int vmpu_region_bits(uint32_t size)
+{
+    int bits;
+
+    bits = vmpu_bits(size)-1;
+
+    /* minimum region size is 32 bytes */
+    if(bits<ARMv7M_MPU_ALIGNMENT_BITS)
+        bits=ARMv7M_MPU_ALIGNMENT_BITS;
+
+    /* round up if needed */
+    if((1UL << bits) != size)
+        bits++;
+
+    return bits;
+}
+
 static uint32_t vmpu_map_acl(UvisorBoxAcl acl)
 {
     uint32_t flags;
@@ -180,30 +197,28 @@ static void vmpu_acl_update_box_region(TMpuRegion *region, uint8_t box_id, void*
 {
     uint32_t flags, bits, mask, size_rounded, subregions;
 
-    DPRINTF("\tbox[%i] acl[%02i]={0x%08X,size=%05i,acl=0x%04X,",
+    DPRINTF("\tbox[%i] acl[%02i]={0x%08X,size=%05i,acl=0x%08X,",
         box_id, g_mpu_region_count, base, size, acl);
 
-    /* enforce minimum size */
-    if(size>ARMv7M_MPU_ALIGNMENT)
-        bits = vmpu_bits(size);
-    else
-    {
-        size = ARMv7M_MPU_ALIGNMENT;
-        bits = ARMv7M_MPU_ALIGNMENT_BITS;
-    }
-
     /* verify region alignment */
+    bits = vmpu_region_bits(size);
     size_rounded = 1UL << bits;
     if(size_rounded != size)
     {
         if((acl & (UVISOR_TACL_SIZE_ROUND_UP|UVISOR_TACL_SIZE_ROUND_DOWN))==0)
-            HALT_ERROR(SANITY_CHECK_FAILED, "box size (%i) not rounded, rounding disabled\n\r", size);
+            HALT_ERROR(SANITY_CHECK_FAILED,
+                "box size (%i) not rounded, rounding disabled (rounded=%i)\n\r",
+                size, size_rounded
+            );
 
         if(acl & UVISOR_TACL_SIZE_ROUND_DOWN)
         {
             bits--;
             if(bits<ARMv7M_MPU_ALIGNMENT_BITS)
-                HALT_ERROR(SANITY_CHECK_FAILED, "region size (%i) can't be rounded down\n\r", size);
+                HALT_ERROR(SANITY_CHECK_FAILED,
+                    "region size (%i) can't be rounded down\n\r",
+                    size
+                );
             size_rounded = 1UL << bits;
         }
     }
@@ -308,7 +323,7 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
     size = 1UL << bits;
     block_size = size/8;
 
-    DPRINTF("\tbox[%i] stack=%i context=%i rounded=%i " , box_id,
+    DPRINTF("\tbox[%i] stack=%i context=%i rounded=%i\n\r" , box_id,
         stack_size, context_size, size);
 
     /* check for correct context address alignment:
@@ -337,10 +352,12 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
     /* ensure stack band on top for stack underflow dectection */
     g_svc_cx_curr_sp[box_id] =
         (uint32_t*)(g_box_mem_pos + size - UVISOR_STACK_BAND_SIZE);
-    /* debug stack & context allocation */
-    DPRINTF("ctx=0x%08X sp=0x%08X\n\r",
-        g_svc_cx_context_ptr[box_id],
-        g_svc_cx_curr_sp[box_id]);
+
+    /* create stack protection region */
+    vmpu_acl_add(
+        box_id, (void*)g_box_mem_pos, size,
+        UVISOR_TACLDEF_STACK | UVISOR_TACL_SUBREGIONS(1UL<<slots_ctx)
+    );
 
     /* move on to the next memory block */
     g_box_mem_pos += size;
