@@ -180,8 +180,8 @@ static void vmpu_acl_update_box_region(TMpuRegion *region, uint8_t box_id, void*
 {
     uint32_t flags, bits, mask, size_rounded;
 
-    DPRINTF("ACL[%02i]:box[%02i] = {0x%08X,size=%05i,acl=0x%04X,",
-        g_mpu_region_count, box_id, base, size, acl);
+    DPRINTF("\tbox[%i] acl[%02i]={0x%08X,size=%05i,acl=0x%04X,",
+        box_id, g_mpu_region_count, base, size, acl);
 
     /* enforce minimum size */
     if(size>ARMv7M_MPU_ALIGNMENT)
