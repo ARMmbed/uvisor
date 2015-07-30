@@ -59,6 +59,14 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 #define vIRQ_SetPriority(irqn, priority)    NVIC_SetPriority((IRQn_Type) (irqn), (uint32_t) (priority))
 #define vIRQ_GetPriority(irqn)              NVIC_GetPriority((IRQn_Type) (irqn))
 
+/* secure_access.h */
+#define ADDRESS_WRITE32(addr, val) (*((volatile uint32_t *) (addr) = (val)))
+#define ADDRESS_WRITE16(addr, val) (*((volatile uint16_t *) (addr) = (val)))
+#define ADDRESS_WRITE8(addr, val)  (*((volatile uint8_t  *) (addr) = (val)))
+#define ADDRESS_READ32(addr) *((volatile uint32_t *) (addr))
+#define ADDRESS_READ16(addr) *((volatile uint16_t *) (addr))
+#define ADDRESS_READ8(addr)  *((volatile uint8_t  *) (addr))
+
 /* secure_gateway.h */
 #define secure_gateway(dst_box, dst_fn, ...) dst_fn(__VA_ARGS__)
 
