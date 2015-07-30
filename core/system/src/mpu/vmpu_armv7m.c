@@ -294,9 +294,7 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
     uint32_t size, block_size;
 
     /* handle main box */
-    if(box_id)
-        stack_size = UVISOR_MIN_STACK(stack_size);
-    else
+    if(!box_id)
     {
         DPRINTF("ctx=%i stack=%i\n\r", context_size, stack_size);
         /* non-important sanity checks */
@@ -311,8 +309,7 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
     }
 
     /* ensure that box stack is at least UVISOR_MIN_STACK_SIZE */
-    if(stack_size<UVISOR_MIN_STACK_SIZE)
-        stack_size = UVISOR_MIN_STACK_SIZE;
+    stack_size = UVISOR_MIN_STACK(stack_size);
 
     /* ensure that 2/8th are available for protecting stack from
      * context - include rounding error margin */
@@ -341,7 +338,7 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
 
     /* round context sizes, leave one free slot */
     slots_ctx = (context_size + block_size - 1)/block_size;
-    slots_stack = 8-slots_ctx-1;
+    slots_stack = slots_ctx ? (8-slots_ctx-1) : 8;
 
     /* final sanity checks */
     if( (slots_ctx * block_size) < context_size )
@@ -350,7 +347,8 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
         HALT_ERROR(SANITY_CHECK_FAILED, "slots_stack underrun\n\r");
 
     /* allocate context pointer */
-    g_svc_cx_context_ptr[box_id] = (uint32_t*)g_box_mem_pos;
+    g_svc_cx_context_ptr[box_id] =
+        slots_ctx ? (uint32_t*)g_box_mem_pos : NULL;
     /* ensure stack band on top for stack underflow dectection */
     g_svc_cx_curr_sp[box_id] =
         (uint32_t*)(g_box_mem_pos + size - UVISOR_STACK_BAND_SIZE);
@@ -358,7 +356,7 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
     /* create stack protection region */
     vmpu_acl_add(
         box_id, (void*)g_box_mem_pos, size,
-        UVISOR_TACLDEF_STACK | UVISOR_TACL_SUBREGIONS(1UL<<slots_ctx)
+        UVISOR_TACLDEF_STACK | (slots_ctx ? UVISOR_TACL_SUBREGIONS(1UL<<slots_ctx) : 0)
     );
 
     /* move on to the next memory block */
