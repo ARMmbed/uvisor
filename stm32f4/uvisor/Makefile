@@ -22,7 +22,6 @@ APP_CFLAGS:=-DUVISOR $(CONFIG) -Iconfig -Isrc -Ilib -Idebug
 
 APP_SRC:=\
 	src/stm32f4_halt.c \
-	src/stm32f4_svc.c \
 	debug/stm32f4_memory_map.c
 
 include ../../core/Makefile.rules

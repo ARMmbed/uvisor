@@ -78,6 +78,8 @@ int vmpu_switch(uint8_t src_box, uint8_t dst_box)
 	return 1;
 }
 
+/* FIXME check if fault came from ldr/str instruction, check ACL and, if
+ * allowed, perform operation and return to regular execution */
 void MemoryManagement_IRQn_Handler(void)
 {
 	DEBUG_FAULT(FAULT_MEMMANAGE);
@@ -180,7 +182,7 @@ static uint32_t vmpu_map_acl(UvisorBoxAcl acl)
 				}
 
 	/* handle code-execute flag */
-	if( acl & (UVISOR_TACL_UEXECUTE|UVISOR_TACL_SEXECUTE) ) 
+	if( acl & (UVISOR_TACL_UEXECUTE|UVISOR_TACL_SEXECUTE) )
 		/* can't distinguish between user & supervisor execution */
 		acl_res |= UVISOR_TACL_UEXECUTE | UVISOR_TACL_SEXECUTE;
 	else

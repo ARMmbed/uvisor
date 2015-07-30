@@ -20,12 +20,9 @@ UVISOR_EXTERN void uvisor_init(void);
  * re-definitions from:
  ******************************************************************************/
 
-/* bitband.h */
+/* config.h */
 UVISOR_EXTERN const uint32_t __uvisor_mode;
 
-#define uvisor_write_bitband(addr, val) *((uint32_t *) (addr)) = (uint32_t) (val)
-
-/* config.h */
 #define UVISOR_DISABLED 0
 
 #define UVISOR_SET_MODE(mode) \
