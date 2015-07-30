@@ -24,6 +24,8 @@ void MemoryManagement_IRQn_Handler(void)
     halt_led(FAULT_MEMMANAGE);
 }
 
+/* FIXME check if fault came from ldr/str instruction, check ACL and, if
+ * allowed, perform operation and return to regular execution */
 void BusFault_IRQn_Handler(void)
 {
     DEBUG_FAULT(FAULT_BUS);
