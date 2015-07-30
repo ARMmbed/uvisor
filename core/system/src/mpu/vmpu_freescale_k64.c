@@ -12,11 +12,14 @@
  ***************************************************************/
 #include <uvisor.h>
 #include <vmpu.h>
+#include <svc.h>
 #include <halt.h>
 #include <debug.h>
 #include <memory_map.h>
 #include "vmpu_freescale_k64_aips.h"
 #include "vmpu_freescale_k64_mem.h"
+
+uint32_t g_box_mem_pos;
 
 void MemoryManagement_IRQn_Handler(void)
 {
@@ -100,7 +103,56 @@ void vmpu_acl_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 
 void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
 {
-    HALT_ERROR(NOT_IMPLEMENTED, "not implemented\n");
+    /* handle main box */
+    if(!box_id)
+    {
+        DPRINTF("ctx=%i stack=%i\n\r", context_size, stack_size);
+        /* non-important sanity checks */
+        assert(context_size == 0);
+        assert(stack_size == 0);
+
+        /* assign main box stack pointer to existing
+         * unprivileged stack pointer */
+        g_svc_cx_curr_sp[0] = (uint32_t*)__get_PSP();
+        g_svc_cx_context_ptr[0] = NULL;
+        return;
+    }
+
+    /* ensure stack & context alignment */
+    stack_size = UVISOR_REGION_ROUND_UP(UVISOR_MIN_STACK(stack_size));
+
+    /* add stack ACL */
+    vmpu_acl_add(
+        box_id,
+        (void*)g_box_mem_pos,
+        stack_size,
+        UVISOR_TACLDEF_STACK
+    );
+
+    /* set stack pointer to box stack size minus guard band */
+    g_box_mem_pos += stack_size;
+    g_svc_cx_curr_sp[box_id] = (uint32_t*)g_box_mem_pos;
+    /* add stack protection band */
+    g_box_mem_pos += UVISOR_STACK_BAND_SIZE;
+
+    /* add context ACL if needed */
+    if(!context_size)
+        g_svc_cx_context_ptr[box_id] = NULL;
+    else
+    {
+        context_size = UVISOR_REGION_ROUND_UP(context_size);
+        g_svc_cx_context_ptr[box_id] = (uint32_t*)g_box_mem_pos;
+
+        /* add context ACL */
+        vmpu_acl_add(
+            box_id,
+            (void*)g_box_mem_pos,
+            context_size,
+            UVISOR_TACLDEF_DATA
+        );
+
+        g_box_mem_pos += context_size + UVISOR_STACK_BAND_SIZE;
+    }
 }
 
 int vmpu_switch(uint8_t src_box, uint8_t dst_box)
@@ -128,6 +180,11 @@ void vmpu_arch_init(void)
 {
     /* enable mem, bus and usage faults */
     SCB->SHCSR |= 0x70000;
+
+    /* initialize box memories, leave stack-band sized gap */
+    g_box_mem_pos = UVISOR_REGION_ROUND_UP(
+        (uint32_t)__uvisor_config.reserved_end) +
+        UVISOR_STACK_BAND_SIZE;
 
     /* init memory protection */
     vmpu_mem_init();
