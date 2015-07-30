@@ -49,18 +49,18 @@ RELEASE_VER:=$(RELEASE_SRC_HW)/version.txt
 
 # make ARMv7-M MPU driver the default
 ifeq ("$(ARCH_MPU)","")
-ARCH_MPU:=ARMv7_M
+ARCH_MPU:=ARMv7M
 endif
 
 # ARMv7-M MPU driver
-ifeq ("$(ARCH_MPU)","ARMv7_M")
+ifeq ("$(ARCH_MPU)","ARMv7M")
 MPU_SRC:=\
          $(SYSTEM_DIR)/src/mpu/vmpu_armv7m.c \
          $(SYSTEM_DIR)/src/mpu/vmpu_armv7m_debug.c
 endif
 
 # Freescale K64 MPU driver
-ifeq ("$(ARCH_MPU)","FREESCALE_K64")
+ifeq ("$(ARCH_MPU)","MK64F")
 MPU_SRC:=\
          $(SYSTEM_DIR)/src/mpu/vmpu_freescale_k64.c \
          $(SYSTEM_DIR)/src/mpu/vmpu_freescale_k64_debug.c \
@@ -130,6 +130,7 @@ CFLAGS_PRE:=\
         $(DEBUG) \
         $(WARNING) \
         -DARCH_$(ARCH) \
+        -DARCH_MPU_$(ARCH_MPU) \
         -D$(CPU) \
         -DPROGRAM_VERSION=\"$(PROGRAM_VERSION)\" \
         -DCPU=$(CPU) \
