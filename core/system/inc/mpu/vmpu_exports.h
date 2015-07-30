@@ -41,6 +41,13 @@
 #define UVISOR_TACL_USER            0x0800UL
 #define UVISOR_TACL_IRQ             0x1000UL
 
+/* subregion mask for ARMv7M */
+#ifdef  ARCH_MPU_ARMv7M
+#define UVISOR_TACL_SUBREGIONS_POS  24
+#define UVISOR_TACL_SUBREGIONS_MASK (0xFFUL<<UVISOR_TACL_SUBREGIONS_POS)
+#define UVISOR_TACL_SUBREGIONS(x)   ( (((uint32_t)(x))<<UVISOR_TACL_SUBREGIONS_POS) & UVISOR_TACL_SUBREGIONS_MASK )
+#endif/*ARCH_MPU_ARMv7M*/
+
 #define UVISOR_TACLDEF_SECURE_BSS   (UVISOR_TACL_UREAD          |\
                                      UVISOR_TACL_UWRITE         |\
                                      UVISOR_TACL_SREAD          |\
@@ -78,16 +85,16 @@
 #define UVISOR_MIN_STACK_SIZE       1024
 #define UVISOR_MIN_STACK(x)         (((x)<UVISOR_MIN_STACK_SIZE)?UVISOR_MIN_STACK_SIZE:(x))
 
-#ifdef  ARCH_MK64F
+#ifdef  ARCH_MPU_MK64F
 #define UVISOR_REGION_ROUND_DOWN(x) ((x) & ~0x1FUL)
 #define UVISOR_REGION_ROUND_UP(x)   UVISOR_ROUND32_DOWN((x)+31UL)
 #define UVISOR_STACK_SIZE_ROUND(x)  UVISOR_REGION_ROUND_UP((x) + \
                                     (UVISOR_STACK_BAND_SIZE * 2))
-#else /*ARM MPU*/
+#else /*ARCH_MPU_ARMv7M*/
 #define UVISOR_REGION_ROUND_DOWN(x) ((x) & ~((1UL<<UVISOR_REGION_BITS(x))-1))
 #define UVISOR_REGION_ROUND_UP(x)   (1UL<<UVISOR_REGION_BITS(x))
 #define UVISOR_STACK_SIZE_ROUND(x)  UVISOR_REGION_ROUND_UP(x)
-#endif/*ARCH_MK64F*/
+#endif/*ARCH_MPU_ARMv7M*/
 
 #ifndef UVISOR_BOX_STACK_SIZE
 #define UVISOR_BOX_STACK_SIZE UVISOR_MIN_STACK_SIZE
