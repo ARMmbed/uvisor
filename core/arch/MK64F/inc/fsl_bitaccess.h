@@ -9,6 +9,9 @@
 **     Copyright (c) 2014 Freescale Semiconductor, Inc.
 **     All rights reserved.
 **
+**     (C) COPYRIGHT 2015-2015 ARM Limited
+**     ALL RIGHTS RESERVED
+**
 **     Redistribution and use in source and binary forms, with or without modification,
 **     are permitted provided that the following conditions are met:
 **
@@ -62,6 +65,10 @@
 **         The declaration of clock configurations has been moved to separate header file system_MK64F12.h
 **         Update of SystemInit() and SystemCoreClockUpdate() functions.
 **         Module access macro module_BASES replaced by module_BASE_PTRS.
+**     - rev. 2.6 (2015-07-30) (ARM)
+**         Macros for bitband address calculation have been decoupled from the
+**         actual address de-referencing in BITBAND_ACCESSxx macros;
+**         Added fallback macros for default read/write operations
 **
 ** ###################################################################
 */
