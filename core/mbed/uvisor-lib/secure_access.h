@@ -13,6 +13,8 @@
 #ifndef __SECURE_ACCESS_H__
 #define __SECURE_ACCESS_H__
 
+#include <assert.h>
+
 #define ADDRESS_WRITE32(addr, val) uvisor_write32((volatile uint32_t *) (addr), (uint32_t) (val))
 #define ADDRESS_WRITE16(addr, val) uvisor_write16((volatile uint16_t *) (addr), (uint16_t) (val))
 #define ADDRESS_WRITE8(addr, val)  uvisor_write8((volatile uint8_t  *) (addr), (uint8_t ) (val))
@@ -21,10 +23,70 @@
 #define ADDRESS_READ16(addr) uvisor_read16((volatile uint16_t *) (addr))
 #define ADDRESS_READ8(addr)  uvisor_read8((volatile uint8_t  *) (addr))
 
-#define UNION_READ_FS(addr, type, field) \
+#define UNION_WRITE_REG_FS(addr, type, val) \
+    ({ \
+        /* sizeof(type ## _t) is known at compile time so the switch statement
+         * will be replaced by a single statement with the memory access */ \
+        switch(sizeof(type ## _t)) \
+        { \
+            case 1: \
+                uvisor_write8((volatile uint8_t *) (addr), (uint8_t) (val)); \
+                break; \
+            case 2: \
+                uvisor_write16((volatile uint16_t *) (addr), (uint16_t) (val)); \
+                break; \
+            case 4: \
+                uvisor_write32((volatile uint32_t *) (addr), (uint32_t) (val)); \
+                break; \
+            default: \
+                /* FIXME replace with SVCall-based uvisor_error() API */ \
+                assert(23 == 42); \
+        } \
+    })
+
+#define UNION_READ_REG_FS(addr, type) \
     ({ \
         type ## _t res; \
-        res.U = uvisor_read32((volatile uint32_t *) (addr)); \
+        /* sizeof(type ## _t) is known at compile time so the switch statement
+         * will be replaced by a single statement with the memory access */ \
+        switch(sizeof(type ## _t)) \
+        { \
+            case 1: \
+                res.U = uvisor_read8((volatile uint8_t *) (addr)); \
+                break; \
+            case 2: \
+                res.U = uvisor_read16((volatile uint16_t *) (addr)); \
+                break; \
+            case 4: \
+                res.U = uvisor_read32((volatile uint32_t *) (addr)); \
+                break; \
+            default: \
+                /* FIXME replace with SVCall-based uvisor_error() API */ \
+                assert(23 == 42); \
+        } \
+        res.U; \
+    })
+
+#define UNION_READ_BIT_FS(addr, type, field) \
+    ({ \
+        type ## _t res; \
+        /* sizeof(type ## _t) is known at compile time so the switch statement
+         * will be replaced by a single statement with the memory access */ \
+        switch(sizeof(type ## _t)) \
+        { \
+            case 1: \
+                res.U = uvisor_read8((volatile uint8_t *) (addr)); \
+                break; \
+            case 2: \
+                res.U = uvisor_read16((volatile uint16_t *) (addr)); \
+                break; \
+            case 4: \
+                res.U = uvisor_read32((volatile uint32_t *) (addr)); \
+                break; \
+            default: \
+                /* FIXME replace with SVCall-based uvisor_error() API */ \
+                assert(23 == 42); \
+        } \
         res.field; \
     })
 
