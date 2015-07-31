@@ -15,12 +15,12 @@
 
 void uvisor_benchmark_configure(void)
 {
-	/* in sequence:
-	 *   - configure the DWT (default overhead = 0)
-	 *   - execute a nop measurement to assess the overhead introduced by the
-	 *     measurement itself
-	 *   - pass the computed overhead to the configuration routine for future
-	 *     measurements */
+    /* in sequence:
+     *   - configure the DWT (default overhead = 0)
+     *   - execute a nop measurement to assess the overhead introduced by the
+     *     measurement itself
+     *   - pass the computed overhead to the configuration routine for future
+     *     measurements */
     __asm__ volatile(
         "push {lr}\n"
         "mov  r0, #0\n"
