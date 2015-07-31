@@ -21,6 +21,7 @@
 /* these header files are included independently from the platform */
 #include "uvisor-lib/uvisor_exports.h"
 #include "uvisor-lib/vmpu_exports.h"
+#include "uvisor-lib/halt_exports.h"
 
 /* conditionally included header files */
 #ifdef  UVISOR_PRESENT
@@ -28,6 +29,7 @@
 #include "uvisor-lib/benchmark.h"
 #include "uvisor-lib/secure_access.h"
 #include "uvisor-lib/box_config.h"
+#include "uvisor-lib/error.h"
 #include "uvisor-lib/interrupts.h"
 #include "uvisor-lib/secure_gateway.h"
 #include "uvisor-lib/svc_exports.h"
