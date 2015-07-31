@@ -13,12 +13,6 @@
 #include <uvisor.h>
 #include "halt.h"
 
-void UVISOR_WEAK halt_led(THaltError reason)
-{
-    HALT_ERROR(NOT_IMPLEMENTED,
-               "halt_led needs hw-specific implementation\n\r");
-}
-
 static void halt_putcp(void* p, char c)
 {
     (void) p;
