@@ -2,7 +2,7 @@
  * This confidential and  proprietary  software may be used only
  * as authorised  by  a licensing  agreement  from  ARM  Limited
  *
- *             (C) COPYRIGHT 2013-2015 ARM Limited
+ *             (C) COPYRIGHT 2015-2015 ARM Limited
  *                      ALL RIGHTS RESERVED
  *
  *  The entire notice above must be reproduced on all authorised
@@ -12,8 +12,6 @@
  ***************************************************************/
 #ifndef __SECURE_ACCESS_H__
 #define __SECURE_ACCESS_H__
-
-#include <assert.h>
 
 #define ADDRESS_WRITE32(addr, val) uvisor_write32((volatile uint32_t *) (addr), (uint32_t) (val))
 #define ADDRESS_WRITE16(addr, val) uvisor_write16((volatile uint16_t *) (addr), (uint16_t) (val))
@@ -39,8 +37,7 @@
                 uvisor_write32((volatile uint32_t *) (addr), (uint32_t) (val)); \
                 break; \
             default: \
-                /* FIXME replace with SVCall-based uvisor_error() API */ \
-                assert(23 == 42); \
+                uvisor_error(USER_NOT_ALLOWED); \
         } \
     })
 
@@ -61,8 +58,7 @@
                 res.U = uvisor_read32((volatile uint32_t *) (addr)); \
                 break; \
             default: \
-                /* FIXME replace with SVCall-based uvisor_error() API */ \
-                assert(23 == 42); \
+                uvisor_error(USER_NOT_ALLOWED); \
         } \
         res.U; \
     })
@@ -84,8 +80,7 @@
                 res.U = uvisor_read32((volatile uint32_t *) (addr)); \
                 break; \
             default: \
-                /* FIXME replace with SVCall-based uvisor_error() API */ \
-                assert(23 == 42); \
+                uvisor_error(USER_NOT_ALLOWED); \
         } \
         res.field; \
     })

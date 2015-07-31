@@ -62,3 +62,9 @@ void halt_line(const char *file, uint32_t line, THaltError reason,
     /* blink & die */
     halt_led(reason);
 }
+
+void halt_user_error(THaltUserError reason)
+{
+    /* blink & die */
+    halt_led(reason + __THALTERROR_MAX);
+}
