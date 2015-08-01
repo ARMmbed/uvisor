@@ -48,6 +48,7 @@ const void *g_svc_vtor_tbl[] = {
     benchmark_configure,     //  9
     benchmark_start,         // 10
     benchmark_stop,          // 11
+    halt_user_error,         // 12
 };
 
 /*******************************************************************************
