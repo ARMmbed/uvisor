@@ -13,6 +13,8 @@
 #ifndef __HALT_H__
 #define __HALT_H__
 
+#include "halt_exports.h"
+
 typedef enum {
     PERMISSION_DENIED = 1,
     SANITY_CHECK_FAILED,
@@ -22,7 +24,8 @@ typedef enum {
     FAULT_BUS,
     FAULT_USAGE,
     FAULT_HARD,
-    FAULT_DEBUG
+    FAULT_DEBUG,
+    __THALTERROR_MAX /* always keep as the last element of the enum */
 } THaltError;
 
 #define HALT_INTRA_PATTERN_DELAY 0x200000U
@@ -36,6 +39,7 @@ typedef enum {
 #endif/*NDEBUG*/
 
 extern void halt_led(THaltError reason);
+extern void halt_user_error(THaltUserError reason);
 extern void halt_error(THaltError reason, const char *fmt, ...);
 extern void halt_line(const char *file, uint32_t line, THaltError reason,
                       const char *fmt, ...);
