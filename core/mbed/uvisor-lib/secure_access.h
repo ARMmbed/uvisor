@@ -13,76 +13,35 @@
 #ifndef __SECURE_ACCESS_H__
 #define __SECURE_ACCESS_H__
 
-#define ADDRESS_WRITE32(addr, val) uvisor_write32((volatile uint32_t *) (addr), (uint32_t) (val))
-#define ADDRESS_WRITE16(addr, val) uvisor_write16((volatile uint16_t *) (addr), (uint16_t) (val))
-#define ADDRESS_WRITE8(addr, val)  uvisor_write8((volatile uint8_t  *) (addr), (uint8_t ) (val))
-
-#define ADDRESS_READ32(addr) uvisor_read32((volatile uint32_t *) (addr))
-#define ADDRESS_READ16(addr) uvisor_read16((volatile uint16_t *) (addr))
-#define ADDRESS_READ8(addr)  uvisor_read8((volatile uint8_t  *) (addr))
-
-#define UNION_WRITE_REG_FS(addr, type, val) \
-    ({ \
-        /* sizeof(type ## _t) is known at compile time so the switch statement
-         * will be replaced by a single statement with the memory access */ \
-        switch(sizeof(type ## _t)) \
+#define ADDRESS_WRITE(type, addr, val) \
+    { \
+        switch(sizeof(type)) \
         { \
-            case 1: \
-                uvisor_write8((volatile uint8_t *) (addr), (uint8_t) (val)); \
+            case 4: \
+                uvisor_write32((volatile uint32_t *) (addr), (uint32_t) (val)); \
                 break; \
             case 2: \
                 uvisor_write16((volatile uint16_t *) (addr), (uint16_t) (val)); \
                 break; \
-            case 4: \
-                uvisor_write32((volatile uint32_t *) (addr), (uint32_t) (val)); \
-                break; \
-            default: \
-                uvisor_error(USER_NOT_ALLOWED); \
-        } \
-    })
-
-#define UNION_READ_REG_FS(addr, type) \
-    ({ \
-        type ## _t res; \
-        /* sizeof(type ## _t) is known at compile time so the switch statement
-         * will be replaced by a single statement with the memory access */ \
-        switch(sizeof(type ## _t)) \
-        { \
             case 1: \
-                res.U = uvisor_read8((volatile uint8_t *) (addr)); \
-                break; \
-            case 2: \
-                res.U = uvisor_read16((volatile uint16_t *) (addr)); \
-                break; \
-            case 4: \
-                res.U = uvisor_read32((volatile uint32_t *) (addr)); \
+                uvisor_write8(( volatile uint8_t  *) (addr), (uint8_t ) (val)); \
                 break; \
             default: \
                 uvisor_error(USER_NOT_ALLOWED); \
+                break; \
         } \
-        res.U; \
-    })
+    }
 
-#define UNION_READ_BIT_FS(addr, type, field) \
+#define ADDRESS_READ(type, addr) \
+    sizeof(type) == 4 ? uvisor_read32((volatile uint32_t *) (addr)) : \
+    sizeof(type) == 2 ? uvisor_read16((volatile uint16_t *) (addr)) : \
+    sizeof(type) == 1 ? uvisor_read8(( volatile uint8_t  *) (addr)) : 0
+
+#define UNION_READ(type, addr, fieldU, fieldB) \
     ({ \
-        type ## _t res; \
-        /* sizeof(type ## _t) is known at compile time so the switch statement
-         * will be replaced by a single statement with the memory access */ \
-        switch(sizeof(type ## _t)) \
-        { \
-            case 1: \
-                res.U = uvisor_read8((volatile uint8_t *) (addr)); \
-                break; \
-            case 2: \
-                res.U = uvisor_read16((volatile uint16_t *) (addr)); \
-                break; \
-            case 4: \
-                res.U = uvisor_read32((volatile uint32_t *) (addr)); \
-                break; \
-            default: \
-                uvisor_error(USER_NOT_ALLOWED); \
-        } \
-        res.field; \
+        type res; \
+        res.fieldU = ADDRESS_READ(type, addr); \
+        res.fieldB; \
     })
 
 static inline __attribute__((always_inline)) void uvisor_write32(uint32_t volatile *addr, uint32_t val)
