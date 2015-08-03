@@ -21,43 +21,91 @@
 
 uint32_t g_box_mem_pos;
 
-void MemoryManagement_IRQn_Handler(void)
+void UVISOR_NAKED UVISOR_NORETURN MemoryManagement_IRQn_Handler(void)
 {
-    DEBUG_FAULT(FAULT_MEMMANAGE);
+    asm volatile(
+        "push {lr}\n"
+        "mov r0, lr\n"
+        "blx __MemoryManagement_IRQn_Handler\n"
+        "pop {pc}\n"
+    );
+}
+
+void __MemoryManagement_IRQn_Handler(uint32_t lr)
+{
+    DEBUG_FAULT(FAULT_MEMMANAGE, lr);
     halt_led(FAULT_MEMMANAGE);
 }
 
-/* FIXME check if fault came from ldr/str instruction, check ACL and, if
- * allowed, perform operation and return to regular execution */
-void BusFault_IRQn_Handler(void)
+void UVISOR_NAKED UVISOR_NORETURN BusFault_IRQn_Handler(void)
 {
-    DEBUG_FAULT(FAULT_BUS);
+    asm volatile(
+        "push {lr}\n"
+        "mov r0, lr\n"
+        "blx __BusFault_IRQn_Handler\n"
+        "pop {pc}\n"
+    );
+}
+
+void __BusFault_IRQn_Handler(uint32_t lr)
+{
+    DEBUG_FAULT(FAULT_BUS, lr);
 
     /* the Freescale MPU results in bus faults when an access is forbidden;
      * hence, a different error pattern is used depending on the case */
-    /* Note: since we are halting execution we don't bother clearing the SPERR
-     *       bit in the MPU->CESR register */
+    /* note: since we are halting execution we don't bother clearing the
+     * SPERR bit in the MPU->CESR register */
     if(MPU->CESR >> 27)
         halt_led(NOT_ALLOWED);
     else
         halt_led(FAULT_BUS);
 }
 
-void UsageFault_IRQn_Handler(void)
+void UVISOR_NAKED UVISOR_NORETURN UsageFault_IRQn_Handler(void)
 {
-    DEBUG_FAULT(FAULT_USAGE);
+    asm volatile(
+        "push {lr}\n"
+        "mov r0, lr\n"
+        "blx __UsageFault_IRQn_Handler\n"
+        "pop {pc}\n"
+    );
+}
+
+void __UsageFault_IRQn_Handler(uint32_t lr)
+{
+    DEBUG_FAULT(FAULT_USAGE, lr);
     halt_led(FAULT_USAGE);
 }
 
-void HardFault_IRQn_Handler(void)
+void UVISOR_NAKED UVISOR_NORETURN HardFault_IRQn_Handler(void)
 {
-    DEBUG_FAULT(FAULT_HARD);
+    asm volatile(
+        "push {lr}\n"
+        "mov r0, lr\n"
+        "blx __HardFault_IRQn_Handler\n"
+        "pop {pc}\n"
+    );
+}
+
+void __HardFault_IRQn_Handler(uint32_t lr)
+{
+    DEBUG_FAULT(FAULT_HARD, lr);
     halt_led(FAULT_HARD);
 }
 
-void DebugMonitor_IRQn_Handler(void)
+void UVISOR_NAKED UVISOR_NORETURN DebugMonitor_IRQn_Handler(void)
 {
-    DEBUG_FAULT(FAULT_DEBUG);
+    asm volatile(
+        "push {lr}\n"
+        "mov r0, lr\n"
+        "blx __DebugMonitor_IRQn_Handler\n"
+        "pop {pc}\n"
+    );
+}
+
+void __DebugMonitor_IRQn_Handler(uint32_t lr)
+{
+    DEBUG_FAULT(FAULT_DEBUG, lr);
     halt_led(FAULT_DEBUG);
 }
 
