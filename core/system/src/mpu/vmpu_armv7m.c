@@ -13,6 +13,7 @@
 #include <uvisor.h>
 #include <vmpu.h>
 #include <svc.h>
+#include <unvic.h>
 #include <halt.h>
 #include <debug.h>
 #include <memory_map.h>
@@ -78,36 +79,55 @@ int vmpu_switch(uint8_t src_box, uint8_t dst_box)
     return 1;
 }
 
-/* FIXME check if fault came from ldr/str instruction, check ACL and, if
- * allowed, perform operation and return to regular execution */
-void MemoryManagement_IRQn_Handler(void)
+void vmpu_sys_mux_handler(uint32_t lr)
 {
-    DEBUG_FAULT(FAULT_MEMMANAGE);
-    halt_led(FAULT_MEMMANAGE);
-}
+    uint32_t *sp;
 
-void BusFault_IRQn_Handler(void)
-{
-    DEBUG_FAULT(FAULT_BUS);
-    halt_led(FAULT_BUS);
-}
+    /* the IPSR enumerates interrupt numbers from 0 up, while *_IRQn numbers are
+     * both positive (hardware IRQn) and negative (system IRQn); here we convert
+     * the IPSR value to this latter encoding */
+    int ipsr = ((int) (__get_IPSR() & 0x1FF)) - IRQn_OFFSET;
 
-void UsageFault_IRQn_Handler(void)
-{
-    DEBUG_FAULT(FAULT_USAGE);
-    halt_led(FAULT_USAGE);
-}
+    switch(ipsr)
+    {
+        case MemoryManagement_IRQn:
+            /* if the access is valid the vmpu_validate_access function changes
+             * the stacked pc as well, so the execution continues after the
+             * faulting instruction if a read operation was required, the
+             * function also updates the value stacked for the correct register */
+            sp = svc_cx_validate_sf((uint32_t *) __get_PSP());
+            if(!vmpu_validate_access(lr, sp))
+                return;
+            else
+            {
+                DEBUG_FAULT(FAULT_MEMMANAGE, lr);
+                halt_led(FAULT_MEMMANAGE);
+            }
 
-void HardFault_IRQn_Handler(void)
-{
-    DEBUG_FAULT(FAULT_HARD);
-    halt_led(FAULT_HARD);
-}
+        case BusFault_IRQn:
+            DEBUG_FAULT(FAULT_BUS, lr);
+            halt_led(FAULT_BUS);
+            break;
 
-void DebugMonitor_IRQn_Handler(void)
-{
-    DEBUG_FAULT(FAULT_DEBUG);
-    halt_led(FAULT_DEBUG);
+        case UsageFault_IRQn:
+            DEBUG_FAULT(FAULT_USAGE, lr);
+            halt_led(FAULT_USAGE);
+            break;
+
+        case HardFault_IRQn:
+            DEBUG_FAULT(FAULT_HARD, lr);
+            halt_led(FAULT_HARD);
+            break;
+
+        case DebugMonitor_IRQn:
+            DEBUG_FAULT(FAULT_DEBUG, lr);
+            halt_led(FAULT_DEBUG);
+            break;
+
+        default:
+            HALT_ERROR(NOT_ALLOWED, "Active IRQn is not a system interrupt");
+            break;
+    }
 }
 
 void vmpu_load_box(uint8_t box_id)

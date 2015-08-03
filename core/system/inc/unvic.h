@@ -47,7 +47,7 @@ extern int      unvic_default(uint32_t isr_id);
 
 extern void unvic_init(void);
 
-static inline void unvic_isr_mux(void)
+static inline __attribute__((always_inline)) void unvic_isr_mux(void)
 {
     /* handle IRQ with an unprivileged handler serving an IRQn in un-privileged
      * mode is achieved by mean of two SVCalls; the first one de-previliges
@@ -60,6 +60,5 @@ static inline void unvic_isr_mux(void)
           [unvic_out] "i" (UVISOR_SVC_ID_UNVIC_OUT)
     );
 }
-
 
 #endif/*__UNVIC_H__*/
