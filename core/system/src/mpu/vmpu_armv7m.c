@@ -78,35 +78,83 @@ int vmpu_switch(uint8_t src_box, uint8_t dst_box)
     return 1;
 }
 
-/* FIXME check if fault came from ldr/str instruction, check ACL and, if
- * allowed, perform operation and return to regular execution */
-void MemoryManagement_IRQn_Handler(void)
+void UVISOR_NAKED UVISOR_NORETURN MemoryManagement_IRQn_Handler(void)
 {
-    DEBUG_FAULT(FAULT_MEMMANAGE);
+    asm volatile(
+        "push {lr}\n"
+        "mov r0, lr\n"
+        "blx __MemoryManagement_IRQn_Handler\n"
+        "pop {pc}\n"
+    );
+}
+
+void __MemoryManagement_IRQn_Handler(uint32_t lr)
+{
+    DEBUG_FAULT(FAULT_MEMMANAGE, lr);
     halt_led(FAULT_MEMMANAGE);
 }
 
-void BusFault_IRQn_Handler(void)
+void UVISOR_NAKED UVISOR_NORETURN BusFault_IRQn_Handler(void)
 {
-    DEBUG_FAULT(FAULT_BUS);
+    asm volatile(
+        "push {lr}\n"
+        "mov r0, lr\n"
+        "blx __BusFault_IRQn_Handler\n"
+        "pop {pc}\n"
+    );
+}
+
+void __BusFault_IRQn_Handler(uint32_t lr)
+{
+    DEBUG_FAULT(FAULT_BUS, lr);
     halt_led(FAULT_BUS);
 }
 
-void UsageFault_IRQn_Handler(void)
+void UVISOR_NAKED UVISOR_NORETURN UsageFault_IRQn_Handler(void)
 {
-    DEBUG_FAULT(FAULT_USAGE);
+    asm volatile(
+        "push {lr}\n"
+        "mov r0, lr\n"
+        "blx __UsageFault_IRQn_Handler\n"
+        "pop {pc}\n"
+    );
+}
+
+void __UsageFault_IRQn_Handler(uint32_t lr)
+{
+    DEBUG_FAULT(FAULT_USAGE, lr);
     halt_led(FAULT_USAGE);
 }
 
-void HardFault_IRQn_Handler(void)
+void UVISOR_NAKED UVISOR_NORETURN HardFault_IRQn_Handler(void)
 {
-    DEBUG_FAULT(FAULT_HARD);
+    asm volatile(
+        "push {lr}\n"
+        "mov r0, lr\n"
+        "blx __HardFault_IRQn_Handler\n"
+        "pop {pc}\n"
+    );
+}
+
+void __HardFault_IRQn_Handler(uint32_t lr)
+{
+    DEBUG_FAULT(FAULT_HARD, lr);
     halt_led(FAULT_HARD);
 }
 
-void DebugMonitor_IRQn_Handler(void)
+void UVISOR_NAKED UVISOR_NORETURN DebugMonitor_IRQn_Handler(void)
 {
-    DEBUG_FAULT(FAULT_DEBUG);
+    asm volatile(
+        "push {lr}\n"
+        "mov r0, lr\n"
+        "blx __DebugMonitor_IRQn_Handler\n"
+        "pop {pc}\n"
+    );
+}
+
+void __DebugMonitor_IRQn_Handler(uint32_t lr)
+{
+    DEBUG_FAULT(FAULT_DEBUG, lr);
     halt_led(FAULT_DEBUG);
 }
 

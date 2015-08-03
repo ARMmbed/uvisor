@@ -48,16 +48,8 @@ void debug_map_addr_to_periph(uint32_t address);
 
 #else /*NDEBUG*/
 
-#define DEBUG_INIT debug_init
-#define DEBUG_FAULT(reason) {\
-    /************************************************************************/\
-    /* lr is used to check execution mode before exception                  */\
-    /* NOTE: this only works if the function is executed before any branch  */\
-    /*       instruction right after the exception                          */\
-    register uint32_t lr asm("lr");\
-    /************************************************************************/\
-    debug_fault(reason, lr);                                                  \
-}
+#define DEBUG_INIT          debug_init
+#define DEBUG_FAULT         debug_fault
 #define DEBUG_CX_SWITCH_IN  debug_cx_switch_in
 #define DEBUG_CX_SWITCH_OUT debug_cx_switch_out
 
