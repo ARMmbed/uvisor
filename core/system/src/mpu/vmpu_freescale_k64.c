@@ -13,6 +13,7 @@
 #include <uvisor.h>
 #include <vmpu.h>
 #include <svc.h>
+#include <unvic.h>
 #include <halt.h>
 #include <debug.h>
 #include <memory_map.h>
@@ -21,44 +22,68 @@
 
 uint32_t g_box_mem_pos;
 
-void MemoryManagement_IRQn_Handler(void)
+void vmpu_sys_mux_handler(uint32_t lr)
 {
-    DEBUG_FAULT(FAULT_MEMMANAGE);
-    halt_led(FAULT_MEMMANAGE);
-}
+    uint32_t *sp;
 
-/* FIXME check if fault came from ldr/str instruction, check ACL and, if
- * allowed, perform operation and return to regular execution */
-void BusFault_IRQn_Handler(void)
-{
-    DEBUG_FAULT(FAULT_BUS);
+    /* the IPSR enumerates interrupt numbers from 0 up, while *_IRQn numbers are
+     * both positive (hardware IRQn) and negative (system IRQn); here we convert
+     * the IPSR value to this latter encoding */
+    int ipsr = ((int) (__get_IPSR() & 0x1FF)) - IRQn_OFFSET;
 
-    /* the Freescale MPU results in bus faults when an access is forbidden;
-     * hence, a different error pattern is used depending on the case */
-    /* Note: since we are halting execution we don't bother clearing the SPERR
-     *       bit in the MPU->CESR register */
-    if(MPU->CESR >> 27)
-        halt_led(NOT_ALLOWED);
-    else
-        halt_led(FAULT_BUS);
-}
+    switch(ipsr)
+    {
+        case MemoryManagement_IRQn:
+            DEBUG_FAULT(FAULT_MEMMANAGE, lr);
+            halt_led(FAULT_MEMMANAGE);
+            break;
 
-void UsageFault_IRQn_Handler(void)
-{
-    DEBUG_FAULT(FAULT_USAGE);
-    halt_led(FAULT_USAGE);
-}
+        case BusFault_IRQn:
+            /* FIXME check if the bus fault is precise; if not, it should not be
+             * attempted to return (the stacked address for return would be
+             * incorrect) */
 
-void HardFault_IRQn_Handler(void)
-{
-    DEBUG_FAULT(FAULT_HARD);
-    halt_led(FAULT_HARD);
-}
+            /* if the access is valid the vmpu_validate_access function changes
+             * the stacked pc as well, so the execution continues after the
+             * faulting instruction if a read operation was required, the
+             * function also updates the value stacked for the correct register */
+            sp = svc_cx_validate_sf((uint32_t *) __get_PSP());
+            if(!vmpu_validate_access(lr, sp))
+                return;
+            else
+            {
+                DEBUG_FAULT(FAULT_BUS, lr);
 
-void DebugMonitor_IRQn_Handler(void)
-{
-    DEBUG_FAULT(FAULT_DEBUG);
-    halt_led(FAULT_DEBUG);
+                /* the Freescale MPU results in bus faults when an access is
+                 * forbidden; a different error is thrown on a per-case basis */
+                /* note: since we are halting execution we don't bother clearing
+                 * the SPERR bit in the MPU->CESR register */
+                if(MPU->CESR >> 27)
+                    halt_led(NOT_ALLOWED);
+                else
+                    halt_led(FAULT_BUS);
+            }
+            break;
+
+        case UsageFault_IRQn:
+            DEBUG_FAULT(FAULT_USAGE, lr);
+            halt_led(FAULT_USAGE);
+            break;
+
+        case HardFault_IRQn:
+            DEBUG_FAULT(FAULT_HARD, lr);
+            halt_led(FAULT_HARD);
+            break;
+
+        case DebugMonitor_IRQn:
+            DEBUG_FAULT(FAULT_DEBUG, lr);
+            halt_led(FAULT_DEBUG);
+            break;
+
+        default:
+            HALT_ERROR(NOT_ALLOWED, "Active IRQn is not a system interrupt");
+            break;
+    }
 }
 
 void vmpu_acl_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)

@@ -205,6 +205,99 @@ static void vmpu_load_boxes(void)
     DPRINTF("vmpu_load_boxes [DONE]\n");
 }
 
+int vmpu_validate_access(uint32_t lr, uint32_t *sp)
+{
+    uint32_t pc;
+    uint16_t opcode;
+    uint32_t *r0, r1;
+
+    /* check if coming from unprivileged mode */
+    if(lr & 0x4)
+    {
+        /* fetch opcode from memory */
+        pc = sp[6];
+        opcode = *((uint16_t *) pc);
+
+        /* parse opcode */
+        /* test lower 8bits for (partially)imm5 == 0, Rn = 0, Rt = 1 */
+        switch(opcode & 0xFF)
+        {
+            /* if using r0 and r1, we expect a strX instruction */
+            case VMPU_OPCODE16_LOWER_R0_R1_MASK:
+                /* fetch r0 and r1 */
+                r0 = (uint32_t *) sp[0];
+                r1 = sp[1];
+
+                /* check ACls */
+                /* TODO */
+
+                /* test upper 8bits for opcode and (partially)imm5 == 0 */
+                switch(opcode >> 8)
+                {
+                    case VMPU_OPCODE16_UPPER_STR_MASK:
+                        *((uint32_t *) r0) = (uint32_t) r1;
+                        break;
+                    case VMPU_OPCODE16_UPPER_STRH_MASK:
+                        *((uint16_t *) r0) = (uint16_t) r1;
+                        break;
+                    case VMPU_OPCODE16_UPPER_STRB_MASK:
+                        *((uint8_t *) r0) = (uint8_t) r1;
+                        break;
+                    default:
+                        return -3;
+                }
+                DPRINTF("Executed privileged access: 0x%08X written to 0x%08X\n\r",
+                        r1, r0);
+
+                break;
+
+            /* if using r0 only, we expect a ldrX instruction */
+            case VMPU_OPCODE16_LOWER_R0_R0_MASK:
+                /* fetch r0 */
+                r0 = (uint32_t *) sp[0];
+
+                /* check ACls */
+                /* TODO */
+
+                /* test upper 8bits for opcode and (partially)imm5 == 0 */
+                switch(opcode >> 8)
+                {
+                    case VMPU_OPCODE16_UPPER_LDR_MASK:
+                        r1 = (uint32_t) *((uint32_t *) r0);
+                        break;
+                    case VMPU_OPCODE16_UPPER_LDRH_MASK:
+                        r1 = (uint16_t) *((uint16_t *) r0);
+                        break;
+                    case VMPU_OPCODE16_UPPER_LDRB_MASK:
+                        r1 = (uint8_t) *((uint8_t *) r0);
+                        break;
+                    default:
+                        return -4;
+                }
+                DPRINTF("Executed privileged access: read 0x%08X from 0x%08X\n\r",
+                        r1, r0);
+
+                /* the result is stored back to the stack (r0) */
+                sp[0] = r1;
+
+                break;
+
+            default:
+                return -2;
+        }
+
+        /* execution will continue from the instruction following the fault */
+        /* note: we assume the instruction is 16 bits wide */
+        sp[6] = pc + 0x2;
+    }
+    else
+        return -1;
+
+    /* success */
+    return 0;
+}
+
+
 int vmpu_init_pre(void)
 {
     DPRINTF("erasing BSS at 0x%08X (%u bytes)\n",
