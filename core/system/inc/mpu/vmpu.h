@@ -84,6 +84,22 @@ extern void vmpu_arch_init(void);
 extern int  vmpu_init_pre(void);
 extern void vmpu_init_post(void);
 
+extern void vmpu_sys_mux_handler(uint32_t lr);
+
 extern uint32_t  g_vmpu_box_count;
+
+static inline __attribute__((always_inline)) void vmpu_sys_mux(void)
+{
+    /* handle IRQ with an unprivileged handler serving an IRQn in un-privileged
+     * mode is achieved by mean of two SVCalls; the first one de-previliges
+     * execution, the second one re-privileges it note: NONBASETHRDENA (in SCB)
+     * must be set to 1 for this to work */
+    asm volatile(
+        "push {lr}\n"
+        "mov r0, lr\n"
+        "blx vmpu_sys_mux_handler\n"
+        "pop {pc}\n"
+    );
+}
 
 #endif/*__VMPU_H__*/

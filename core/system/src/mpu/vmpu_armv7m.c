@@ -13,6 +13,7 @@
 #include <uvisor.h>
 #include <vmpu.h>
 #include <svc.h>
+#include <unvic.h>
 #include <halt.h>
 #include <debug.h>
 #include <memory_map.h>
@@ -78,94 +79,55 @@ int vmpu_switch(uint8_t src_box, uint8_t dst_box)
     return 1;
 }
 
-void UVISOR_NAKED UVISOR_NORETURN MemoryManagement_IRQn_Handler(void)
+void vmpu_sys_mux_handler(uint32_t lr)
 {
-    asm volatile(
-        "push {lr}\n"
-        "mov r0, lr\n"
-        "blx __MemoryManagement_IRQn_Handler\n"
-        "pop {pc}\n"
-    );
-}
+    uint32_t *sp;
 
-void __MemoryManagement_IRQn_Handler(uint32_t lr)
-{
-    /* if the access is valid the vmpu_validate_access function changes the
-     * stacked pc as well, so the execution continues after the faulting
-     * instruction
-     * if a read operation was required, the function also updates the value
-     * stacked for the correct register */
-    if(!vmpu_validate_access(lr, svc_cx_validate_sf((uint32_t *) __get_PSP())))
-        return;
-    else
+    /* the IPSR enumerates interrupt numbers from 0 up, while *_IRQn numbers are
+     * both positive (hardware IRQn) and negative (system IRQn); here we convert
+     * the IPSR value to this latter encoding */
+    int ipsr = ((int) (__get_IPSR() & 0x1FF)) - IRQn_OFFSET;
+
+    switch(ipsr)
     {
-        DEBUG_FAULT(FAULT_MEMMANAGE, lr);
-        halt_led(FAULT_MEMMANAGE);
+        case MemoryManagement_IRQn:
+            /* if the access is valid the vmpu_validate_access function changes
+             * the stacked pc as well, so the execution continues after the
+             * faulting instruction if a read operation was required, the
+             * function also updates the value stacked for the correct register */
+            sp = svc_cx_validate_sf((uint32_t *) __get_PSP());
+            if(!vmpu_validate_access(lr, sp))
+                return;
+            else
+            {
+                DEBUG_FAULT(FAULT_MEMMANAGE, lr);
+                halt_led(FAULT_MEMMANAGE);
+            }
+
+        case BusFault_IRQn:
+            DEBUG_FAULT(FAULT_BUS, lr);
+            halt_led(FAULT_BUS);
+            break;
+
+        case UsageFault_IRQn:
+            DEBUG_FAULT(FAULT_USAGE, lr);
+            halt_led(FAULT_USAGE);
+            break;
+
+        case HardFault_IRQn:
+            DEBUG_FAULT(FAULT_HARD, lr);
+            halt_led(FAULT_HARD);
+            break;
+
+        case DebugMonitor_IRQn:
+            DEBUG_FAULT(FAULT_DEBUG, lr);
+            halt_led(FAULT_DEBUG);
+            break;
+
+        default:
+            HALT_ERROR(NOT_ALLOWED, "Active IRQn is not a system interrupt");
+            break;
     }
-}
-
-void UVISOR_NAKED UVISOR_NORETURN BusFault_IRQn_Handler(void)
-{
-    asm volatile(
-        "push {lr}\n"
-        "mov r0, lr\n"
-        "blx __BusFault_IRQn_Handler\n"
-        "pop {pc}\n"
-    );
-}
-
-void __BusFault_IRQn_Handler(uint32_t lr)
-{
-    DEBUG_FAULT(FAULT_BUS, lr);
-    halt_led(FAULT_BUS);
-}
-
-void UVISOR_NAKED UVISOR_NORETURN UsageFault_IRQn_Handler(void)
-{
-    asm volatile(
-        "push {lr}\n"
-        "mov r0, lr\n"
-        "blx __UsageFault_IRQn_Handler\n"
-        "pop {pc}\n"
-    );
-}
-
-void __UsageFault_IRQn_Handler(uint32_t lr)
-{
-    DEBUG_FAULT(FAULT_USAGE, lr);
-    halt_led(FAULT_USAGE);
-}
-
-void UVISOR_NAKED UVISOR_NORETURN HardFault_IRQn_Handler(void)
-{
-    asm volatile(
-        "push {lr}\n"
-        "mov r0, lr\n"
-        "blx __HardFault_IRQn_Handler\n"
-        "pop {pc}\n"
-    );
-}
-
-void __HardFault_IRQn_Handler(uint32_t lr)
-{
-    DEBUG_FAULT(FAULT_HARD, lr);
-    halt_led(FAULT_HARD);
-}
-
-void UVISOR_NAKED UVISOR_NORETURN DebugMonitor_IRQn_Handler(void)
-{
-    asm volatile(
-        "push {lr}\n"
-        "mov r0, lr\n"
-        "blx __DebugMonitor_IRQn_Handler\n"
-        "pop {pc}\n"
-    );
-}
-
-void __DebugMonitor_IRQn_Handler(uint32_t lr)
-{
-    DEBUG_FAULT(FAULT_DEBUG, lr);
-    halt_led(FAULT_DEBUG);
 }
 
 void vmpu_load_box(uint8_t box_id)
