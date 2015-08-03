@@ -49,16 +49,29 @@ void UVISOR_NAKED UVISOR_NORETURN BusFault_IRQn_Handler(void)
 
 void __BusFault_IRQn_Handler(uint32_t lr)
 {
-    DEBUG_FAULT(FAULT_BUS, lr);
+    /* FIXME check if the bus fault is precise; if not, it should not be
+     * attempted to return (the stacked address for return would be incorrect) */
 
-    /* the Freescale MPU results in bus faults when an access is forbidden;
-     * hence, a different error pattern is used depending on the case */
-    /* note: since we are halting execution we don't bother clearing the
-     * SPERR bit in the MPU->CESR register */
-    if(MPU->CESR >> 27)
-        halt_led(NOT_ALLOWED);
+    /* if the access is valid the vmpu_validate_access function changes the
+     * stacked pc as well, so the execution continues after the faulting
+     * instruction
+     * if a read operation was required, the function also updates the value
+     * stacked for the correct register */
+    if(!vmpu_validate_access(lr, svc_cx_validate_sf((uint32_t *) __get_PSP())))
+        return;
     else
-        halt_led(FAULT_BUS);
+    {
+        DEBUG_FAULT(FAULT_BUS, lr);
+
+        /* the Freescale MPU results in bus faults when an access is forbidden;
+         * hence, a different error pattern is used depending on the case */
+        /* note: since we are halting execution we don't bother clearing the
+         * SPERR bit in the MPU->CESR register */
+        if(MPU->CESR >> 27)
+            halt_led(NOT_ALLOWED);
+        else
+            halt_led(FAULT_BUS);
+    }
 }
 
 void UVISOR_NAKED UVISOR_NORETURN UsageFault_IRQn_Handler(void)

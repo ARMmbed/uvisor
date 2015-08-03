@@ -90,8 +90,18 @@ void UVISOR_NAKED UVISOR_NORETURN MemoryManagement_IRQn_Handler(void)
 
 void __MemoryManagement_IRQn_Handler(uint32_t lr)
 {
-    DEBUG_FAULT(FAULT_MEMMANAGE, lr);
-    halt_led(FAULT_MEMMANAGE);
+    /* if the access is valid the vmpu_validate_access function changes the
+     * stacked pc as well, so the execution continues after the faulting
+     * instruction
+     * if a read operation was required, the function also updates the value
+     * stacked for the correct register */
+    if(!vmpu_validate_access(lr, svc_cx_validate_sf((uint32_t *) __get_PSP())))
+        return;
+    else
+    {
+        DEBUG_FAULT(FAULT_MEMMANAGE, lr);
+        halt_led(FAULT_MEMMANAGE);
+    }
 }
 
 void UVISOR_NAKED UVISOR_NORETURN BusFault_IRQn_Handler(void)
