@@ -225,12 +225,14 @@ const TIsrVector g_isr_vector[ISR_VECTORS] =
 	ENET_Error_IRQn_Handler,               /*  85 */
 };
 
-void isr_default_sys_handler(void)
+void UVISOR_NAKED UVISOR_NORETURN isr_default_sys_handler(void)
 {
-	HALT_ERROR(NOT_IMPLEMENTED, "function not implemented\n\r");
+	/* the multiplexer will execute the correct handler depending on the IRQn */
+	vmpu_sys_mux();
 }
 
 void isr_default_handler(void)
 {
+	/* the multiplexer will execute the correct handler depending on the IRQn */
 	unvic_isr_mux();
 }
