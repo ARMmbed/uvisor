@@ -79,8 +79,10 @@ extern void vmpu_load_box(uint8_t box_id);
 extern int vmpu_validate_access(uint32_t lr, uint32_t *sp);
 
 extern void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size);
+extern uint32_t vmpu_acl_static_region(uint8_t region, void* base, uint32_t size, UvisorBoxAcl acl);
 
 extern void vmpu_arch_init(void);
+extern void vmpu_arch_init_hw(void);
 extern int  vmpu_init_pre(void);
 extern void vmpu_init_post(void);
 
