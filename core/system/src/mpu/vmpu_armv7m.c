@@ -177,15 +177,15 @@ static uint32_t vmpu_map_acl(UvisorBoxAcl acl)
             {
                 acl_res =
                     UVISOR_TACL_UREAD |
-                    UVISOR_TACL_SREAD;
-                flags = MPU_RASR_AP_PRO_URO;
+                    UVISOR_TACL_SREAD | UVISOR_TACL_SWRITE;
+                flags = MPU_RASR_AP_PRW_URO;
             }
             else
             {
                 acl_res =
                     UVISOR_TACL_UREAD |
-                    UVISOR_TACL_SREAD | UVISOR_TACL_SWRITE;
-                flags = MPU_RASR_AP_PRW_URO;
+                    UVISOR_TACL_SREAD;
+                flags = MPU_RASR_AP_PRO_URO;
             }
         }
         else
