@@ -175,7 +175,10 @@ void debug_exc_sf(uint32_t lr)
 
 void UVISOR_WEAK debug_fault_memmanage(void)
 {
-    dprintf("* CFSR : 0x%08X\n\r\n\r", SCB->CFSR);
+    dprintf("* CFSR  : 0x%08X\n\r", SCB->CFSR);
+
+    if(SCB->CFSR & 0x80)
+        dprintf("* MMFAR : 0x%08X\n\r", SCB->MMFAR);
 }
 
 void UVISOR_WEAK debug_fault_bus(void)
