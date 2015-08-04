@@ -175,10 +175,20 @@ void debug_exc_sf(uint32_t lr)
 
 void UVISOR_WEAK debug_fault_memmanage(void)
 {
+#ifndef NDEBUG
+    const MemMap *map;
+
     dprintf("* CFSR  : 0x%08X\n\r", SCB->CFSR);
 
     if(SCB->CFSR & 0x80)
-        dprintf("* MMFAR : 0x%08X\n\r", SCB->MMFAR);
+    {
+        /* resolve memory region responsible for the fault */
+        map = memory_map_name(SCB->MMFAR);
+
+        dprintf("* MMFAR : 0x%08X (%s)\n\r",
+            SCB->MMFAR, map ? map->name : "unknown");
+    }
+#endif/*NDEBUG*/
 }
 
 void UVISOR_WEAK debug_fault_bus(void)
