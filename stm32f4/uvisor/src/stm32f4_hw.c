@@ -30,7 +30,7 @@ void vmpu_arch_init_hw(void)
     vmpu_acl_static_region(
         1,
         (void*)0x20000000,
-        0X40000,
+        0x40000,
         UVISOR_TACLDEF_DATA | UVISOR_TACL_EXECUTE
     );
 }
