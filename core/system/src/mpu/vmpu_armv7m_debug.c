@@ -55,7 +55,7 @@ void debug_mpu_config(void)
         /* print information for region (fields are printed as bits) */
         dprintf("  %d      0x%08X %03d%s %d  %d%d%d %d%d%d %d %d %d ",
                 i,
-                (MPU->RBAR & MPU_RBAR_ADDR_Msk) >> MPU_RBAR_ADDR_Pos,
+                MPU->RBAR & MPU_RBAR_ADDR_Msk,
                 size > 4  ? 0x1 << (size % 10) : 0,
                 dim[size / 10],
                 (rasr & MPU_RASR_XN_Msk)  >> MPU_RASR_XN_Pos,
