@@ -51,7 +51,7 @@ typedef struct {
     uint32_t *reserved_start, *reserved_end;
 
     /* address of __uvisor_box_context */
-    uint32_t *uvisor_box_context;
+    uint32_t **uvisor_box_context;
 } UVISOR_PACKED UvisorConfig;
 
 UVISOR_EXTERN const UvisorConfig __uvisor_config;
