@@ -57,12 +57,32 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 #define vIRQ_GetPriority(irqn)              NVIC_GetPriority((IRQn_Type) (irqn))
 
 /* secure_access.h */
-#define ADDRESS_WRITE32(addr, val) (*((volatile uint32_t *) (addr) = (val)))
-#define ADDRESS_WRITE16(addr, val) (*((volatile uint16_t *) (addr) = (val)))
-#define ADDRESS_WRITE8(addr, val)  (*((volatile uint8_t  *) (addr) = (val)))
-#define ADDRESS_READ32(addr) *((volatile uint32_t *) (addr))
-#define ADDRESS_READ16(addr) *((volatile uint16_t *) (addr))
-#define ADDRESS_READ8(addr)  *((volatile uint8_t  *) (addr))
+/* the conditional statement will be optimised away since the compiler already
+ * knows the sizeof(type) */
+#define ADDRESS_READ(type, addr) \
+    (sizeof(type) == 4 ? *((volatile uint32_t *) (addr)) : \
+     sizeof(type) == 2 ? *((volatile uint16_t *) (addr)) : \
+     sizeof(type) == 1 ? *((volatile uint8_t  *) (addr)) : 0)
+
+/* the switch statement will be optimised away since the compiler already knows
+ * the sizeof(type) */
+#define ADDRESS_WRITE(type, addr, val) \
+    { \
+        switch(sizeof(type)) \
+        { \
+            case 4: \
+                *((volatile uint32_t *) (addr)) = (uint32_t) (val); \
+                break; \
+            case 2: \
+                *((volatile uint16_t *) (addr)) = (uint16_t) (val); \
+                break; \
+            case 1: \
+                *((volatile uint8_t  *) (addr)) = (uint8_t ) (val); \
+                break; \
+        } \
+    }
+
+#define UNION_READ(type, addr, fieldU, fieldB) ((*((type *) (addr))).fieldB)
 
 /* secure_gateway.h */
 #define secure_gateway(dst_box, dst_fn, ...) dst_fn(__VA_ARGS__)

@@ -13,6 +13,8 @@
 #ifndef __SECURE_ACCESS_H__
 #define __SECURE_ACCESS_H__
 
+/* the switch statement will be optimised away since the compiler already knows
+ * the sizeof(type) */
 #define ADDRESS_WRITE(type, addr, val) \
     { \
         switch(sizeof(type)) \
@@ -32,10 +34,12 @@
         } \
     }
 
+/* the conditional statement will be optimised away since the compiler already
+ * knows the sizeof(type) */
 #define ADDRESS_READ(type, addr) \
-    sizeof(type) == 4 ? uvisor_read32((volatile uint32_t *) (addr)) : \
-    sizeof(type) == 2 ? uvisor_read16((volatile uint16_t *) (addr)) : \
-    sizeof(type) == 1 ? uvisor_read8(( volatile uint8_t  *) (addr)) : 0
+    (sizeof(type) == 4 ? uvisor_read32((volatile uint32_t *) (addr)) : \
+     sizeof(type) == 2 ? uvisor_read16((volatile uint16_t *) (addr)) : \
+     sizeof(type) == 1 ? uvisor_read8(( volatile uint8_t  *) (addr)) : 0)
 
 #define UNION_READ(type, addr, fieldU, fieldB) \
     ({ \
