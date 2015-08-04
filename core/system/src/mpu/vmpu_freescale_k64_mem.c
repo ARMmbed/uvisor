@@ -55,7 +55,7 @@ void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
         {
             t = g_mem_acl_user + 1;
             while(src_count--)
-                MPU->WORD[t][3] = 0;
+                MPU->WORD[t++][3] = 0;
         }
         return;
     }
