@@ -285,8 +285,8 @@ uint32_t vmpu_acl_static_region(uint8_t region, void* base, uint32_t size, Uviso
     vmpu_acl_update_box_region(&res, 0, base, size, acl);
 
     /* apply RASR & RBAR */
-    MPU->RASR = res.rasr;
     MPU->RBAR = res.base | (region & MPU_RBAR_REGION_Msk) | MPU_RBAR_VALID_Msk;
+    MPU->RASR = res.rasr;
 
     return res.size;
 }
