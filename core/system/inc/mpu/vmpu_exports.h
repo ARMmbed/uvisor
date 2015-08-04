@@ -29,6 +29,8 @@
                                      UVISOR_TACL_SWRITE         |\
                                      UVISOR_TACL_SEXECUTE)
 
+#define UVISOR_TACL_EXECUTE (UVISOR_TACL_UEXECUTE | UVISOR_TACL_SEXECUTE)
+
 /* all possible access control flags */
 #define UVISOR_TACL_ACCESS          (UVISOR_TACL_UACL | UVISOR_TACL_SACL)
 
