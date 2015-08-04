@@ -23,7 +23,7 @@ void vmpu_arch_init_hw(void)
         0,
         (void*)FLASH_ORIGIN,
         ((uint32_t)__uvisor_config.secure_end)-FLASH_ORIGIN,
-        UVISOR_TACLDEF_SECURE_CONST | UVISOR_TACL_SEXECUTE
+        UVISOR_TACLDEF_SECURE_CONST | UVISOR_TACL_EXECUTE
     );
 
     /* enable box zero SRAM, region can be larger than physical SRAM */
@@ -31,7 +31,7 @@ void vmpu_arch_init_hw(void)
         1,
         (void*)0x20000000,
         0X40000,
-        UVISOR_TACLDEF_DATA | UVISOR_TACL_SEXECUTE
+        UVISOR_TACLDEF_DATA | UVISOR_TACL_EXECUTE
     );
 }
 
