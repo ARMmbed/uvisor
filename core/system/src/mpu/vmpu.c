@@ -297,7 +297,6 @@ int vmpu_validate_access(uint32_t lr, uint32_t *sp)
     return 0;
 }
 
-
 int vmpu_init_pre(void)
 {
     DPRINTF("erasing BSS at 0x%08X (%u bytes)\n",

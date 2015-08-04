@@ -74,11 +74,6 @@ TMpuBox g_mpu_box[UVISOR_MAX_BOXES];
 
 static uint32_t g_vmpu_aligment_mask;
 
-int vmpu_switch(uint8_t src_box, uint8_t dst_box)
-{
-    return 1;
-}
-
 void vmpu_sys_mux_handler(uint32_t lr)
 {
     uint32_t *sp;
@@ -130,8 +125,19 @@ void vmpu_sys_mux_handler(uint32_t lr)
     }
 }
 
+int vmpu_switch(uint8_t src_box, uint8_t dst_box)
+{
+    return 1;
+}
+
 void vmpu_load_box(uint8_t box_id)
 {
+    if(box_id != 0)
+    {
+        HALT_ERROR(NOT_IMPLEMENTED, "currently only box 0 can be loaded");
+    }
+    vmpu_switch(box_id, box_id);
+    DPRINTF("%d  box %d loaded \n\r", box_id);
 }
 
 static int vmpu_region_bits(uint32_t size)
@@ -271,6 +277,20 @@ static void vmpu_acl_update_box_region(TMpuRegion *region, uint8_t box_id, void*
     DPRINTF("rounded=%05i}\n\r", size_rounded);
 }
 
+uint32_t vmpu_acl_static_region(uint8_t region, void* base, uint32_t size, UvisorBoxAcl acl)
+{
+    TMpuRegion res;
+
+    /* apply ACL's */
+    vmpu_acl_update_box_region(&res, 0, base, size, acl);
+
+    /* apply RASR & RBAR */
+    MPU->RASR = res.rasr;
+    MPU->RBAR = res.base | (region & MPU_RBAR_REGION_Msk) | MPU_RBAR_VALID_Msk;
+
+    return res.size;
+}
+
 void vmpu_acl_add(uint8_t box_id, void* addr, uint32_t size, UvisorBoxAcl acl)
 {
     TMpuBox *box;
@@ -298,14 +318,6 @@ void vmpu_acl_add(uint8_t box_id, void* addr, uint32_t size, UvisorBoxAcl acl)
     /* take account for new region */
     box->count++;
     g_mpu_region_count++;
-}
-
-void vmpu_init_static_regions(void)
-{
-    debug_mpu_config();
-
-    /* finally enable MPU */
-    MPU->CTRL = MPU_CTRL_ENABLE_Msk|MPU_CTRL_PRIVDEFENA_Msk;
 }
 
 void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
@@ -409,4 +421,13 @@ void vmpu_arch_init(void)
 
     /* enable mem, bus and usage faults */
     SCB->SHCSR |= 0x70000;
+
+    /* initialize static MPU regions */
+    vmpu_arch_init_hw();
+
+    /* dump MPU configuration */
+    debug_mpu_config();
+
+    /* finally enable MPU */
+    MPU->CTRL = MPU_CTRL_ENABLE_Msk|MPU_CTRL_PRIVDEFENA_Msk;
 }
