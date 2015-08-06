@@ -82,7 +82,7 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
         } \
     }
 
-#define UNION_READ(type, addr, fieldU, fieldB) ((*((type *) (addr))).fieldB)
+#define UNION_READ(type, addr, fieldU, fieldB) ((*((volatile type *) (addr))).fieldB)
 
 /* secure_gateway.h */
 #define secure_gateway(dst_box, dst_fn, ...) dst_fn(__VA_ARGS__)
