@@ -49,8 +49,11 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 #define UVISOR_SECURE_BSS \
     __attribute__((section(".uvisor.bss.data"), aligned(32)))
 
+/* we currently only support secure data sections in Flash on the K64F */
+#ifdef TARGET_LIKE_FRDM_K64F_GCC
 #define UVISOR_SECURE_DATA \
     __attribute__((section(".uvisor.data"), aligned(32)))
+#endif
 
 /* this macro selects an overloaded macro (variable number of arguments) */
 #define __UVISOR_BOX_MACRO(_1, _2, _3, _4, NAME, ...) NAME
