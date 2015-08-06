@@ -206,6 +206,12 @@ void vmpu_arch_init(void)
     /* enable mem, bus and usage faults */
     SCB->SHCSR |= 0x70000;
 
+    /* FIXME this is a temporary fix; we will introduce a smarter way to recover
+     * from bus faults, even when they are imprecise */
+    /* recovering from bus faults requires them to be precise, so write buffering
+     * is disabled */
+    SCnSCB->ACTLR |= 0x2;
+
     /* initialize box memories, leave stack-band sized gap */
     g_box_mem_pos = UVISOR_REGION_ROUND_UP(
         (uint32_t)__uvisor_config.reserved_end) +
