@@ -15,7 +15,10 @@
 #include <debug.h>
 
 #define VMPU_GRANULARITY 0x400
+#define VMPU_ID_COUNT 0x100
 
+static uint32_t g_peripheral_common[VMPU_ID_COUNT/32];
+static uint32_t g_peripheral_acl[UVISOR_MAX_BOXES][VMPU_ID_COUNT/32];
 static uint32_t g_vmpu_public_flash;
 
 void vmpu_arch_init_hw(void)
@@ -85,4 +88,41 @@ int vmpu_addr2pid(uint32_t addr)
 
     /* default is invalid peripheral */
     return -1;
+}
+
+void vmpu_add_peripheral_map(uint8_t box_id, uint32_t addr, uint32_t length, uint8_t shared)
+{
+    int pid, index;
+    uint32_t mask;
+
+    /* scan through whole peripheral length, mark all */
+    while(1)
+    {
+        /* determine peripheral ID for given address */
+        pid = vmpu_addr2pid(addr);
+        if((pid<0) || (pid>=VMPU_ID_COUNT))
+                HALT_ERROR(SANITY_CHECK_FAILED,
+                    "pid invalid (%i) for address 0x%08X\n\r",
+                    pid, addr
+                );
+
+        /* calculate table index and bitmask */
+        index = pid / 32;
+        mask = 1UL << (pid%32);
+
+        /* ensure that boxes don't declare regions that exist in the
+         * main box already */
+        if((g_peripheral_common[index] & mask)==0)
+        {
+            /* mark regions */
+            g_peripheral_common[index] |= mask;
+            g_peripheral_acl[box_id][index] |= mask;
+        }
+
+        if(length<=VMPU_GRANULARITY)
+            break;
+
+        addr+=VMPU_GRANULARITY;
+        length-=VMPU_GRANULARITY;
+    }
 }
