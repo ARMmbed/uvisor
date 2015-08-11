@@ -81,7 +81,7 @@ void vmpu_sys_mux_handler(uint32_t lr)
             break;
 
         default:
-            HALT_ERROR(NOT_ALLOWED, "Active IRQn is not a system interrupt");
+            HALT_ERROR(NOT_ALLOWED, "Active IRQn(%i) is not a system interrupt", ipsr);
             break;
     }
 }
