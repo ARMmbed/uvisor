@@ -231,7 +231,7 @@ void UVISOR_NAKED UVISOR_NORETURN isr_default_sys_handler(void)
 	vmpu_sys_mux();
 }
 
-void isr_default_handler(void)
+void UVISOR_NAKED UVISOR_NORETURN isr_default_handler(void)
 {
 	/* the multiplexer will execute the correct handler depending on the IRQn */
 	unvic_isr_mux();
