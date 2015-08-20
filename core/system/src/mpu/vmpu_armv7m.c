@@ -127,17 +127,16 @@ void vmpu_sys_mux_handler(uint32_t lr)
 
 int vmpu_switch(uint8_t src_box, uint8_t dst_box)
 {
+    DPRINTF("switch from %i to %i\n\r", src_box, dst_box);
     return 1;
 }
 
 void vmpu_load_box(uint8_t box_id)
 {
-    if(box_id != 0)
-    {
+    if(box_id == 0)
+        vmpu_switch(0, 0);
+    else
         HALT_ERROR(NOT_IMPLEMENTED, "currently only box 0 can be loaded");
-    }
-    vmpu_switch(box_id, box_id);
-    DPRINTF("%d  box %d loaded \n\r", box_id);
 }
 
 static int vmpu_region_bits(uint32_t size)
