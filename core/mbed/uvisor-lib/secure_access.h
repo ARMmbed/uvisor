@@ -1,15 +1,19 @@
-/***************************************************************
- * This confidential and  proprietary  software may be used only
- * as authorised  by  a licensing  agreement  from  ARM  Limited
+/*
+ * Copyright (c) 2015, ARM Limited, All Rights Reserved
+ * SPDX-License-Identifier: Apache-2.0
  *
- *             (C) COPYRIGHT 2015-2015 ARM Limited
- *                      ALL RIGHTS RESERVED
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *  The entire notice above must be reproduced on all authorised
- *  copies and copies  may only be made to the  extent permitted
- *  by a licensing agreement from ARM Limited.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- ***************************************************************/
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #ifndef __SECURE_ACCESS_H__
 #define __SECURE_ACCESS_H__
 

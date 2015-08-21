@@ -9,7 +9,7 @@
 **     Copyright (c) 2014 Freescale Semiconductor, Inc.
 **     All rights reserved.
 **
-**     (C) COPYRIGHT 2015-2015 ARM Limited
+**     (C) COPYRIGHT 2015 ARM Limited
 **     ALL RIGHTS RESERVED
 **
 **     Redistribution and use in source and binary forms, with or without modification,
