@@ -72,7 +72,7 @@ typedef struct {
     uint32_t count;
 } TMpuBox;
 
-uint32_t g_mpu_region_count, g_box_mem_pos;
+uint32_t g_mpu_region_count, g_mpu_static_count, g_box_mem_pos;
 TMpuRegion g_mpu_list[MPU_REGION_COUNT];
 TMpuBox g_mpu_box[UVISOR_MAX_BOXES];
 
@@ -427,6 +427,8 @@ void vmpu_arch_init(void)
 
     /* initialize static MPU regions */
     vmpu_arch_init_hw();
+    /* remember static MPU region count */
+    g_mpu_static_count = g_mpu_region_count;
 
     /* dump MPU configuration */
 #ifndef NDEBUG
