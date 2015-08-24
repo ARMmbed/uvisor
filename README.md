@@ -4,7 +4,9 @@
 
 The uVisor is a self-contained software hypervisor that creates independent secure domains on ARM Cortex-M3 and M4 microcontrollers (M0+ will follow). Its function is to increase resilience against malware and to protect secrets from leaking even among different modules of the same application.
 
-Currently the only supported platform is the [Freescale FRDM-K64F](http://developer.mbed.org/platforms/FRDM-K64F/) ([GCC ARM Embedded toolchain](https://launchpad.net/gcc-arm-embedded)).
+Supported platforms:
+- [Freescale FRDM-K64F](http://developer.mbed.org/platforms/FRDM-K64F/) ([GCC ARM Embedded toolchain](https://launchpad.net/gcc-arm-embedded)).
+- [STMicorelectronics STM32F429I-DISCO](http://www.st.com/web/catalog/tools/FM116/SC959/SS1532/PF259090) ([GCC ARM Embedded toolchain](https://launchpad.net/gcc-arm-embedded)).
 
 ## The uVisor Design Philosophy
 
@@ -180,7 +182,9 @@ environment.
 
 ## Software and Hardware Requirements
 
-* One of the available target boards (currently only [FRDM-K64F](http://developer.mbed.org/platforms/FRDM-K64F/)).
+* One of the available target boards:
+ * [Freescale FRDM-K64F](http://developer.mbed.org/platforms/FRDM-K64F/)
+ * [STMicorelectronics STM32F429I-DISCO](http://www.st.com/web/catalog/tools/FM116/SC959/SS1532/PF259090)
 
 To build:
 
