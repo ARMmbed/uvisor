@@ -30,4 +30,7 @@
 #define STACK_SIZE       2048
 #define STACK_GUARD_BAND  (STACK_SIZE / 8)
 
+/* reserved regions */
+#define ARMv7M_MPU_RESERVED_REGIONS 2
+
 #endif/*__CONFIG_H__*/

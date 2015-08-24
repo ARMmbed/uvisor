@@ -42,6 +42,11 @@ void vmpu_arch_init_hw(void)
         0x40000,
         UVISOR_TACLDEF_DATA | UVISOR_TACL_EXECUTE
     );
+
+    /* sanity check, increase define if necessary */
+    if(ARMv7M_MPU_RESERVED_REGIONS != 2)
+        HALT_ERROR(SANITY_CHECK_FAILED,
+            "please adjust ARMv7M_MPU_RESERVED_REGIONS to actual region count");
 }
 
 int vmpu_addr2pid(uint32_t addr)

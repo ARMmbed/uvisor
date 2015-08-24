@@ -72,7 +72,7 @@ typedef struct {
     uint32_t count;
 } TMpuBox;
 
-uint32_t g_mpu_region_count, g_mpu_static_count, g_box_mem_pos;
+uint32_t g_mpu_region_count, g_box_mem_pos;
 TMpuRegion g_mpu_list[MPU_REGION_COUNT];
 TMpuBox g_mpu_box[UVISOR_MAX_BOXES];
 
@@ -129,10 +129,62 @@ void vmpu_sys_mux_handler(uint32_t lr)
     }
 }
 
-int vmpu_switch(uint8_t src_box, uint8_t dst_box)
+/* FIXME: added very simple MPU region switching - optimize! */
+void vmpu_switch(uint8_t src_box, uint8_t dst_box)
 {
-    DPRINTF("switch from %i to %i\n\r", src_box, dst_box);
-    return 1;
+    int i, mpu_slot;
+    const TMpuBox *box;
+    const TMpuRegion *region;
+
+    DPRINTF("switching from %i to %i\n\r", src_box, dst_box);
+
+    if(!g_mpu_region_count || dst_box>=UVISOR_MAX_BOXES)
+        HALT_ERROR(SANITY_CHECK_FAILED, "dst_box out of range (%u)", dst_box);
+
+    /* handle main box first */
+    box = g_mpu_box;
+    region = box->region;
+
+    mpu_slot = ARMv7M_MPU_RESERVED_REGIONS;
+    for(i=0; i<box->count; i++)
+    {
+        if(mpu_slot>=ARMv7M_MPU_REGIONS)
+             return;
+        MPU->RBAR = region->base | mpu_slot | MPU_RBAR_VALID_Msk;
+        MPU->RASR = region->rasr;
+
+        /* process next slot */
+        region++;
+        mpu_slot++;
+    }
+
+    /* already updated main box ACLs in previous step */
+    if(!dst_box)
+        return;
+
+    /* handle target box next */
+    box = &g_mpu_box[dst_box];
+    region = box->region;
+
+    for(i=0; i<box->count; i++)
+    {
+        if(mpu_slot>=ARMv7M_MPU_REGIONS)
+             return;
+        MPU->RBAR = region->base | mpu_slot | MPU_RBAR_VALID_Msk;
+        MPU->RASR = region->rasr;
+
+        /* process next slot */
+        region++;
+        mpu_slot++;
+    }
+
+    /* clear remaining slots */
+    while(mpu_slot<ARMv7M_MPU_REGIONS)
+    {
+        MPU->RBAR = mpu_slot | MPU_RBAR_VALID_Msk;
+        MPU->RASR = 0;
+        mpu_slot++;
+    }
 }
 
 void vmpu_load_box(uint8_t box_id)
@@ -427,8 +479,6 @@ void vmpu_arch_init(void)
 
     /* initialize static MPU regions */
     vmpu_arch_init_hw();
-    /* remember static MPU region count */
-    g_mpu_static_count = g_mpu_region_count;
 
     /* dump MPU configuration */
 #ifndef NDEBUG
