@@ -208,6 +208,7 @@ static void vmpu_load_boxes(void)
     DPRINTF("vmpu_load_boxes [DONE]\n");
 }
 
+/* FIXME: perform ACL checks to close security hole */
 int vmpu_validate_access(uint32_t lr, uint32_t *sp)
 {
     uint32_t pc;
