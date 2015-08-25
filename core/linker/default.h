@@ -70,7 +70,7 @@ SECTIONS
         *(.text.main_entry)
         *(.text*)
         *(.rodata*)
-        . = ALIGN(256);
+        . = ALIGN(512);
         *(.isr*)
         PROVIDE(__data_start_src__ = LOADADDR(.data));
         PROVIDE(__uvisor_config = LOADADDR(.data) + SIZEOF(.data));
