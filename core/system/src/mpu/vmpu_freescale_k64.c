@@ -184,15 +184,13 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
     }
 }
 
-int vmpu_switch(uint8_t src_box, uint8_t dst_box)
+void vmpu_switch(uint8_t src_box, uint8_t dst_box)
 {
     /* switch ACLs for peripherals */
     vmpu_aips_switch(src_box, dst_box);
 
     /* switch ACLs for memory regions */
     vmpu_mem_switch(src_box, dst_box);
-
-    return 0;
 }
 
 void vmpu_load_box(uint8_t box_id)

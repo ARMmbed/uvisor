@@ -74,7 +74,7 @@ extern int  vmpu_acl_reg(UvisorBoxAcl acl, uint32_t addr, uint32_t rmask,
                          uint32_t wmask);
 extern int  vmpu_acl_bit(UvisorBoxAcl acl, uint32_t addr);
 
-extern void  vmpu_switch(uint8_t src_box, uint8_t dst_box);
+extern void vmpu_switch(uint8_t src_box, uint8_t dst_box);
 
 extern void vmpu_load_box(uint8_t box_id);
 extern void vmpu_add_peripheral_map(uint8_t box_id, uint32_t addr, uint32_t length, uint8_t shared);
