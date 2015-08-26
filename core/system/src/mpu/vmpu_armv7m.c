@@ -64,7 +64,7 @@ typedef struct {
     uint32_t base;
     uint32_t rasr;
     uint32_t size;
-    uint32_t faults;
+    uint32_t acl;
 } TMpuRegion;
 
 typedef struct {
@@ -78,9 +78,28 @@ TMpuBox g_mpu_box[UVISOR_MAX_BOXES];
 
 static uint32_t g_vmpu_aligment_mask;
 
+static void vmpu_update_regions(uint32_t lr)
+{
+    //uint32_t addr;
+
+    if((SCB->CFSR & 0x9B) != 0x82)
+    {
+        DPRINTF("vmpu_update_regions can't handle this memory exception (0x%08X)\n", lr);
+        DEBUG_FAULT(FAULT_MEMMANAGE, lr);
+        halt_led(FAULT_MEMMANAGE);
+    }
+
+    //addr = SCB->BFAR;
+
+    //DPRINTF("vmpu_update_regions: addr 0x%08X\n", addr);
+
+    return;
+}
+
 void vmpu_sys_mux_handler(uint32_t lr)
 {
-    uint32_t *sp;
+    int res;
+    uint32_t sp, pc;
 
     /* the IPSR enumerates interrupt numbers from 0 up, while *_IRQn numbers are
      * both positive (hardware IRQn) and negative (system IRQn); here we convert
@@ -90,13 +109,23 @@ void vmpu_sys_mux_handler(uint32_t lr)
     switch(ipsr)
     {
         case MemoryManagement_IRQn:
-            /* if the access is valid the vmpu_validate_access function changes
-             * the stacked pc as well, so the execution continues after the
-             * faulting instruction if a read operation was required, the
-             * function also updates the value stacked for the correct register */
-            sp = svc_cx_validate_sf((uint32_t *) __get_PSP());
-            if(!vmpu_validate_access(lr, sp))
-                return;
+            /* only support unprivileged exceptions */
+            if(lr & 0x4)
+            {
+                sp = __get_PSP();
+                pc = vmpu_unpriv_uint32_read(sp+(6*4));
+
+                if(!VMPU_FLASH_ADDR(pc))
+                    vmpu_update_regions(lr);
+                {
+                    if((res = vmpu_unpriv_access(pc, sp))!=0)
+                    {
+                        DEBUG_FAULT(FAULT_MEMMANAGE, lr);
+                        HALT_ERROR(FAULT_MEMMANAGE,
+                            "vmpu_unpriv_access failed with res=%i", res);
+                    }
+                }
+            }
             else
             {
                 DEBUG_FAULT(FAULT_MEMMANAGE, lr);
@@ -327,7 +356,7 @@ static void vmpu_acl_update_box_region(TMpuRegion *region, uint8_t box_id, void*
         subregions;
     region->base = (uint32_t)base;
     region->size = size_rounded;
-    region->faults = 0;
+    region->acl = acl;
 
     DPRINTF("rounded=%05i}\n\r", size_rounded);
 }

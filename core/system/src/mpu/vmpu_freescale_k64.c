@@ -28,7 +28,8 @@ uint32_t g_box_mem_pos;
 
 void vmpu_sys_mux_handler(uint32_t lr)
 {
-    uint32_t *sp;
+    int res;
+    uint32_t sp, pc;
 
     /* the IPSR enumerates interrupt numbers from 0 up, while *_IRQn numbers are
      * both positive (hardware IRQn) and negative (system IRQn); here we convert
@@ -51,9 +52,19 @@ void vmpu_sys_mux_handler(uint32_t lr)
              * the stacked pc as well, so the execution continues after the
              * faulting instruction if a read operation was required, the
              * function also updates the value stacked for the correct register */
-            sp = svc_cx_validate_sf((uint32_t *) __get_PSP());
-            if(!vmpu_validate_access(lr, sp))
-                return;
+
+            /* only unprivileged access handled */
+            if(lr & 0x4)
+            {
+                sp = __get_PSP();
+                pc = vmpu_unpriv_uint32_read(sp+(6*4));
+                if((res = vmpu_unpriv_access(pc, sp))!=0)
+                {
+                    DEBUG_FAULT(FAULT_MEMMANAGE, lr);
+                    HALT_ERROR(FAULT_MEMMANAGE,
+                        "vmpu_unpriv_access failed with res=%i", res);
+                }
+            }
             else
             {
                 DEBUG_FAULT(FAULT_BUS, lr);
