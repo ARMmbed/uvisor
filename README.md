@@ -4,6 +4,16 @@
 
 The uVisor is a self-contained software hypervisor that creates independent secure domains on ARM Cortex-M3 and M4 microcontrollers (M0+ will follow). Its function is to increase resilience against malware and to protect secrets from leaking even among different modules of the same application.
 
+Further reading:
+- The uVisor [Design Philosophy](#the-uvisor-design-philosophy)
+  - [Techical Details](#technical-details)
+  - [Memory Layout](#memory-layout)
+  - [Secure Boot](#the-boot-process)
+- uVisor-lib user mode APIs
+  - [API documentation](https://github.com/ARMmbed/uvisor-lib/blob/master/DOCUMENTATION.md)
+  - [yotta module](#the-uvisor-as-a-yotta-module) integration
+- [Secure coding guidelines](SECURE-CODING.md) for code contributors
+
 ### Word of caution
 This version of the uVisor is an early beta with an **incomplete implementation of the security features** of the final product. Future versions of uVisor will add these functions - starting with this year's ARM TechCon that will come with a security challenge firmware.
 
