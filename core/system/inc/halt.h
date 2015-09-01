@@ -32,8 +32,8 @@ typedef enum {
     __THALTERROR_MAX /* always keep as the last element of the enum */
 } THaltError;
 
-#define HALT_INTRA_PATTERN_DELAY 0x200000U
-#define HALT_INTER_PATTERN_DELAY (3*HALT_INTRA_PATTERN_DELAY)
+#define HALT_INTRA_PATTERN_DELAY 0x400000U
+#define HALT_INTER_PATTERN_DELAY (4*HALT_INTRA_PATTERN_DELAY)
 
 #ifdef  NDEBUG
 #define HALT_ERROR(reason, ...) halt_led(reason)
