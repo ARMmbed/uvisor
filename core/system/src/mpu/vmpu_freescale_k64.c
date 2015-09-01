@@ -183,6 +183,18 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
         context_size = UVISOR_REGION_ROUND_UP(context_size);
         g_svc_cx_context_ptr[box_id] = (uint32_t*)g_box_mem_pos;
 
+        DPRINTF("erasing box context at 0x%08X (%u bytes)\n",
+            g_box_mem_pos,
+            context_size
+        );
+
+        /* reset uninitialized secured box context */
+        memset(
+            (void *) g_box_mem_pos,
+            0,
+            context_size
+        );
+
         /* add context ACL */
         vmpu_acl_add(
             box_id,
