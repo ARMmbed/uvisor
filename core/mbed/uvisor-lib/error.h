@@ -17,6 +17,6 @@
 #ifndef __ERROR_H__
 #define __ERROR_H__
 
-void uvisor_error(THaltUserError reason);
+UVISOR_EXTERN void uvisor_error(THaltUserError reason);
 
 #endif/*__ERROR*/

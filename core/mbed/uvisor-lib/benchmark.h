@@ -17,8 +17,8 @@
 #ifndef __BENCHMARK_H__
 #define __BENCHMARK_H__
 
-void uvisor_benchmark_configure(void);
-void uvisor_benchmark_start(void);
-uint32_t uvisor_benchmark_stop(void);
+UVISOR_EXTERN void uvisor_benchmark_configure(void);
+UVISOR_EXTERN void uvisor_benchmark_start(void);
+UVISOR_EXTERN uint32_t uvisor_benchmark_stop(void);
 
 #endif/*__BENCHMARK_H__*/
