@@ -78,24 +78,6 @@ TMpuBox g_mpu_box[UVISOR_MAX_BOXES];
 
 static uint32_t g_vmpu_aligment_mask;
 
-static void vmpu_update_regions(uint32_t lr)
-{
-    //uint32_t addr;
-
-    if((SCB->CFSR & 0x9B) != 0x82)
-    {
-        DPRINTF("vmpu_update_regions can't handle this memory exception (0x%08X)\n", lr);
-        DEBUG_FAULT(FAULT_MEMMANAGE, lr);
-        halt_led(FAULT_MEMMANAGE);
-    }
-
-    //addr = SCB->BFAR;
-
-    //DPRINTF("vmpu_update_regions: addr 0x%08X\n", addr);
-
-    return;
-}
-
 void vmpu_sys_mux_handler(uint32_t lr)
 {
     int res;
@@ -113,17 +95,12 @@ void vmpu_sys_mux_handler(uint32_t lr)
             if(lr & 0x4)
             {
                 sp = __get_PSP();
-                pc = vmpu_unpriv_uint32_read(sp+(6*4));
+                pc = vmpu_unpriv_uint32_read(sp + (6 * 4));
 
-                if(!VMPU_FLASH_ADDR(pc))
-                    vmpu_update_regions(lr);
+                if(vmpu_unpriv_access(pc, sp))
                 {
-                    if((res = vmpu_unpriv_access(pc, sp))!=0)
-                    {
-                        DEBUG_FAULT(FAULT_MEMMANAGE, lr);
-                        HALT_ERROR(FAULT_MEMMANAGE,
-                            "vmpu_unpriv_access failed with res=%i", res);
-                    }
+                    DEBUG_FAULT(FAULT_MEMMANAGE, lr);
+                    HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied");
                 }
             }
             else

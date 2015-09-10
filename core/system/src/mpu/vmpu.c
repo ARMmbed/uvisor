@@ -213,90 +213,109 @@ int vmpu_unpriv_access(uint32_t pc, uint32_t sp)
 {
     uint16_t opcode;
     uint32_t r0, r1;
+    uint32_t cnt_max, cnt;
+    int found;
 
     /* check for attacks */
     if(!VMPU_FLASH_ADDR(pc))
-        HALT_ERROR(NOT_ALLOWED, "This is not the PC (0x%08X) your were searching for", pc);
+       HALT_ERROR(NOT_ALLOWED, "This is not the PC (0x%08X) your were searching for", pc);
 
-    /* fetch opcode from memory */
-    opcode = vmpu_unpriv_uint16_read(pc);
+    /* if the bus fault is imprecise seek back for ldrX/strX opcode */
+    if(SCB->CFSR & (1 << 10))
+        cnt_max = UVISOR_NOP_CNT;
+    else
+        cnt_max = 0;
 
     /* parse opcode */
-    /* test lower 8bits for (partially)imm5 == 0, Rn = 0, Rt = 1 */
-    switch(opcode & 0xFF)
+    cnt = 0;
+    do
     {
-        /* if using r0 and r1, we expect a strX instruction */
-        case VMPU_OPCODE16_LOWER_R0_R1_MASK:
-            /* fetch r0 and r1 */
-            r0 = vmpu_unpriv_uint32_read(sp);
-            r1 = vmpu_unpriv_uint32_read(sp+4);
+        /* fetch opcode from memory */
+        opcode = vmpu_unpriv_uint16_read(pc - (cnt << 1));
 
-            /* check ACls */
-            /* TODO/FIXME */
+        /* test lower 8bits for (partially)imm5 == 0, Rn = 0, Rt = 1 */
+        found = TRUE;
+        switch(opcode & 0xFF)
+        {
+            /* if using r0 and r1, we expect a strX instruction */
+            case VMPU_OPCODE16_LOWER_R0_R1_MASK:
+                /* fetch r0 and r1 */
+                r0 = vmpu_unpriv_uint32_read(sp);
+                r1 = vmpu_unpriv_uint32_read(sp+4);
 
-            /* test upper 8bits for opcode and (partially)imm5 == 0 */
-            switch(opcode >> 8)
-            {
-                case VMPU_OPCODE16_UPPER_STR_MASK:
-                    *((uint32_t *) r0) = (uint32_t) r1;
-                    break;
-                case VMPU_OPCODE16_UPPER_STRH_MASK:
-                    *((uint16_t *) r0) = (uint16_t) r1;
-                    break;
-                case VMPU_OPCODE16_UPPER_STRB_MASK:
-                    *((uint8_t *) r0) = (uint8_t) r1;
-                    break;
-                default:
-                    return -3;
-            }
-            DPRINTF("Executed privileged access: 0x%08X written to 0x%08X\n\r",
-                    r1, r0);
+                /* check ACls */
+                /* TODO/FIXME */
 
-            break;
+                /* test upper 8bits for opcode and (partially)imm5 == 0 */
+                switch(opcode >> 8)
+                {
+                    case VMPU_OPCODE16_UPPER_STR_MASK:
+                        *((uint32_t *) r0) = (uint32_t) r1;
+                        break;
+                    case VMPU_OPCODE16_UPPER_STRH_MASK:
+                        *((uint16_t *) r0) = (uint16_t) r1;
+                        break;
+                    case VMPU_OPCODE16_UPPER_STRB_MASK:
+                        *((uint8_t *) r0) = (uint8_t) r1;
+                        break;
+                    default:
+                        found = FALSE;
+                        break;
+                }
+                if(found)
+                    DPRINTF("Executed privileged access: 0x%08X written to 0x%08X\n\r", r1, r0);
+                break;
 
-        /* if using r0 only, we expect a ldrX instruction */
-        case VMPU_OPCODE16_LOWER_R0_R0_MASK:
-            /* fetch r0 */
-            r0 = vmpu_unpriv_uint32_read(sp);
+            /* if using r0 only, we expect a ldrX instruction */
+            case VMPU_OPCODE16_LOWER_R0_R0_MASK:
+                /* fetch r0 */
+                r0 = vmpu_unpriv_uint32_read(sp);
 
-            /* check ACls */
-            /* TODO/FIXME */
+                /* check ACls */
+                /* TODO/FIXME */
 
-            /* test upper 8bits for opcode and (partially)imm5 == 0 */
-            switch(opcode >> 8)
-            {
-                case VMPU_OPCODE16_UPPER_LDR_MASK:
-                    r1 = (uint32_t) *((uint32_t *) r0);
-                    break;
-                case VMPU_OPCODE16_UPPER_LDRH_MASK:
-                    r1 = (uint16_t) *((uint16_t *) r0);
-                    break;
-                case VMPU_OPCODE16_UPPER_LDRB_MASK:
-                    r1 = (uint8_t) *((uint8_t *) r0);
-                    break;
-                default:
-                    return -4;
-            }
-            DPRINTF("Executed privileged access: read 0x%08X from 0x%08X\n\r",
-                    r1, r0);
+                /* test upper 8bits for opcode and (partially)imm5 == 0 */
+                switch(opcode >> 8)
+                {
+                    case VMPU_OPCODE16_UPPER_LDR_MASK:
+                        r1 = (uint32_t) *((uint32_t *) r0);
+                        break;
+                    case VMPU_OPCODE16_UPPER_LDRH_MASK:
+                        r1 = (uint16_t) *((uint16_t *) r0);
+                        break;
+                    case VMPU_OPCODE16_UPPER_LDRB_MASK:
+                        r1 = (uint8_t) *((uint8_t *) r0);
+                        break;
+                    default:
+                        found = FALSE;
+                        break;
+                }
+                if(found)
+                {
+                    /* the result is stored back to the stack (r0) */
+                    vmpu_unpriv_uint32_write(sp, r1);
 
-            /* the result is stored back to the stack (r0) */
-            vmpu_unpriv_uint32_write(sp, r1);
+                    DPRINTF("Executed privileged access: read 0x%08X from 0x%08X\n\r", r1, r0);
+                }
+                break;
 
-            break;
+            default:
+                found = FALSE;
+                break;
+        }
 
-        default:
-            return -2;
+        /* parse next opcode */
+        cnt++;
     }
+    while(!found && cnt < cnt_max);
 
-    /* execution will continue from the instruction following the fault */
-    /* note: we assume the instruction is 16 bits wide
-     *
-     * FIXME: for delayed writes check if PC already progressed. Only
-     *        increment if PC is at the instruction that caused the flaw
-     *
-     * */
-    vmpu_unpriv_uint32_write(sp+(6*4), pc+2);
+    /* return error if opcode was not found */
+    if(!found)
+        return -1;
+
+    /* otherwise execution continues from the instruction following the fault */
+    /* note: we assume the instruction is 16 bits wide and skip the NOPs */
+    vmpu_unpriv_uint32_write(sp + (6 << 2), pc + ((UVISOR_NOP_CNT + 2 - cnt) << 1));
 
     /* success */
     return 0;

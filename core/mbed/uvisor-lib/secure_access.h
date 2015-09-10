@@ -17,6 +17,8 @@
 #ifndef __SECURE_ACCESS_H__
 #define __SECURE_ACCESS_H__
 
+#include "uvisor-lib/vmpu_exports.h"
+
 /* the switch statement will be optimised away since the compiler already knows
  * the sizeof(type) */
 #define ADDRESS_WRITE(type, addr, val) \
@@ -58,6 +60,7 @@ static inline __attribute__((always_inline)) void uvisor_write32(uint32_t volati
     register uint32_t r1 __asm__("r1") = val;
     __asm__ volatile(
         "str %[v], [%[a]]\n"
+        UVISOR_NOP_GROUP
         :: [a] "r" (r0),
            [v] "r" (r1)
     );
@@ -69,6 +72,7 @@ static inline __attribute__((always_inline)) void uvisor_write16(uint16_t volati
     register uint16_t r1 __asm__("r1") = val;
     __asm__ volatile(
         "strh %[v], [%[a]]\n"
+        UVISOR_NOP_GROUP
         :: [a] "r" (r0),
            [v] "r" (r1)
     );
@@ -80,6 +84,7 @@ static inline __attribute__((always_inline)) void uvisor_write8(uint8_t volatile
     register uint8_t  r1 __asm__("r1") = val;
     __asm__ volatile(
         "strb %[v], [%[a]]\n"
+        UVISOR_NOP_GROUP
         :: [a] "r" (r0),
            [v] "r" (r1)
     );

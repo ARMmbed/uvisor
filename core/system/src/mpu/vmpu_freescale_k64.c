@@ -28,7 +28,6 @@ uint32_t g_box_mem_pos;
 
 void vmpu_sys_mux_handler(uint32_t lr)
 {
-    int res;
     uint32_t sp, pc;
 
     /* the IPSR enumerates interrupt numbers from 0 up, while *_IRQn numbers are
@@ -44,10 +43,6 @@ void vmpu_sys_mux_handler(uint32_t lr)
             break;
 
         case BusFault_IRQn:
-            /* FIXME check if the bus fault is precise; if not, it should not be
-             * attempted to return (the stacked address for return would be
-             * incorrect) */
-
             /* if the access is valid the vmpu_validate_access function changes
              * the stacked pc as well, so the execution continues after the
              * faulting instruction if a read operation was required, the
@@ -57,12 +52,11 @@ void vmpu_sys_mux_handler(uint32_t lr)
             if(lr & 0x4)
             {
                 sp = __get_PSP();
-                pc = vmpu_unpriv_uint32_read(sp+(6*4));
-                if((res = vmpu_unpriv_access(pc, sp))!=0)
+                pc = vmpu_unpriv_uint32_read(sp + (6 * 4));
+                if(vmpu_unpriv_access(pc, sp))
                 {
                     DEBUG_FAULT(FAULT_BUS, lr);
-                    HALT_ERROR(FAULT_BUS,
-                        "vmpu_unpriv_access failed with res=%i", res);
+                    HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied");
                 }
             }
             else
@@ -230,12 +224,6 @@ void vmpu_arch_init(void)
 {
     /* enable mem, bus and usage faults */
     SCB->SHCSR |= 0x70000;
-
-    /* FIXME this is a temporary fix; we will introduce a smarter way to recover
-     * from bus faults, even when they are imprecise */
-    /* recovering from bus faults requires them to be precise, so write buffering
-     * is disabled */
-    SCnSCB->ACTLR |= 0x2;
 
     /* initialize box memories, leave stack-band sized gap */
     g_box_mem_pos = UVISOR_REGION_ROUND_UP(
