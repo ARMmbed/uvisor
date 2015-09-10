@@ -60,8 +60,8 @@ void vmpu_sys_mux_handler(uint32_t lr)
                 pc = vmpu_unpriv_uint32_read(sp+(6*4));
                 if((res = vmpu_unpriv_access(pc, sp))!=0)
                 {
-                    DEBUG_FAULT(FAULT_MEMMANAGE, lr);
-                    HALT_ERROR(FAULT_MEMMANAGE,
+                    DEBUG_FAULT(FAULT_BUS, lr);
+                    HALT_ERROR(FAULT_BUS,
                         "vmpu_unpriv_access failed with res=%i", res);
                 }
             }
