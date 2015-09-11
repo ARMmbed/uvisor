@@ -45,9 +45,18 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 #define UVISOR_SECURE_BSS
 #define UVISOR_SECURE_DATA
 
-#define UVISOR_BOX_CONFIG(box_name, acl_list, stack_size) \
+#define __UVISOR_BOX_CONFIG_NOCONTEXT(box_name, acl_list, stack_size) \
     UVISOR_SECURE_CONST void *box_acl_ ## box_name = acl_list;
 
+#define __UVISOR_BOX_CONFIG_CONTEXT(box_name, acl_list, stack_size, context_type) \
+    UVISOR_SECURE_CONST void *box_acl_ ## box_name = acl_list; \
+    context_type box_ctx_ ## box_name; \
+    context_type * const uvisor_ctx = &box_ctx_ ## box_name;
+
+#define __UVISOR_BOX_MACRO(_1, _2, _3, _4, NAME, ...) NAME
+#define UVISOR_BOX_CONFIG(...) \
+    __UVISOR_BOX_MACRO(__VA_ARGS__, __UVISOR_BOX_CONFIG_CONTEXT, \
+                                    __UVISOR_BOX_CONFIG_NOCONTEXT)(__VA_ARGS__)
 /* interrupts.h */
 #define vIRQ_SetVectorX(irqn, vector, flag) NVIC_SetVector((IRQn_Type) (irqn), (uint32_t) (vector))
 #define vIRQ_SetVector(irqn, vector)        NVIC_SetVector((IRQn_Type) (irqn), (uint32_t) (vector))
