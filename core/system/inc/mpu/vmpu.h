@@ -80,7 +80,7 @@ extern void vmpu_switch(uint8_t src_box, uint8_t dst_box);
 extern void vmpu_load_box(uint8_t box_id);
 extern void vmpu_add_peripheral_map(uint8_t box_id, uint32_t addr, uint32_t length, uint8_t shared);
 
-extern int vmpu_unpriv_access(uint32_t pc, uint32_t sp);
+extern int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp);
 
 extern void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size);
 extern uint32_t vmpu_acl_static_region(uint8_t region, void* base, uint32_t size, UvisorBoxAcl acl);

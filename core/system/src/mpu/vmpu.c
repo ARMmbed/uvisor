@@ -209,7 +209,7 @@ static void vmpu_load_boxes(void)
 }
 
 /* FIXME: perform ACL checks to close security hole */
-int vmpu_unpriv_access(uint32_t pc, uint32_t sp)
+int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp)
 {
     uint16_t opcode;
     uint32_t r0, r1;
@@ -220,7 +220,7 @@ int vmpu_unpriv_access(uint32_t pc, uint32_t sp)
     if(!VMPU_FLASH_ADDR(pc))
        HALT_ERROR(NOT_ALLOWED, "This is not the PC (0x%08X) your were searching for", pc);
 
-    /* if the bus fault is imprecise seek back for ldrX/strX opcode */
+    /* if the bus fault is imprecise we will seek back for ldrX/strX opcode */
     if(SCB->CFSR & (1 << 10))
         cnt_max = UVISOR_NOP_CNT;
     else
@@ -314,7 +314,7 @@ int vmpu_unpriv_access(uint32_t pc, uint32_t sp)
         return -1;
 
     /* otherwise execution continues from the instruction following the fault */
-    /* note: we assume the instruction is 16 bits wide and skip the NOPs */
+    /* note: we assume the instruction is 16 bits wide and skip possible NOPs */
     vmpu_unpriv_uint32_write(sp + (6 << 2), pc + ((UVISOR_NOP_CNT + 2 - cnt) << 1));
 
     /* success */

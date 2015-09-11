@@ -78,9 +78,16 @@ TMpuBox g_mpu_box[UVISOR_MAX_BOXES];
 
 static uint32_t g_vmpu_aligment_mask;
 
+/* TODO/FIXME: implement recovery from MemManage fault */
+static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp)
+{
+    /* FIXME: currently we deny every access */
+    /* TODO: implement actual recovery */
+    return -1;
+}
+
 void vmpu_sys_mux_handler(uint32_t lr)
 {
-    int res;
     uint32_t sp, pc;
 
     /* the IPSR enumerates interrupt numbers from 0 up, while *_IRQn numbers are
@@ -91,22 +98,25 @@ void vmpu_sys_mux_handler(uint32_t lr)
     switch(ipsr)
     {
         case MemoryManagement_IRQn:
-            /* only support unprivileged exceptions */
+            /* currently we only support recovery from unprivileged mode */
             if(lr & 0x4)
             {
+                /* pc and sp at fault */
                 sp = __get_PSP();
                 pc = vmpu_unpriv_uint32_read(sp + (6 * 4));
 
-                if(vmpu_unpriv_access(pc, sp))
-                {
-                    DEBUG_FAULT(FAULT_MEMMANAGE, lr);
-                    HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied");
-                }
+                /* check if the fault is an MPU fault */
+                if((SCB->CFSR & (1 << 7)) && !vmpu_fault_recovery_mpu(pc, sp))
+                    return;
+
+                /* if recovery was not successful, throw an error and halt */
+                DEBUG_FAULT(FAULT_MEMMANAGE, lr);
+                HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied");
             }
             else
             {
                 DEBUG_FAULT(FAULT_MEMMANAGE, lr);
-                halt_led(FAULT_MEMMANAGE);
+                HALT_ERROR(FAULT_MEMMANAGE, "Cannot recover from privileged MemManage fault");
             }
 
         case BusFault_IRQn:
