@@ -93,8 +93,8 @@ DEBUG_HOST:=localhost:2331
 OPT:=-Os -DNDEBUG
 DEBUG:=-g3
 WARNING:=-Wall -Werror
-CPU_LOWER:=$(shell tr '[:upper:]' '[:lower:]' <<< $(CPU))
-ARCH_LOWER:=$(shell tr '[:upper:]' '[:lower:]' <<< $(ARCH))
+CPU_LOWER:=$(shell echo $(CPU) | tr '[:upper:]' '[:lower:]')
+ARCH_LOWER:=$(shell echo $(ARCH) | tr '[:upper:]' '[:lower:]')
 FLASH_OFFSET:=0
 
 # determine repository version
