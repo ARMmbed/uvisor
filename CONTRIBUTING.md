@@ -8,7 +8,8 @@ welcome contributions and bug reports.
   [contribution guide](https://github.com/ARMmbed/mbed-os/blob/master/Contributing%20to%20mbed.md).
   Note that we have a
   [Contributor Agreement](http://developer.mbed.org/contributor_agreement/)
-  that must be agreed to before contributions can be merged.
+  that must be agreed to before contributions can be merged. To agree to the
+  contributor agreement, you need to have an mbed.com account and be logged in.
 
 *We only accept bug reports and pull requests on GitHub*.
 
