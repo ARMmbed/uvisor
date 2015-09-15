@@ -26,9 +26,16 @@
 
 uint32_t g_box_mem_pos;
 
+/* TODO/FIXME: implement recovery from Freescale MPU fault */
+static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp)
+{
+    /* FIXME: currently we deny every access */
+    /* TODO: implement actual recovery */
+    return -1;
+}
+
 void vmpu_sys_mux_handler(uint32_t lr)
 {
-    int res;
     uint32_t sp, pc;
 
     /* the IPSR enumerates interrupt numbers from 0 up, while *_IRQn numbers are
@@ -44,39 +51,41 @@ void vmpu_sys_mux_handler(uint32_t lr)
             break;
 
         case BusFault_IRQn:
-            /* FIXME check if the bus fault is precise; if not, it should not be
-             * attempted to return (the stacked address for return would be
-             * incorrect) */
+            /* where a Freescale MPU is used, bus faults can originate both as
+             * pure bus faults or as MPU faults; in addition, they can be both
+             * precise and imprecise
+             * there is also an additional corner case: some registers (MK64F)
+             * cannot be accessed in unprivileged mode even if an MPU region is
+             * created for them and the corresponding bit in PACRx is set. In
+             * some cases we want to allow access for them (with ACLs), hence we
+             * use a function that looks for a specially crafted opcode */
 
-            /* if the access is valid the vmpu_validate_access function changes
-             * the stacked pc as well, so the execution continues after the
-             * faulting instruction if a read operation was required, the
-             * function also updates the value stacked for the correct register */
+            /* note: all recovery functions update the stacked stack pointer so
+             * that exception return points to the correct instruction */
 
-            /* only unprivileged access handled */
+            /* currently we only support recovery from unprivileged mode */
             if(lr & 0x4)
             {
+                /* pc and sp at fault */
                 sp = __get_PSP();
-                pc = vmpu_unpriv_uint32_read(sp+(6*4));
-                if((res = vmpu_unpriv_access(pc, sp))!=0)
-                {
-                    DEBUG_FAULT(FAULT_BUS, lr);
-                    HALT_ERROR(FAULT_BUS,
-                        "vmpu_unpriv_access failed with res=%i", res);
-                }
+                pc = vmpu_unpriv_uint32_read(sp + (6 * 4));
+
+                /* check if the fault is an MPU fault */
+                if(MPU->CESR >> 27 && !vmpu_fault_recovery_mpu(pc, sp))
+                    return;
+
+                /* check if the fault is the special register corner case */
+                if(!vmpu_fault_recovery_bus(pc, sp))
+                    return;
+
+                /* if recovery was not successful, throw an error and halt */
+                DEBUG_FAULT(FAULT_BUS, lr);
+                HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied");
             }
             else
             {
                 DEBUG_FAULT(FAULT_BUS, lr);
-
-                /* the Freescale MPU results in bus faults when an access is
-                 * forbidden; a different error is thrown on a per-case basis */
-                /* note: since we are halting execution we don't bother clearing
-                 * the SPERR bit in the MPU->CESR register */
-                if(MPU->CESR >> 27)
-                    halt_led(NOT_ALLOWED);
-                else
-                    halt_led(FAULT_BUS);
+                HALT_ERROR(FAULT_BUS, "Cannot recover from privileged bus fault");
             }
             break;
 
@@ -230,12 +239,6 @@ void vmpu_arch_init(void)
 {
     /* enable mem, bus and usage faults */
     SCB->SHCSR |= 0x70000;
-
-    /* FIXME this is a temporary fix; we will introduce a smarter way to recover
-     * from bus faults, even when they are imprecise */
-    /* recovering from bus faults requires them to be precise, so write buffering
-     * is disabled */
-    SCnSCB->ACTLR |= 0x2;
 
     /* initialize box memories, leave stack-band sized gap */
     g_box_mem_pos = UVISOR_REGION_ROUND_UP(

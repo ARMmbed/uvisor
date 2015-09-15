@@ -106,6 +106,14 @@
 #define UVISOR_BOX_STACK_SIZE UVISOR_MIN_STACK_SIZE
 #endif/*UVISOR_BOX_STACK*/
 
+/* NOPs added for write buffering synchronization (2 are for dsb. 16bits) */
+#define UVISOR_NOP_CNT   (2 + 3)
+#define UVISOR_NOP_GROUP \
+   "dsb\n" \
+   "nop\n" \
+   "nop\n" \
+   "nop\n"
+
 typedef uint32_t UvisorBoxAcl;
 
 typedef struct
