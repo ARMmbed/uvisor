@@ -41,15 +41,23 @@ MBED_DIR:=$(CORE_DIR)/mbed
 DEBUG_DIR:=$(CORE_DIR)/debug
 LIB_DIR:=$(CORE_DIR)/lib
 DEVICE_DIR:=$(CORE_DIR)/arch/$(ARCH)
+RELEASE_DIR:=$(ROOT_DIR)/release
+
+# mbed origin paths
+MBED_SRC:=$(MBED_DIR)/source
+MBED_SRC_HW:=$(MBED_SRC)/$(CPU)
+MBED_INC:=$(MBED_DIR)/uvisor-lib
+MBED_ASM_INPUT:=$(MBED_SRC)/uvisor-input.S
+MBED_ASM_HEADER:=$(MBED_SRC)/uvisor-header.S
+MBED_ASM:=$(MBED_SRC_HW)/uvisor.s
+MBED_BIN_NAME:=uvisor-$(CPU).box
+MBED_BIN:=$(MBED_SRC_HW)/$(MBED_BIN_NAME)
 
 # mbed release paths
-RELEASE_DIR:=$(ROOT_DIR)/release
 RELEASE_SRC:=$(RELEASE_DIR)/source
 RELEASE_SRC_HW:=$(RELEASE_SRC)/$(CPU)
 RELEASE_INC:=$(RELEASE_DIR)/uvisor-lib
-RELEASE_ASM:=$(RELEASE_SRC_HW)/uvisor-GCC_ARM.s
-RELEASE_BIN_NAME:=uvisor-$(CPU).box
-RELEASE_BIN:=$(RELEASE_SRC_HW)/$(RELEASE_BIN_NAME)
+RELEASE_OBJ:=$(RELEASE_SRC_HW)/uvisor.o
 RELEASE_VER:=$(RELEASE_SRC_HW)/version.txt
 
 # make ARMv7-M MPU driver the default
@@ -173,20 +181,22 @@ $(PROJECT).bin: $(PROJECT).elf
 $(PROJECT).linker: $(MEM_CONFIG) $(CORE_DIR)/linker/default.h
 	$(CPP) -w -P -I$(CORE_DIR) $(APP_CFLAGS) -D$(CPU) -DARCH_$(ARCH) -include $^ -o $@
 
-release: $(MBED_DIR)/source/uvisor-gcc-input.S $(PROJECT).bin
+release: $(MBED_ASM_INPUT) $(PROJECT).bin
 	rm  -f $(RELEASE_INC)/*.h
 	rm  -f $(RELEASE_SRC)/*.cpp
 	rm -rf $(RELEASE_SRC_HW)
+	mkdir -p $(MBED_SRC_HW)
 	mkdir -p $(RELEASE_SRC_HW)
 	echo "$(PROGRAM_VERSION)" > $(RELEASE_VER)
-	cp $(PROJECT).bin $(RELEASE_BIN)
-	cp $(MBED_DIR)/uvisor-lib/*.h $(RELEASE_INC)/
-	cp $(MBED_DIR)/source/*.cpp   $(RELEASE_SRC)/
+	cp $(PROJECT).bin $(MBED_BIN)
+	cp $(MBED_INC)/*.h   $(RELEASE_INC)/
+	cp $(MBED_SRC)/*.cpp $(RELEASE_SRC)/
 	find ../.. -name "*_exports.h" -not -path "$(RELEASE_DIR)/*"\
 	     -exec cp {} $(RELEASE_INC)/ \;
-	cp -f $(MBED_DIR)/source/uvisor-gcc-header.S $(RELEASE_ASM)
+	cp -f $(MBED_ASM_HEADER) $(MBED_ASM)
 	$(CPP) -w -P -I$(CORE_DIR) $(APP_CFLAGS) -DP-D$(CPU) -DARCH_$(ARCH)\
-	       -DRELEASE_BIN=\"$(RELEASE_BIN_NAME)\" $< >> $(RELEASE_ASM)
+	       -DRELEASE_BIN=\"$(MBED_BIN)\" $< >> $(MBED_ASM)
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $(RELEASE_OBJ) $(MBED_ASM)
 
 swo:
 	$(JLINK_VIEWER) $(JLINK_PARAM) $(APP_JLINK_PARAM) -itmmask $(JLINK_VIEWER_MASK) $(JLINK_SWO_PARAM)
