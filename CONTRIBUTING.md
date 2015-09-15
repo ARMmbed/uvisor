@@ -22,7 +22,7 @@ welcome contributions and bug reports.
   to get advice from the mbed Team. This will help streamline getting your pull
   request merged.
 
-* If you work for an [mbed Partner company](http://mbed.com/ecosystem/partners/),
+* If you work for an [mbed Partner company](http://www.mbed.com/en/partners/our-partners/),
   you will have a partner manager assigned to you who can help you navigate the
   process and get the best out of your partnership.
 
