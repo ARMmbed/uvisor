@@ -76,9 +76,9 @@
             "skip_args%=:\n"                                                   \
             :          "=r" (res)                                              \
             : [svc_id] "I"  (UVISOR_SVC_ID_SECURE_GATEWAY(NARGS(__VA_ARGS__))) \
-                       SELECT_REGS(__VA_ARGS__)                                \
+              SELECT_REGS(__VA_ARGS__)                                         \
         );                                                                     \
         res;                                                                   \
      })
 
-#endif/*__SECURE_GATEWAY_H__*/
+#endif /* __SECURE_GATEWAY_H__ */

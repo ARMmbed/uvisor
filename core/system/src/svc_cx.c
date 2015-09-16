@@ -30,7 +30,8 @@ void UVISOR_NAKED svc_cx_thunk(void)
 {
     asm volatile(
         "svc %[svc_id]\n"
-        :: [svc_id] "i" (UVISOR_SVC_ID_CX_OUT)
+        :
+        : [svc_id] "i" (UVISOR_SVC_ID_CX_OUT)
     );
 }
 
@@ -47,12 +48,11 @@ uint32_t *svc_cx_validate_sf(uint32_t *sp)
         "tst    r1, #0x4\n"                           /* test alignment */
         "it     ne\n"
         "ldrtne r1, [%[sp], %[max_exc_sf_size]]\n"    /* test sp[8] */
-        :: [sp]              "r"  (sp),
-           [exc_sf_size]     "i"  ((uint32_t) (sizeof(uint32_t) *
-                                               (SVC_CX_EXC_SF_SIZE - 1))),
-           [max_exc_sf_size] "i"  ((uint32_t) (sizeof(uint32_t) *
-                                               (SVC_CX_EXC_SF_SIZE)))
-         : "r1"
+        :
+        : [sp]              "r"  (sp),
+          [exc_sf_size]     "i"  ((uint32_t) (sizeof(uint32_t) * (SVC_CX_EXC_SF_SIZE - 1))),
+          [max_exc_sf_size] "i"  ((uint32_t) (sizeof(uint32_t) * (SVC_CX_EXC_SF_SIZE)))
+        : "r1"
     );
 
     /* the initial stack pointer, if validated, is returned unchanged */
@@ -82,7 +82,8 @@ void UVISOR_NAKED svc_cx_switch_in(uint32_t *svc_sp, uint32_t *svc_pc,
         "no_regs_clearing:\n"
         "pop  {pc}\n"               /* callee-saved regs are not popped */
         /* the destination function will be executed after this */
-        :: "r" (svc_sp), "r" (svc_pc), "r" (svc_id)
+        :
+        : "r" (svc_sp), "r" (svc_pc), "r" (svc_id)
     );
 }
 
@@ -108,7 +109,7 @@ uint32_t __svc_cx_switch_in(uint32_t *svc_sp, uint32_t svc_pc,
     dst_sp = svc_cx_get_curr_sp(dst_id);
 
     /* check src and dst IDs */
-    if(src_id == dst_id)
+    if (src_id == dst_id)
         HALT_ERROR(NOT_ALLOWED, "src_id == dst_id at box %i", src_id);
 
     /* create exception stack frame */
@@ -150,7 +151,8 @@ void UVISOR_NAKED svc_cx_switch_out(uint32_t *svc_sp)
         "pop  {lr}\n"
         "pop  {r4-r11}\n"
         "bx   lr\n"
-        :: "r" (svc_sp)
+        :
+        : "r" (svc_sp)
     );
 }
 

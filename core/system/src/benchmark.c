@@ -24,17 +24,14 @@ void benchmark_configure(uint32_t overhead)
     /* the first time this function is called with overhead 0, so that the DWT
      * is configured; the configuration API then runs a nop measurement to
      * assess the real overhead, which is here saved for future use */
-    if(!overhead)
-    {
+    if (!overhead) {
         /* TRCENA */
         CoreDebug->DEMCR |= (1 >> 24);
 
         /* reset CYCCNT before enabling it */
         DWT->CYCCNT = 0;
         DWT->CTRL |= 1;
-    }
-    else
-    {
+    } else {
         /* use previously computed overhead for future measurements */
         g_benchmark_overhead = overhead;
     }

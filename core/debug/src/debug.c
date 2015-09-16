@@ -22,7 +22,7 @@
 
 #ifndef DEBUG_MAX_BUFFER
 #define DEBUG_MAX_BUFFER 128
-#endif/*DEBUG_MAX_BUFFER*/
+#endif /* DEBUG_MAX_BUFFER */
 
 uint8_t g_buffer[DEBUG_MAX_BUFFER];
 int g_buffer_pos;
@@ -30,13 +30,12 @@ int g_buffer_pos;
 #ifndef CHANNEL_DEBUG
 void default_putc(uint8_t data)
 {
-    if(g_buffer_pos<(DEBUG_MAX_BUFFER-1))
+    if (g_buffer_pos < (DEBUG_MAX_BUFFER - 1))
         g_buffer[g_buffer_pos++] = data;
     else
         data = '\n';
 
-    if(data == '\n')
-    {
+    if (data == '\n') {
         g_buffer[g_buffer_pos] = 0;
         asm(
             "mov r0, #4\n"
@@ -49,7 +48,7 @@ void default_putc(uint8_t data)
         g_buffer_pos = 0;
     }
 }
-#endif/*CHANNEL_DEBUG*/
+#endif /* CHANNEL_DEBUG */
 
 void debug_init(void)
 {
@@ -65,21 +64,16 @@ static void debug_cx_state(int _indent)
     /* generate indentation depending on nesting depth */
     char _sp[UVISOR_MAX_BOXES + 4];
 
-    for (i = 0; i < _indent; i++)
-    {
+    for (i = 0; i < _indent; i++) {
         _sp[i]     = ' ';
     }
     _sp[i] = '\0';
 
     /* print state stack */
-    if (!g_svc_cx_state_ptr)
-    {
+    if (!g_svc_cx_state_ptr) {
         dprintf("%sNo saved state\n\r", _sp);
-    }
-    else
-    {
-        for (i = 0; i < g_svc_cx_state_ptr; i++)
-        {
+    } else {
+        for (i = 0; i < g_svc_cx_state_ptr; i++) {
             dprintf("%sState %d\n\r",        _sp, i);
             dprintf("%s  src_id %d\n\r",     _sp, g_svc_cx_state[i].src_id);
             dprintf("%s  src_sp 0x%08X\n\r", _sp, g_svc_cx_state[i].src_sp);
@@ -88,18 +82,15 @@ static void debug_cx_state(int _indent)
 
     /* print current stack pointers for all boxes */
     dprintf("%s     ", _sp);
-    for (i = 0; i < g_vmpu_box_count; i++)
-    {
+    for (i = 0; i < g_vmpu_box_count; i++) {
         dprintf("------------ ");
     }
     dprintf("\n%sSP: |", _sp);
-    for (i = 0; i < g_vmpu_box_count; i++)
-    {
+    for (i = 0; i < g_vmpu_box_count; i++) {
         dprintf(" 0x%08X |", g_svc_cx_curr_sp[i]);
     }
     dprintf("\n%s     ", _sp);
-    for (i = 0; i < g_vmpu_box_count; i++)
-    {
+    for (i = 0; i < g_vmpu_box_count; i++) {
         dprintf("------------ ");
     }
     dprintf("\n");
@@ -111,8 +102,7 @@ void debug_cx_switch_in(void)
 
     /* indent debug messages linearly with the nesting depth */
     dprintf("\n\r");
-    for(i = 0; i < g_svc_cx_state_ptr; i++)
-    {
+    for (i = 0; i < g_svc_cx_state_ptr; i++) {
         dprintf("--");
     }
     dprintf("> Context switch in\n");
@@ -126,8 +116,7 @@ void debug_cx_switch_out(void)
 
     /* indent debug messages linearly with the nesting depth */
     dprintf("\n\r<--");
-    for(i = 0; i < g_svc_cx_state_ptr; i++)
-    {
+    for (i = 0; i < g_svc_cx_state_ptr; i++) {
         dprintf("--");
     }
     dprintf(" Context switch out\n");
@@ -144,15 +133,12 @@ void debug_exc_sf(uint32_t lr)
     dprintf("* EXCEPTION STACK FRAME\n");
 
     /* get stack pointer to exception frame */
-    if(mode)
-    {
+    if (mode) {
         sp = (uint32_t *) __get_PSP();
         dprintf("  Exception from unprivileged code\n");
         dprintf("    psp:     0x%08X\n\r", sp);
         dprintf("    lr:      0x%08X\n\r", lr);
-    }
-    else
-    {
+    } else {
         dprintf("  Exception from privileged code\n");
         dprintf("  Cannot print exception stack frame.\n\n");
         return;
@@ -166,12 +152,10 @@ void debug_exc_sf(uint32_t lr)
     /* print exception stack frame */
     dprintf("  Exception stack frame:\n");
     i = SVC_CX_EXC_SF_SIZE;
-    if(sp[8] & (1 << 9))
-    {
+    if (sp[8] & (1 << 9)) {
         dprintf("    psp[%02d]: 0x%08X | %s\n", i, sp[i], exc_sf_verbose[i]);
     }
-    for(i = SVC_CX_EXC_SF_SIZE - 1; i >= 0; --i)
-    {
+    for (i = SVC_CX_EXC_SF_SIZE - 1; i >= 0; --i) {
         dprintf("    psp[%02d]: 0x%08X | %s\n", i, sp[i], exc_sf_verbose[i]);
     }
     dprintf("\n");
@@ -184,15 +168,14 @@ void UVISOR_WEAK debug_fault_memmanage(void)
 
     dprintf("* CFSR  : 0x%08X\n\r", SCB->CFSR);
 
-    if(SCB->CFSR & 0x80)
-    {
+    if (SCB->CFSR & 0x80) {
         /* resolve memory region responsible for the fault */
         map = memory_map_name(SCB->MMFAR);
 
         dprintf("* MMFAR : 0x%08X (%s)\n\r",
-            SCB->MMFAR, map ? map->name : "unknown");
+                SCB->MMFAR, map ? map->name : "unknown");
     }
-#endif/*NDEBUG*/
+#endif /* NDEBUG */
 }
 
 void UVISOR_WEAK debug_fault_bus(void)
@@ -219,8 +202,7 @@ void UVISOR_WEAK debug_fault_debug(void)
 void debug_fault(THaltError reason, uint32_t lr)
 {
     /* fault-specific code */
-    switch(reason)
-    {
+    switch (reason) {
         case FAULT_MEMMANAGE:
             DEBUG_PRINT_HEAD("MEMMANAGE FAULT");
             debug_fault_memmanage();

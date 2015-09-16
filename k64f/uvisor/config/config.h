@@ -29,6 +29,6 @@
 
 #define STACK_SIZE 2048
 #define STACK_GUARD_BAND 128
-#define TOTAL_SRAM_SIZE (256*1024UL)
+#define TOTAL_SRAM_SIZE (256 * 1024UL)
 
 #endif/*__CONFIG_H__*/

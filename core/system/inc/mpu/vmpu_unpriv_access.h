@@ -21,14 +21,18 @@ static inline __attribute__((always_inline)) void vmpu_unpriv_uint16_write(uint3
 {
     asm volatile(
         "strt %[data], [%[addr]]"
-    :: [addr] "r" (addr), [data] "r" (data));
+        :
+        : [addr] "r" (addr),
+          [data] "r" (data));
 }
 
 static inline __attribute__((always_inline)) void vmpu_unpriv_uint32_write(uint32_t addr, uint32_t data)
 {
     asm volatile(
         "strt %[data], [%[addr]]"
-    :: [addr] "r" (addr), [data] "r" (data));
+        :
+        : [addr] "r" (addr),
+          [data] "r" (data));
 }
 
 static inline __attribute__((always_inline)) uint16_t vmpu_unpriv_uint16_read(uint32_t addr)
@@ -36,7 +40,8 @@ static inline __attribute__((always_inline)) uint16_t vmpu_unpriv_uint16_read(ui
     uint16_t res;
     asm volatile(
         "ldrt %[res], [%[addr]]"
-    : [res] "=r" (res) : [addr] "r" (addr));
+        : [res] "=r" (res)
+        : [addr] "r" (addr));
     return res;
 }
 
@@ -45,8 +50,9 @@ static inline __attribute__((always_inline)) uint32_t vmpu_unpriv_uint32_read(ui
     uint32_t res;
     asm volatile(
         "ldrt %[res], [%[addr]]"
-    : [res] "=r" (res) : [addr] "r" (addr));
+        : [res] "=r" (res)
+        : [addr] "r" (addr));
     return res;
 }
 
-#endif/*__VMPU_UNPRIV_ACCESS_H__*/
+#endif /* __VMPU_UNPRIV_ACCESS_H__ */

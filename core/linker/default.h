@@ -20,11 +20,11 @@ ENTRY(main_entry)
 
 #ifndef RESERVED_FLASH
 #define RESERVED_FLASH 0x0
-#endif/*RESERVED_FLASH*/
+#endif /* RESERVED_FLASH */
 
 #ifndef RESERVED_SRAM
 #define RESERVED_SRAM 0x0
-#endif/*RESERVED_SRAM*/
+#endif /* RESERVED_SRAM */
 
 #define FLASH_MAX (FLASH_LENGTH-RESERVED_FLASH)
 #define SRAM_MAX  (SRAM_LENGTH -RESERVED_SRAM)
@@ -33,39 +33,37 @@ ENTRY(main_entry)
 #if   ((USE_FLASH_SIZE) > (FLASH_MAX))
 #error "USE_FLASH_SIZE needs to be smaller than FLASH_MAX"
 #endif
-#else /*USE_FLASH_SIZE*/
+#else /* USE_FLASH_SIZE */
 #define USE_FLASH_SIZE FLASH_MAX
-#endif/*USE_FLASH_SIZE*/
+#endif /* USE_FLASH_SIZE */
 
 #ifdef  USE_SRAM_SIZE
 #if   ((USE_SRAM_SIZE) > (SRAM_MAX))
 #error "USE_SRAM_SIZE needs to be smaller than SRAM_MAX"
 #endif
-#else /*USE_SRAM_SIZE*/
+#else /* USE_SRAM_SIZE */
 #define USE_SRAM_SIZE SRAM_MAX
-#endif/*USE_SRAM_SIZE*/
+#endif /* USE_SRAM_SIZE */
 
 #ifndef STACK_GUARD_BAND
 #define STACK_GUARD_BAND 32
-#endif/*STACK_GUARD_BAND*/
+#endif /* STACK_GUARD_BAND */
 
 #ifndef STACK_SIZE
 #define STACK_SIZE 1024
-#endif/*STACK_SIZE*/
+#endif /* STACK_SIZE */
 
-MEMORY
-{
-  FLASH (rx) : ORIGIN = (FLASH_ORIGIN + RESERVED_FLASH),
-               LENGTH = USE_FLASH_SIZE - RESERVED_FLASH
-  RAM   (rwx): ORIGIN = (SRAM_ORIGIN + RESERVED_SRAM),
-               LENGTH = USE_SRAM_SIZE - RESERVED_SRAM - STACK_SIZE
-  STACK (rw) : ORIGIN = (SRAM_ORIGIN + USE_SRAM_SIZE - STACK_SIZE),
-               LENGTH = STACK_SIZE
-}
+MEMORY {
+    FLASH (rx) : ORIGIN = (FLASH_ORIGIN + RESERVED_FLASH),
+        LENGTH = USE_FLASH_SIZE - RESERVED_FLASH
+        RAM   (rwx): ORIGIN = (SRAM_ORIGIN + RESERVED_SRAM),
+        LENGTH = USE_SRAM_SIZE - RESERVED_SRAM - STACK_SIZE
+        STACK (rw) : ORIGIN = (SRAM_ORIGIN + USE_SRAM_SIZE - STACK_SIZE),
+        LENGTH = STACK_SIZE
+    }
 
-SECTIONS
-{
-    .text :
+SECTIONS {
+.text :
     {
         *(.text.main_entry)
         *(.text*)
@@ -82,13 +80,13 @@ SECTIONS
     } > FLASH
 
     __exidx_start = .;
-    .ARM.exidx :
+.ARM.exidx :
     {
         *(.ARM.exidx* .gnu.linkonce.armexidx.*)
     } > FLASH
     __exidx_end = .;
 
-    .data :
+.data :
     {
         . = ALIGN(4);
         __data_start__ = .;

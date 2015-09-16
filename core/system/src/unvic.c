@@ -25,20 +25,18 @@ TIsrUVector g_unvic_vector[HW_IRQ_VECTORS];
 
 /* vmpu_acl_irq to unvic_acl_add */
 void vmpu_acl_irq(uint8_t box_id, void *function, uint32_t irqn)
-     UVISOR_LINKTO(unvic_acl_add);
+UVISOR_LINKTO(unvic_acl_add);
 
 static void unvic_default_check(uint32_t irqn)
 {
     /* IRQn goes from 0 to (HW_IRQ_VECTORS - 1) */
-    if(irqn >= HW_IRQ_VECTORS)
-    {
+    if (irqn >= HW_IRQ_VECTORS) {
         HALT_ERROR(NOT_ALLOWED,
                    "Not allowed: IRQ %d is out of range\n\r", irqn);
     }
 
     /* check if uvisor does not already own the IRQn slot */
-    if(g_isr_vector[IRQn_OFFSET + irqn] != &isr_default_handler)
-    {
+    if (g_isr_vector[IRQn_OFFSET + irqn] != &isr_default_handler) {
         HALT_ERROR(PERMISSION_DENIED,
                    "Permission denied: IRQ %d is owned by uVisor\n\r", irqn);
     }
@@ -55,11 +53,10 @@ void unvic_acl_add(uint8_t box_id, void *function, uint32_t irqn)
     uv = &g_unvic_vector[irqn];
 
     /* check if IRQ entry is populated */
-    if(uv->id || uv->hdlr)
-    {
+    if (uv->id || uv->hdlr) {
         HALT_ERROR(PERMISSION_DENIED,
                    "Permission denied: IRQ %d is owned by box %d\n\r", irqn,
-                                                                       uv->id);
+                   uv->id);
     }
 
     /* save settings, function handler is optional */
@@ -82,11 +79,10 @@ static void unvic_acl_check(int irqn)
      *       box claimed exclusive ownership for it. So, another box can claim it
      *       if it is currently un-registered (that is, if the registered handler
      *       is NULL) */
-    if(uv->id != svc_cx_get_curr_id() && (uv->id || uv->hdlr))
-    {
+    if (uv->id != svc_cx_get_curr_id() && (uv->id || uv->hdlr)) {
         HALT_ERROR(PERMISSION_DENIED,
                    "Permission denied: IRQ %d is owned by box %d\n\r", irqn,
-                                                                       uv->id);
+                   uv->id);
     }
 }
 
@@ -137,7 +133,7 @@ void unvic_irq_disable(uint32_t irqn)
     unvic_acl_check(irqn);
 
     DPRINTF("IRQ %d disabled, but still owned by box %d\n\r", irqn,
-                                          g_unvic_vector[irqn].id);
+            g_unvic_vector[irqn].id);
     NVIC_DisableIRQ(irqn);
 }
 
@@ -179,7 +175,7 @@ void unvic_irq_priority_set(uint32_t irqn, uint32_t priority)
     /* FIXME add check for maximum priority */
 
     /* set priority for device specific interrupts */
-    if(priority < UNVIC_MIN_PRIORITY)
+    if (priority < UNVIC_MIN_PRIORITY)
         NVIC_SetPriority(irqn, UNVIC_MIN_PRIORITY);
     else
         NVIC_SetPriority(irqn, UNVIC_MIN_PRIORITY + priority);
@@ -220,7 +216,8 @@ void UVISOR_NAKED unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
         "orr  lr, #0x1C\n"          /* return with PSP, 8 words */
         "bx   lr\n"
         /* the unprivileged interrupt handler will be executed after this */
-        :: "r" (svc_sp), "r" (svc_pc)
+        :
+        : "r" (svc_sp), "r" (svc_pc)
     );
 }
 
@@ -245,8 +242,7 @@ uint32_t __unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
     dst_fn = (uint32_t) g_unvic_vector[irqn].hdlr;
 
     /* check ISR vector */
-    if(!dst_fn)
-    {
+    if (!dst_fn) {
         HALT_ERROR(NOT_ALLOWED,
                    "Unprivileged handler for IRQ %i not found\n\r", irqn);
     }
@@ -256,8 +252,7 @@ uint32_t __unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
     src_sp = svc_cx_validate_sf((uint32_t *) __get_PSP());
 
     /* a proper context switch is only needed if changing box */
-    if(src_id != dst_id)
-    {
+    if (src_id != dst_id) {
         /* gather information from current state */
         dst_sp = svc_cx_get_curr_sp(dst_id);
 
@@ -266,9 +261,7 @@ uint32_t __unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
 
         /* switch boxes */
         vmpu_switch(src_id, dst_id);
-    }
-    else
-    {
+    } else {
         dst_sp = src_sp;
     }
 
@@ -298,7 +291,7 @@ uint32_t __unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
     __set_CONTROL(__get_CONTROL() | 3);
 
     DPRINTF("IRQ %d served with vector 0x%08X\n\r", irqn,
-                                                    g_unvic_vector[irqn]);
+            g_unvic_vector[irqn]);
     /* FIXME add support for privacy (triggers register clearing) */
     return 0;
 }
@@ -317,7 +310,8 @@ void UVISOR_NAKED unvic_svc_cx_out(uint32_t *svc_sp)
         "orr lr, #0x10\n"               /* return with MSP, 8 words */
         "bic lr, #0xC\n"
         "bx  lr\n"
-        :: "r" (svc_sp)
+        :
+        : "r" (svc_sp)
     );
 }
 
@@ -340,8 +334,7 @@ void __unvic_svc_cx_out(uint32_t *svc_sp, uint32_t *msp)
      * was kept idle after interrupt de-privileging */
     msp[6] = dst_sp[6];
 
-    if(src_id != dst_id)
-    {
+    if (src_id != dst_id) {
         /* set the context stack pointer back to the one of the src box */
         *(__uvisor_config.uvisor_box_context) = g_svc_cx_context_ptr[src_id];
 

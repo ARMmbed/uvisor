@@ -30,19 +30,21 @@ void debug_mpu_config(void)
     /* CTRL */
     ctrl = MPU->CTRL;
     dprintf("\n\r");
-    dprintf("  Background region %s\n\r", ctrl & MPU_CTRL_PRIVDEFENA_Msk ?
-                                          "enabled" : "disabled");
-    dprintf("  MPU %s @NMI, @HardFault\n\r", ctrl & MPU_CTRL_HFNMIENA_Msk ?
-                                             "enabled" : "bypassed");
-    dprintf("  MPU %s\n\r", ctrl & MPU_CTRL_PRIVDEFENA_Msk ?
-                                  "enabled" : "disabled");
+    dprintf("  Background region %s\n\r",
+            ctrl & MPU_CTRL_PRIVDEFENA_Msk ?
+                "enabled" : "disabled");
+    dprintf("  MPU %s @NMI, @HardFault\n\r",
+            ctrl & MPU_CTRL_HFNMIENA_Msk ?
+                "enabled" : "bypassed");
+    dprintf("  MPU %s\n\r",
+     	    ctrl & MPU_CTRL_PRIVDEFENA_Msk ?
+                "enabled" : "disabled");
     dprintf("\n\r");
 
     /* information for each region (RBAR, RASR) */
     dregion = (MPU->TYPE & MPU_TYPE_DREGION_Msk) >> MPU_TYPE_DREGION_Pos;
     dprintf("  Region Start      Size  XN AP  TEX S C B SRD      Valid\n\r");
-    for(i = 0; i < dregion; ++i)
-    {
+    for (i = 0; i < dregion; ++i) {
         /* select region */
         MPU->RNR = i;
 

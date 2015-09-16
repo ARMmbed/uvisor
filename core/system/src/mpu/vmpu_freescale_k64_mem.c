@@ -21,14 +21,12 @@
 
 #define MPU_MAX_REGIONS 11
 
-typedef struct
-{
+typedef struct {
     uint32_t word[3];
     uint32_t acl;
 } TMemACL;
 
-typedef struct
-{
+typedef struct {
     TMemACL *acl;
     uint32_t count;
 } TBoxACL;
@@ -40,7 +38,7 @@ static TBoxACL g_mem_box[UVISOR_MAX_BOXES];
 void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
 {
     uint32_t t, u, src_count, dst_count;
-    volatile uint32_t* word;
+    volatile uint32_t *word;
     TBoxACL *box;
     TMemACL *rgd;
 
@@ -52,13 +50,11 @@ void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
 
     /* for box zero, just disable private ACL's */
     src_count = g_mem_box[src_box].count;
-    if(src_box && !dst_box)
-    {
+    if (src_box && !dst_box) {
         /* disable private regions */
-        if(src_count)
-        {
+        if (src_count) {
             t = g_mem_acl_user + 1;
-            while(src_count--)
+            while (src_count--)
                 MPU->WORD[t++][3] = 0;
         }
         return;
@@ -74,8 +70,7 @@ void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
     /* update MPU regions */
     t = g_mem_acl_user + 1;
     u = dst_count;
-    while(u--)
-    {
+    while (u--) {
         word = MPU->WORD[t++];
         word[0] = rgd->word[0];
         word[1] = rgd->word[1];
@@ -85,8 +80,7 @@ void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
     }
 
     /* delete regions beyon updated regions */
-    while(src_count>dst_count)
-    {
+    while (src_count > dst_count) {
         MPU->WORD[t++][3] = 0;
         dst_count++;
     }
@@ -94,13 +88,11 @@ void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
 
 static int vmpu_mem_overlap(uint32_t s1, uint32_t e1, uint32_t s2, uint32_t e2)
 {
-    return (
-        (s1>e1)                ||
-        (s2>e2)                || /* punish messing with overlap */
-        ((s1<=s2) && (e1> s2)) ||
-        ((s1< e2) && (e1>=e2)) ||
-        ((s1>=s2) && (e1<=e2))
-        );
+    return ((s1 > e1)                 ||
+            (s2 > e2)                 || /* punish messing with overlap */
+            ((s1 <= s2) && (e1 > s2)) ||
+            ((s1 < e2) && (e1 >= e2)) ||
+            ((s1 >= s2) && (e1 <= e2)));
 }
 
 static int vmpu_mem_add_int(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
@@ -110,71 +102,66 @@ static int vmpu_mem_add_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
     TMemACL *rgd;
 
     DPRINTF(" mem_acl[%i]: 0x%08X-0x%08X (size=%i, acl=0x%04X)\n",
-            g_mem_acl_count, start, ((uint32_t)start)+size, size, acl);
+            g_mem_acl_count, start,
+            ((uint32_t) start) + size, size, acl);
 
     /* handle empty or fully protected regions */
-    if(!size || !(acl & (UVISOR_TACL_UACL|UVISOR_TACL_SACL)))
+    if (!size || !(acl & (UVISOR_TACL_UACL | UVISOR_TACL_SACL)))
         return 1;
 
     /* ensure that ACL size can be rounded up to slot size */
-    if(size % 32)
-    {
-        if(acl & UVISOR_TACL_SIZE_ROUND_DOWN)
+    if (size % 32) {
+        if (acl & UVISOR_TACL_SIZE_ROUND_DOWN)
             size = UVISOR_REGION_ROUND_DOWN(size);
-        else
-            if(acl & UVISOR_TACL_SIZE_ROUND_UP)
-                size = UVISOR_REGION_ROUND_UP(size);
-            else
-                {
-                    DPRINTF("use UVISOR_TACL_SIZE_ROUND_UP/*_DOWN to round ACL size\n");
-                    return -21;
-                }
+        else if (acl & UVISOR_TACL_SIZE_ROUND_UP)
+            size = UVISOR_REGION_ROUND_UP(size);
+        else {
+            DPRINTF("use UVISOR_TACL_SIZE_ROUND_UP/*_DOWN to round ACL size\n");
+            return -21;
+        }
     }
 
     /* ensure that ACL base is a multiple of 32 */
-    if((((uint32_t)start) % 32) != 0)
-    {
+    if ((((uint32_t)start) % 32) != 0) {
         DPRINTF("start address needs to be aligned on a 32 bytes border\n");
         return -22;
     }
 
     /* get box config */
-    if(box_id >= UVISOR_MAX_BOXES)
+    if (box_id >= UVISOR_MAX_BOXES)
         return -23;
     box = &g_mem_box[box_id];
 
     /* initialize acl pointer */
-    if(!box->acl)
-    {
+    if (!box->acl) {
         /* check for integer overflow */
-        if( g_mem_acl_count >= UVISOR_MAX_ACLS )
+        if (g_mem_acl_count >= UVISOR_MAX_ACLS)
             return -24;
         box->acl = &g_mem_acl[g_mem_acl_count];
     }
 
     /* check for precise overflow */
-    if( (&box->acl[box->count] - g_mem_acl)>=(UVISOR_MAX_ACLS-1) )
+    if ((&box->acl[box->count] - g_mem_acl) >= (UVISOR_MAX_ACLS - 1))
         return -25;
 
     /* check if region overlaps */
     end = ((uint32_t) start) + size;
     rgd = g_mem_acl;
-    for(t=0; t<g_mem_acl_count; t++, rgd++)
-        if(vmpu_mem_overlap((uint32_t) start, end, rgd->word[0], rgd->word[1]))
-        {
+    for (t = 0; t < g_mem_acl_count; t++, rgd++)
+        if (vmpu_mem_overlap((uint32_t) start, end, rgd->word[0], rgd->word[1])) {
             DPRINTF("detected overlap with ACL %i (0x%08X-0x%08X)\n",
-                t, rgd->word[0], rgd->word[1]);
+                    t, rgd->word[0], rgd->word[1]);
 
             /* handle permitted overlaps */
-            if(!((rgd->acl & UVISOR_TACL_SHARED) &&
-                (acl & UVISOR_TACL_SHARED)))
+            if (!((rgd->acl & UVISOR_TACL_SHARED) &&
+                  (acl & UVISOR_TACL_SHARED)))
                 return -26;
         }
 
     /* get mem ACL */
     rgd = &box->acl[box->count];
     /* already populated - ensure to fill boxes unfragmented */
-    if(rgd->acl)
+    if (rgd->acl)
         return -27;
 
     /* remember original ACL */
@@ -188,21 +175,20 @@ static int vmpu_mem_add_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
     perm = (acl & UVISOR_TACL_USER) ?  acl & UVISOR_TACL_UACL : 0;
 
     /* if S-perms are identical to U-perms, refer from S to U */
-    if(((acl & UVISOR_TACL_SACL)>>3) == perm)
+    if (((acl & UVISOR_TACL_SACL) >> 3) == perm) {
         perm |= 3UL << 3;
-    else
+    } else {
         /* handle detailed supervisor permissions */
-        switch(acl & UVISOR_TACL_SACL)
-        {
-            case UVISOR_TACL_SREAD|UVISOR_TACL_SWRITE|UVISOR_TACL_SEXECUTE:
+        switch (acl & UVISOR_TACL_SACL) {
+            case UVISOR_TACL_SREAD | UVISOR_TACL_SWRITE | UVISOR_TACL_SEXECUTE:
                 perm |= 0UL << 3;
                 break;
 
-            case UVISOR_TACL_SREAD|UVISOR_TACL_SEXECUTE:
+            case UVISOR_TACL_SREAD | UVISOR_TACL_SEXECUTE:
                 perm |= 1UL << 3;
                 break;
 
-            case UVISOR_TACL_SREAD|UVISOR_TACL_SWRITE:
+            case UVISOR_TACL_SREAD | UVISOR_TACL_SWRITE:
                 perm |= 2UL << 3;
                 break;
 
@@ -210,6 +196,7 @@ static int vmpu_mem_add_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
                 DPRINTF("chosen supervisor ACL's are not supported by hardware (0x%08X)\n", acl);
                 return -7;
         }
+    }
     rgd->word[2] = perm;
 
     /* increment ACL count */
@@ -220,33 +207,30 @@ static int vmpu_mem_add_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
     return 1;
 }
 
-int vmpu_mem_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
+int vmpu_mem_add(uint8_t box_id, void *start, uint32_t size, UvisorBoxAcl acl)
 {
-    if(    (((uint32_t*)start)>=__uvisor_config.secure_start) &&
-        ((((uint32_t)start)+size)<=(uint32_t)__uvisor_config.secure_end) )
-    {
+    if ((((uint32_t *) start) >= __uvisor_config.secure_start) &&
+        ((((uint32_t) start) + size) <= (uint32_t) __uvisor_config.secure_end)) {
         DPRINTF("\t\tSECURE_FLASH\n");
 
         return vmpu_mem_add_int(box_id, start, size,
                                 (acl & UVISOR_TACLDEF_SECURE_CONST) | UVISOR_TACL_USER);
     }
 
-    if(    (((uint32_t*)start)>=__uvisor_config.reserved_end) &&
-        ((((uint32_t)start)+size)<=(uint32_t)__uvisor_config.bss_start) )
-    {
+    if ((((uint32_t *) start) >= __uvisor_config.reserved_end) &&
+        ((((uint32_t) start) + size) <= (uint32_t) __uvisor_config.bss_start)) {
         DPRINTF("\t\tSECURE_STACK\n");
 
         /* disallow user to provide stack region ACL's */
-        if(acl & UVISOR_TACL_USER)
+        if (acl & UVISOR_TACL_USER)
             return -1;
 
         return vmpu_mem_add_int(box_id, start, size,
                                 (acl & UVISOR_TACLDEF_STACK) | UVISOR_TACL_STACK | UVISOR_TACL_USER);
     }
 
-    if(    (((uint32_t*)start)>=__uvisor_config.bss_start) &&
-        ((((uint32_t)start)+size)<=(uint32_t)__uvisor_config.bss_end) )
-    {
+    if ((((uint32_t *) start) >= __uvisor_config.bss_start) &&
+        ((((uint32_t) start) + size) <= (uint32_t) __uvisor_config.bss_end)) {
         DPRINTF("\t\tSECURE_BSS\n");
 
         return vmpu_mem_add_int(box_id, start, size,
@@ -261,32 +245,33 @@ void vmpu_mem_init(void)
     int res;
 
     /* uvisor SRAM only accessible to uvisor */
-    res = vmpu_mem_add_int(0, (void*)SRAM_ORIGIN, ((uint32_t)__uvisor_config.reserved_end)-SRAM_ORIGIN,
-        UVISOR_TACL_SREAD|
-        UVISOR_TACL_SWRITE);
-    if( res<0 )
+    res = vmpu_mem_add_int(0, (void *) SRAM_ORIGIN,
+                           ((uint32_t) __uvisor_config.reserved_end) - SRAM_ORIGIN,
+                           UVISOR_TACL_SREAD | UVISOR_TACL_SWRITE);
+    if (res < 0)
         HALT_ERROR(SANITY_CHECK_FAILED, "failed setting up SRAM_ORIGIN (%i)\n", res);
 
     /* rest of SRAM, accessible to mbed - non-executable for uvisor */
-    res = vmpu_mem_add_int(0, __uvisor_config.data_end, (SRAM_ORIGIN+SRAM_LENGTH)-((uint32_t)__uvisor_config.data_end),
-        UVISOR_TACL_SREAD|
-        UVISOR_TACL_SWRITE|
-        UVISOR_TACL_UREAD|
-        UVISOR_TACL_UWRITE|
-        UVISOR_TACL_UEXECUTE|
-        UVISOR_TACL_USER
-        );
-    if( res<0 )
+    res = vmpu_mem_add_int(0, __uvisor_config.data_end,
+                           (SRAM_ORIGIN + SRAM_LENGTH) -((uint32_t) __uvisor_config.data_end),
+                           UVISOR_TACL_SREAD |
+                           UVISOR_TACL_SWRITE |
+                           UVISOR_TACL_UREAD |
+                           UVISOR_TACL_UWRITE |
+                           UVISOR_TACL_UEXECUTE |
+                           UVISOR_TACL_USER);
+    if (res < 0)
         HALT_ERROR(SANITY_CHECK_FAILED, "failed setting up box 0 SRAM (%i)\n", res);
 
     /* enable read access to unsecure flash regions - allow execution */
-    res = vmpu_mem_add_int(0, (void*)FLASH_ORIGIN, ((uint32_t)__uvisor_config.secure_start)-FLASH_ORIGIN,
-        UVISOR_TACL_SREAD|
-        UVISOR_TACL_SEXECUTE|
-        UVISOR_TACL_UREAD|
-        UVISOR_TACL_UEXECUTE|
-        UVISOR_TACL_USER);
-    if( res<0 )
+    res = vmpu_mem_add_int(0, (void *) FLASH_ORIGIN,
+                           ((uint32_t) __uvisor_config.secure_start) - FLASH_ORIGIN,
+                           UVISOR_TACL_SREAD |
+                           UVISOR_TACL_SEXECUTE |
+                           UVISOR_TACL_UREAD |
+                           UVISOR_TACL_UEXECUTE |
+                           UVISOR_TACL_USER);
+    if (res < 0)
         HALT_ERROR(SANITY_CHECK_FAILED, "failed setting up box FLASH (%i)\n", res);
 
     /* initial primary box ACL's */

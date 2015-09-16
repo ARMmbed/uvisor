@@ -40,15 +40,13 @@ void halt_led(THaltError reason)
     GPIOG->PUPDR &= ~(0x3 << (HALT_LED_PIN * 2));
 
     flag = 0;
-    while(1)
-    {
-        for(toggle = 0; toggle < 2 * (uint32_t) reason; toggle++)
-        {
+    while (1) {
+        for (toggle = 0; toggle < 2 * (uint32_t) reason; toggle++) {
             /* toggle PORTG LED pin */
             GPIOG->BSRR |= 0x1 << (HALT_LED_PIN + (flag ? 16 : 0));
             flag = !flag;
-            for(delay = 0; delay < HALT_INTRA_PATTERN_DELAY; delay++);
+            for (delay = 0; delay < HALT_INTRA_PATTERN_DELAY; delay++);
         }
-        for(delay = 0; delay < HALT_INTER_PATTERN_DELAY; delay++);
+        for (delay = 0; delay < HALT_INTER_PATTERN_DELAY; delay++);
     }
 }

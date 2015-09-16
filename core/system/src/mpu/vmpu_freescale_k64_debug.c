@@ -30,7 +30,7 @@ static uint32_t debug_aips_bitn_from_alias(uint32_t alias, uint32_t aips_addr)
     uint32_t bitn;
 
     bitn = ((alias - MEMORY_MAP_BITBANDING_START) -
-           ((aips_addr - MEMORY_MAP_PERIPH_START) << 5)) >> 2;
+            ((aips_addr - MEMORY_MAP_PERIPH_START) << 5)) >> 2;
 
     return bitn;
 }
@@ -92,12 +92,9 @@ void debug_mpu_fault(void)
     uint32_t edr, ear, eacd;
     int s, r, i, found;
 
-    if(sperr)
-    {
-        for(s = 4; s >= 0; s--)
-        {
-            if(sperr & (1 << s))
-            {
+    if (sperr) {
+        for (s = 4; s >= 0; s--) {
+            if (sperr & (1 << s)) {
                 edr = MPU->SP[4 - s].EDR;
                 ear = MPU->SP[4 - s].EAR;
                 eacd = edr >> 20;
@@ -107,12 +104,9 @@ void debug_mpu_fault(void)
                 dprintf("  Address:          0x%08X\n\r", ear);
                 dprintf("  Faulting regions: ");
                 found = 0;
-                for(r = 11; r >= 0; r--)
-                {
-                    if(eacd & (1 << r))
-                    {
-                        if(!found)
-                        {
+                for (r = 11; r >= 0; r--) {
+                    if (eacd & (1 << r)) {
+                        if (!found) {
                             dprintf("\n\r");
                             found = 1;
                         }
@@ -123,7 +117,7 @@ void debug_mpu_fault(void)
                         dprintf("\n\r");
                     }
                 }
-                if(!found)
+                if (!found)
                     dprintf("[none]\n\r");
                 dprintf("  Master port:      %d\n\r", (edr >> 4) & 0xF);
                 dprintf("  Error attribute:  %s %s (%s mode)\n\r",
@@ -133,9 +127,9 @@ void debug_mpu_fault(void)
                 break;
             }
         }
-    }
-    else
+    } else {
         dprintf("* No MPU violation found\n\r");
+    }
     dprintf("\n\r");
 }
 
@@ -148,21 +142,17 @@ void debug_map_addr_to_periph(uint32_t address)
     dprintf("  Address:           0x%08X\n", address);
 
     /* find system memory region */
-    if((map = memory_map_name(address)) != NULL)
-    {
+    if ((map = memory_map_name(address)) != NULL) {
         dprintf("  Region/Peripheral: %s\n", map->name);
         dprintf("    Base address:    0x%08X\n", map->base);
         dprintf("    End address:     0x%08X\n", map->end);
 
-        if(address >= MEMORY_MAP_PERIPH_START &&
-           address <= MEMORY_MAP_PERIPH_END)
-        {
+        if (address >= MEMORY_MAP_PERIPH_START &&
+                address <= MEMORY_MAP_PERIPH_END) {
             dprintf("    AIPS slot:       %d\n",
                     debug_aips_slot_from_addr(map->base));
-        }
-        else if(address >= MEMORY_MAP_BITBANDING_START &&
-                address <= MEMORY_MAP_BITBANDING_END)
-        {
+        } else if (address >= MEMORY_MAP_BITBANDING_START &&
+                   address <= MEMORY_MAP_BITBANDING_END) {
             dprintf("    Before bitband:  0x%08X\n",
                     (aips_addr = debug_aips_addr_from_alias(address)));
             map = memory_map_name(aips_addr);
@@ -170,9 +160,9 @@ void debug_map_addr_to_periph(uint32_t address)
             dprintf("      Base address:  0x%08X\n", map->base);
             dprintf("      End address:   0x%08X\n", map->end);
             dprintf("    Accessed bit:    %d\n",
-                     debug_aips_bitn_from_alias(address, aips_addr));
+                    debug_aips_bitn_from_alias(address, aips_addr));
             dprintf("    AIPS slot:       %d\n",
-                     debug_aips_slot_from_addr(aips_addr));
+                    debug_aips_slot_from_addr(aips_addr));
         }
 
         dprintf("\n");

@@ -34,14 +34,12 @@ void halt_led(THaltError reason)
     /* initially set PORTB pin 22 (LED active low) */
     PTB->PSOR = 1UL << 22;
 
-    while(1)
-    {
-        for(toggle = 0; toggle < 2 * (uint32_t) reason; toggle++)
-        {
+    while (1) {
+        for (toggle = 0; toggle < 2 * (uint32_t) reason; toggle++) {
             /* toggle PORTB pin 22 */
             PTB->PTOR = (1UL << 22);
-            for(delay = 0; delay < HALT_INTRA_PATTERN_DELAY; delay++);
+            for (delay = 0; delay < HALT_INTRA_PATTERN_DELAY; delay++);
         }
-        for(delay = 0; delay < HALT_INTER_PATTERN_DELAY; delay++);
+        for (delay = 0; delay < HALT_INTER_PATTERN_DELAY; delay++);
     }
 }

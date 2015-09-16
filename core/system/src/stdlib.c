@@ -21,22 +21,19 @@ void swo_putc(uint8_t data)
 {
     static uint8_t itm_init = 0;
 
-    if(!itm_init)
-    {
+    if (!itm_init) {
         itm_init = TRUE;
 
         /* reset previous channel settings */
         ITM->LAR  = 0xC5ACCE55;
 
         /* wait for debugger to connect */
-        while(!((ITM->TCR & ITM_TCR_ITMENA_Msk) &&
-                (ITM->TER & (1<<CHANNEL_DEBUG))));
+        while (!((ITM->TCR & ITM_TCR_ITMENA_Msk) &&
+                 (ITM->TER & (1 << CHANNEL_DEBUG))));
     }
 
-    if(    (ITM->TCR & ITM_TCR_ITMENA_Msk) &&
-        (ITM->TER & (1<<CHANNEL_DEBUG))
-        )
-    {
+    if ((ITM->TCR & ITM_TCR_ITMENA_Msk) &&
+        (ITM->TER & (1<<CHANNEL_DEBUG))) {
         /* FIXME power */
         /* wait for TX */
         while (ITM->PORT[CHANNEL_DEBUG].u32 == 0);
@@ -49,4 +46,4 @@ void UVISOR_WEAK default_putc(uint8_t data)
 {
     swo_putc(data);
 }
-#endif/*CHANNEL_DEBUG*/
+#endif /* CHANNEL_DEBUG */

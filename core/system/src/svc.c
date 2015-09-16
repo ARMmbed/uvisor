@@ -85,8 +85,8 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
         "it     eq\n"
         "beq    called_from_priv\n"
 
-    /* the code here serves calls from unprivileged code and is mirrored below
-     * for the privileged case; only minor changes exists between the two */
+        /* the code here serves calls from unprivileged code and is mirrored below
+         * for the privileged case; only minor changes exists between the two */
     "called_from_unpriv:\n"
         "mrs    r0, PSP\n"                  // stack pointer
         "ldrt   r1, [r0, #24]\n"            // stacked pc
@@ -127,7 +127,7 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
         ".word  __svc_not_implemented\n"
     "jump_table_unpriv_end:\n"
 
-    ".thumb_func\n"                            // needed for correct referencing
+        ".thumb_func\n"                            // needed for correct referencing
     "custom_table_unpriv:\n"
         /* there is no need to mask the lower 4 bits of the SVC# because
          * custom_table_unpriv is only when SVC# <= 0x0F */
@@ -146,7 +146,7 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
         "ldrt   r0, [r0, #0]\n"             // pass args from stack (unpriv)
         "pop    {pc}\n"                     // execute handler (return to thunk)
 
-    ".thumb_func\n"                            // needed for correct referencing
+        ".thumb_func\n"                            // needed for correct referencing
     "svc_thunk_unpriv:\n"
         "mrs    r1, PSP\n"                  // unpriv stack may have changed
         "strt   r0, [r1]\n"                 // store result on stacked r0
@@ -190,9 +190,9 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
         ".word  __svc_not_implemented\n"
         ".word  __svc_not_implemented\n"
         ".word  __svc_not_implemented\n"
-    "jump_table_priv_end:\n"
+        "jump_table_priv_end:\n"
 
-    ".thumb_func\n"                            // needed for correct referencing
+        ".thumb_func\n"                            // needed for correct referencing
     "custom_table_priv:\n"
         /* there is no need to mask the lower 4 bits of the SVC# because
          * custom_table_unpriv is only when SVC# <= 0x0F */
@@ -208,14 +208,14 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
         "ldm    r0, {r0-r3}\n"              // pass args from stack
         "pop    {pc}\n"                     // execute handler (return to thunk)
 
-    ".thumb_func\n"                            // needed for correct referencing
+        ".thumb_func\n"                            // needed for correct referencing
     "svc_thunk_priv:\n"
         "str    r0, [sp, #4]\n"             // store result on stacked r0
         "pop    {pc}\n"                     // return from SVCall
 
-        :: [mode_bits]     "i" (UVISOR_SVC_CUSTOM_BITS),
-           [svc_hdlrs_num] "i" (SVC_HDLRS_IND)
-    );
+        :
+        : [mode_bits]     "i" (UVISOR_SVC_CUSTOM_BITS),
+          [svc_hdlrs_num] "i" (SVC_HDLRS_IND));
 }
 
 /*******************************************************************************

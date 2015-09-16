@@ -25,17 +25,15 @@ TIsrVector g_isr_vector_prev;
 UVISOR_NOINLINE void uvisor_init_pre(void)
 {
     /* reset uvisor BSS */
-    memset(
-        &__bss_start__,
-        0,
-        VMPU_REGION_SIZE(&__bss_start__, &__bss_end__)
+    memset(&__bss_start__,
+           0,
+           VMPU_REGION_SIZE(&__bss_start__, &__bss_end__)
     );
 
     /* initialize data if needed */
-    memcpy(
-        &__data_start__,
-        &__data_start_src__,
-        VMPU_REGION_SIZE(&__data_start__, &__data_end__)
+    memcpy(&__data_start__,
+           &__data_start_src__,
+           VMPU_REGION_SIZE(&__data_start__, &__data_end__)
     );
 
     /* initialize debugging features */
@@ -44,16 +42,16 @@ UVISOR_NOINLINE void uvisor_init_pre(void)
 
 UVISOR_NOINLINE void uvisor_init_post(void)
 {
-        /* vector table initialization */
-        unvic_init();
+    /* vector table initialization */
+    unvic_init();
 
-        /* init MPU */
-        vmpu_init_post();
+    /* init MPU */
+    vmpu_init_post();
 
-        /* init SVC call interface */
-        svc_init();
+    /* init SVC call interface */
+    svc_init();
 
-        DPRINTF("uvisor initialized\n");
+    DPRINTF("uvisor initialized\n");
 }
 
 void main_entry(void)
@@ -62,8 +60,7 @@ void main_entry(void)
     uvisor_init_pre();
 
     /* run basic sanity checks */
-    if(vmpu_init_pre() == 0)
-    {
+    if (vmpu_init_pre() == 0) {
         /* disable IRQ's to perform atomic swaps */
         __disable_irq();
 
@@ -71,7 +68,7 @@ void main_entry(void)
         g_isr_vector_prev = (TIsrVector)SCB->VTOR;
         /* swap vector tables */
         SCB->VTOR = (uint32_t)&g_isr_vector;
-        /* swap stack pointers*/
+        /* swap stack pointers */
         __set_PSP(__get_MSP());
         __set_MSP((uint32_t)&__stack_top__);
 

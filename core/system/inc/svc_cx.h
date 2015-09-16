@@ -60,7 +60,7 @@ static void inline svc_cx_push_state(uint8_t src_id, uint32_t *src_sp,
                                      uint8_t dst_id)
 {
     /* check state stack overflow */
-    if(g_svc_cx_state_ptr == UVISOR_SVC_CONTEXT_MAX_DEPTH)
+    if (g_svc_cx_state_ptr == UVISOR_SVC_CONTEXT_MAX_DEPTH)
         HALT_ERROR(SANITY_CHECK_FAILED, "state stack overflow");
 
     /* push state */
@@ -69,7 +69,7 @@ static void inline svc_cx_push_state(uint8_t src_id, uint32_t *src_sp,
     ++g_svc_cx_state_ptr;
 
     /* save curr stack pointer for the src box */
-        g_svc_cx_curr_sp[src_id] = src_sp;
+    g_svc_cx_curr_sp[src_id] = src_sp;
 
     /* update current box id */
     g_svc_cx_curr_id = dst_id;
@@ -78,7 +78,7 @@ static void inline svc_cx_push_state(uint8_t src_id, uint32_t *src_sp,
 static inline void svc_cx_pop_state(uint8_t dst_id, uint32_t *dst_sp)
 {
     /* check state stack underflow */
-    if(!g_svc_cx_state_ptr)
+    if (!g_svc_cx_state_ptr)
         HALT_ERROR(SANITY_CHECK_FAILED, "state stack underflow");
 
     /* pop state */
@@ -94,4 +94,4 @@ static inline void svc_cx_pop_state(uint8_t dst_id, uint32_t *dst_sp)
 
 uint32_t *svc_cx_validate_sf(uint32_t *sp);
 
-#endif/*__SVC_CX_H__*/
+#endif /* __SVC_CX_H__ */

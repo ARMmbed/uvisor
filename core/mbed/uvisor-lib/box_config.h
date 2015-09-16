@@ -45,7 +45,7 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
     }; \
     \
     const __attribute__((section(".uvisor.cfgtbl_first"), aligned(4))) \
-          volatile void* main_cfg_ptr  =  & main_cfg;
+          volatile void *main_cfg_ptr = &main_cfg;
 
 #define UVISOR_SECURE_CONST \
     const volatile __attribute__((section(".uvisor.secure"), aligned(32)))
@@ -65,7 +65,7 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 #define __UVISOR_BOX_CONFIG(box_name, acl_list, stack_size, context_size) \
     \
     uint8_t __attribute__((section(".uvisor.bss.stack"), aligned(32))) \
-        box_name ## _reserved[UVISOR_STACK_SIZE_ROUND(((UVISOR_MIN_STACK(stack_size) + (context_size))*8)/6)]; \
+        box_name ## _reserved[UVISOR_STACK_SIZE_ROUND(((UVISOR_MIN_STACK(stack_size) + (context_size)) * 8) / 6)]; \
     \
     static UVISOR_SECURE_CONST UvisorBoxConfig box_name ## _cfg = { \
         UVISOR_BOX_MAGIC, \
@@ -90,4 +90,4 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
     __UVISOR_BOX_MACRO(__VA_ARGS__, __UVISOR_BOX_CONFIG_CONTEXT, \
                                     __UVISOR_BOX_CONFIG_NOCONTEXT)(__VA_ARGS__)
 
-#endif/*__BOX_CONFIG_H__*/
+#endif /* __BOX_CONFIG_H__ */

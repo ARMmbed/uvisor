@@ -43,8 +43,7 @@ void vmpu_sys_mux_handler(uint32_t lr)
      * the IPSR value to this latter encoding */
     int ipsr = ((int) (__get_IPSR() & 0x1FF)) - IRQn_OFFSET;
 
-    switch(ipsr)
-    {
+    switch (ipsr) {
         case MemoryManagement_IRQn:
             DEBUG_FAULT(FAULT_MEMMANAGE, lr);
             halt_led(FAULT_MEMMANAGE);
@@ -64,26 +63,23 @@ void vmpu_sys_mux_handler(uint32_t lr)
              * that exception return points to the correct instruction */
 
             /* currently we only support recovery from unprivileged mode */
-            if(lr & 0x4)
-            {
+            if (lr & 0x4) {
                 /* pc and sp at fault */
                 sp = __get_PSP();
                 pc = vmpu_unpriv_uint32_read(sp + (6 * 4));
 
                 /* check if the fault is an MPU fault */
-                if(MPU->CESR >> 27 && !vmpu_fault_recovery_mpu(pc, sp))
+                if (MPU->CESR >> 27 && !vmpu_fault_recovery_mpu(pc, sp))
                     return;
 
                 /* check if the fault is the special register corner case */
-                if(!vmpu_fault_recovery_bus(pc, sp))
+                if (!vmpu_fault_recovery_bus(pc, sp))
                     return;
 
                 /* if recovery was not successful, throw an error and halt */
                 DEBUG_FAULT(FAULT_BUS, lr);
                 HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied");
-            }
-            else
-            {
+            } else {
                 DEBUG_FAULT(FAULT_BUS, lr);
                 HALT_ERROR(FAULT_BUS, "Cannot recover from privileged bus fault");
             }
@@ -110,51 +106,48 @@ void vmpu_sys_mux_handler(uint32_t lr)
     }
 }
 
-void vmpu_acl_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
+void vmpu_acl_add(uint8_t box_id, void *start, uint32_t size, UvisorBoxAcl acl)
 {
     int res;
 
 #ifndef NDEBUG
     const MemMap *map;
-#endif/*NDEBUG*/
+#endif /* NDEBUG */
 
     /* check for maximum box ID */
-    if(box_id>=UVISOR_MAX_BOXES)
+    if (box_id >= UVISOR_MAX_BOXES)
         HALT_ERROR(SANITY_CHECK_FAILED, "box ID out of range (%i)\n", box_id);
 
     /* check for alignment to 32 bytes */
-    if(((uint32_t)start) & 0x1F)
+    if (((uint32_t) start) & 0x1F)
         HALT_ERROR(SANITY_CHECK_FAILED, "ACL start address is not aligned [0x%08X]\n", start);
 
     /* round ACLs if needed */
-    if(acl & UVISOR_TACL_SIZE_ROUND_DOWN)
+    if (acl & UVISOR_TACL_SIZE_ROUND_DOWN)
         size = UVISOR_REGION_ROUND_DOWN(size);
-    else
-        if(acl & UVISOR_TACL_SIZE_ROUND_UP)
-            size = UVISOR_REGION_ROUND_UP(size);
+    else if (acl & UVISOR_TACL_SIZE_ROUND_UP)
+        size = UVISOR_REGION_ROUND_UP(size);
 
     DPRINTF("\t@0x%08X size=%06i acl=0x%04X [%s]\n", start, size, acl,
-        ((map = memory_map_name((uint32_t)start))!=NULL) ? map->name : "unknown"
-    );
+            ((map = memory_map_name((uint32_t) start)) != NULL) ?
+                map->name : "unknown");
 
     /* check for peripheral memory, proceed with general memory */
-    if(acl & UVISOR_TACL_PERIPHERAL)
+    if (acl & UVISOR_TACL_PERIPHERAL)
         res = vmpu_aips_add(box_id, start, size, acl);
     else
         res = vmpu_mem_add(box_id, start, size, acl);
 
-    if(!res)
+    if (!res)
         HALT_ERROR(NOT_ALLOWED, "ACL in unhandled memory area\n");
-    else
-        if(res<0)
-            HALT_ERROR(SANITY_CHECK_FAILED, "ACL sanity check failed [%i]\n", res);
+    else if(res<0)
+        HALT_ERROR(SANITY_CHECK_FAILED, "ACL sanity check failed [%i]\n", res);
 }
 
 void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
 {
     /* handle main box */
-    if(!box_id)
-    {
+    if (!box_id) {
         DPRINTF("ctx=%i stack=%i\n\r", context_size, stack_size);
         /* non-important sanity checks */
         assert(context_size == 0);
@@ -162,7 +155,7 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
 
         /* assign main box stack pointer to existing
          * unprivileged stack pointer */
-        g_svc_cx_curr_sp[0] = (uint32_t*)__get_PSP();
+        g_svc_cx_curr_sp[0] = (uint32_t *) __get_PSP();
         g_svc_cx_context_ptr[0] = NULL;
         return;
     }
@@ -171,46 +164,38 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
     stack_size = UVISOR_REGION_ROUND_UP(UVISOR_MIN_STACK(stack_size));
 
     /* add stack ACL */
-    vmpu_acl_add(
-        box_id,
-        (void*)g_box_mem_pos,
+    vmpu_acl_add(box_id,
+        (void *) g_box_mem_pos,
         stack_size,
-        UVISOR_TACLDEF_STACK
-    );
+        UVISOR_TACLDEF_STACK);
 
     /* set stack pointer to box stack size minus guard band */
     g_box_mem_pos += stack_size;
-    g_svc_cx_curr_sp[box_id] = (uint32_t*)g_box_mem_pos;
+    g_svc_cx_curr_sp[box_id] = (uint32_t *) g_box_mem_pos;
     /* add stack protection band */
     g_box_mem_pos += UVISOR_STACK_BAND_SIZE;
 
     /* add context ACL if needed */
-    if(!context_size)
+    if (!context_size)
         g_svc_cx_context_ptr[box_id] = NULL;
-    else
-    {
+    else {
         context_size = UVISOR_REGION_ROUND_UP(context_size);
-        g_svc_cx_context_ptr[box_id] = (uint32_t*)g_box_mem_pos;
+        g_svc_cx_context_ptr[box_id] = (uint32_t *) g_box_mem_pos;
 
         DPRINTF("erasing box context at 0x%08X (%u bytes)\n",
-            g_box_mem_pos,
-            context_size
-        );
+                g_box_mem_pos,
+                context_size);
 
         /* reset uninitialized secured box context */
-        memset(
-            (void *) g_box_mem_pos,
-            0,
-            context_size
-        );
+        memset((void *) g_box_mem_pos,
+               0,
+               context_size);
 
         /* add context ACL */
-        vmpu_acl_add(
-            box_id,
-            (void*)g_box_mem_pos,
-            context_size,
-            UVISOR_TACLDEF_DATA
-        );
+        vmpu_acl_add(box_id,
+                     (void *) g_box_mem_pos,
+                     context_size,
+                     UVISOR_TACLDEF_DATA);
 
         g_box_mem_pos += context_size + UVISOR_STACK_BAND_SIZE;
     }
@@ -227,8 +212,7 @@ void vmpu_switch(uint8_t src_box, uint8_t dst_box)
 
 void vmpu_load_box(uint8_t box_id)
 {
-    if(box_id != 0)
-    {
+    if (box_id != 0) {
         HALT_ERROR(NOT_IMPLEMENTED, "currently only box 0 can be loaded");
     }
     vmpu_aips_switch(box_id, box_id);
@@ -241,9 +225,8 @@ void vmpu_arch_init(void)
     SCB->SHCSR |= 0x70000;
 
     /* initialize box memories, leave stack-band sized gap */
-    g_box_mem_pos = UVISOR_REGION_ROUND_UP(
-        (uint32_t)__uvisor_config.reserved_end) +
-        UVISOR_STACK_BAND_SIZE;
+    g_box_mem_pos = UVISOR_REGION_ROUND_UP((uint32_t) __uvisor_config.reserved_end) +
+                    UVISOR_STACK_BAND_SIZE;
 
     /* init memory protection */
     vmpu_mem_init();

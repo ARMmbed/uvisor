@@ -33,8 +33,9 @@ void uvisor_benchmark_configure(void)
         "bl   uvisor_benchmark_stop\n"
         "svc  %[svc_id_benchmark_cfg]\n"
         "pop  {pc}\n"
-        :: [svc_id_benchmark_cfg]  "i" (UVISOR_SVC_ID_BENCHMARK_CFG)
-         : "r0"
+        :
+        : [svc_id_benchmark_cfg]  "i" (UVISOR_SVC_ID_BENCHMARK_CFG)
+        : "r0"
     );
 }
 
@@ -42,7 +43,8 @@ void uvisor_benchmark_start(void)
 {
     __asm__ volatile(
         "svc %[svc_id_benchmark_rst]\n"
-        :: [svc_id_benchmark_rst] "i" (UVISOR_SVC_ID_BENCHMARK_RST)
+        :
+        : [svc_id_benchmark_rst] "i" (UVISOR_SVC_ID_BENCHMARK_RST)
     );
 }
 

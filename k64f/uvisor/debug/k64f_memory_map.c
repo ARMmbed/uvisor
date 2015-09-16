@@ -110,15 +110,15 @@ static const MemMap g_mem_map[] = {
     {"ROMTable",   0xE00FF000, 0xE00FFFFF}, /* end of PPB                     */
 };
 
-const MemMap* memory_map_name(uint32_t addr)
+const MemMap *memory_map_name(uint32_t addr)
 {
     int i;
     const MemMap *map;
 
     /* find system memory region */
     map = g_mem_map;
-    for(i = 0; i < UVISOR_ARRAY_COUNT(g_mem_map); i++)
-        if((addr >= map->base) && (addr <= map->end))
+    for (i = 0; i < UVISOR_ARRAY_COUNT(g_mem_map); i++)
+        if ((addr >= map->base) && (addr <= map->end))
             return map;
         else
             map++;
