@@ -17,23 +17,29 @@
 #ifndef __SECURE_GATEWAY_H__
 #define __SECURE_GATEWAY_H__
 
-/* the actual secure gateway */
-#define secure_gateway(dst_box, dst_fn, ...)                                   \
-    ({                                                                         \
-        SELECT_ARGS(__VA_ARGS__)                                               \
-        register uint32_t res asm("r0");                                       \
-        asm volatile(                                                          \
-            "svc   %[svc_id]\n"                                                \
-            "b.n   skip_args%=\n"                                              \
-            ".word "UVISOR_TO_STRING(UVISOR_SVC_GW_MAGIC)"\n"                  \
-            ".word "UVISOR_TO_STRING(dst_fn)"\n"                               \
-            ".word "UVISOR_TO_STRING(dst_box)"_cfg_ptr\n"                      \
-            "skip_args%=:\n"                                                   \
-            :          "=r" (res)                                              \
-            : [svc_id] "I"  (UVISOR_SVC_ID_SECURE_GATEWAY(NARGS(__VA_ARGS__))) \
-                       SELECT_REGS(__VA_ARGS__)                                \
-        );                                                                     \
-        res;                                                                   \
-     })
+/* secure gateway metadata */
+#if defined(__CC_ARM)
+
+/* TODO/FIXME */
+
+#elif defined(__GNUC__)
+
+#define __UVISOR_SECURE_GATEWAY_METADATA(dst_box, dst_fn) \
+    "b.n skip_args%=\n" \
+    ".word "UVISOR_TO_STRING(UVISOR_SVC_GW_MAGIC)"\n" \
+    ".word "UVISOR_TO_STRING(dst_fn)"\n" \
+    ".word "UVISOR_TO_STRING(dst_box)"_cfg_ptr\n" \
+    "skip_args%=:\n"
+
+#endif /* defined(__CC_ARM) || defined(__GNUC__) */
+
+/* secure gateway */
+#define secure_gateway(dst_box, dst_fn, ...) \
+    ({ \
+        uint32_t res = UVISOR_SVC(UVISOR_SVC_ID_SECURE_GATEWAY(UVISOR_MACRO_NARGS(__VA_ARGS__)), \
+                                  __UVISOR_SECURE_GATEWAY_METADATA(dst_box, dst_fn), \
+                                  __VA_ARGS__); \
+        res; \
+    })
 
 #endif/*__SECURE_GATEWAY_H__*/
