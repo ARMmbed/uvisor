@@ -49,6 +49,15 @@ static int vmpu_sanity_checks(void)
             __uvisor_config.magic,
             UVISOR_MAGIC);
 
+    /* verify basic assumptions about vmpu_bits/__builtin_clz */
+    assert(__builtin_clz(0) == 32);
+    assert(__builtin_clz(1UL << 31) == 0);
+    assert(vmpu_bits(0) == 0);
+    assert(vmpu_bits(1UL << 31) == 32);
+    assert(vmpu_bits(0x8000UL) == 16);
+    assert(vmpu_bits(0x8001UL) == 16);
+    assert(vmpu_bits(1) == 1);
+
     /* verify if configuration mode is inside flash memory */
     assert((uint32_t)__uvisor_config.mode >= FLASH_ORIGIN);
     assert((uint32_t)__uvisor_config.mode <= (FLASH_ORIGIN + FLASH_LENGTH - 4));
