@@ -60,7 +60,29 @@
 #define UVISOR_SVC_ID_UNVIC_IN       UVISOR_SVC_FIXED_TABLE(1)
 
 /* unprivileged code uses a secure gateway to switch context */
-#define UVISOR_SVC_ID_SECURE_GATEWAY(args)                                     \
-    ((UVISOR_SVC_ID_CX_IN) | (UVISOR_SVC_CUSTOM_TABLE(args)))
+#define UVISOR_SVC_ID_SECURE_GATEWAY(args) ((UVISOR_SVC_ID_CX_IN) | (UVISOR_SVC_CUSTOM_TABLE(args)))
+
+/* macro to execute an SVCall; additional metadata can be provided, which will
+ * be appended right after the svc instruction */
+/* note: the macro is implicitly overloaded to allow 0 to 4 32bits arguments */
+#if defined(__CC_ARM)
+
+#elif defined(__GNUC__)
+
+#define UVISOR_SVC(id, metadata, ...) \
+    ({ \
+        UVISOR_MACRO_REGS_ARGS(__VA_ARGS__); \
+        UVISOR_MACRO_REGS_RETVAL(res); \
+        asm volatile( \
+            "svc %[svc_id]\n" \
+            metadata \
+            :          "=r" (res) \
+            : [svc_id] "I"  (id), \
+              UVISOR_MACRO_GCC_ASM_INPUT(__VA_ARGS__) \
+        ); \
+        res; \
+    })
+
+#endif /* defined(__CC_ARM) || defined(__GNUC__) */
 
 #endif/*__SVC_EXPORTS_H__*/
