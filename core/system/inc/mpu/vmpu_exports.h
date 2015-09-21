@@ -148,14 +148,7 @@ typedef struct
 
 static inline int vmpu_bits(uint32_t size)
 {
-    int bits=0;
-    /* find highest bit */
-    while(size)
-    {
-        size>>=1;
-        bits++;
-    }
-    return bits;
+    return (size == 0) ? 0 : (32 - __builtin_clz(size));
 }
 
 #endif/*__VMPU_EXPORTS_H__*/
