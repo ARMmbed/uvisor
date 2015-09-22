@@ -18,6 +18,7 @@
 #define __UVISOR_LIB_H__
 
 #include <stdint.h>
+#include "cmsis_nvic.h"
 
 /* the symbol UVISOR_PRESENT is defined here based on the supported platforms */
 #include "uvisor-lib/platforms.h"
@@ -30,14 +31,15 @@
 /* conditionally included header files */
 #ifdef  UVISOR_PRESENT
 
+#include "uvisor-lib/svc_exports.h"
+#include "uvisor-lib/svc_gw_exports.h"
+
 #include "uvisor-lib/benchmark.h"
 #include "uvisor-lib/secure_access.h"
 #include "uvisor-lib/box_config.h"
 #include "uvisor-lib/error.h"
 #include "uvisor-lib/interrupts.h"
 #include "uvisor-lib/secure_gateway.h"
-#include "uvisor-lib/svc_exports.h"
-#include "uvisor-lib/svc_gw_exports.h"
 
 #else /*UVISOR_PRESENT*/
 
