@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __SECURE_ACCESS_H__
-#define __SECURE_ACCESS_H__
+#ifndef __UVISOR_LIB_SECURE_ACCESS_H__
+#define __UVISOR_LIB_SECURE_ACCESS_H__
 
 #include "uvisor-lib/vmpu_exports.h"
 
@@ -126,4 +126,4 @@ static inline __attribute__((always_inline)) uint8_t uvisor_read8(uint8_t volati
     return res;
 }
 
-#endif/*__SECURE_ACCESS_H__*/
+#endif /* __UVISOR_LIB_SECURE_ACCESS_H__ */

@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __BOX_CONFIG_H__
-#define __BOX_CONFIG_H__
+#ifndef __UVISOR_LIB_BOX_CONFIG_H__
+#define __UVISOR_LIB_BOX_CONFIG_H__
 
 UVISOR_EXTERN const uint32_t __uvisor_mode;
 
@@ -90,4 +90,4 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
     __UVISOR_BOX_MACRO(__VA_ARGS__, __UVISOR_BOX_CONFIG_CONTEXT, \
                                     __UVISOR_BOX_CONFIG_NOCONTEXT)(__VA_ARGS__)
 
-#endif/*__BOX_CONFIG_H__*/
+#endif /* __UVISOR_LIB_BOX_CONFIG_H__ */

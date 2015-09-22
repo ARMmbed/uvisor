@@ -14,11 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __BENCHMARK_H__
-#define __BENCHMARK_H__
+#ifndef __UVISOR_LIB_BENCHMARK_H__
+#define __UVISOR_LIB_BENCHMARK_H__
 
 UVISOR_EXTERN void uvisor_benchmark_configure(void);
 UVISOR_EXTERN void uvisor_benchmark_start(void);
 UVISOR_EXTERN uint32_t uvisor_benchmark_stop(void);
 
-#endif/*__BENCHMARK_H__*/
+#endif /* __UVISOR_LIB_BENCHMARK_H__ */

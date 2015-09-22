@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __INTERRUPTS_H__
-#define __INTERRUPTS_H__
+#ifndef __UVISOR_LIB_INTERRUPTS_H__
+#define __UVISOR_LIB_INTERRUPTS_H__
 
 UVISOR_EXTERN void     __uvisor_isr_set(uint32_t irqn, uint32_t vector,
                                         uint32_t flag);
@@ -148,4 +148,4 @@ UVISOR_EXTERN uint32_t __uvisor_irq_priority_get(uint32_t irqn);
         res;                                                                   \
     })
 
-#endif/*__INTERRUPTS_H__*/
+#endif /* __UVISOR_LIB_INTERRUPTS_H__ */

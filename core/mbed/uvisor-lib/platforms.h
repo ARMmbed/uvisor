@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __PLATFORMS_H__
-#define __PLATFORMS_H__
+#ifndef __UVISOR_LIB_PLATFORMS_H__
+#define __UVISOR_LIB_PLATFORMS_H__
 
 /* list of supported platforms */
 #if defined(TARGET_LIKE_FRDM_K64F_GCC)         || \
@@ -23,6 +23,7 @@
 
 #define UVISOR_PRESENT
 
-#endif
+#endif /* TARGET_LIKE_FRDM_K64F_GCC        or
+          TARGET_LIKE_STM32F429I_DISCO_GCC */
 
-#endif/*__PLATFORMS_H__*/
+#endif /* __UVISOR_LIB_PLATFORMS_H__ */

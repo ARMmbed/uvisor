@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __ERROR_H__
-#define __ERROR_H__
+#ifndef __UVISOR_LIB_ERROR_H__
+#define __UVISOR_LIB_ERROR_H__
 
 UVISOR_EXTERN void uvisor_error(THaltUserError reason);
 
-#endif/*__ERROR*/
+#endif /* __UVISOR_LIB_ERROR_H__ */
