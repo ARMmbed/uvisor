@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __SECURE_GATEWAY_H__
-#define __SECURE_GATEWAY_H__
+#ifndef __UVISOR_LIB_SECURE_GATEWAY_H__
+#define __UVISOR_LIB_SECURE_GATEWAY_H__
 
 /* secure gateway metadata */
 #if defined(__CC_ARM)
@@ -31,7 +31,7 @@
     ".word "UVISOR_TO_STRING(dst_box)"_cfg_ptr\n" \
     "skip_args%=:\n"
 
-#endif /* defined(__CC_ARM) || defined(__GNUC__) */
+#endif /* __CC_ARM or __GNUC__ */
 
 /* secure gateway */
 #define secure_gateway(dst_box, dst_fn, ...) \
@@ -42,4 +42,4 @@
         res; \
     })
 
-#endif/*__SECURE_GATEWAY_H__*/
+#endif /* __UVISOR_LIB_SECURE_GATEWAY_H__ */

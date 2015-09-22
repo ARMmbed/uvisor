@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __UVISOR_LIB_H__
-#define __UVISOR_LIB_H__
+#ifndef __UVISOR_LIB_UVISOR_LIB_H__
+#define __UVISOR_LIB_UVISOR_LIB_H__
 
 #include <stdint.h>
 #include "cmsis_nvic.h"
@@ -41,10 +41,10 @@
 #include "uvisor-lib/interrupts.h"
 #include "uvisor-lib/secure_gateway.h"
 
-#else /*UVISOR_PRESENT*/
+#else /* UVISOR_PRESENT */
 
 #include "uvisor-lib/unsupported.h"
 
-#endif/*UVISOR_PRESENT*/
+#endif /* UVISOR_PRESENT */
 
-#endif/*__UVISOR_LIB_H__*/
+#endif /* __UVISOR_LIB_UVISOR_LIB_H__ */

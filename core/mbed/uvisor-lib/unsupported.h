@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __UNSUPPORTED_H__
-#define __UNSUPPORTED_H__
+#ifndef __UVISOR_LIB_UNSUPPORTED_H__
+#define __UVISOR_LIB_UNSUPPORTED_H__
 
 /* uvisor hook for unsupported platforms */
 UVISOR_EXTERN void uvisor_init(void);
@@ -100,4 +100,4 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 /* secure_gateway.h */
 #define secure_gateway(dst_box, dst_fn, ...) dst_fn(__VA_ARGS__)
 
-#endif/*__UNSUPPORTED_H__*/
+#endif /* __UVISOR_LIB_UNSUPPORTED_H__ */

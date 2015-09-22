@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __SECURE_ACCESS_H__
-#define __SECURE_ACCESS_H__
+#ifndef __UVISOR_LIB_SECURE_ACCESS_H__
+#define __UVISOR_LIB_SECURE_ACCESS_H__
 
 #include "uvisor-lib/vmpu_exports.h"
 
@@ -84,4 +84,4 @@ static inline UVISOR_FORCEINLINE uint8_t uvisor_read8(uint8_t volatile *addr)
     return UVISOR_ASM_MEMORY_ACCESS(ldrb, uint8_t, addr);
 }
 
-#endif/*__SECURE_ACCESS_H__*/
+#endif /* __UVISOR_LIB_SECURE_ACCESS_H__ */
