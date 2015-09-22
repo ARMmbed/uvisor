@@ -19,11 +19,5 @@
 
 void uvisor_error(THaltUserError reason)
 {
-    register uint32_t __r0 __asm__("r0") = (uint32_t) reason;
-    __asm__ volatile(
-        "svc %[svc_id]\n"
-        :
-        : [r0]     "r" (__r0),
-          [svc_id] "i" (UVISOR_SVC_ID_HALT_USER_ERR)
-    );
+    UVISOR_SVC(UVISOR_SVC_ID_HALT_USER_ERR, "", reason);
 }

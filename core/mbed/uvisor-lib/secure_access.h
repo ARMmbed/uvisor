@@ -54,76 +54,34 @@
         res.fieldB; \
     })
 
-static inline __attribute__((always_inline)) void uvisor_write32(uint32_t volatile *addr, uint32_t val)
+static inline UVISOR_FORCEINLINE void uvisor_write32(uint32_t volatile *addr, uint32_t val)
 {
-    register uint32_t r0 __asm__("r0") = (uint32_t) addr;
-    register uint32_t r1 __asm__("r1") = val;
-    __asm__ volatile(
-        "str %[v], [%[a]]\n"
-        UVISOR_NOP_GROUP
-        :: [a] "r" (r0),
-           [v] "r" (r1)
-    );
+    UVISOR_ASM_MEMORY_ACCESS(str, uint32_t, addr, val);
 }
 
-static inline __attribute__((always_inline)) void uvisor_write16(uint16_t volatile *addr, uint16_t val)
+static inline UVISOR_FORCEINLINE void uvisor_write16(uint16_t volatile *addr, uint16_t val)
 {
-    register uint32_t r0 __asm__("r0") = (uint32_t) addr;
-    register uint16_t r1 __asm__("r1") = val;
-    __asm__ volatile(
-        "strh %[v], [%[a]]\n"
-        UVISOR_NOP_GROUP
-        :: [a] "r" (r0),
-           [v] "r" (r1)
-    );
+    UVISOR_ASM_MEMORY_ACCESS(strh, uint16_t, addr, val);
 }
 
-static inline __attribute__((always_inline)) void uvisor_write8(uint8_t volatile *addr, uint8_t val)
+static inline UVISOR_FORCEINLINE void uvisor_write8(uint8_t volatile *addr, uint8_t val)
 {
-    register uint32_t r0 __asm__("r0") = (uint32_t) addr;
-    register uint8_t  r1 __asm__("r1") = val;
-    __asm__ volatile(
-        "strb %[v], [%[a]]\n"
-        UVISOR_NOP_GROUP
-        :: [a] "r" (r0),
-           [v] "r" (r1)
-    );
+    UVISOR_ASM_MEMORY_ACCESS(strb, uint8_t, addr, val);
 }
 
-static inline __attribute__((always_inline)) uint32_t uvisor_read32(uint32_t volatile *addr)
+static inline UVISOR_FORCEINLINE uint32_t uvisor_read32(uint32_t volatile *addr)
 {
-    register uint32_t r0  __asm__("r0") = (uint32_t) addr;
-    register uint32_t res __asm__("r0");
-    __asm__ volatile(
-        "ldr %[r], [%[a]]\n"
-        : [r] "=r" (res)
-        : [a] "r"  (r0)
-    );
-    return (uint32_t) res;
+    return UVISOR_ASM_MEMORY_ACCESS(ldr, uint32_t, addr);
 }
 
-static inline __attribute__((always_inline)) uint16_t uvisor_read16(uint16_t volatile *addr)
+static inline UVISOR_FORCEINLINE uint16_t uvisor_read16(uint16_t volatile *addr)
 {
-    register uint32_t r0  __asm__("r0") = (uint32_t) addr;
-    register uint16_t res __asm__("r0");
-    __asm__ volatile(
-        "ldrh %[r], [%[a]]\n"
-        : [r] "=r" (res)
-        : [a] "r"  (r0)
-    );
-    return res;
+    return UVISOR_ASM_MEMORY_ACCESS(ldrh, uint16_t, addr);
 }
 
-static inline __attribute__((always_inline)) uint8_t uvisor_read8(uint8_t volatile *addr)
+static inline UVISOR_FORCEINLINE uint8_t uvisor_read8(uint8_t volatile *addr)
 {
-    register uint32_t r0  __asm__("r0") = (uint32_t) addr;
-    register uint8_t  res __asm__("r0");
-    __asm__ volatile(
-        "ldrb %[r], [%[a]]\n"
-        : [r] "=r" (res)
-        : [a] "r"  (r0)
-    );
-    return res;
+    return UVISOR_ASM_MEMORY_ACCESS(ldrb, uint8_t, addr);
 }
 
 #endif/*__SECURE_ACCESS_H__*/

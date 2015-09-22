@@ -27,6 +27,11 @@
 #define UVISOR_EXTERN extern
 #endif/*__CPP__*/
 
+/* asm keyword */
+#ifndef asm
+#define asm __asm__
+#endif
+
 /* compiler attributes */
 #define UVISOR_FORCEINLINE __attribute__((always_inline))
 #define UVISOR_NOINLINE    __attribute__((noinline))
@@ -124,10 +129,6 @@
 /* TODO/FIXME */
 
 #elif defined(__GNUC__)
-
-#ifndef asm
-#define asm __asm__
-#endif
 
 #define __UVISOR_ASM_MEMORY_ACCESS_R(opcode, type, ...) \
     ({ \

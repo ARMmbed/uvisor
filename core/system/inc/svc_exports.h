@@ -71,14 +71,14 @@
 
 #define UVISOR_SVC(id, metadata, ...) \
     ({ \
-        UVISOR_MACRO_REGS_ARGS(__VA_ARGS__); \
-        UVISOR_MACRO_REGS_RETVAL(res); \
+        UVISOR_MACRO_REGS_ARGS(uint32_t, ##__VA_ARGS__); \
+        UVISOR_MACRO_REGS_RETVAL(uint32_t, res); \
         asm volatile( \
             "svc %[svc_id]\n" \
             metadata \
-            :          "=r" (res) \
-            : [svc_id] "I"  (id), \
-              UVISOR_MACRO_GCC_ASM_INPUT(__VA_ARGS__) \
+            : UVISOR_MACRO_GCC_ASM_OUTPUT(res) \
+            : UVISOR_MACRO_GCC_ASM_INPUT(__VA_ARGS__), \
+              [svc_id] "I" (id) \
         ); \
         res; \
     })
