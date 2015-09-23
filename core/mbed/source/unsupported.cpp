@@ -17,7 +17,7 @@
 #include "uvisor-lib/uvisor-lib.h"
 
 /* uvisor hook for unsupported platforms */
-UVISOR_EXTERN void uvisor_init(void)
+void uvisor_init(void)
 {
     return;
 }

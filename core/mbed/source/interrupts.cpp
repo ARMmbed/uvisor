@@ -17,113 +17,92 @@
 #include "mbed/mbed.h"
 #include "uvisor-lib/uvisor-lib.h"
 
-void __uvisor_isr_set(uint32_t irqn, uint32_t vector, uint32_t flag)
+void vIRQ_SetVectorX(uint32_t irqn, uint32_t vector, uint32_t flag)
 {
-    register uint32_t __r0 __asm__("r0") = irqn;
-    register uint32_t __r1 __asm__("r1") = vector;
-    register uint32_t __r2 __asm__("r2") = flag;
-    __asm__ volatile(
-        "svc %[svc_id]\n"
-        :
-        : [r0]     "r" (__r0),
-          [r1]     "r" (__r1),
-          [r2]     "r" (__r2),
-          [svc_id] "i" (UVISOR_SVC_ID_ISR_SET)
-    );
+    if(__uvisor_mode == 0) {
+        NVIC_SetVector((IRQn_Type) irqn, vector);
+    }
+    else {
+        UVISOR_SVC(UVISOR_SVC_ID_ISR_SET, "", irqn, vector, flag);
+    }
 }
 
-uint32_t __uvisor_isr_get(uint32_t irqn)
+uint32_t vIRQ_GetVector(uint32_t irqn)
 {
-    register uint32_t __r0  __asm__("r0") = irqn;
-    register uint32_t __res __asm__("r0");
-    __asm__ volatile(
-        "svc %[svc_id]\n"
-        : [res]    "=r" (__res)
-        : [r0]     "r"  (__r0),
-          [svc_id] "i"  (UVISOR_SVC_ID_ISR_GET)
-    );
-    return __res;
+    if(__uvisor_mode == 0) {
+        return NVIC_GetVector((IRQn_Type) irqn);
+    }
+    else {
+        return UVISOR_SVC(UVISOR_SVC_ID_ISR_GET, "", irqn);
+    }
 }
 
-void __uvisor_irq_enable(uint32_t irqn)
+void vIRQ_EnableIRQ(uint32_t irqn)
 {
-    register uint32_t __r0 __asm__("r0") = irqn;
-    __asm__ volatile(
-        "svc %[svc_id]\n"
-        :
-        : [r0]     "r" (__r0),
-          [svc_id] "i" (UVISOR_SVC_ID_IRQ_ENABLE)
-    );
+    if(__uvisor_mode == 0) {
+        NVIC_EnableIRQ((IRQn_Type) irqn);
+    }
+    else {
+        UVISOR_SVC(UVISOR_SVC_ID_IRQ_ENABLE, "", irqn);
+    }
 }
 
-void __uvisor_irq_disable(uint32_t irqn)
+void vIRQ_DisableIRQ(uint32_t irqn)
 {
-    register uint32_t __r0 __asm__("r0") = irqn;
-    __asm__ volatile(
-        "svc %[svc_id]\n"
-        :
-        : [r0]     "r" (__r0),
-          [svc_id] "i" (UVISOR_SVC_ID_IRQ_DISABLE)
-    );
+    if(__uvisor_mode == 0) {
+        NVIC_DisableIRQ((IRQn_Type) irqn);
+    }
+    else {
+        UVISOR_SVC(UVISOR_SVC_ID_IRQ_DISABLE, "", irqn);
+    }
 }
 
-void __uvisor_irq_pending_clr(uint32_t irqn)
+void vIRQ_ClearPendingIRQ(uint32_t irqn)
 {
-    register uint32_t __r0 __asm__("r0") = irqn;
-    __asm__ volatile(
-        "svc %[svc_id]\n"
-        :
-        : [r0]     "r" (__r0),
-          [svc_id] "i" (UVISOR_SVC_ID_IRQ_PEND_CLR)
-    );
+    if(__uvisor_mode == 0) {
+        NVIC_ClearPendingIRQ((IRQn_Type) irqn);
+    }
+    else {
+        UVISOR_SVC(UVISOR_SVC_ID_IRQ_PEND_CLR, "", irqn);
+    }
 }
 
-void __uvisor_irq_pending_set(uint32_t irqn)
+void vIRQ_SetPendingIRQ(uint32_t irqn)
 {
-    register uint32_t __r0 __asm__("r0") = irqn;
-    __asm__ volatile(
-        "svc %[svc_id]\n"
-        :
-        : [r0]     "r" (__r0),
-          [svc_id] "i" (UVISOR_SVC_ID_IRQ_PEND_SET)
-    );
+    if(__uvisor_mode == 0) {
+        NVIC_SetPendingIRQ((IRQn_Type) irqn);
+    }
+    else {
+        UVISOR_SVC(UVISOR_SVC_ID_IRQ_PEND_SET, "", irqn);
+    }
 }
 
-uint32_t __uvisor_irq_pending_get(uint32_t irqn)
+uint32_t vIRQ_GetPendingIRQ(uint32_t irqn)
 {
-    register uint32_t __r0  __asm__("r0") = irqn;
-    register uint32_t __res __asm__("r0");
-    __asm__ volatile(
-        "svc %[svc_id]\n"
-        : [res]    "=r" (__res)
-        : [r0]     "r"  (__r0),
-          [svc_id] "i"  (UVISOR_SVC_ID_IRQ_PEND_GET)
-    );
-    return __res;
+    if(__uvisor_mode == 0) {
+        return NVIC_GetPendingIRQ((IRQn_Type) irqn);
+    }
+    else {
+        return UVISOR_SVC(UVISOR_SVC_ID_IRQ_PEND_GET, "", irqn);
+    }
 }
 
-void __uvisor_irq_priority_set(uint32_t irqn, uint32_t priority)
+void vIRQ_SetPriority(uint32_t irqn, uint32_t priority)
 {
-    register uint32_t __r0 __asm__("r0") = irqn;
-    register uint32_t __r1 __asm__("r1") = priority;
-    __asm__ volatile(
-        "svc %[svc_id]\n"
-        :
-        : [r0]     "r" (__r0),
-          [r1]     "r" (__r1),
-          [svc_id] "i" (UVISOR_SVC_ID_IRQ_PRIO_SET)
-    );
+    if(__uvisor_mode == 0) {
+        NVIC_SetPriority((IRQn_Type) irqn, priority);
+    }
+    else {
+        UVISOR_SVC(UVISOR_SVC_ID_IRQ_PRIO_SET, "", irqn, priority);
+    }
 }
 
-uint32_t __uvisor_irq_priority_get(uint32_t irqn)
+uint32_t vIRQ_GetPriority(uint32_t irqn)
 {
-    register uint32_t __r0  __asm__("r0") = irqn;
-    register uint32_t __res __asm__("r0");
-    __asm__ volatile(
-        "svc %[svc_id]\n"
-        : [res]    "=r" (__res)
-        : [r0]     "r"  (__r0),
-          [svc_id] "i"  (UVISOR_SVC_ID_IRQ_PRIO_GET)
-    );
-    return __res;
+    if(__uvisor_mode == 0) {
+        return NVIC_GetPriority((IRQn_Type) irqn);
+    }
+    else {
+        return UVISOR_SVC(UVISOR_SVC_ID_IRQ_PRIO_GET, "", irqn);
+    }
 }

@@ -27,6 +27,11 @@
 #define UVISOR_EXTERN extern
 #endif/*__CPP__*/
 
+/* asm keyword */
+#ifndef asm
+#define asm __asm__
+#endif
+
 /* compiler attributes */
 #define UVISOR_FORCEINLINE __attribute__((always_inline))
 #define UVISOR_NOINLINE    __attribute__((noinline))
@@ -55,34 +60,35 @@
      __UVISOR_MACRO_SELECT(_0, ##__VA_ARGS__, 4, 3, 2, 1, 0)
 
 /* declare explicit callee-saved registers to hold input arguments (0 to 4) */
-#define UVISOR_MACRO_REGS_ARGS(...) \
+/* note: sizeof(type) must be less than or equal to 4 */
+#define UVISOR_MACRO_REGS_ARGS(type, ...) \
      __UVISOR_MACRO_SELECT(_0, ##__VA_ARGS__, __UVISOR_MACRO_REGS_ARGS4, \
                                               __UVISOR_MACRO_REGS_ARGS3, \
                                               __UVISOR_MACRO_REGS_ARGS2, \
                                               __UVISOR_MACRO_REGS_ARGS1, \
-                                              __UVISOR_MACRO_REGS_ARGS0)(__VA_ARGS__)
-#define __UVISOR_MACRO_REGS_ARGS0()
-#define __UVISOR_MACRO_REGS_ARGS1(a0) \
-        register uint32_t r0 asm("r0") = (uint32_t) a0;
-#define __UVISOR_MACRO_REGS_ARGS2(a0, a1) \
-        register uint32_t r0 asm("r0") = (uint32_t) a0; \
-        register uint32_t r1 asm("r1") = (uint32_t) a1;
-#define __UVISOR_MACRO_REGS_ARGS3(a0, a1, a2) \
-        register uint32_t r0 asm("r0") = (uint32_t) a0; \
-        register uint32_t r1 asm("r1") = (uint32_t) a1; \
-        register uint32_t r2 asm("r2") = (uint32_t) a2;
-#define __UVISOR_MACRO_REGS_ARGS4(a0, a1, a2, a3) \
-        register uint32_t r0 asm("r0") = (uint32_t) a0; \
-        register uint32_t r1 asm("r1") = (uint32_t) a1; \
-        register uint32_t r2 asm("r2") = (uint32_t) a2; \
-        register uint32_t r3 asm("r3") = (uint32_t) a3;
+                                              __UVISOR_MACRO_REGS_ARGS0)(type, ##__VA_ARGS__)
+#define __UVISOR_MACRO_REGS_ARGS0(type)
+#define __UVISOR_MACRO_REGS_ARGS1(type, a0) \
+        register type r0 asm("r0") = (type) a0;
+#define __UVISOR_MACRO_REGS_ARGS2(type, a0, a1) \
+        register type r0 asm("r0") = (type) a0; \
+        register type r1 asm("r1") = (type) a1;
+#define __UVISOR_MACRO_REGS_ARGS3(type, a0, a1, a2) \
+        register type r0 asm("r0") = (type) a0; \
+        register type r1 asm("r1") = (type) a1; \
+        register type r2 asm("r2") = (type) a2;
+#define __UVISOR_MACRO_REGS_ARGS4(type, a0, a1, a2, a3) \
+        register type r0 asm("r0") = (type) a0; \
+        register type r1 asm("r1") = (type) a1; \
+        register type r2 asm("r2") = (type) a2; \
+        register type r3 asm("r3") = (type) a3;
 
 /* declare explicit callee-saved registers to hold output values */
-/* note: currently only one 32bit output value is allowed */
-#define UVISOR_MACRO_REGS_RETVAL(name) \
-    register uint32_t name asm("r0");
+/* note: currently only one output value is allowed, up to 32bits */
+#define UVISOR_MACRO_REGS_RETVAL(type, name) \
+    register type name asm("r0");
 
-/* declare callee-saved input operands for gcc-style extended inline asm */
+/* declare callee-saved input/output operands for gcc-style inline asm */
 /* note: this macro requires that a C variable having the same name of the
  *       corresponding callee-saved register is declared; these operands follow
  *       the official ABI for ARMv7M (e.g. 2 input arguments of 32bits each max,
@@ -99,11 +105,53 @@
                                               __UVISOR_MACRO_GCC_ASM_INPUT1, \
                                               __UVISOR_MACRO_GCC_ASM_INPUT0)(__VA_ARGS__)
 #define __UVISOR_MACRO_GCC_ASM_INPUT0()               [__dummy] "I" (0)
-#define __UVISOR_MACRO_GCC_ASM_INPUT1(a0)             "r" (r0)
-#define __UVISOR_MACRO_GCC_ASM_INPUT2(a0, a1)         "r" (r0), "r" (r1)
-#define __UVISOR_MACRO_GCC_ASM_INPUT3(a0, a1, a2)     "r" (r0), "r" (r1), "r" (r2)
-#define __UVISOR_MACRO_GCC_ASM_INPUT4(a0, a1, a2, a3) "r" (r0), "r" (r1), "r" (r2), "r" (r3)
+#define __UVISOR_MACRO_GCC_ASM_INPUT1(a0)             [r0] "r" (r0)
+#define __UVISOR_MACRO_GCC_ASM_INPUT2(a0, a1)         [r0] "r" (r0), [r1] "r" (r1)
+#define __UVISOR_MACRO_GCC_ASM_INPUT3(a0, a1, a2)     [r0] "r" (r0), [r1] "r" (r1), [r2] "r" (r2)
+#define __UVISOR_MACRO_GCC_ASM_INPUT4(a0, a1, a2, a3) [r0] "r" (r0), [r1] "r" (r1), [r2] "r" (r2), [r3] "r" (r3)
+
+#define UVISOR_MACRO_GCC_ASM_OUTPUT(name) [res] "=r" (name)
 
 #endif /* __GNUC__ */
+
+/* this macro multiplexes read/write opcodes depending on the number of
+ * arguments */
+#define UVISOR_ASM_MEMORY_ACCESS(opcode, type, ...) \
+    __UVISOR_MACRO_SELECT(_0, ##__VA_ARGS__, /* no macro for 4 args */   , \
+                                             /* no macro for 3 args */   , \
+                                             __UVISOR_ASM_MEMORY_ACCESS_W, \
+                                             __UVISOR_ASM_MEMORY_ACCESS_R, \
+                                             /* no macro for 0 args */   )(opcode, type, ##__VA_ARGS__)
+/* the macros that actually generate the assembly code for the memory access are
+ * toolchain-specific */
+#if defined(__CC_ARM)
+
+/* TODO/FIXME */
+
+#elif defined(__GNUC__)
+
+#define __UVISOR_ASM_MEMORY_ACCESS_R(opcode, type, ...) \
+    ({ \
+        UVISOR_MACRO_REGS_ARGS(uint32_t, ##__VA_ARGS__); \
+        UVISOR_MACRO_REGS_RETVAL(type, res); \
+        asm volatile( \
+            UVISOR_TO_STRING(opcode)" %[res], [%[r0]]\n" \
+            UVISOR_NOP_GROUP \
+            : UVISOR_MACRO_GCC_ASM_OUTPUT(res) \
+            : UVISOR_MACRO_GCC_ASM_INPUT(__VA_ARGS__) \
+        ); \
+        res; \
+    })
+
+#define __UVISOR_ASM_MEMORY_ACCESS_W(opcode, type, ...) \
+    UVISOR_MACRO_REGS_ARGS(uint32_t, ##__VA_ARGS__); \
+    asm volatile( \
+        UVISOR_TO_STRING(opcode)" %[r1], [%[r0]]\n" \
+        UVISOR_NOP_GROUP \
+        : \
+        : UVISOR_MACRO_GCC_ASM_INPUT(__VA_ARGS__) \
+    );
+
+#endif /* defined(__CC_ARM) || defined(__GNUC__) */
 
 #endif/*__UVISOR_EXPORTS_H__*/
