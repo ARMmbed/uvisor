@@ -24,7 +24,8 @@ UVISOR_EXTERN void uvisor_init(void);
  * re-definitions from:
  ******************************************************************************/
 
-/* config.h */
+/* uvisor-lib/box-config.h */
+
 UVISOR_EXTERN const uint32_t __uvisor_mode;
 
 #define UVISOR_DISABLED 0
@@ -57,7 +58,9 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 #define UVISOR_BOX_CONFIG(...) \
     __UVISOR_BOX_MACRO(__VA_ARGS__, __UVISOR_BOX_CONFIG_CONTEXT, \
                                     __UVISOR_BOX_CONFIG_NOCONTEXT)(__VA_ARGS__)
-/* interrupts.h */
+
+/* uvisor-lib/interrupts.h */
+
 #define vIRQ_SetVectorX(irqn, vector, flag) NVIC_SetVector((IRQn_Type) (irqn), (uint32_t) (vector))
 #define vIRQ_SetVector(irqn, vector)        NVIC_SetVector((IRQn_Type) (irqn), (uint32_t) (vector))
 #define vIRQ_GetVector(irqn)                NVIC_GetVector((IRQn_Type) (irqn))
@@ -69,7 +72,8 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 #define vIRQ_SetPriority(irqn, priority)    NVIC_SetPriority((IRQn_Type) (irqn), (uint32_t) (priority))
 #define vIRQ_GetPriority(irqn)              NVIC_GetPriority((IRQn_Type) (irqn))
 
-/* secure_access.h */
+/* uvisor-lib/secure_access.h */
+
 /* the conditional statement will be optimised away since the compiler already
  * knows the sizeof(type) */
 #define ADDRESS_READ(type, addr) \
@@ -97,7 +101,8 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 
 #define UNION_READ(type, addr, fieldU, fieldB) ((*((volatile type *) (addr))).fieldB)
 
-/* secure_gateway.h */
+/* uvisor-lib/secure_gateway.h */
+
 #define secure_gateway(dst_box, dst_fn, ...) dst_fn(__VA_ARGS__)
 
 #endif /* __UVISOR_LIB_UNSUPPORTED_H__ */
