@@ -21,8 +21,6 @@
 #define VMPU_GRANULARITY 0x400
 #define VMPU_ID_COUNT 0x100
 
-static uint32_t g_peripheral_common[VMPU_ID_COUNT/32];
-static uint32_t g_peripheral_acl[UVISOR_MAX_BOXES][VMPU_ID_COUNT/32];
 static uint32_t g_vmpu_public_flash;
 
 void vmpu_arch_init_hw(void)
@@ -47,91 +45,4 @@ void vmpu_arch_init_hw(void)
     if(ARMv7M_MPU_RESERVED_REGIONS != 2)
         HALT_ERROR(SANITY_CHECK_FAILED,
             "please adjust ARMv7M_MPU_RESERVED_REGIONS to actual region count");
-}
-
-int vmpu_addr2pid(uint32_t addr)
-{
-    uint8_t block = (uint8_t)(addr>>16);
-    uint16_t block_low = (uint16_t)addr;
-
-    switch((uint8_t)(addr>>24))
-    {
-        /* APB1, APB2, AHB1 */
-        case 0x40:
-            /* detect peripheral region ID 0x00-0xBF */
-            if(block<=0x02)
-                return (addr & 0x3FFFFUL)/VMPU_GRANULARITY;
-
-            /* USB OTG HS */
-            if((block>0x04) && (block<=0x07))
-                return 0xC0;
-
-            /* bail out if no match */
-            break;
-
-        /* FSMC or FMC */
-        case 0xA0:
-            return ((!block) && (block_low <= 0xFFF)) ? 0xC1 : -1;
-
-        /* AHB2 */
-        case 0x50:
-            switch(block)
-            {
-                /* USB OTG FS */
-                case 0x00:
-                case 0x01:
-                case 0x02:
-                case 0x03:
-                    return 0xC2;
-
-                /* DMCI */
-                case 0x05:
-                    return (block_low <= 0x3FF) ? 0xC3 : -1;
-
-                /* crypto peripheral region ID 0xC4-0xC6 */
-                case 0x06:
-                    return (block_low <= 0xBFF) ?
-                        0xC4+(block_low/VMPU_GRANULARITY) : -1;
-            }
-    }
-
-    /* default is invalid peripheral */
-    return -1;
-}
-
-void vmpu_add_peripheral_map(uint8_t box_id, uint32_t addr, uint32_t length, uint8_t shared)
-{
-    int pid, index;
-    uint32_t mask;
-
-    /* scan through whole peripheral length, mark all */
-    while(1)
-    {
-        /* determine peripheral ID for given address */
-        pid = vmpu_addr2pid(addr);
-        if((pid<0) || (pid>=VMPU_ID_COUNT))
-                HALT_ERROR(SANITY_CHECK_FAILED,
-                    "pid invalid (%i) for address 0x%08X\n\r",
-                    pid, addr
-                );
-
-        /* calculate table index and bitmask */
-        index = pid / 32;
-        mask = 1UL << (pid%32);
-
-        /* ensure that boxes don't declare regions that exist in the
-         * main box already */
-        if((g_peripheral_common[index] & mask)==0)
-        {
-            /* mark regions */
-            g_peripheral_common[index] |= mask;
-            g_peripheral_acl[box_id][index] |= mask;
-        }
-
-        if(length<=VMPU_GRANULARITY)
-            break;
-
-        addr+=VMPU_GRANULARITY;
-        length-=VMPU_GRANULARITY;
-    }
 }
