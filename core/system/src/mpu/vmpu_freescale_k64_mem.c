@@ -222,17 +222,8 @@ static int vmpu_mem_add_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
 
 int vmpu_mem_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 {
-    if(    (((uint32_t*)start)>=__uvisor_config.secure_start) &&
-        ((((uint32_t)start)+size)<=(uint32_t)__uvisor_config.secure_end) )
-    {
-        DPRINTF("\t\tSECURE_FLASH\n");
-
-        return vmpu_mem_add_int(box_id, start, size,
-                                (acl & UVISOR_TACLDEF_SECURE_CONST) | UVISOR_TACL_USER);
-    }
-
-    if(    (((uint32_t*)start)>=__uvisor_config.reserved_end) &&
-        ((((uint32_t)start)+size)<=(uint32_t)__uvisor_config.bss_start) )
+    if(    (((uint32_t*)start)>=__uvisor_config.bss_boxes_start) &&
+        ((((uint32_t)start)+size)<=(uint32_t)__uvisor_config.bss_boxes_end) )
     {
         DPRINTF("\t\tSECURE_STACK\n");
 
@@ -244,15 +235,6 @@ int vmpu_mem_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
                                 (acl & UVISOR_TACLDEF_STACK) | UVISOR_TACL_STACK | UVISOR_TACL_USER);
     }
 
-    if(    (((uint32_t*)start)>=__uvisor_config.bss_start) &&
-        ((((uint32_t)start)+size)<=(uint32_t)__uvisor_config.bss_end) )
-    {
-        DPRINTF("\t\tSECURE_BSS\n");
-
-        return vmpu_mem_add_int(box_id, start, size,
-                                (acl & UVISOR_TACLDEF_SECURE_BSS) | UVISOR_TACL_USER);
-    }
-
     return 0;
 }
 
@@ -261,14 +243,14 @@ void vmpu_mem_init(void)
     int res;
 
     /* uvisor SRAM only accessible to uvisor */
-    res = vmpu_mem_add_int(0, (void*)SRAM_ORIGIN, ((uint32_t)__uvisor_config.reserved_end)-SRAM_ORIGIN,
+    res = vmpu_mem_add_int(0, (void*)SRAM_ORIGIN, ((uint32_t)__uvisor_config.bss_main_end)-SRAM_ORIGIN,
         UVISOR_TACL_SREAD|
         UVISOR_TACL_SWRITE);
     if( res<0 )
         HALT_ERROR(SANITY_CHECK_FAILED, "failed setting up SRAM_ORIGIN (%i)\n", res);
 
     /* rest of SRAM, accessible to mbed - non-executable for uvisor */
-    res = vmpu_mem_add_int(0, __uvisor_config.data_end, (SRAM_ORIGIN+SRAM_LENGTH)-((uint32_t)__uvisor_config.data_end),
+    res = vmpu_mem_add_int(0, __uvisor_config.bss_end, (SRAM_ORIGIN+SRAM_LENGTH)-((uint32_t)__uvisor_config.bss_end),
         UVISOR_TACL_SREAD|
         UVISOR_TACL_SWRITE|
         UVISOR_TACL_UREAD|

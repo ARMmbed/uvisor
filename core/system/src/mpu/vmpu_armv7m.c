@@ -434,7 +434,7 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
         g_box_mem_pos = (g_box_mem_pos & ~(size-1)) + size;
 
     /* check if we have enough memory left */
-    if((g_box_mem_pos + size)>((uint32_t)__uvisor_config.bss_start))
+    if((g_box_mem_pos + size)<=((uint32_t)__uvisor_config.bss_boxes_end))
         HALT_ERROR(SANITY_CHECK_FAILED,
             "memory overflow - increase uvisor memory "
             "allocation\n\r");
@@ -486,9 +486,9 @@ void vmpu_arch_init(void)
 
     /* init protected box memory enumation pointer */
     DPRINTF("\n\rbox stack segment start=0x%08X end=0x%08X (length=%i)\n\r",
-        __uvisor_config.reserved_end, __uvisor_config.bss_start,
-        ((uint32_t)__uvisor_config.bss_start)-((uint32_t)__uvisor_config.reserved_end));
-    g_box_mem_pos = (uint32_t)__uvisor_config.reserved_end;
+        __uvisor_config.bss_boxes_start, __uvisor_config.bss_boxes_start,
+        ((uint32_t)__uvisor_config.bss_boxes_end)-((uint32_t)__uvisor_config.bss_boxes_start));
+    g_box_mem_pos = (uint32_t)__uvisor_config.bss_boxes_start;
 
     /* enable mem, bus and usage faults */
     SCB->SHCSR |= 0x70000;

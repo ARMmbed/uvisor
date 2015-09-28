@@ -39,20 +39,26 @@ typedef struct {
     uint32_t version;
     uint32_t *mode;
 
-    /* initialized secret data section */
-    uint32_t *cfgtbl_start, *cfgtbl_end;
-
-    /* initialized secret data section */
-    uint32_t *data_src, *data_start, *data_end;
-
-    /* uninitialized secret data section */
+    /* protected bss */
     uint32_t *bss_start, *bss_end;
 
-    /* uvisors protected flash memory regions */
+        /* uvisor main bss */
+    uint32_t *bss_main_start, *bss_main_end;
+
+        /* secure boxes bss */
+    uint32_t *bss_boxes_start, *bss_boxes_end;
+
+    /* uvisor code and data */
+    uint32_t *main_start, *main_end;
+
+    /* protected flash memory region */
     uint32_t *secure_start, *secure_end;
 
-    /* memory reserved for uvisor */
-    uint32_t *reserved_start, *reserved_end;
+        /* boxes configuration tables */
+    uint32_t *cfgtbl_start, *cfgtbl_end;
+
+        /* pointers to boxes configuration tables */
+    uint32_t *cfgtbl_ptr_start, *cfgtbl_ptr_end;
 
     /* address of __uvisor_box_context */
     uint32_t **uvisor_box_context;
