@@ -30,12 +30,11 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
     UVISOR_SET_MODE_ACL_COUNT(mode, acl_list, UVISOR_ARRAY_COUNT(acl_list))
 
 #define UVISOR_SET_MODE_ACL_COUNT(mode, acl_list, acl_list_count) \
-    uint8_t __attribute__((section(".uvisor.bss.stack"), aligned(32))) \
-        __reserved_stack[UVISOR_STACK_BAND_SIZE]; \
+    uint8_t __attribute__((section(".keep.uvisor.bss.boxes"), aligned(32))) __reserved_stack[UVISOR_STACK_BAND_SIZE]; \
     \
     UVISOR_EXTERN const uint32_t __uvisor_mode = (mode); \
     \
-    static UVISOR_SECURE_CONST UvisorBoxConfig main_cfg = { \
+    static const __attribute__((section(".keep.uvisor.cfgtbl"), aligned(4))) UvisorBoxConfig main_cfg = { \
         UVISOR_BOX_MAGIC, \
         UVISOR_BOX_VERSION, \
         0, \
@@ -44,30 +43,17 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
         acl_list_count \
     }; \
     \
-    const __attribute__((section(".uvisor.cfgtbl_first"), aligned(4))) \
-          volatile void* main_cfg_ptr  =  & main_cfg;
-
-#define UVISOR_SECURE_CONST \
-    const volatile __attribute__((section(".uvisor.secure"), aligned(32)))
-
-#define UVISOR_SECURE_BSS \
-    __attribute__((section(".uvisor.bss.data"), aligned(32)))
-
-/* we currently only support secure data sections in Flash on the K64F */
-#ifdef TARGET_LIKE_FRDM_K64F_GCC
-#define UVISOR_SECURE_DATA \
-    __attribute__((section(".uvisor.data"), aligned(32)))
-#endif
+    const __attribute__((section(".keep.uvisor.cfgtbl_ptr_first"), aligned(4))) volatile void* main_cfg_ptr = &main_cfg;
 
 /* this macro selects an overloaded macro (variable number of arguments) */
 #define __UVISOR_BOX_MACRO(_1, _2, _3, _4, NAME, ...) NAME
 
 #define __UVISOR_BOX_CONFIG(box_name, acl_list, stack_size, context_size) \
     \
-    uint8_t __attribute__((section(".uvisor.bss.stack"), aligned(32))) \
+    uint8_t __attribute__((section(".keep.uvisor.bss.boxes"), aligned(32))) \
         box_name ## _reserved[UVISOR_STACK_SIZE_ROUND(((UVISOR_MIN_STACK(stack_size) + (context_size))*8)/6)]; \
     \
-    static UVISOR_SECURE_CONST UvisorBoxConfig box_name ## _cfg = { \
+    static const __attribute__((section(".keep.uvisor.cfgtbl"), aligned(4))) UvisorBoxConfig box_name ## _cfg = { \
         UVISOR_BOX_MAGIC, \
         UVISOR_BOX_VERSION, \
         UVISOR_MIN_STACK(stack_size), \
@@ -76,7 +62,7 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
         UVISOR_ARRAY_COUNT(acl_list) \
     }; \
     \
-    const __attribute__((section(".uvisor.cfgtbl"), aligned(4))) \
+    const __attribute__((section(".keep.uvisor.cfgtbl_ptr"), aligned(4))) \
           volatile void *box_name ## _cfg_ptr  =  & box_name ## _cfg;
 
 #define __UVISOR_BOX_CONFIG_NOCONTEXT(box_name, acl_list, stack_size) \

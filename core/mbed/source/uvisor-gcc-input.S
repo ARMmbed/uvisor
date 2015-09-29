@@ -47,35 +47,40 @@ uvisor_config:
        2: enabled */
     .long __uvisor_mode
 
-    /* start and end address of box list */
-    .long __uvisor_cfgtbl_start
-    .long __uvisor_cfgtbl_end
-
-    /* flash origin of initialized secret data */
-    .long __uvisor_data_src
-
-    /* initialized secret data section */
-    .long __uvisor_data_start
-    .long __uvisor_data_end
-
-    /* uninitialized secret data section */
+    /* start and end address of protected bss */
     .long __uvisor_bss_start
     .long __uvisor_bss_end
 
-    /* start and end of flash protection - remaining flash size is
-       available for configuration storage */
+    /* start and end address of uvisor main bss */
+    .long __uvisor_bss_main_start
+    .long __uvisor_bss_main_end
+
+    /* start and end address of uvisor secure boxes bss */
+    .long __uvisor_bss_boxes_start
+    .long __uvisor_bss_boxes_end
+
+    /* start and end address of uvisor code and data */
+    .long __uvisor_main_start
+    .long __uvisor_main_end
+
+    /* start and end address of protected flash region
+    /* note: remaining flash size is available for configuration storage */
     .long __uvisor_secure_start
     .long __uvisor_secure_end
 
-    /* start and end of uvisor stack */
-    .long __uvisor_reserved_start
-    .long __uvisor_reserved_end
+     /* start and end address of boxes configuration tables */
+    .long __uvisor_cfgtbl_start
+    .long __uvisor_cfgtbl_end
+
+    /* start and end address of list of pointers to boxes configuration tables */
+    .long __uvisor_cfgtbl_ptr_start
+    .long __uvisor_cfgtbl_ptr_end
 
     /* pointer to __uvisor_box_context */
     .long __uvisor_box_context
 
-    /* uvisor default mode - user can override weak reference */
 __uvisor_mode:
+    /* uvisor default mode - user can override weak reference */
     .long 0
 
     .align 5
@@ -85,7 +90,5 @@ __uvisor_box_context:
 uvisor_ctx:
     .long 0
 
-.section .uvisor.bss.main,"awM",@nobits
-__uvisor_reserved_start:
+.section .keep.uvisor.bss.main,"awM",@nobits
     .space USE_SRAM_SIZE
-__uvisor_reserved_end:

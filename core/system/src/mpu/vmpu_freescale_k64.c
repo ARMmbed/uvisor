@@ -242,7 +242,7 @@ void vmpu_arch_init(void)
 
     /* initialize box memories, leave stack-band sized gap */
     g_box_mem_pos = UVISOR_REGION_ROUND_UP(
-        (uint32_t)__uvisor_config.reserved_end) +
+        (uint32_t)__uvisor_config.bss_boxes_start) +
         UVISOR_STACK_BAND_SIZE;
 
     /* init memory protection */
