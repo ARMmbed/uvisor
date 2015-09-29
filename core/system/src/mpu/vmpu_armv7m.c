@@ -62,6 +62,7 @@
 
 typedef struct {
     uint32_t base;
+    uint32_t end;
     uint32_t rasr;
     uint32_t size;
     uint32_t acl;
@@ -72,18 +73,65 @@ typedef struct {
     uint32_t count;
 } TMpuBox;
 
+uint32_t g_mpu_slot;
+static uint8_t g_active_box;
 uint32_t g_mpu_region_count, g_box_mem_pos;
 TMpuRegion g_mpu_list[MPU_REGION_COUNT];
 TMpuBox g_mpu_box[UVISOR_MAX_BOXES];
 
 static uint32_t g_vmpu_aligment_mask;
 
+static const TMpuRegion* vmpu_fault_find(uint32_t fault_addr,  const TMpuBox *box)
+{
+    int count;
+    const TMpuRegion *region;
+
+    count = box->count;
+    region = box->region;
+    while (count-- > 0) {
+        if ((fault_addr >= region->base) && (fault_addr < region->end))
+           return region;
+        else
+            region++;
+    }
+
+    return NULL;
+}
+
+static const TMpuRegion* vmpu_fault_find_box(void)
+{
+    uint32_t fault_addr;
+    const TMpuRegion *region;
+
+    /* get fault address */
+    fault_addr = SCB->MMFAR;
+
+    /* check current box if not base */
+    if (g_active_box) {
+        if ((region = vmpu_fault_find(fault_addr, &g_mpu_box[g_active_box])) != NULL)
+            return region;
+    }
+
+    /* check base-box */
+    return vmpu_fault_find(fault_addr, &g_mpu_box[0]);
+}
+
 /* TODO/FIXME: implement recovery from MemManage fault */
 static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp)
 {
-    /* FIXME: currently we deny every access */
-    /* TODO: implement actual recovery */
-    return -1;
+    const TMpuRegion *region;
+
+    if ((region = vmpu_fault_find_box()) == NULL)
+        return 0;
+
+    /* FIXME: use random numbers for box number */
+    MPU->RBAR = region->base | g_mpu_slot++ | MPU_RBAR_VALID_Msk;
+    MPU->RASR = region->rasr;
+
+    if (g_mpu_slot >= ARMv7M_MPU_REGIONS)
+        g_mpu_slot = ARMv7M_MPU_RESERVED_REGIONS;
+
+    return 1;
 }
 
 void vmpu_sys_mux_handler(uint32_t lr)
@@ -106,7 +154,7 @@ void vmpu_sys_mux_handler(uint32_t lr)
                 pc = vmpu_unpriv_uint32_read(sp + (6 * 4));
 
                 /* check if the fault is an MPU fault */
-                if((SCB->CFSR & (1 << 7)) && !vmpu_fault_recovery_mpu(pc, sp))
+                if ((SCB->CFSR & (1 << 7)) && vmpu_fault_recovery_mpu(pc, sp))
                     return;
 
                 /* if recovery was not successful, throw an error and halt */
@@ -157,6 +205,9 @@ void vmpu_switch(uint8_t src_box, uint8_t dst_box)
     if(!g_mpu_region_count || dst_box>=UVISOR_MAX_BOXES)
         HALT_ERROR(SANITY_CHECK_FAILED, "dst_box out of range (%u)", dst_box);
 
+    /* remember active box */
+    g_active_box = dst_box;
+
     /* handle main box first */
     box = g_mpu_box;
     region = box->region;
@@ -175,23 +226,23 @@ void vmpu_switch(uint8_t src_box, uint8_t dst_box)
     }
 
     /* already updated main box ACLs in previous step */
-    if(!dst_box)
-        return;
-
-    /* handle target box next */
-    box = &g_mpu_box[dst_box];
-    region = box->region;
-
-    for(i=0; i<box->count; i++)
+    if (dst_box)
     {
-        if(mpu_slot>=ARMv7M_MPU_REGIONS)
-             return;
-        MPU->RBAR = region->base | mpu_slot | MPU_RBAR_VALID_Msk;
-        MPU->RASR = region->rasr;
+        /* handle target box next */
+        box = &g_mpu_box[dst_box];
+        region = box->region;
 
-        /* process next slot */
-        region++;
-        mpu_slot++;
+        for (i = 0; i < box->count; i++)
+        {
+            if (mpu_slot >= ARMv7M_MPU_REGIONS)
+                 return;
+            MPU->RBAR = region->base | mpu_slot | MPU_RBAR_VALID_Msk;
+            MPU->RASR = region->rasr;
+
+            /* process next slot */
+            region++;
+            mpu_slot++;
+        }
     }
 
     /* clear remaining slots */
@@ -341,7 +392,8 @@ static void vmpu_acl_update_box_region(TMpuRegion *region, uint8_t box_id, void*
         flags | MPU_RASR_ENABLE_Msk |
         ((uint32_t)(bits-1)<<MPU_RASR_SIZE_Pos) |
         subregions;
-    region->base = (uint32_t)base;
+    region->base = (uint32_t) base;
+    region->end = (uint32_t) base + size_rounded;
     region->size = size_rounded;
     region->acl = acl;
 
@@ -474,6 +526,9 @@ void vmpu_arch_init(void)
     MPU->RBAR = MPU_RBAR_ADDR_Msk;
     g_vmpu_aligment_mask = ~MPU->RBAR;
     MPU->RBAR = 0;
+
+    /* initialize round-robin slot pointer */
+    g_mpu_slot = ARMv7M_MPU_RESERVED_REGIONS;
 
     /* show basic mpu settings */
     DPRINTF("MPU.REGIONS=%i\r\n", (uint8_t)(MPU->TYPE >> MPU_TYPE_DREGION_Pos));
