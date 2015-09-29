@@ -486,7 +486,7 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
         g_box_mem_pos = (g_box_mem_pos & ~(size-1)) + size;
 
     /* check if we have enough memory left */
-    if((g_box_mem_pos + size)<=((uint32_t)__uvisor_config.bss_boxes_end))
+    if((g_box_mem_pos + size) > ((uint32_t)__uvisor_config.bss_boxes_end))
         HALT_ERROR(SANITY_CHECK_FAILED,
             "memory overflow - increase uvisor memory "
             "allocation\n\r");
