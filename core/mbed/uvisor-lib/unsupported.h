@@ -34,23 +34,18 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
     UVISOR_SET_MODE_ACL_COUNT(mode, NULL, 0)
 
 #define UVISOR_SET_MODE_ACL(mode, acl_list) \
-    UVISOR_SET_MODE_ACL_COUNT(mode, \
-                              acl_list, \
-                              UVISOR_ARRAY_COUNT(acl_list))
+    UVISOR_SET_MODE_ACL_COUNT(mode, acl_list, UVISOR_ARRAY_COUNT(acl_list))
 
 #define UVISOR_SET_MODE_ACL_COUNT(mode, acl_list, acl_list_count) \
     UVISOR_EXTERN const uint32_t __uvisor_mode = UVISOR_DISABLED; \
-    UVISOR_SECURE_CONST void *main_acl = acl_list;
-
-#define UVISOR_SECURE_CONST const volatile
-#define UVISOR_SECURE_BSS
-#define UVISOR_SECURE_DATA
+    static const void *main_acl = acl_list; \
+    const __attribute__((section(".keep.uvisor.cfgtbl_ptr_first"), aligned(4))) volatile void *main_cfg_ptr = NULL;
 
 #define __UVISOR_BOX_CONFIG_NOCONTEXT(box_name, acl_list, stack_size) \
     UVISOR_SECURE_CONST void *box_acl_ ## box_name = acl_list;
 
 #define __UVISOR_BOX_CONFIG_CONTEXT(box_name, acl_list, stack_size, context_type) \
-    UVISOR_SECURE_CONST void *box_acl_ ## box_name = acl_list; \
+    static const void *box_acl_ ## box_name = acl_list; \
     context_type box_ctx_ ## box_name; \
     context_type * const uvisor_ctx = &box_ctx_ ## box_name;
 
