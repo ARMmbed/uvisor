@@ -28,7 +28,6 @@
 
 uvisor_init:
     /* uvisor - precompiled blob */
-    .align 5
     .incbin RELEASE_BIN
 
 uvisor_config:
@@ -83,12 +82,10 @@ __uvisor_mode:
     /* uvisor default mode - user can override weak reference */
     .long 0
 
-    .align 5
-
 .section .bss
 __uvisor_box_context:
 uvisor_ctx:
     .long 0
 
-.section .keep.uvisor.bss.main,"awM",@nobits
+.section .keep.uvisor.bss.main, "awM", @nobits
     .space USE_SRAM_SIZE

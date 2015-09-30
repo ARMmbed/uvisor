@@ -19,7 +19,7 @@
 
 #include <uvisor-config.h>
 
-#define RESERVED_FLASH 0x420
+#define RESERVED_FLASH 0x410
 #define RESERVED_SRAM  0x200
 
 #define XTAL_FREQUENCY 48000000UL
