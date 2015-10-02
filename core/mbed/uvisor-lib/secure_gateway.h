@@ -26,9 +26,9 @@
 
 #define __UVISOR_SECURE_GATEWAY_METADATA(dst_box, dst_fn) \
     "b.n skip_args%=\n" \
-    ".word "UVISOR_TO_STRING(UVISOR_SVC_GW_MAGIC)"\n" \
-    ".word "UVISOR_TO_STRING(dst_fn)"\n" \
-    ".word "UVISOR_TO_STRING(dst_box)"_cfg_ptr\n" \
+    ".word " UVISOR_TO_STRING(UVISOR_SVC_GW_MAGIC) "\n" \
+    ".word " UVISOR_TO_STRING(dst_fn) "\n" \
+    ".word " UVISOR_TO_STRING(dst_box) "_cfg_ptr\n" \
     "skip_args%=:\n"
 
 #endif /* __CC_ARM or __GNUC__ */
