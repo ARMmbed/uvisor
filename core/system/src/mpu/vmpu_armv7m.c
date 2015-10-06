@@ -40,6 +40,7 @@
 #define MPU_RBAR(region,addr)   (((uint32_t)(region))|MPU_RBAR_VALID_Msk|addr)
 #define MPU_RBAR_RNR(addr)     (addr)
 #define MPU_STACK_GUARD_BAND_SIZE (UVISOR_SRAM_SIZE/8)
+#define SCB_MMFSR (*((volatile uint8_t *) &SCB->CFSR))
 
 /* various MPU flags */
 #define MPU_RASR_AP_PNO_UNO (0x00UL<<MPU_RASR_AP_Pos)
@@ -103,8 +104,14 @@ static const TMpuRegion* vmpu_fault_find_box(void)
     uint32_t fault_addr;
     const TMpuRegion *region;
 
-    /* get fault address */
+    /* backup fault address */
     fault_addr = SCB->MMFAR;
+    /* check for fault address, ensure data faults only */
+    if (SCB_MMFSR != 0x82) {
+        return NULL;
+    }
+    /* clear MMFSR only - reset MMARVALID bit to acknowledge fault */
+    SCB_MMFSR = 0x80;
 
     /* check current box if not base */
     if (g_active_box) {
@@ -154,8 +161,9 @@ void vmpu_sys_mux_handler(uint32_t lr)
                 pc = vmpu_unpriv_uint32_read(sp + (6 * 4));
 
                 /* check if the fault is an MPU fault */
-                if ((SCB->CFSR & (1 << 7)) && vmpu_fault_recovery_mpu(pc, sp))
+                if (vmpu_fault_recovery_mpu(pc, sp)) {
                     return;
+                }
 
                 /* if recovery was not successful, throw an error and halt */
                 DEBUG_FAULT(FAULT_MEMMANAGE, lr);
