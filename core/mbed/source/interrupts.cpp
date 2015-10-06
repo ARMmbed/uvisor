@@ -114,7 +114,7 @@ int vIRQ_GetLevel(void)
         /* check if an IRQn is active (an ISR is being served) */
         uint32_t ipsr = __get_IPSR();
         int irqn = (int) (ipsr & 0x1FF) - NVIC_USER_IRQ_OFFSET;
-        if (!ipsr || !NVIC_GetActive((IRQn_Type) irqn)) {
+        if (irqn >= NVIC_NUM_VECTORS || !ipsr || !NVIC_GetActive((IRQn_Type) irqn)) {
             return -1;
         }
 
