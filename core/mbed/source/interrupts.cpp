@@ -107,17 +107,13 @@ uint32_t vIRQ_GetPriority(uint32_t irqn)
     }
 }
 
-/* FIXME when the number of system interrupts will be made available as
- * a preprocessor define in a uniform way it will be deleted from here */
-#define UVISOR_NVIC_IRQn_OFFSET 16
-
 int vIRQ_GetLevel(void)
 {
     /* if uVisor is disabled we use the standard priority levels */
     if (__uvisor_mode == 0) {
         /* check if an IRQn is active (an ISR is being served) */
         uint32_t ipsr = __get_IPSR();
-        int irqn = (int) (ipsr & 0x1FF) - UVISOR_NVIC_IRQn_OFFSET;
+        int irqn = (int) (ipsr & 0x1FF) - NVIC_USER_IRQ_OFFSET;
         if (!ipsr || !NVIC_GetActive((IRQn_Type) irqn)) {
             return -1;
         }
