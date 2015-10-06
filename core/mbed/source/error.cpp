@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "mbed/mbed.h"
 #include "uvisor-lib/uvisor-lib.h"
 
 void uvisor_error(THaltUserError reason)

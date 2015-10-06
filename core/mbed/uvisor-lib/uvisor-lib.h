@@ -20,8 +20,7 @@
 #include <stdint.h>
 
 /* needed for NVIC symbols */
-/* #include "cmsis-core/cmsis_nvic.h" */
-#include "cmsis_nvic.h"
+#include "cmsis-core/cmsis_nvic.h"
 
 /* the symbol UVISOR_PRESENT is defined here based on the supported platforms */
 #include "uvisor-lib/platforms.h"
