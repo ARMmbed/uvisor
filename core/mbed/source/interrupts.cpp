@@ -105,3 +105,34 @@ uint32_t vIRQ_GetPriority(uint32_t irqn)
         return UVISOR_SVC(UVISOR_SVC_ID_IRQ_PRIO_GET, "", irqn);
     }
 }
+
+int vIRQ_GetLevel(void)
+{
+    /* if uVisor is disabled we use the standard priority levels */
+    if (__uvisor_mode == 0) {
+        /* check if an IRQn is active (an ISR is being served) */
+        uint32_t ipsr = __get_IPSR();
+        int irqn = (int) (ipsr & 0x1FF) - NVIC_USER_IRQ_OFFSET;
+        if (irqn >= NVIC_NUM_VECTORS || !ipsr || !NVIC_GetActive((IRQn_Type) irqn)) {
+            return -1;
+        }
+
+        /* return the priority level of the active IRQ */
+        /* if we are in a system interrupt we do not provide the actual
+         * priority level, which is usually negative, since we already use -1
+         * for stating "no IRQn is active". This is consistent with the
+         * behavior of the actual uVisor-managed API, as this call will never
+         * come from a system interrupt. The caller can still use this
+         * information to assess that an IRQn is actually active (0 = lowest
+         * priority) */
+        if (irqn < 0) {
+            return 0;
+        }
+        else {
+            return NVIC_GetPriority((IRQn_Type) irqn);
+        }
+    }
+    else {
+        return UVISOR_SVC(UVISOR_SVC_ID_IRQ_LEVEL_GET, "");
+    }
+}

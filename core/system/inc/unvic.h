@@ -47,6 +47,7 @@ extern void     unvic_irq_pending_set(uint32_t irqn);
 extern uint32_t unvic_irq_pending_get(uint32_t irqn);
 extern void     unvic_irq_priority_set(uint32_t irqn, uint32_t priority);
 extern uint32_t unvic_irq_priority_get(uint32_t irqn);
+extern int      unvic_irq_level_get(void);
 extern int      unvic_default(uint32_t isr_id);
 
 extern void unvic_init(void);

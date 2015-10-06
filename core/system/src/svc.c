@@ -53,6 +53,7 @@ const void *g_svc_vtor_tbl[] = {
     benchmark_start,         // 10
     benchmark_stop,          // 11
     halt_user_error,         // 12
+    unvic_irq_level_get,     // 13
 };
 
 /*******************************************************************************

@@ -196,6 +196,29 @@ uint32_t unvic_irq_priority_get(uint32_t irqn)
     return NVIC_GetPriority(irqn);
 }
 
+int unvic_irq_level_get(void)
+{
+    /* gather IPSR from exception stack frame */
+    /* the currently active IRQn is the one of the SVCall, while instead we want
+     * to know the IRQn at the time of the SVCcall, which is saved on the stack */
+    uint32_t ipsr = vmpu_unpriv_uint32_read(__get_PSP() + 4 * 7);
+    uint32_t irqn = (ipsr & 0x1FF) - IRQn_OFFSET;
+
+    /* check if an interrupt is actually active */
+    /* note: this includes pending interrupts that are not currently being served */
+    if (!ipsr || !NVIC_GetActive(irqn)) {
+        return -1;
+    }
+
+    /* check that the IRQn is not owned by uVisor */
+    /* this also checks that the IRQn is in the correct range */
+    unvic_default_check(irqn);
+
+    /* if an IRQn is active, return the (virtualised, i.e. shifted) priority level
+     * of the interrupt, which goes from 0 up */
+    return (int) NVIC_GetPriority(irqn) - UNVIC_MIN_PRIORITY;
+}
+
 /* naked wrapper function needed to preserve LR */
 void UVISOR_NAKED unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
 {

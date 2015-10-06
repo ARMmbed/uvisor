@@ -26,6 +26,7 @@ UVISOR_EXTERN void vIRQ_SetPendingIRQ(uint32_t irqn);
 UVISOR_EXTERN uint32_t vIRQ_GetPendingIRQ(uint32_t irqn);
 UVISOR_EXTERN void vIRQ_SetPriority(uint32_t irqn, uint32_t priority);
 UVISOR_EXTERN uint32_t vIRQ_GetPriority(uint32_t irqn);
+UVISOR_EXTERN int vIRQ_GetLevel(void);
 
 /* this definition is kept for backward compatibility with NVIC_SetVector */
 #define vIRQ_SetVector(irqn, vector) vIRQ_SetVectorX(irqn, vector, 0)
