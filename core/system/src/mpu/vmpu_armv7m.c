@@ -110,17 +110,20 @@ static const TMpuRegion* vmpu_fault_find_box(void)
     if (SCB_MMFSR != 0x82) {
         return NULL;
     }
-    /* clear MMFSR only - reset MMARVALID bit to acknowledge fault */
-    SCB_MMFSR = 0x80;
 
     /* check current box if not base */
-    if (g_active_box) {
-        if ((region = vmpu_fault_find(fault_addr, &g_mpu_box[g_active_box])) != NULL)
-            return region;
+    if ((g_active_box) && ((region = vmpu_fault_find(fault_addr, &g_mpu_box[g_active_box])) == NULL)) {
+        return NULL;
     }
 
     /* check base-box */
-    return vmpu_fault_find(fault_addr, &g_mpu_box[0]);
+    if ((region = vmpu_fault_find(fault_addr, &g_mpu_box[0])) == NULL) {
+        return NULL;
+    }
+
+    /* clear MMFSR only - reset MMARVALID bit to acknowledge fault */
+    SCB_MMFSR = 0x80;
+    return region;
 }
 
 /* TODO/FIXME: implement recovery from MemManage fault */
