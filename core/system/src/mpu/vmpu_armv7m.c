@@ -219,24 +219,7 @@ void vmpu_switch(uint8_t src_box, uint8_t dst_box)
     /* remember active box */
     g_active_box = dst_box;
 
-    /* handle main box first */
-    box = g_mpu_box;
-    region = box->region;
-
-    mpu_slot = ARMv7M_MPU_RESERVED_REGIONS;
-    for(i=0; i<box->count; i++)
-    {
-        if(mpu_slot>=ARMv7M_MPU_REGIONS)
-             return;
-        MPU->RBAR = region->base | mpu_slot | MPU_RBAR_VALID_Msk;
-        MPU->RASR = region->rasr;
-
-        /* process next slot */
-        region++;
-        mpu_slot++;
-    }
-
-    /* already updated main box ACLs in previous step */
+    /* update target box first to make target stack available */
     if (dst_box)
     {
         /* handle target box next */
@@ -254,6 +237,22 @@ void vmpu_switch(uint8_t src_box, uint8_t dst_box)
             region++;
             mpu_slot++;
         }
+    }
+
+    /* handle main box last */
+    box = g_mpu_box;
+    region = box->region;
+
+    mpu_slot = ARMv7M_MPU_RESERVED_REGIONS;
+    for (i=0; i<box->count; i++) {
+        if (mpu_slot>=ARMv7M_MPU_REGIONS)
+             return;
+        MPU->RBAR = region->base | mpu_slot | MPU_RBAR_VALID_Msk;
+        MPU->RASR = region->rasr;
+
+        /* process next slot */
+        region++;
+        mpu_slot++;
     }
 
     /* clear remaining slots */
