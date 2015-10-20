@@ -220,6 +220,7 @@ void vmpu_switch(uint8_t src_box, uint8_t dst_box)
     g_active_box = dst_box;
 
     /* update target box first to make target stack available */
+    mpu_slot = ARMv7M_MPU_RESERVED_REGIONS;
     if (dst_box)
     {
         /* handle target box next */
@@ -243,7 +244,6 @@ void vmpu_switch(uint8_t src_box, uint8_t dst_box)
     box = g_mpu_box;
     region = box->region;
 
-    mpu_slot = ARMv7M_MPU_RESERVED_REGIONS;
     for (i=0; i<box->count; i++) {
         if (mpu_slot>=ARMv7M_MPU_REGIONS)
              return;
