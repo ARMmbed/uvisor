@@ -25,6 +25,8 @@ CPU_JLINK:=$(ARCH)29ZI
 APP_CLEAN:=
 APP_CFLAGS:=-DUVISOR $(CONFIG) -Iconfig -Isrc -Ilib -Idebug
 
+SERIAL_DEBUG?=disable
+
 APP_SRC:=\
 	src/stm32f4_halt.c \
 	src/stm32f4_hw.c \

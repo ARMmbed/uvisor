@@ -6,6 +6,7 @@ CONFIG:=
 
 APP_CLEAN:=
 APP_CFLAGS:=-DUVISOR $(CONFIG) -Iconfig -Isrc -Ilib -Idebug
+SERIAL_DEBUG?=disable
 APP_SRC:=\
 	src/k64f_halt.c \
 	debug/k64f_memory_map.c \

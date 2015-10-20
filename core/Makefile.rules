@@ -81,6 +81,28 @@ MPU_SRC:=\
          $(SYSTEM_DIR)/src/mpu/vmpu_freescale_k64_mem.c
 endif
 
+# serial driver
+SERIAL_SRC:=
+CFLAG_SERIAL_DBG:=
+ifeq ("$(SERIAL_DEBUG)", "enable")
+SERIAL_SRC:=\
+	$(DEVICE_DIR)/src/serial.c
+
+ifeq ("$(CPU)", "STM32F429xx")
+SERIAL_SRC += $(DEVICE_DIR)/src/stm32f4xx_hal_gpio.c \
+              $(DEVICE_DIR)/src/stm32f4xx_hal_rcc.c \
+              $(DEVICE_DIR)/src/stm32f4xx_hal_uart.c \
+              $(DEVICE_DIR)/src/pinmap.c \
+              $(DEVICE_DIR)/src/pinmap_common.c \
+              $(DEVICE_DIR)/src/PeripheralPins.c \
+              $(DEVICE_DIR)/src/gpio_api.c \
+              $(DEVICE_DIR)/src/serial_api.c
+endif
+
+CFLAG_SERIAL_DBG:=-DSERIAL_DBG
+endif
+
+
 SOURCES:=\
          $(SYSTEM_DIR)/src/benchmark.c \
          $(SYSTEM_DIR)/src/halt.c \
@@ -95,7 +117,8 @@ SOURCES:=\
          $(DEVICE_DIR)/src/system.c \
          $(SYSTEM_DIR)/src/mpu/vmpu.c \
          $(MPU_SRC) \
-         $(APP_SRC)
+         $(APP_SRC) \
+         $(SERIAL_SRC)
 
 DEBUG_HOST:=localhost:2331
 OPT:=-Os -DNDEBUG
@@ -147,6 +170,7 @@ CFLAGS_PRE:=\
         -D$(CPU) \
         -DPROGRAM_VERSION=\"$(PROGRAM_VERSION)\" \
         -DCPU=$(CPU) \
+        $(CFLAG_SERIAL_DBG) \
         $(APP_CFLAGS) \
         -include $(MEM_CONFIG) \
         -I$(CORE_DIR) \

@@ -19,6 +19,8 @@
 #include "svc.h"
 #include "unvic.h"
 #include "debug.h"
+#include "serial.h"
+
 
 TIsrVector g_isr_vector_prev;
 
@@ -60,6 +62,9 @@ void main_entry(void)
 {
     /* initialize uvisor */
     uvisor_init_pre();
+#ifdef SERIAL_DBG
+    uvisor_serial_init();
+#endif
 
     /* run basic sanity checks */
     if(vmpu_init_pre() == 0)

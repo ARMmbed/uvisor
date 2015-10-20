@@ -32,6 +32,10 @@
 #include <uvisor.h>
 #include "tfp_printf.h"
 
+#ifdef SERIAL_DBG
+#include "serial.h"
+#endif
+
 #ifdef PRINTF_LONG_SUPPORT
 
 static void uli2a(unsigned long int num, unsigned int base, int uc,char * bf)
@@ -225,7 +229,11 @@ void tfp_sprintf(char* s,char *fmt, ...)
 static void tfp_printf_putcp(void* p,char c)
 {
 	(void) p;
+#ifdef SERIAL_DBG
+	uvisor_serial_putc(c);
+#else
 	default_putc(c);
+#endif
 }
 
 void tfp_printf (const char *fmt, ...)
