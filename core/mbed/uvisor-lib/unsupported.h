@@ -39,12 +39,11 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 #define UVISOR_SET_MODE_ACL_COUNT(mode, acl_list, acl_list_count) \
     UVISOR_EXTERN const uint32_t __uvisor_mode = UVISOR_DISABLED; \
     static const void *main_acl = acl_list; \
-    const __attribute__((section(".keep.uvisor.cfgtbl_ptr_first"), aligned(4))) volatile void *main_cfg_ptr = &main_acl;
+    extern const __attribute__((section(".keep.uvisor.cfgtbl_ptr_first"), aligned(4))) void * const main_cfg_ptr = &main_acl;
 
 #define __UVISOR_BOX_CONFIG_NOCONTEXT(box_name, acl_list, stack_size) \
     static const void *box_acl_ ## box_name = acl_list; \
-    const __attribute__((section(".keep.uvisor.cfgtbl_ptr"), aligned(4))) volatile void *box_name ## _cfg_ptr = \
-        &box_acl_ ## box_name;
+    extern const __attribute__((section(".keep.uvisor.cfgtbl_ptr"), aligned(4))) void * const box_name ## _cfg_ptr = &box_acl_ ## box_name;
 
 #define __UVISOR_BOX_CONFIG_CONTEXT(box_name, acl_list, stack_size, context_type) \
     context_type box_ctx_ ## box_name; \
