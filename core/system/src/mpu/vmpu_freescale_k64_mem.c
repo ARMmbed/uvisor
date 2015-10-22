@@ -262,7 +262,7 @@ void vmpu_mem_init(void)
         HALT_ERROR(SANITY_CHECK_FAILED, "failed setting up box 0 SRAM (%i)\n", res);
 
     /* enable read access to unsecure flash regions - allow execution */
-    res = vmpu_mem_add_int(0, (void*)FLASH_ORIGIN, ((uint32_t)__uvisor_config.secure_start)-FLASH_ORIGIN,
+    res = vmpu_mem_add_int(0, (void*)FLASH_ORIGIN, ((uint32_t)__uvisor_config.secure_end)-FLASH_ORIGIN,
         UVISOR_TACL_SREAD|
         UVISOR_TACL_SEXECUTE|
         UVISOR_TACL_UREAD|
