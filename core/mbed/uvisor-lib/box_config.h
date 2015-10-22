@@ -43,7 +43,7 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
         acl_list_count \
     }; \
     \
-    const __attribute__((section(".keep.uvisor.cfgtbl_ptr_first"), aligned(4))) volatile void* main_cfg_ptr = &main_cfg;
+    extern const __attribute__((section(".keep.uvisor.cfgtbl_ptr_first"), aligned(4))) void * const main_cfg_ptr = &main_cfg;
 
 /* this macro selects an overloaded macro (variable number of arguments) */
 #define __UVISOR_BOX_MACRO(_1, _2, _3, _4, NAME, ...) NAME
@@ -62,8 +62,7 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
         UVISOR_ARRAY_COUNT(acl_list) \
     }; \
     \
-    const __attribute__((section(".keep.uvisor.cfgtbl_ptr"), aligned(4))) \
-          volatile void *box_name ## _cfg_ptr  =  & box_name ## _cfg;
+    extern const __attribute__((section(".keep.uvisor.cfgtbl_ptr"), aligned(4))) void * const box_name ## _cfg_ptr = &box_name ## _cfg;
 
 #define __UVISOR_BOX_CONFIG_NOCONTEXT(box_name, acl_list, stack_size) \
     __UVISOR_BOX_CONFIG(box_name, acl_list, stack_size, 0) \
