@@ -179,8 +179,34 @@ void vmpu_sys_mux_handler(uint32_t lr)
             }
 
         case BusFault_IRQn:
-            DEBUG_FAULT(FAULT_BUS, lr);
-            halt_led(FAULT_BUS);
+            /* bus faults can be used in a "managed" way, triggered to let uVisor
+             * handle some restricted registers
+             * note: this feature will not be needed anymore when the register-level
+             * will be implemented */
+
+            /* note: all recovery functions update the stacked stack pointer so
+             * that exception return points to the correct instruction */
+
+            /* currently we only support recovery from unprivileged mode */
+            if(lr & 0x4)
+            {
+                /* pc and sp at fault */
+                sp = __get_PSP();
+                pc = vmpu_unpriv_uint32_read(sp + (6 * 4));
+
+                /* check if the fault is the special register corner case */
+                if(!vmpu_fault_recovery_bus(pc, sp))
+                    return;
+
+                /* if recovery was not successful, throw an error and halt */
+                DEBUG_FAULT(FAULT_BUS, lr);
+                HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied");
+            }
+            else
+            {
+                DEBUG_FAULT(FAULT_BUS, lr);
+                HALT_ERROR(FAULT_BUS, "Cannot recover from privileged bus fault");
+            }
             break;
 
         case UsageFault_IRQn:
