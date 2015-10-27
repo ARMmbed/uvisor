@@ -199,7 +199,6 @@ static void vmpu_load_boxes(void)
     DPRINTF("vmpu_load_boxes [DONE]\n");
 }
 
-/* FIXME: perform ACL checks to close security hole */
 int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp)
 {
     uint16_t opcode;
@@ -235,7 +234,9 @@ int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp)
                 r1 = vmpu_unpriv_uint32_read(sp+4);
 
                 /* check ACls */
-                /* TODO/FIXME */
+                if((vmpu_fault_find_acl(r0,sizeof(uint32_t)) | UVISOR_TACL_UWRITE) == 0) {
+                    return -1;
+                };
 
                 /* test upper 8bits for opcode and (partially)imm5 == 0 */
                 switch(opcode >> 8)
@@ -263,7 +264,9 @@ int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp)
                 r0 = vmpu_unpriv_uint32_read(sp);
 
                 /* check ACls */
-                /* TODO/FIXME */
+                if((vmpu_fault_find_acl(r0,sizeof(uint32_t)) | UVISOR_TACL_UREAD) == 0) {
+                    return -1;
+                };
 
                 /* test upper 8bits for opcode and (partially)imm5 == 0 */
                 switch(opcode >> 8)
