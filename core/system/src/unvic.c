@@ -314,7 +314,7 @@ uint32_t __unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
 
     /* save the current state */
     svc_cx_push_state(src_id, src_sp, dst_id);
-    DEBUG_CX_SWITCH_IN();
+    /* DEBUG_CX_SWITCH_IN(); */
 
     /* de-privilege executionn */
     __set_PSP((uint32_t) dst_sp);
@@ -357,7 +357,7 @@ void __unvic_svc_cx_out(uint32_t *svc_sp, uint32_t *msp)
     svc_cx_pop_state(dst_id, dst_sp);
     src_id = svc_cx_get_src_id();
     src_sp = svc_cx_get_src_sp();
-    DEBUG_CX_SWITCH_OUT();
+    /* DEBUG_CX_SWITCH_OUT(); */
 
     /* copy return address of previous stack frame to the privileged one, which
      * was kept idle after interrupt de-privileging */
