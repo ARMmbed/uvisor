@@ -120,15 +120,20 @@ uint32_t vmpu_fault_find_acl(uint32_t fault_addr, uint32_t size)
 {
     const TMpuRegion *region;
 
-    /* search base box and active box ACLs */
-    region = vmpu_fault_find_box(fault_addr);
-
-    /* ensure that data fits in selected region */
-    if((fault_addr+size)>region->end)
-        return 0;
-
     /* return ACL if available */
-    return region ? region->acl : 0;
+    switch (fault_addr) {
+        case (uint32_t) &SCB->SCR:
+            return UVISOR_TACL_UWRITE | UVISOR_TACL_UREAD;
+        default:
+            /* search base box and active box ACLs */
+            region = vmpu_fault_find_box(fault_addr);
+
+            /* ensure that data fits in selected region */
+            if((fault_addr+size)>region->end)
+                return 0;
+
+            return region ? region->acl : 0;
+    }
 }
 
 static const TMpuRegion* vmpu_mpu_fault_find(void)
