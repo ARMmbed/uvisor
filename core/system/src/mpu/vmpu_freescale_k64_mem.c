@@ -37,6 +37,12 @@ uint32_t g_mem_acl_count, g_mem_acl_user;
 static TMemACL g_mem_acl[UVISOR_MAX_ACLS];
 static TBoxACL g_mem_box[UVISOR_MAX_BOXES];
 
+/* FIXME - test for actual ACLs */
+uint32_t vmpu_fault_find_acl_mem(uint8_t box_id, uint32_t fault_addr, uint32_t size)
+{
+    return 0;
+}
+
 void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
 {
     uint32_t t, u, src_count, dst_count;

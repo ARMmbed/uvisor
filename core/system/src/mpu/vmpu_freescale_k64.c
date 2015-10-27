@@ -24,6 +24,7 @@
 #include "vmpu_freescale_k64_aips.h"
 #include "vmpu_freescale_k64_mem.h"
 
+static uint8_t g_active_box;
 uint32_t g_box_mem_pos;
 
 /* TODO/FIXME: implement recovery from Freescale MPU fault */
@@ -218,12 +219,30 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
 
 void vmpu_switch(uint8_t src_box, uint8_t dst_box)
 {
+    /* check for errors */
+    if(dst_box>=UVISOR_MAX_BOXES)
+        HALT_ERROR(SANITY_CHECK_FAILED, "dst_box out of range (%u)", dst_box);
+
+    /* remember active box */
+    g_active_box = dst_box;
+
     /* switch ACLs for peripherals */
     vmpu_aips_switch(src_box, dst_box);
 
     /* switch ACLs for memory regions */
     vmpu_mem_switch(src_box, dst_box);
 }
+
+uint32_t vmpu_fault_find_acl(uint32_t fault_addr, uint32_t size)
+{
+    /* only support peripheral access for now */
+    if( (fault_addr>=AIPS0_BASE) &&
+        ((fault_addr<(AIPS0_BASE+(0xFEUL*(AIPSx_SLOT_SIZE))))) )
+        return vmpu_fault_find_acl_aips(g_active_box, fault_addr, size);
+    else
+        return vmpu_fault_find_acl_mem(g_active_box, fault_addr, size);
+}
+
 
 void vmpu_load_box(uint8_t box_id)
 {
