@@ -20,8 +20,6 @@
 #include <vmpu.h>
 #include "vmpu_freescale_k64_aips.h"
 
-#define AIPSx_SLOT_SIZE    0x1000UL
-#define AIPSx_SLOT_MAX     0xFE
 #define AIPSx_DWORDS       ((AIPSx_SLOT_MAX+31)/32)
 #define PACRx_DEFAULT_MASK 0x44444444UL
 
@@ -33,16 +31,23 @@ int vmpu_aips_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 {
     int i, slot_count;
     uint8_t aips_slot;
-    uint32_t base, t;
+    uint32_t base, t, address;
 
     if(    !((((uint32_t)start)>=AIPS0_BASE) &&
         (((uint32_t)start)<(AIPS0_BASE+(0xFEUL*(AIPSx_SLOT_SIZE))))) )
         return 0;
 
-    aips_slot = (uint8_t)(((uint32_t)start) >> 12);
+    if((acl & UVISOR_TACL_UWRITE)==0) {
+        DPRINTF("read-only AIPS slots are currently not supported\n");
+        return -2;
+    }
+
+    /* normalize address to AIPS0_BASE */
+    address = ((uint32_t)start) - AIPS0_BASE;
+    aips_slot = (uint8_t)(address >> 12);
     if(aips_slot > AIPSx_SLOT_MAX)
     {
-        DPRINTF("AIPS slot out of range (0xFF)");
+        DPRINTF("AIPS slot out of range (0x%02X)\n", AIPSx_SLOT_MAX);
         return -3;
     }
 
@@ -105,6 +110,35 @@ int vmpu_aips_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
     }
 
     return 1;
+}
+
+uint32_t vmpu_fault_find_acl_aips(uint8_t active_box, uint32_t fault_addr, uint32_t size)
+{
+    uint32_t aips_slot, base;
+    uint32_t *pdst_acl;
+
+    /* normalize address to AIPS0_BASE */
+    aips_slot = (fault_addr - AIPS0_BASE) >> 12;
+    if(aips_slot > AIPSx_SLOT_MAX)
+    {
+        DPRINTF("AIPS slot out of range (0x%02X)\n", AIPSx_SLOT_MAX);
+        return 0;
+    }
+
+    /* calculate resulting AIPS slot and base */
+    base = AIPS0_BASE | (aips_slot << 12);
+    /* ensure that data fits in selected region */
+    if((size>sizeof(uint32_t)) || ((fault_addr+size)>(base+AIPSx_SLOT_SIZE)))
+        return 0;
+
+    /* get active box */
+    pdst_acl = g_aipsx_box[active_box];
+
+    /* check peripheral ACL */
+    if(pdst_acl[aips_slot / 32] & (1UL << (aips_slot % 32)))
+        return UVISOR_TACLDEF_PERIPH;
+    else
+        return 0;
 }
 
 void vmpu_aips_switch(uint8_t src_box, uint8_t dst_box)

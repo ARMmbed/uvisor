@@ -99,17 +99,9 @@ static const TMpuRegion* vmpu_fault_find(uint32_t fault_addr,  const TMpuBox *bo
     return NULL;
 }
 
-static const TMpuRegion* vmpu_fault_find_box(void)
+static const TMpuRegion* vmpu_fault_find_box(uint32_t fault_addr)
 {
-    uint32_t fault_addr;
     const TMpuRegion *region;
-
-    /* backup fault address */
-    fault_addr = SCB->MMFAR;
-    /* check for fault address, ensure data faults only */
-    if (SCB_MMFSR != 0x82) {
-        return NULL;
-    }
 
     /* check current box if not base */
     if ((g_active_box) && ((region = vmpu_fault_find(fault_addr, &g_mpu_box[g_active_box])) == NULL)) {
@@ -121,6 +113,39 @@ static const TMpuRegion* vmpu_fault_find_box(void)
         return NULL;
     }
 
+    return region;
+}
+
+uint32_t vmpu_fault_find_acl(uint32_t fault_addr, uint32_t size)
+{
+    const TMpuRegion *region;
+
+    /* search base box and active box ACLs */
+    region = vmpu_fault_find_box(fault_addr);
+
+    /* ensure that data fits in selected region */
+    if((fault_addr+size)>region->end)
+        return 0;
+
+    /* return ACL if available */
+    return region ? region->acl : 0;
+}
+
+static const TMpuRegion* vmpu_mpu_fault_find(void)
+{
+    uint32_t fault_addr;
+    const TMpuRegion *region;
+
+    /* backup fault address */
+    fault_addr = SCB->MMFAR;
+    /* check for fault address, ensure data faults only */
+    if (SCB_MMFSR != 0x82) {
+        return NULL;
+    }
+
+    /* search base box and active box ACLs */
+    region = vmpu_fault_find_box(fault_addr);
+
     /* clear MMFSR only - reset MMARVALID bit to acknowledge fault */
     SCB_MMFSR = 0x80;
     return region;
@@ -131,7 +156,7 @@ static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp)
 {
     const TMpuRegion *region;
 
-    if ((region = vmpu_fault_find_box()) == NULL)
+    if ((region = vmpu_mpu_fault_find()) == NULL)
         return 0;
 
     /* FIXME: use random numbers for box number */
