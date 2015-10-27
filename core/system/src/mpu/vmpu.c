@@ -234,7 +234,7 @@ int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp)
                 r1 = vmpu_unpriv_uint32_read(sp+4);
 
                 /* check ACls */
-                if((vmpu_fault_find_acl(r0,sizeof(uint32_t)) | UVISOR_TACL_UWRITE) == 0) {
+                if((vmpu_fault_find_acl(r0,sizeof(uint32_t)) & UVISOR_TACL_UWRITE) == 0) {
                     return -1;
                 };
 
@@ -264,7 +264,7 @@ int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp)
                 r0 = vmpu_unpriv_uint32_read(sp);
 
                 /* check ACls */
-                if((vmpu_fault_find_acl(r0,sizeof(uint32_t)) | UVISOR_TACL_UREAD) == 0) {
+                if((vmpu_fault_find_acl(r0,sizeof(uint32_t)) & UVISOR_TACL_UREAD) == 0) {
                     return -1;
                 };
 
