@@ -53,15 +53,16 @@
 #define UVISOR_SVC_ID_IRQ_LEVEL_GET  UVISOR_SVC_CUSTOM_TABLE(13)
 
 /* SVC immediate values for hardcoded table (call from unprivileged) */
-#define UVISOR_SVC_ID_UNVIC_OUT      UVISOR_SVC_FIXED_TABLE(1)
-#define UVISOR_SVC_ID_CX_IN          UVISOR_SVC_FIXED_TABLE(2)
-#define UVISOR_SVC_ID_CX_OUT         UVISOR_SVC_FIXED_TABLE(3)
+#define UVISOR_SVC_ID_UNVIC_OUT        UVISOR_SVC_FIXED_TABLE(1)
+#define UVISOR_SVC_ID_CX_IN            UVISOR_SVC_FIXED_TABLE(2)
+#define UVISOR_SVC_ID_CX_OUT           UVISOR_SVC_FIXED_TABLE(3)
+#define UVISOR_SVC_ID_REGISTER_GATEWAY UVISOR_SVC_FIXED_TABLE(4)
 
 /* SVC immediate values for hardcoded table (call from privileged) */
-#define UVISOR_SVC_ID_UNVIC_IN       UVISOR_SVC_FIXED_TABLE(1)
+#define UVISOR_SVC_ID_UNVIC_IN         UVISOR_SVC_FIXED_TABLE(1)
 
 /* unprivileged code uses a secure gateway to switch context */
-#define UVISOR_SVC_ID_SECURE_GATEWAY(args) ((UVISOR_SVC_ID_CX_IN) | (UVISOR_SVC_CUSTOM_TABLE(args)))
+#define UVISOR_SVC_ID_SECURE_GATEWAY(nargs) ((UVISOR_SVC_ID_CX_IN) | (UVISOR_SVC_CUSTOM_TABLE(nargs)))
 
 /* macro to execute an SVCall; additional metadata can be provided, which will
  * be appended right after the svc instruction */

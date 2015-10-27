@@ -95,6 +95,8 @@ extern void vmpu_sys_mux_handler(uint32_t lr);
 
 extern uint32_t  g_vmpu_box_count;
 
+extern uint32_t vmpu_register_gateway(uint32_t addr, uint32_t val);
+
 static inline __attribute__((always_inline)) void vmpu_sys_mux(void)
 {
     /* handle IRQ with an unprivileged handler serving an IRQn in un-privileged

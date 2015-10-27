@@ -114,7 +114,7 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
         ".word  unvic_svc_cx_out\n"
         ".word  svc_cx_switch_in\n"
         ".word  svc_cx_switch_out\n"
-        ".word  __svc_not_implemented\n"
+        ".word  vmpu_register_gateway\n"
         ".word  __svc_not_implemented\n"
         ".word  __svc_not_implemented\n"
         ".word  __svc_not_implemented\n"
