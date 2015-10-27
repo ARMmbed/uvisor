@@ -87,7 +87,7 @@ The main memory sections that the uVisor protects are detailed in the following 
     </tr>
     <tr>
       <td>uVisor data/BSS/stack</td>
-      <td>The uVisor places all its constants, initialised and initialised data and the stack in secured areas of memory, separated from the unprivileged code
+      <td>The uVisor places all its constants, initialised and uninitialised data and the stack in secured areas of memory, separated from the unprivileged code
       </td>
     </tr>
     <tr>
