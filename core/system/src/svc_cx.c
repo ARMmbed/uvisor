@@ -129,7 +129,7 @@ uint32_t __svc_cx_switch_in(uint32_t *svc_sp, uint32_t svc_pc,
 
     /* save the current state */
     svc_cx_push_state(src_id, src_sp, dst_id);
-    DEBUG_CX_SWITCH_IN();
+    /* DEBUG_CX_SWITCH_IN(); */
 
     /* set the context stack pointer for the dst box */
     *(__uvisor_config.uvisor_box_context) = g_svc_cx_context_ptr[dst_id];
@@ -167,7 +167,7 @@ void __svc_cx_switch_out(uint32_t *svc_sp)
     svc_cx_pop_state(dst_id, dst_sp);
     src_id = svc_cx_get_src_id();
     src_sp = svc_cx_get_src_sp();
-    DEBUG_CX_SWITCH_OUT();
+    /* DEBUG_CX_SWITCH_OUT(); */
 
     /* copy return value from destination stack frame */
     src_sp[0] = dst_sp[0];
