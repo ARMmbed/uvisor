@@ -70,6 +70,52 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 #define vIRQ_SetPriority(irqn, priority)    NVIC_SetPriority((IRQn_Type) (irqn), (uint32_t) (priority))
 #define vIRQ_GetPriority(irqn)              NVIC_GetPriority((IRQn_Type) (irqn))
 
+/* uvisor-lib/register_gateway.h */
+
+static inline UVISOR_FORCEINLINE uint32_t uvisor_read(uint32_t addr)
+{
+    return *((uint32_t *) addr);
+}
+
+static inline UVISOR_FORCEINLINE uint32_t uvisor_read(uint32_t addr, uint32_t op, uint32_t mask)
+{
+    switch(op)
+    {
+        case UVISOR_OP_NOP:
+            return uvisor_read(addr);
+        case UVISOR_OP_AND:
+            return *((uint32_t *) addr) & mask;
+        case UVISOR_OP_OR:
+            return *((uint32_t *) addr) | mask;
+        case UVISOR_OP_XOR:
+            return *((uint32_t *) addr) ^ mask;
+        default:
+            /* FIXME */
+    }
+}
+
+static inline UVISOR_FORCEINLINE void uvisor_write(uint32_t addr, uint32_t val)
+{
+    *((uint32_t *) addr) = val;
+}
+
+static inline UVISOR_FORCEINLINE void uvisor_write(uint32_t addr, uint32_t val, uint32_t op, uint32_t mask)
+{
+    switch(op)
+    {
+        case UVISOR_OP_NOP:
+            uvisor_write(addr, val);
+        case UVISOR_OP_AND:
+            *((uint32_t *) addr) &= val | ~mask;
+        case UVISOR_OP_OR:
+            *((uint32_t *) addr) |= val & mask;
+        case UVISOR_OP_XOR:
+            *((uint32_t *) addr) ^= val & mask;
+        default:
+            /* FIXME */
+    }
+}
+
 /* uvisor-lib/secure_access.h */
 
 /* the conditional statement will be optimised away since the compiler already

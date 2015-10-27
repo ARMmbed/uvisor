@@ -199,6 +199,11 @@ static void vmpu_load_boxes(void)
     DPRINTF("vmpu_load_boxes [DONE]\n");
 }
 
+uint32_t vmpu_register_gateway(uint32_t addr, uint32_t val)
+{
+    return 0;
+}
+
 int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp)
 {
     uint16_t opcode;

@@ -39,6 +39,7 @@
 #include "uvisor-lib/box_config.h"
 #include "uvisor-lib/error.h"
 #include "uvisor-lib/interrupts.h"
+#include "uvisor-lib/register_gateway.h"
 #include "uvisor-lib/secure_access.h"
 #include "uvisor-lib/secure_gateway.h"
 
