@@ -181,7 +181,7 @@ environment.
 
 To build:
 
-* Latest [GCC ARM Embeeded toolchain](https://launchpad.net/gcc-arm-embedded).
+* Latest [GCC ARM Embedded toolchain](https://launchpad.net/gcc-arm-embedded).
 
 To debug:
 
