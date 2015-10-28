@@ -18,8 +18,7 @@ Further reading:
 This version of the uVisor is an early beta with an **incomplete implementation of the security features** of the final product. Future versions of uVisor will add these functions - starting with this year's ARM TechCon that will come with a security challenge firmware.
 
 Some of the open uVisor issues in progress are listed here:
-- [known defects](https://github.com/ARMmbed/uvisor/issues?q=is%3Aopen+is%3Aissue+label%3Adefect)
-- full list of [open issues](https://github.com/ARMmbed/uvisor/issues)
+- [Known issues](https://github.com/ARMmbed/uvisor/issues?q=is%3Aopen+is%3Aissue+label%3Aissue)
 - [FIXMEs](https://github.com/ARMmbed/uvisor/search?utf8=%E2%9C%93&q=FIXME)
 
 ### Supported platforms:
