@@ -72,49 +72,56 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 
 /* uvisor-lib/register_gateway.h */
 
-static inline UVISOR_FORCEINLINE uint32_t uvisor_read(uint32_t addr)
-{
-    return *((uint32_t *) addr);
-}
+#define UVISOR_OP_READ(op)  (op)
+#define UVISOR_OP_WRITE(op) ((1 << 4) | (op))
+#define UVISOR_OP_NOP       0x0
+#define UVISOR_OP_AND       0x1
+#define UVISOR_OP_OR        0x2
+#define UVISOR_OP_XOR       0x3
+
+/* default mask for whole register operatins */
+#define __UVISOR_OP_DEFAULT_MASK 0x0
 
 static inline UVISOR_FORCEINLINE uint32_t uvisor_read(uint32_t addr, uint32_t op, uint32_t mask)
 {
     switch(op)
     {
-        case UVISOR_OP_NOP:
-            return uvisor_read(addr);
-        case UVISOR_OP_AND:
+        case UVISOR_OP_READ(UVISOR_OP_NOP):
+            return *((uint32_t *) addr);
+        case UVISOR_OP_READ(UVISOR_OP_AND):
             return *((uint32_t *) addr) & mask;
-        case UVISOR_OP_OR:
+        case UVISOR_OP_READ(UVISOR_OP_OR):
             return *((uint32_t *) addr) | mask;
-        case UVISOR_OP_XOR:
+        case UVISOR_OP_READ(UVISOR_OP_XOR):
             return *((uint32_t *) addr) ^ mask;
         default:
             /* FIXME */
+            return 0;
     }
 }
 
-static inline UVISOR_FORCEINLINE void uvisor_write(uint32_t addr, uint32_t val)
-{
-    *((uint32_t *) addr) = val;
-}
+#define uvisor_read(addr) uvisor_read((uint32_t) (addr), UVISOR_OP_READ(UVISOR_OP_NOP), __UVISOR_OP_DEFAULT_MASK)
 
 static inline UVISOR_FORCEINLINE void uvisor_write(uint32_t addr, uint32_t val, uint32_t op, uint32_t mask)
 {
     switch(op)
     {
-        case UVISOR_OP_NOP:
-            uvisor_write(addr, val);
-        case UVISOR_OP_AND:
+        case UVISOR_OP_WRITE(UVISOR_OP_NOP):
+            *((uint32_t *) addr) = val;
+        case UVISOR_OP_WRITE(UVISOR_OP_AND):
             *((uint32_t *) addr) &= val | ~mask;
-        case UVISOR_OP_OR:
+        case UVISOR_OP_WRITE(UVISOR_OP_OR):
             *((uint32_t *) addr) |= val & mask;
-        case UVISOR_OP_XOR:
+        case UVISOR_OP_WRITE(UVISOR_OP_XOR):
             *((uint32_t *) addr) ^= val & mask;
         default:
             /* FIXME */
+            return;
     }
 }
+
+#define uvisor_write(addr, val) uvisor_write((uint32_t) (addr), (uint32_t) (val), \
+                                             UVISOR_OP_WRITE(UVISOR_OP_NOP), __UVISOR_OP_DEFAULT_MASK)
 
 /* uvisor-lib/secure_access.h */
 
