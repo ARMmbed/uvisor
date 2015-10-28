@@ -21,7 +21,7 @@
 #if defined(TARGET_LIKE_FRDM_K64F_GCC)         || \
     defined(TARGET_LIKE_STM32F429I_DISCO_GCC)
 
-#define UVISOR_PRESENT
+#define UVISOR_PRESENT 1
 
 #endif /* TARGET_LIKE_FRDM_K64F_GCC        or
           TARGET_LIKE_STM32F429I_DISCO_GCC */
