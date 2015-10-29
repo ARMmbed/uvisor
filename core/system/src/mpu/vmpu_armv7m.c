@@ -40,7 +40,6 @@
 #define MPU_RBAR(region,addr)   (((uint32_t)(region))|MPU_RBAR_VALID_Msk|addr)
 #define MPU_RBAR_RNR(addr)     (addr)
 #define MPU_STACK_GUARD_BAND_SIZE (UVISOR_SRAM_SIZE/8)
-#define SCB_MMFSR (*((volatile uint8_t *) &SCB->CFSR))
 
 /* various MPU flags */
 #define MPU_RASR_AP_PNO_UNO (0x00UL<<MPU_RASR_AP_Pos)
@@ -82,7 +81,7 @@ TMpuBox g_mpu_box[UVISOR_MAX_BOXES];
 
 static uint32_t g_vmpu_aligment_mask;
 
-static const TMpuRegion* vmpu_fault_find(uint32_t fault_addr,  const TMpuBox *box)
+static const TMpuRegion* vmpu_fault_find_box_region(uint32_t fault_addr, const TMpuBox *box)
 {
     int count;
     const TMpuRegion *region;
@@ -99,17 +98,17 @@ static const TMpuRegion* vmpu_fault_find(uint32_t fault_addr,  const TMpuBox *bo
     return NULL;
 }
 
-static const TMpuRegion* vmpu_fault_find_box(uint32_t fault_addr)
+static const TMpuRegion* vmpu_fault_find_region(uint32_t fault_addr)
 {
     const TMpuRegion *region;
 
     /* check current box if not base */
-    if ((g_active_box) && ((region = vmpu_fault_find(fault_addr, &g_mpu_box[g_active_box])) == NULL)) {
+    if ((g_active_box) && ((region = vmpu_fault_find_box_region(fault_addr, &g_mpu_box[g_active_box])) == NULL)) {
         return NULL;
     }
 
     /* check base-box */
-    if ((region = vmpu_fault_find(fault_addr, &g_mpu_box[0])) == NULL) {
+    if ((region = vmpu_fault_find_box_region(fault_addr, &g_mpu_box[0])) == NULL) {
         return NULL;
     }
 
@@ -126,7 +125,7 @@ uint32_t vmpu_fault_find_acl(uint32_t fault_addr, uint32_t size)
             return UVISOR_TACL_UWRITE | UVISOR_TACL_UREAD;
         default:
             /* search base box and active box ACLs */
-            region = vmpu_fault_find_box(fault_addr);
+            region = vmpu_fault_find_region(fault_addr);
 
             /* ensure that data fits in selected region */
             if((fault_addr+size)>region->end)
@@ -136,32 +135,17 @@ uint32_t vmpu_fault_find_acl(uint32_t fault_addr, uint32_t size)
     }
 }
 
-static const TMpuRegion* vmpu_mpu_fault_find(void)
+static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint32_t fault_status)
 {
-    uint32_t fault_addr;
     const TMpuRegion *region;
 
-    /* backup fault address */
-    fault_addr = SCB->MMFAR;
-    /* check for fault address, ensure data faults only */
-    if (SCB_MMFSR != 0x82) {
-        return NULL;
+    /* no recovery possible if the MPU syndrome register is not valid */
+    if (fault_status != 0x82) {
+        return 0;
     }
 
-    /* search base box and active box ACLs */
-    region = vmpu_fault_find_box(fault_addr);
-
-    /* clear MMFSR only - reset MMARVALID bit to acknowledge fault */
-    SCB_MMFSR = 0x80;
-    return region;
-}
-
-/* TODO/FIXME: implement recovery from MemManage fault */
-static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp)
-{
-    const TMpuRegion *region;
-
-    if ((region = vmpu_mpu_fault_find()) == NULL)
+    /* find region for faulting address */
+    if ((region = vmpu_fault_find_region(fault_addr)) == NULL)
         return 0;
 
     /* FIXME: use random numbers for box number */
@@ -177,6 +161,7 @@ static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp)
 void vmpu_sys_mux_handler(uint32_t lr)
 {
     uint32_t sp, pc;
+    uint32_t fault_addr, fault_status;
 
     /* the IPSR enumerates interrupt numbers from 0 up, while *_IRQn numbers are
      * both positive (hardware IRQn) and negative (system IRQn); here we convert
@@ -193,8 +178,13 @@ void vmpu_sys_mux_handler(uint32_t lr)
                 sp = __get_PSP();
                 pc = vmpu_unpriv_uint32_read(sp + (6 * 4));
 
+                /* backup fault address and status, then clear the MMARVALID flag */
+                fault_addr = SCB->MMFAR;
+                fault_status = VMPU_SCB_MMFSR;
+                VMPU_SCB_MMFSR = 0x80;
+
                 /* check if the fault is an MPU fault */
-                if (vmpu_fault_recovery_mpu(pc, sp)) {
+                if (vmpu_fault_recovery_mpu(pc, sp, fault_addr, fault_status)) {
                     return;
                 }
 
@@ -224,8 +214,13 @@ void vmpu_sys_mux_handler(uint32_t lr)
                 sp = __get_PSP();
                 pc = vmpu_unpriv_uint32_read(sp + (6 * 4));
 
+                /* backup fault address and status, then clear the BFARVALID flag */
+                fault_addr = SCB->BFAR;
+                fault_status = VMPU_SCB_BFSR;
+                VMPU_SCB_BFSR = 0x80;
+
                 /* check if the fault is the special register corner case */
-                if(!vmpu_fault_recovery_bus(pc, sp))
+                if(!vmpu_fault_recovery_bus(pc, sp, fault_addr, fault_status))
                     return;
 
                 /* if recovery was not successful, throw an error and halt */

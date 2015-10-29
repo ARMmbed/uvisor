@@ -38,6 +38,7 @@ static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp)
 void vmpu_sys_mux_handler(uint32_t lr)
 {
     uint32_t sp, pc;
+    uint32_t fault_addr, fault_status;
 
     /* the IPSR enumerates interrupt numbers from 0 up, while *_IRQn numbers are
      * both positive (hardware IRQn) and negative (system IRQn); here we convert
@@ -71,12 +72,17 @@ void vmpu_sys_mux_handler(uint32_t lr)
                 sp = __get_PSP();
                 pc = vmpu_unpriv_uint32_read(sp + (6 * 4));
 
+                /* backup fault address and status, then clear the MMARVALID flag */
+                fault_addr = SCB->MMFAR;
+                fault_status = VMPU_SCB_MMFSR;
+                VMPU_SCB_MMFSR = 0x80;
+
                 /* check if the fault is an MPU fault */
                 if(MPU->CESR >> 27 && !vmpu_fault_recovery_mpu(pc, sp))
                     return;
 
                 /* check if the fault is the special register corner case */
-                if(!vmpu_fault_recovery_bus(pc, sp))
+                if(!vmpu_fault_recovery_bus(pc, sp, fault_addr, fault_status))
                     return;
 
                 /* if recovery was not successful, throw an error and halt */
