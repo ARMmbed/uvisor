@@ -270,8 +270,9 @@ int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint3
                         found = FALSE;
                         break;
                 }
-                if(found)
-                    DPRINTF("Executed privileged access: 0x%08X written to 0x%08X\n\r", r1, r0);
+                if (found) {
+                    /* DPRINTF("Executed privileged access: 0x%08X written to 0x%08X\n\r", r1, r0); */
+                }
                 break;
 
             /* if using r0 only, we expect a ldrX instruction */
@@ -305,7 +306,7 @@ int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint3
                     /* the result is stored back to the stack (r0) */
                     vmpu_unpriv_uint32_write(sp, r1);
 
-                    DPRINTF("Executed privileged access: read 0x%08X from 0x%08X\n\r", r1, r0);
+                    /* DPRINTF("Executed privileged access: read 0x%08X from 0x%08X\n\r", r1, r0); */
                 }
                 break;
 

@@ -269,7 +269,7 @@ void vmpu_switch(uint8_t src_box, uint8_t dst_box)
     const TMpuBox *box;
     const TMpuRegion *region;
 
-    DPRINTF("switching from %i to %i\n\r", src_box, dst_box);
+    /* DPRINTF("switching from %i to %i\n\r", src_box, dst_box); */
 
     if(!g_mpu_region_count || dst_box>=UVISOR_MAX_BOXES)
         HALT_ERROR(SANITY_CHECK_FAILED, "dst_box out of range (%u)", dst_box);
