@@ -239,6 +239,15 @@ uint32_t vmpu_fault_find_acl(uint32_t fault_addr, uint32_t size)
         case (uint32_t) &SCB->SCR:
             return UVISOR_TACL_UWRITE | UVISOR_TACL_UREAD;
         default:
+            /* translate fault_addr into its physical address if it is in the bit-banding region */
+            if (fault_addr >= VMPU_PERIPH_BITBAND_START && fault_addr <= VMPU_PERIPH_BITBAND_END) {
+                fault_addr = VMPU_PERIPH_BITBAND_ALIAS_TO_ADDR(fault_addr);
+            }
+            else if (fault_addr >= VMPU_SRAM_BITBAND_START && fault_addr <= VMPU_SRAM_BITBAND_END) {
+                fault_addr = VMPU_SRAM_BITBAND_ALIAS_TO_ADDR(fault_addr);
+            }
+
+            /* look for ACL */
             if( (fault_addr>=AIPS0_BASE) &&
                 ((fault_addr<(AIPS0_BASE+(0xFEUL*(AIPSx_SLOT_SIZE))))) )
                 return vmpu_fault_find_acl_aips(g_active_box, fault_addr, size);
