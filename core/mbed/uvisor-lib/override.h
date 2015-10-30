@@ -26,10 +26,6 @@
 
 #include <stdint.h>
 
-/* FIXME remove when yotta config symbol implemented properly */
-#include "uvisor-lib/platforms.h"
-#define YOTTA_CFG_UVISOR_PRESENT UVISOR_PRESENT
-
 extern void vIRQ_SetVectorX(uint32_t irqn, uint32_t vector, uint32_t flag);
 extern uint32_t vIRQ_GetVector(uint32_t irqn);
 extern void vIRQ_EnableIRQ(uint32_t irqn);
