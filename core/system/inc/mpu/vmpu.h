@@ -66,6 +66,33 @@
 #define VMPU_OPCODE16_UPPER_LDRH_MASK   0x88
 #define VMPU_OPCODE16_UPPER_LDRB_MASK   0x78
 
+/* bit-banding regions boundaries */
+#define VMPU_SRAM_START           0x20000000
+#define VMPU_SRAM_BITBAND_START   0x22000000
+#define VMPU_SRAM_BITBAND_END     0x23FFFFFF
+#define VMPU_PERIPH_START         0x40000000
+#define VMPU_PERIPH_BITBAND_START 0x42000000
+#define VMPU_PERIPH_BITBAND_END   0x43FFFFFF
+
+/* bit-banding aliases macros
+ * physical address ---> bit-banded alias
+ * bit-banded alias ---> physical address
+ * bit-banded alias ---> specific bit accessed at physical address */
+#define VMPU_SRAM_BITBAND_ADDR_TO_ALIAS(addr, bit)   (VMPU_SRAM_BITBAND_START + 32U * (((uint32_t) (addr)) - \
+                                                     VMPU_SRAM_START) + 4U * ((uint32_t) (bit)))
+#define VMPU_SRAM_BITBAND_ALIAS_TO_ADDR(alias)       ((((((uint32_t) (alias)) - VMPU_SRAM_BITBAND_START) >> 5) & \
+                                                     ~0x3U) + VMPU_SRAM_START)
+#define VMPU_SRAM_BITBAND_ALIAS_TO_BIT(alias)        (((((uint32_t) (alias)) - VMPU_SRAM_BITBAND_START) - \
+                                                     ((VMPU_SRAM_BITBAND_ALIAS_TO_ADDR(alias) - \
+                                                     VMPU_SRAM_START) << 5)) >> 2)
+#define VMPU_PERIPH_BITBAND_ADDR_TO_ALIAS(addr, bit) (VMPU_PERIPH_BITBAND_START + 32U * (((uint32_t) (addr)) - \
+                                                     VMPU_PERIPH_START) + 4U * ((uint32_t) (bit)))
+#define VMPU_PERIPH_BITBAND_ALIAS_TO_ADDR(alias)     ((((((uint32_t) (alias)) - VMPU_PERIPH_BITBAND_START) >> 5) & \
+                                                     ~0x3U) + VMPU_PERIPH_START)
+#define VMPU_PERIPH_BITBAND_ALIAS_TO_BIT(alias)      (((((uint32_t) (alias)) - VMPU_PERIPH_BITBAND_START) - \
+                                                     ((VMPU_PERIPH_BITBAND_ALIAS_TO_ADDR(alias) - \
+                                                     VMPU_PERIPH_START) << 5)) >> 2)
+
 extern uint8_t g_active_box;
 
 extern void vmpu_acl_add(uint8_t box_id, void *addr,
