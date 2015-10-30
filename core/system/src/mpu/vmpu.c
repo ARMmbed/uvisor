@@ -205,7 +205,7 @@ uint32_t vmpu_register_gateway(uint32_t addr, uint32_t val)
     return 0;
 }
 
-int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp)
+int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint32_t fault_status)
 {
     uint16_t opcode;
     uint32_t r0, r1;
@@ -216,11 +216,21 @@ int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp)
     if(!VMPU_FLASH_ADDR(pc))
        HALT_ERROR(NOT_ALLOWED, "This is not the PC (0x%08X) your were searching for", pc);
 
-    /* if the bus fault is imprecise we will seek back for ldrX/strX opcode */
-    if(SCB->CFSR & (1 << 10))
-        cnt_max = UVISOR_NOP_CNT;
-    else
-        cnt_max = 0;
+    /* check fault register; the following two configurations are allowed:
+     *   0x04 - imprecise data bus fault, no stacking/unstacking errors
+     *   0x82 - precise data bus fault, no stacking/unstacking errors */
+    /* note: currently the faulting address argument is not used, since it
+     * is saved in r0 for managed bus faults */
+    switch(fault_status) {
+        case 0x82:
+            cnt_max = 0;
+            break;
+        case 0x04:
+            cnt_max = UVISOR_NOP_CNT;
+            break;
+        default:
+            return -1;
+    }
 
     /* parse opcode */
     cnt = 0;

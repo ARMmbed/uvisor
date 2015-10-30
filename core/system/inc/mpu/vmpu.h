@@ -27,6 +27,9 @@
 #define VMPU_REGION_SIZE(p1, p2) ((p1 >= p2) ? 0 : \
                                              ((uint32_t) (p2) - (uint32_t) (p1)))
 
+#define VMPU_SCB_BFSR  (*((volatile uint8_t *) &SCB->CFSR + 1))
+#define VMPU_SCB_MMFSR (*((volatile uint8_t *) &SCB->CFSR))
+
 /* opcode encoding for ldr/str instructions
  *
  * for str instructions we expect the following:
@@ -108,7 +111,7 @@ extern void vmpu_switch(uint8_t src_box, uint8_t dst_box);
 
 extern void vmpu_load_box(uint8_t box_id);
 
-extern int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp);
+extern int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint32_t fault_status);
 
 uint32_t vmpu_fault_find_acl(uint32_t fault_addr, uint32_t size);
 
