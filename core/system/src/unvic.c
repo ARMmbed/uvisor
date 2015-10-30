@@ -322,8 +322,8 @@ uint32_t __unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
     __set_PSP((uint32_t) dst_sp);
     __set_CONTROL(__get_CONTROL() | 3);
 
-    DPRINTF("IRQ %d served with vector 0x%08X\n\r", irqn,
-                                                    g_unvic_vector[irqn]);
+    /* DPRINTF("IRQ %d served with vector 0x%08X\n\r", irqn, */
+    /*                                                 g_unvic_vector[irqn]); */
     /* FIXME add support for privacy (triggers register clearing) */
     return 0;
 }
