@@ -82,7 +82,7 @@ static void unvic_acl_check(int irqn)
      *       box claimed exclusive ownership for it. So, another box can claim it
      *       if it is currently un-registered (that is, if the registered handler
      *       is NULL) */
-    if(uv->id != svc_cx_get_curr_id() && (uv->id || uv->hdlr))
+    if(uv->id != g_active_box && (uv->id || uv->hdlr))
     {
         HALT_ERROR(PERMISSION_DENIED,
                    "Permission denied: IRQ %d is owned by box %d\n\r", irqn,
@@ -261,11 +261,13 @@ uint32_t __unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
     uint32_t ipsr = msp[7];
     uint32_t irqn = (ipsr & 0x1FF) - IRQn_OFFSET;
 
-    /* verify IRQ access privileges */
-    unvic_acl_check(irqn);
-
     dst_id = g_unvic_vector[irqn].id;
     dst_fn = (uint32_t) g_unvic_vector[irqn].hdlr;
+
+    /* verify IRQ access privileges */
+    /* note: only default basic checks are performed, since the remaining
+     * information is fetched from our trusted vector table */
+    unvic_default_check(irqn);
 
     /* check ISR vector */
     if(!dst_fn)

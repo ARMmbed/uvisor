@@ -75,7 +75,6 @@ typedef struct {
 } TMpuBox;
 
 uint32_t g_mpu_slot;
-static uint8_t g_active_box;
 uint32_t g_mpu_region_count, g_box_mem_pos;
 TMpuRegion g_mpu_list[MPU_REGION_COUNT];
 TMpuBox g_mpu_box[UVISOR_MAX_BOXES];

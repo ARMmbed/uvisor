@@ -66,6 +66,8 @@
 #define VMPU_OPCODE16_UPPER_LDRH_MASK   0x88
 #define VMPU_OPCODE16_UPPER_LDRB_MASK   0x78
 
+extern uint8_t g_active_box;
+
 extern void vmpu_acl_add(uint8_t box_id, void *addr,
                          uint32_t size, UvisorBoxAcl acl);
 extern void vmpu_acl_irq(uint8_t box_id, void *function, uint32_t isr_id);

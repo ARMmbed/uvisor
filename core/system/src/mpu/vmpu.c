@@ -37,6 +37,7 @@
 #endif
 
 uint32_t  g_vmpu_box_count;
+uint8_t g_active_box;
 
 static int vmpu_sanity_checks(void)
 {
