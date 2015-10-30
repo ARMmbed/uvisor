@@ -24,7 +24,6 @@
 #include "vmpu_freescale_k64_aips.h"
 #include "vmpu_freescale_k64_mem.h"
 
-static uint8_t g_active_box;
 uint32_t g_box_mem_pos;
 
 /* TODO/FIXME: implement recovery from Freescale MPU fault */
