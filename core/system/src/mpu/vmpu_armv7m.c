@@ -188,7 +188,7 @@ void vmpu_sys_mux_handler(uint32_t lr)
                 /* backup fault address and status, then clear the MMARVALID flag */
                 fault_addr = SCB->MMFAR;
                 fault_status = VMPU_SCB_MMFSR;
-                VMPU_SCB_MMFSR = 0x80;
+                VMPU_SCB_MMFSR = fault_status;
 
                 /* check if the fault is an MPU fault */
                 if (vmpu_fault_recovery_mpu(pc, sp, fault_addr, fault_status)) {
@@ -224,7 +224,7 @@ void vmpu_sys_mux_handler(uint32_t lr)
                 /* backup fault address and status, then clear the BFARVALID flag */
                 fault_addr = SCB->BFAR;
                 fault_status = VMPU_SCB_BFSR;
-                VMPU_SCB_BFSR = 0x80;
+                VMPU_SCB_BFSR = fault_status;
 
                 /* check if the fault is the special register corner case */
                 if(!vmpu_fault_recovery_bus(pc, sp, fault_addr, fault_status))
