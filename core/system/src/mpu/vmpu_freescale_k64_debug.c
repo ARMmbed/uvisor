@@ -49,7 +49,7 @@ void debug_fault_bus(void)
 {
     dprintf("* CFSR : 0x%08X\n\r\n\r", SCB->CFSR);
     dprintf("* BFAR : 0x%08X\n\r\n\r", SCB->BFAR);
-    debug_mpu_fault();
+    debug_fault_mpu();
     debug_map_addr_to_periph(SCB->BFAR);
 }
 
@@ -85,7 +85,7 @@ void debug_mpu_config(void)
     /* the alternate view is not printed */
 }
 
-void debug_mpu_fault(void)
+void debug_fault_mpu(void)
 {
     uint32_t cesr = MPU->CESR;
     uint32_t sperr = cesr >> 27;
