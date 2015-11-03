@@ -23,15 +23,15 @@
 void debug_init(void);
 void debug_cx_switch_in(void);
 void debug_cx_switch_out(void);
-void debug_exc_sf(uint32_t lr);
+void debug_exception_frame(uint32_t lr, uint32_t sp);
 void debug_fault_memmanage(void);
 void debug_fault_bus(void);
 void debug_fault_usage(void);
 void debug_fault_hard(void);
 void debug_fault_debug(void);
-void debug_fault(THaltError reason, uint32_t lr);
+void debug_fault_mpu(void);
+void debug_fault(THaltError reason, uint32_t lr, uint32_t sp);
 void debug_mpu_config(void);
-void debug_mpu_fault(void);
 void debug_map_addr_to_periph(uint32_t address);
 
 #define DEBUG_PRINT_HEAD(x) {\

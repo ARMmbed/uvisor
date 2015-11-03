@@ -135,88 +135,67 @@ void debug_cx_switch_out(void)
     dprintf("\n\r");
 }
 
-void debug_exc_sf(uint32_t lr)
+void debug_exception_frame(uint32_t lr, uint32_t sp)
 {
     int i;
-    uint32_t *sp;
-    uint32_t mode = lr & 0x4;
-
-    dprintf("* EXCEPTION STACK FRAME\n");
-
-    /* get stack pointer to exception frame */
-    if(mode)
-    {
-        sp = (uint32_t *) __get_PSP();
-        dprintf("  Exception from unprivileged code\n");
-        dprintf("    psp:     0x%08X\n\r", sp);
-        dprintf("    lr:      0x%08X\n\r", lr);
-    }
-    else
-    {
-        dprintf("  Exception from privileged code\n");
-        dprintf("  Cannot print exception stack frame.\n\n");
-        return;
-    }
+    int mode = lr & 0x4;
 
     char exc_sf_verbose[SVC_CX_EXC_SF_SIZE + 1][6] = {
         "r0", "r1", "r2", "r3", "r12",
         "lr", "pc", "xPSR", "align"
     };
 
+    dprintf("* EXCEPTION STACK FRAME\n");
+    dprintf("  Exception from %s code\n", mode ? "unprivileged" : "privileged");
+    dprintf("    %csp:     0x%08X\n\r", mode ? 'p' : 'm', sp);
+    dprintf("    lr:      0x%08X\n\r", lr);
+
     /* print exception stack frame */
     dprintf("  Exception stack frame:\n");
     i = SVC_CX_EXC_SF_SIZE;
-    if(sp[8] & (1 << 9))
+    if(((uint32_t *) sp)[8] & (1 << 9))
     {
-        dprintf("    psp[%02d]: 0x%08X | %s\n", i, sp[i], exc_sf_verbose[i]);
+        dprintf("    %csp[%02d]: 0x%08X | %s\n", mode ? 'p' : 'm', i, ((uint32_t *) sp)[i], exc_sf_verbose[i]);
     }
     for(i = SVC_CX_EXC_SF_SIZE - 1; i >= 0; --i)
     {
-        dprintf("    psp[%02d]: 0x%08X | %s\n", i, sp[i], exc_sf_verbose[i]);
+        dprintf("    %csp[%02d]: 0x%08X | %s\n", mode ? 'p' : 'm', i, ((uint32_t *) sp)[i], exc_sf_verbose[i]);
     }
     dprintf("\n");
 }
 
 void UVISOR_WEAK debug_fault_memmanage(void)
 {
-#ifndef NDEBUG
-    const MemMap *map;
-
-    dprintf("* CFSR  : 0x%08X\n\r", SCB->CFSR);
-
-    if(SCB->CFSR & 0x80)
-    {
-        /* resolve memory region responsible for the fault */
-        map = memory_map_name(SCB->MMFAR);
-
-        dprintf("* MMFAR : 0x%08X (%s)\n\r",
-            SCB->MMFAR, map ? map->name : "unknown");
-    }
-#endif/*NDEBUG*/
+    dprintf("* CFSR  : 0x%08X\n\r\n\r", SCB->CFSR);
+    dprintf("* MMFAR : 0x%08X\n\r\n\r", SCB->MMFAR);
 }
 
 void UVISOR_WEAK debug_fault_bus(void)
 {
-    dprintf("* CFSR : 0x%08X\n\r\n\r", SCB->CFSR);
-    dprintf("* BFAR : 0x%08X\n\r\n\r", SCB->BFAR);
+    dprintf("* CFSR  : 0x%08X\n\r\n\r", SCB->CFSR);
+    dprintf("* BFAR  : 0x%08X\n\r\n\r", SCB->BFAR);
 }
 
 void UVISOR_WEAK debug_fault_usage(void)
 {
-    dprintf("* CFSR : 0x%08X\n\r\n\r", SCB->CFSR);
+    dprintf("* CFSR  : 0x%08X\n\r\n\r", SCB->CFSR);
 }
 
 void UVISOR_WEAK debug_fault_hard(void)
 {
-    dprintf("* HFSR : 0x%08X\n\r\n\r", SCB->HFSR);
+    dprintf("* HFSR  : 0x%08X\n\r\n\r", SCB->HFSR);
+    dprintf("* CFSR  : 0x%08X\n\r\n\r", SCB->CFSR);
+    dprintf("* DFSR  : 0x%08X\n\r\n\r", SCB->DFSR);
+    dprintf("* BFAR  : 0x%08X\n\r\n\r", SCB->BFAR);
+    dprintf("* MMFAR : 0x%08X\n\r\n\r", SCB->MMFAR);
 }
 
 void UVISOR_WEAK debug_fault_debug(void)
 {
-    dprintf("* DFSR : 0x%08X\n\r\n\r", SCB->DFSR);
+    dprintf("* DFSR  : 0x%08X\n\r\n\r", SCB->DFSR);
 }
 
-void debug_fault(THaltError reason, uint32_t lr)
+void debug_fault(THaltError reason, uint32_t lr, uint32_t sp)
 {
     /* fault-specific code */
     switch(reason)
@@ -243,28 +222,11 @@ void debug_fault(THaltError reason, uint32_t lr)
             break;
         default:
             DEBUG_PRINT_HEAD("[unknown fault]");
+            break;
     }
 
     /* blue screen */
-    debug_exc_sf(lr);
+    debug_exception_frame(lr, sp);
     debug_mpu_config();
     DEBUG_PRINT_END();
-}
-
-void UVISOR_WEAK debug_mpu_config(void)
-{
-    HALT_ERROR(NOT_IMPLEMENTED,
-               "debug_mpu_config needs hw-specific implementation\n\r");
-}
-
-void UVISOR_WEAK debug_mpu_fault(void)
-{
-    HALT_ERROR(NOT_IMPLEMENTED,
-               "debug_mpu_fault needs hw-specific implementation\n\r");
-}
-
-void UVISOR_WEAK debug_map_addr_to_periph(uint32_t address)
-{
-    HALT_ERROR(NOT_IMPLEMENTED,
-               "debug_map_addr_to_periph needs hw-specific implementation\n\r");
 }
