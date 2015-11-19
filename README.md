@@ -14,6 +14,9 @@ Further reading:
   - [yotta module](#the-uvisor-as-a-yotta-module) integration
 - [Secure coding guidelines](SECURE-CODING.md) for code contributors
 
+uVisor in the press:
+- [Q&A with ARM](http://eecatalog.com/IoT/2015/08/18/qa-with-arm-securing-the-iot-using-arm-cortex-processors-and-a-growing-mbed-platform-suite/): Securing the IoT using ARM Cortex Processors, and a growing mbed platform suite
+
 ### Word of Caution
 This version of the uVisor is an early technology preview with an **incomplete implementation of the security features** of the final product. Future versions of uVisor will add these functions.
 
