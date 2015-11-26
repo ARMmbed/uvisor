@@ -123,7 +123,7 @@ extern void vmpu_arch_init_hw(void);
 extern int  vmpu_init_pre(void);
 extern void vmpu_init_post(void);
 
-extern void vmpu_sys_mux_handler(uint32_t lr);
+extern void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp);
 
 extern uint32_t  g_vmpu_box_count;
 
@@ -136,8 +136,9 @@ static inline __attribute__((always_inline)) void vmpu_sys_mux(void)
      * execution, the second one re-privileges it note: NONBASETHRDENA (in SCB)
      * must be set to 1 for this to work */
     asm volatile(
-        "push {lr}\n"
         "mov r0, lr\n"
+        "mrs r1, MSP\n"
+        "push {lr}\n"
         "blx vmpu_sys_mux_handler\n"
         "pop {pc}\n"
     );
