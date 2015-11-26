@@ -30,7 +30,7 @@
 #include "uvisor-lib/svc_gw_exports.h"
 
 /* conditionally included header files */
-#ifdef YOTTA_CFG_UVISOR_PRESENT
+#if YOTTA_CFG_UVISOR_PRESENT == 1
 
 #include "uvisor-lib/benchmark.h"
 #include "uvisor-lib/box_config.h"
@@ -40,10 +40,10 @@
 #include "uvisor-lib/secure_access.h"
 #include "uvisor-lib/secure_gateway.h"
 
-#else /* YOTTA_CFG_UVISOR_PRESENT */
+#else /* YOTTA_CFG_UVISOR_PRESENT == 1 */
 
 #include "uvisor-lib/unsupported.h"
 
-#endif /* YOTTA_CFG_UVISOR_PRESENT */
+#endif /* YOTTA_CFG_UVISOR_PRESENT == 1 */
 
 #endif /* __UVISOR_LIB_UVISOR_LIB_H__ */
