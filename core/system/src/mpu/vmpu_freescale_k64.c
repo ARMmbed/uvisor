@@ -34,9 +34,9 @@ static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp)
     return -1;
 }
 
-void vmpu_sys_mux_handler(uint32_t lr)
+void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
 {
-    uint32_t sp, pc;
+    uint32_t psp, pc;
     uint32_t fault_addr, fault_status;
 
     /* the IPSR enumerates interrupt numbers from 0 up, while *_IRQn numbers are
@@ -44,10 +44,13 @@ void vmpu_sys_mux_handler(uint32_t lr)
      * the IPSR value to this latter encoding */
     int ipsr = ((int) (__get_IPSR() & 0x1FF)) - IRQn_OFFSET;
 
+    /* PSP at fault */
+    psp = __get_PSP();
+
     switch(ipsr)
     {
         case MemoryManagement_IRQn:
-            DEBUG_FAULT(FAULT_MEMMANAGE, lr);
+            DEBUG_FAULT(FAULT_MEMMANAGE, lr, lr & 0x4 ? psp : msp);
             halt_led(FAULT_MEMMANAGE);
             break;
 
@@ -67,49 +70,48 @@ void vmpu_sys_mux_handler(uint32_t lr)
             /* currently we only support recovery from unprivileged mode */
             if(lr & 0x4)
             {
-                /* pc and sp at fault */
-                sp = __get_PSP();
-                pc = vmpu_unpriv_uint32_read(sp + (6 * 4));
+                /* pc at fault */
+                pc = vmpu_unpriv_uint32_read(psp + (6 * 4));
 
                 /* backup fault address and status */
                 fault_addr = SCB->BFAR;
                 fault_status = VMPU_SCB_BFSR;
 
                 /* check if the fault is an MPU fault */
-                if (MPU->CESR >> 27 && !vmpu_fault_recovery_mpu(pc, sp)) {
+                if (MPU->CESR >> 27 && !vmpu_fault_recovery_mpu(pc, psp)) {
                     VMPU_SCB_BFSR = fault_status;
                     return;
                 }
 
                 /* check if the fault is the special register corner case */
-                if (!vmpu_fault_recovery_bus(pc, sp, fault_addr, fault_status)) {
+                if (!vmpu_fault_recovery_bus(pc, psp, fault_addr, fault_status)) {
                     VMPU_SCB_BFSR = fault_status;
                     return;
                 }
 
                 /* if recovery was not successful, throw an error and halt */
-                DEBUG_FAULT(FAULT_BUS, lr);
+                DEBUG_FAULT(FAULT_BUS, lr, psp);
                 HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied");
             }
             else
             {
-                DEBUG_FAULT(FAULT_BUS, lr);
+                DEBUG_FAULT(FAULT_BUS, lr, msp);
                 HALT_ERROR(FAULT_BUS, "Cannot recover from privileged bus fault");
             }
             break;
 
         case UsageFault_IRQn:
-            DEBUG_FAULT(FAULT_USAGE, lr);
+            DEBUG_FAULT(FAULT_USAGE, lr, lr & 0x4 ? psp : msp);
             halt_led(FAULT_USAGE);
             break;
 
         case HardFault_IRQn:
-            DEBUG_FAULT(FAULT_HARD, lr);
+            DEBUG_FAULT(FAULT_HARD, lr, lr & 0x4 ? psp : msp);
             halt_led(FAULT_HARD);
             break;
 
         case DebugMonitor_IRQn:
-            DEBUG_FAULT(FAULT_DEBUG, lr);
+            DEBUG_FAULT(FAULT_DEBUG, lr, lr & 0x4 ? psp : msp);
             halt_led(FAULT_DEBUG);
             break;
 
