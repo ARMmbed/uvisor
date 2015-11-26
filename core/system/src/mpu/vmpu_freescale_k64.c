@@ -71,18 +71,21 @@ void vmpu_sys_mux_handler(uint32_t lr)
                 sp = __get_PSP();
                 pc = vmpu_unpriv_uint32_read(sp + (6 * 4));
 
-                /* backup fault address and status, then clear the BFARVALID flag */
+                /* backup fault address and status */
                 fault_addr = SCB->BFAR;
                 fault_status = VMPU_SCB_BFSR;
-                VMPU_SCB_BFSR = fault_status;
 
                 /* check if the fault is an MPU fault */
-                if(MPU->CESR >> 27 && !vmpu_fault_recovery_mpu(pc, sp))
+                if (MPU->CESR >> 27 && !vmpu_fault_recovery_mpu(pc, sp)) {
+                    VMPU_SCB_BFSR = fault_status;
                     return;
+                }
 
                 /* check if the fault is the special register corner case */
-                if(!vmpu_fault_recovery_bus(pc, sp, fault_addr, fault_status))
+                if (!vmpu_fault_recovery_bus(pc, sp, fault_addr, fault_status)) {
+                    VMPU_SCB_BFSR = fault_status;
                     return;
+                }
 
                 /* if recovery was not successful, throw an error and halt */
                 DEBUG_FAULT(FAULT_BUS, lr);
