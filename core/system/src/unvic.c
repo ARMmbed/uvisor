@@ -67,8 +67,9 @@ void unvic_acl_add(uint8_t box_id, void *function, uint32_t irqn)
     uv->hdlr = function;
 }
 
-static void unvic_acl_check(int irqn)
+static int unvic_acl_check(int irqn)
 {
+    int is_irqn_registered;
     TIsrUVector *uv;
 
     /* don't allow to modify uVisor-owned IRQs */
@@ -77,17 +78,23 @@ static void unvic_acl_check(int irqn)
     /* get vector entry */
     uv = &g_unvic_vector[irqn];
 
+    /* an IRQn slot is considered as registered if the ISR entry in the unprivileged
+     * table is not 0 */
+    is_irqn_registered = uv->hdlr ? 1 : 0;
+
     /* check if the same box that registered the IRQn is accessing it
      * note: if the vector entry for a certain IRQn is 0, it means that no secure
      *       box claimed exclusive ownership for it. So, another box can claim it
      *       if it is currently un-registered (that is, if the registered handler
      *       is NULL) */
-    if(uv->id != g_active_box && (uv->id || uv->hdlr))
+    if(uv->id != g_active_box && (uv->id || is_irqn_registered))
     {
         HALT_ERROR(PERMISSION_DENIED,
                    "Permission denied: IRQ %d is owned by box %d\n\r", irqn,
                                                                        uv->id);
     }
+
+    return is_irqn_registered;
 }
 
 /* FIXME flag is currently not implemented */
@@ -123,43 +130,81 @@ uint32_t unvic_isr_get(uint32_t irqn)
 
 void unvic_irq_enable(uint32_t irqn)
 {
+    int is_irqn_registered;
+
     /* verify IRQ access privileges */
-    unvic_acl_check(irqn);
+    is_irqn_registered = unvic_acl_check(irqn);
 
     /* enable IRQ */
-    DPRINTF("IRQ %d enabled\n\r", irqn);
-    NVIC_EnableIRQ(irqn);
+    if (is_irqn_registered) {
+        DPRINTF("IRQ %d enabled\n\r", irqn);
+        NVIC_EnableIRQ(irqn);
+        return;
+    }
+    else if (UNVIC_IS_IRQ_ENABLED(irqn)) {
+        DPRINTF("IRQ %d is unregistered; state unchanged\n\r", irqn);
+        return;
+    }
+    else {
+        HALT_ERROR(NOT_ALLOWED, "IRQ %d is unregistered; state cannot be changed", irqn);
+    }
 }
 
 void unvic_irq_disable(uint32_t irqn)
 {
-    /* verify IRQ access privileges */
-    unvic_acl_check(irqn);
+    int is_irqn_registered;
 
-    DPRINTF("IRQ %d disabled, but still owned by box %d\n\r", irqn,
-                                          g_unvic_vector[irqn].id);
-    NVIC_DisableIRQ(irqn);
+    /* verify IRQ access privileges */
+    is_irqn_registered = unvic_acl_check(irqn);
+
+    if (is_irqn_registered) {
+        DPRINTF("IRQ %d disabled, but still owned by box %d\n\r", irqn, g_unvic_vector[irqn].id);
+        NVIC_DisableIRQ(irqn);
+        return;
+    }
+    else if (!UNVIC_IS_IRQ_ENABLED(irqn)) {
+        DPRINTF("IRQ %d is unregistered; state unchanged\n\r", irqn);
+        return;
+    }
+    else {
+        HALT_ERROR(NOT_ALLOWED, "IRQ %d is unregistered; state cannot be changed", irqn);
+    }
 }
 
 void unvic_irq_pending_clr(uint32_t irqn)
 {
+    int is_irqn_registered;
+
     /* verify IRQ access privileges */
-    unvic_acl_check(irqn);
+    is_irqn_registered = unvic_acl_check(irqn);
 
     /* enable IRQ */
-    DPRINTF("IRQ %d pending status cleared\n\r", irqn);
-    NVIC_ClearPendingIRQ(irqn);
+    if (is_irqn_registered) {
+        DPRINTF("IRQ %d pending status cleared\n\r", irqn);
+        NVIC_ClearPendingIRQ(irqn);
+        return;
+    }
+    else {
+        HALT_ERROR(NOT_ALLOWED, "IRQ %d is unregistered; state cannot be changed", irqn);
+    }
 }
 
 void unvic_irq_pending_set(uint32_t irqn)
 {
+    int is_irqn_registered;
+
     /* verify IRQ access privileges */
-    unvic_acl_check(irqn);
+    is_irqn_registered = unvic_acl_check(irqn);
 
     /* enable IRQ */
-    DPRINTF("IRQ %d pending status set "
-            "(will be served as soon as possible)\n\r", irqn);
-    NVIC_SetPendingIRQ(irqn);
+    if (is_irqn_registered) {
+        DPRINTF("IRQ %d pending status set (will be served as soon as possible)\n\r", irqn);
+        NVIC_SetPendingIRQ(irqn);
+        return;
+    }
+    else {
+        HALT_ERROR(NOT_ALLOWED, "IRQ %d is unregistered; state cannot be changed", irqn);
+    }
 }
 
 uint32_t unvic_irq_pending_get(uint32_t irqn)
@@ -173,8 +218,10 @@ uint32_t unvic_irq_pending_get(uint32_t irqn)
 
 void unvic_irq_priority_set(uint32_t irqn, uint32_t priority)
 {
+    int is_irqn_registered;
+
     /* verify IRQ access privileges */
-    unvic_acl_check(irqn);
+    is_irqn_registered = unvic_acl_check(irqn);
 
     /* FIXME add check for maximum priority */
 
@@ -184,7 +231,14 @@ void unvic_irq_priority_set(uint32_t irqn, uint32_t priority)
     else
         NVIC_SetPriority(irqn, UNVIC_MIN_PRIORITY + priority);
 
-    NVIC_SetPriority(irqn, priority);
+    if (is_irqn_registered) {
+        DPRINTF("IRQ %d priority set to %d\n\r", irqn, priority);
+        NVIC_SetPriority(irqn, priority);
+        return;
+    }
+    else {
+        HALT_ERROR(NOT_ALLOWED, "IRQ %d is unregistered; state cannot be changed", irqn);
+    }
 }
 
 uint32_t unvic_irq_priority_get(uint32_t irqn)
