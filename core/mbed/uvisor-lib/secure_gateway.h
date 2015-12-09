@@ -37,8 +37,7 @@
 #define secure_gateway(dst_box, dst_fn, ...) \
     ({ \
         uint32_t res = UVISOR_SVC(UVISOR_SVC_ID_SECURE_GATEWAY(UVISOR_MACRO_NARGS(__VA_ARGS__)), \
-                                  __UVISOR_SECURE_GATEWAY_METADATA(dst_box, dst_fn), \
-                                  __VA_ARGS__); \
+                                  __UVISOR_SECURE_GATEWAY_METADATA(dst_box, dst_fn), ##__VA_ARGS__); \
         res; \
     })
 
