@@ -223,7 +223,11 @@ void unvic_irq_priority_set(uint32_t irqn, uint32_t priority)
     /* verify IRQ access privileges */
     is_irqn_registered = unvic_acl_check(irqn);
 
-    /* FIXME add check for maximum priority */
+    /* check for maximum priority */
+    if (priority >= ((1 << __NVIC_PRIO_BITS) - UNVIC_MIN_PRIORITY)) {
+        HALT_ERROR(NOT_ALLOWED, "NVIC priority overflow; max priority allowed: %d\n\r",
+                   (1 << __NVIC_PRIO_BITS) - 1 - UNVIC_MIN_PRIORITY);
+    }
 
     /* set priority for device specific interrupts */
     NVIC_SetPriority(irqn, UNVIC_MIN_PRIORITY + priority);
@@ -432,4 +436,15 @@ void __unvic_svc_cx_out(uint32_t *svc_sp, uint32_t *msp)
 
 void unvic_init(void)
 {
+    /* check that minimum priority is still in the range of possible priority
+     * levels */
+    assert(UNVIC_MIN_PRIORITY < (1 << __NVIC_PRIO_BITS));
+
+    /* by setting the priority group to 0 we make sure that all priority levels
+     * are available for pre-emption and that interrupts with the same priority
+     * level occurring at the same time are served in the default way, that is,
+     * by IRQ number
+     * for example, IRQ 0 has precedence over IRQ 1 if both have the same
+     * priority level */
+    NVIC_SetPriorityGrouping(0);
 }
