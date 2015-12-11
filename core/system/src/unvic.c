@@ -226,10 +226,7 @@ void unvic_irq_priority_set(uint32_t irqn, uint32_t priority)
     /* FIXME add check for maximum priority */
 
     /* set priority for device specific interrupts */
-    if(priority < UNVIC_MIN_PRIORITY)
-        NVIC_SetPriority(irqn, UNVIC_MIN_PRIORITY);
-    else
-        NVIC_SetPriority(irqn, UNVIC_MIN_PRIORITY + priority);
+    NVIC_SetPriority(irqn, UNVIC_MIN_PRIORITY + priority);
 
     if (is_irqn_registered) {
         DPRINTF("IRQ %d priority set to %d\n\r", irqn, priority);
@@ -247,7 +244,7 @@ uint32_t unvic_irq_priority_get(uint32_t irqn)
     unvic_acl_check(irqn);
 
     /* get priority for device specific interrupts  */
-    return NVIC_GetPriority(irqn);
+    return NVIC_GetPriority(irqn) - UNVIC_MIN_PRIORITY;
 }
 
 int unvic_irq_level_get(void)
