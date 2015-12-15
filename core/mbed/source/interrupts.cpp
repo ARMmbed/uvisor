@@ -26,6 +26,11 @@ void vIRQ_SetVectorX(uint32_t irqn, uint32_t vector, uint32_t flag)
     }
 }
 
+void vIRQ_SetVector(uint32_t irqn, uint32_t vector)
+{
+    vIRQ_SetVectorX(irqn, vector, 0);
+}
+
 uint32_t vIRQ_GetVector(uint32_t irqn)
 {
     if(__uvisor_mode == 0) {
