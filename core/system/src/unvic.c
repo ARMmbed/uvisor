@@ -107,9 +107,17 @@ void unvic_isr_set(uint32_t irqn, uint32_t vector, uint32_t flag)
      * note: if the handler is NULL the IRQn gets de-registered for the current
      *       box, meaning that other boxes can still use it. In this way boxes
      *       can share un-exclusive IRQs. A secure box should not do that if it
-     *       wants to hold exclusivity over an IRQn */
+     *       wants to hold exclusivity over an IRQn
+     * note: when an IRQ is released (de-registered) the corresponding IRQn is
+     *       disabled, to ensure that no spurious interrupts are served */
+    if (vector) {
+        g_unvic_vector[irqn].id = svc_cx_get_curr_id();
+    }
+    else {
+        NVIC_DisableIRQ(irqn);
+        g_unvic_vector[irqn].id = 0;
+    }
     g_unvic_vector[irqn].hdlr = (TIsrVector) vector;
-    g_unvic_vector[irqn].id   = vector ? svc_cx_get_curr_id() : 0;
 
     /* set default priority (SVC must always be higher) */
     NVIC_SetPriority(irqn, UNVIC_MIN_PRIORITY);
