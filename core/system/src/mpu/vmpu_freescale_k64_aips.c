@@ -29,7 +29,7 @@ static uint32_t g_aipsx_exc[AIPSx_DWORDS];
 
 int vmpu_aips_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 {
-    int i, slot_count;
+    int i, slot_count, box_count;
     uint8_t aips_slot;
     uint32_t base, t, address;
 
@@ -79,11 +79,6 @@ int vmpu_aips_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
     }
     slot_count -= aips_slot;
 
-
-    /* initialize box[0] ACL's as background regions */
-    if(box_id)
-        memcpy(g_aipsx_box[box_id], g_aipsx_box[0], sizeof(g_aipsx_box[0]));
-
     /* iterate through all slots */
     while(slot_count--)
     {
@@ -99,8 +94,18 @@ int vmpu_aips_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 
         /* ensure we have a list of all peripherals */
         g_aipsx_all[i] |= t;
+
         /* remember box-specific peripherals */
-        g_aipsx_box[box_id][i] |= t;
+        if (box_id) {
+            g_aipsx_box[box_id][i] |= t;
+        }
+        else {
+            /* box 0 ACLs are applied to all boxes */
+            for (box_count = 0; box_count <= g_vmpu_box_count; box_count++) {
+                g_aipsx_box[box_count][i] |= t;
+            }
+        }
+
         /* remember exclusive peripherals */
         if( (acl & UVISOR_TACL_SHARED) == 0 )
             g_aipsx_exc[i] |= t;
