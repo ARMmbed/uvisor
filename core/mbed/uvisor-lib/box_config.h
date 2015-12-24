@@ -48,7 +48,7 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 /* this macro selects an overloaded macro (variable number of arguments) */
 #define __UVISOR_BOX_MACRO(_1, _2, _3, _4, NAME, ...) NAME
 
-#define __UVISOR_BOX_CONFIG(box_name, acl_list, stack_size, context_size) \
+#define __UVISOR_BOX_CONFIG(box_name, acl_list, acl_list_count, stack_size, context_size) \
     \
     uint8_t __attribute__((section(".keep.uvisor.bss.boxes"), aligned(32))) \
         box_name ## _reserved[UVISOR_STACK_SIZE_ROUND(((UVISOR_MIN_STACK(stack_size) + (context_size))*8)/6)]; \
@@ -59,20 +59,36 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
         UVISOR_MIN_STACK(stack_size), \
         context_size, \
         acl_list, \
-        UVISOR_ARRAY_COUNT(acl_list) \
+        acl_list_count \
     }; \
     \
     extern const __attribute__((section(".keep.uvisor.cfgtbl_ptr"), aligned(4))) void * const box_name ## _cfg_ptr = &box_name ## _cfg;
 
 #define __UVISOR_BOX_CONFIG_NOCONTEXT(box_name, acl_list, stack_size) \
-    __UVISOR_BOX_CONFIG(box_name, acl_list, stack_size, 0) \
+    __UVISOR_BOX_CONFIG(box_name, acl_list, UVISOR_ARRAY_COUNT(acl_list), stack_size, 0) \
 
 #define __UVISOR_BOX_CONFIG_CONTEXT(box_name, acl_list, stack_size, context_type) \
-    __UVISOR_BOX_CONFIG(box_name, acl_list, stack_size, sizeof(context_type)) \
+    __UVISOR_BOX_CONFIG(box_name, acl_list, UVISOR_ARRAY_COUNT(acl_list), stack_size, sizeof(context_type)) \
     UVISOR_EXTERN context_type * const uvisor_ctx;
 
-#define UVISOR_BOX_CONFIG(...) \
+#define __UVISOR_BOX_CONFIG_NOACL(box_name, stack_size, context_type) \
+    __UVISOR_BOX_CONFIG(box_name, NULL, 0, stack_size, sizeof(context_type)) \
+    UVISOR_EXTERN context_type * const uvisor_ctx;
+
+#define __UVISOR_BOX_CONFIG_NOACL_NOCONTEXT(box_name, stack_size) \
+    __UVISOR_BOX_CONFIG(box_name, NULL, 0, stack_size, 0)
+
+#define UVISOR_BOX_CONFIG_ACL(...) \
     __UVISOR_BOX_MACRO(__VA_ARGS__, __UVISOR_BOX_CONFIG_CONTEXT, \
-                                    __UVISOR_BOX_CONFIG_NOCONTEXT)(__VA_ARGS__)
+                                    __UVISOR_BOX_CONFIG_NOCONTEXT, \
+                                    __UVISOR_BOX_CONFIG_NOACL_NOCONTEXT)(__VA_ARGS__)
+
+#define UVISOR_BOX_CONFIG_CTX(...) \
+    __UVISOR_BOX_MACRO(__VA_ARGS__, __UVISOR_BOX_CONFIG_CONTEXT, \
+                                    __UVISOR_BOX_CONFIG_NOACL, \
+                                    __UVISOR_BOX_CONFIG_NOACL_NOCONTEXT)(__VA_ARGS__)
+
+#define UVISOR_BOX_CONFIG(...) \
+    UVISOR_BOX_CONFIG_ACL(__VA_ARGS__)
 
 #endif /* __UVISOR_LIB_BOX_CONFIG_H__ */
