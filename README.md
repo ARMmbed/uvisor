@@ -13,6 +13,7 @@ Further reading:
 - uVisor-lib user mode APIs
   - [API documentation](https://github.com/ARMmbed/uvisor-lib/blob/master/DOCUMENTATION.md)
   - [yotta module](#the-uvisor-as-a-yotta-module) integration
+- [uVisor OS Integration & Porting Guide](PORTING.md)
 - [Secure coding guidelines](SECURE-CODING.md) for code contributors
 
 uVisor in the press:
