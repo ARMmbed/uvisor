@@ -10,6 +10,8 @@ Further reading:
   - [Techical Details](#technical-details)
   - [Memory Layout](#memory-layout)
   - [Secure Boot](#the-boot-process)
+- [Debugging with uVisor](PORTING.md#debugging-uvisor)
+  - [link locally modified uVisor-lib to your project](PORTING.md#building-with-yotta)
 - uVisor-lib user mode APIs
   - [API documentation](https://github.com/ARMmbed/uvisor-lib/blob/master/DOCUMENTATION.md)
   - [yotta module](#the-uvisor-as-a-yotta-module) integration
