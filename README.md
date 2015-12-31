@@ -10,11 +10,16 @@ Further reading:
   - [Techical Details](#technical-details)
   - [Memory Layout](#memory-layout)
   - [Secure Boot](#the-boot-process)
-- [Debugging with uVisor](PORTING.md#debugging-uvisor)
-  - [link locally modified uVisor-lib to your project](PORTING.md#building-with-yotta)
 - uVisor-lib user mode APIs
   - [API documentation](https://github.com/ARMmbed/uvisor-lib/blob/master/DOCUMENTATION.md)
   - [yotta module](#the-uvisor-as-a-yotta-module) integration
+- [Debugging with uVisor](PORTING.md#debugging-uvisor)
+  - [link locally modified uVisor-lib to your project](PORTING.md#building-with-yotta)
+  - Any debugger with semihosting support can be used
+  - [uvisor-helloworld](https://github.com/ARMmbed/uvisor-helloworld) is prepared for debugging
+    - see the ```make gdbserver``` and the ```make gdbtui``` targets for setting up debugging
+    - We recommend using a JLink debugger (JLink LITE for ARM Cortex-M at least) 
+    - Get the latest [SEGGER JLink software & documentation  pack](https://www.segger.com/jlink-software.html) for your target platform
 - [uVisor OS Integration & Porting Guide](PORTING.md)
 - [Secure coding guidelines](SECURE-CODING.md) for code contributors
 
@@ -156,19 +161,6 @@ yotta link uvisor-lib
 
 Again, consider using the official uvisor-lib release if building with yotta, and refer to its [documentation](https://github.com/ARMmbed/uvisor-lib-private) for the APIs it exposes to unprivileged code.
 
-## Debugging
-
-By default, debug output is silenced. Special debug messages only occur when the device is halted due to faults or failures caught by the uVisor. These messages are printed using semihosting. If you want to enable more verbose debug messages just build as follows:
-
-```bash
-# create local version of uvisor-lib with debug enabled
-cd ~/code/uvisor/k64f/uvisor
-make OPT= clean release
-```
-And locally link the resulting debug release to yotta as described previously.
-
-Note that this debug build implements blocking messages. If a debugger is not connected, the processor halts waiting for it.
-
 ## Software and Hardware Requirements
 
 * One of the available target boards:
@@ -178,8 +170,3 @@ Note that this debug build implements blocking messages. If a debugger is not co
 To build:
 
 * Latest [GCC ARM Embedded toolchain](https://launchpad.net/gcc-arm-embedded).
-
-To debug:
-
-* A JLink debugger (JLink LITE Cortex-M at least).
-* Latest [SEGGER JLink software & documentation  pack](https://www.segger.com/jlink-software.html) for the target platform.
