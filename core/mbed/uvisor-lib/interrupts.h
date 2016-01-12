@@ -18,6 +18,7 @@
 #define __UVISOR_LIB_INTERRUPTS_H__
 
 UVISOR_EXTERN void vIRQ_SetVectorX(uint32_t irqn, uint32_t vector, uint32_t flag);
+UVISOR_EXTERN void vIRQ_SetVector(uint32_t irqn, uint32_t vector);
 UVISOR_EXTERN uint32_t vIRQ_GetVector(uint32_t irqn);
 UVISOR_EXTERN void vIRQ_EnableIRQ(uint32_t irqn);
 UVISOR_EXTERN void vIRQ_DisableIRQ(uint32_t irqn);
@@ -27,8 +28,5 @@ UVISOR_EXTERN uint32_t vIRQ_GetPendingIRQ(uint32_t irqn);
 UVISOR_EXTERN void vIRQ_SetPriority(uint32_t irqn, uint32_t priority);
 UVISOR_EXTERN uint32_t vIRQ_GetPriority(uint32_t irqn);
 UVISOR_EXTERN int vIRQ_GetLevel(void);
-
-/* this definition is kept for backward compatibility with NVIC_SetVector */
-#define vIRQ_SetVector(irqn, vector) vIRQ_SetVectorX(irqn, vector, 0)
 
 #endif /* __UVISOR_LIB_INTERRUPTS_H__ */
