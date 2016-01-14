@@ -120,7 +120,7 @@ void unvic_isr_set(uint32_t irqn, uint32_t vector, uint32_t flag)
     g_unvic_vector[irqn].hdlr = (TIsrVector) vector;
 
     /* set default priority (SVC must always be higher) */
-    NVIC_SetPriority(irqn, UNVIC_MIN_PRIORITY);
+    NVIC_SetPriority(irqn, __UVISOR_NVIC_MIN_PRIORITY);
 
     DPRINTF("IRQ %d %s box %d\n\r",
             irqn,
@@ -232,13 +232,12 @@ void unvic_irq_priority_set(uint32_t irqn, uint32_t priority)
     is_irqn_registered = unvic_acl_check(irqn);
 
     /* check for maximum priority */
-    if (priority >= ((1 << __NVIC_PRIO_BITS) - UNVIC_MIN_PRIORITY)) {
-        HALT_ERROR(NOT_ALLOWED, "NVIC priority overflow; max priority allowed: %d\n\r",
-                   (1 << __NVIC_PRIO_BITS) - 1 - UNVIC_MIN_PRIORITY);
+    if (priority > UVISOR_VIRQ_MAX_PRIORITY) {
+        HALT_ERROR(NOT_ALLOWED, "NVIC priority overflow; max priority allowed: %d\n\r", UVISOR_VIRQ_MAX_PRIORITY);
     }
 
     /* set priority for device specific interrupts */
-    NVIC_SetPriority(irqn, UNVIC_MIN_PRIORITY + priority);
+    NVIC_SetPriority(irqn, __UVISOR_NVIC_MIN_PRIORITY + priority);
 
     if (is_irqn_registered) {
         DPRINTF("IRQ %d priority set to %d\n\r", irqn, priority);
@@ -256,7 +255,7 @@ uint32_t unvic_irq_priority_get(uint32_t irqn)
     unvic_acl_check(irqn);
 
     /* get priority for device specific interrupts  */
-    return NVIC_GetPriority(irqn) - UNVIC_MIN_PRIORITY;
+    return NVIC_GetPriority(irqn) - __UVISOR_NVIC_MIN_PRIORITY;
 }
 
 int unvic_irq_level_get(void)
@@ -279,7 +278,7 @@ int unvic_irq_level_get(void)
 
     /* if an IRQn is active, return the (virtualised, i.e. shifted) priority level
      * of the interrupt, which goes from 0 up */
-    return (int) NVIC_GetPriority(irqn) - UNVIC_MIN_PRIORITY;
+    return (int) NVIC_GetPriority(irqn) - __UVISOR_NVIC_MIN_PRIORITY;
 }
 
 /* naked wrapper function needed to preserve LR */
@@ -446,7 +445,7 @@ void unvic_init(void)
 {
     /* check that minimum priority is still in the range of possible priority
      * levels */
-    assert(UNVIC_MIN_PRIORITY < (1 << __NVIC_PRIO_BITS));
+    assert(__UVISOR_NVIC_MIN_PRIORITY < UVISOR_VIRQ_MAX_PRIORITY);
 
     /* by setting the priority group to 0 we make sure that all priority levels
      * are available for pre-emption and that interrupts with the same priority
