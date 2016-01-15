@@ -161,6 +161,11 @@ void vmpu_acl_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
             HALT_ERROR(SANITY_CHECK_FAILED, "ACL sanity check failed [%i]\n", res);
 }
 
+void vmpu_acl_common_add(void)
+{
+    vmpu_aips_common_add();
+}
+
 void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
 {
     /* handle main box */

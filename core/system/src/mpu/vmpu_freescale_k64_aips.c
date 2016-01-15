@@ -29,7 +29,7 @@ static uint32_t g_aipsx_exc[AIPSx_DWORDS];
 
 int vmpu_aips_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 {
-    int i, slot_count, box_count;
+    int i, slot_count;
     uint8_t aips_slot;
     uint32_t base, t, address;
 
@@ -96,15 +96,7 @@ int vmpu_aips_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
         g_aipsx_all[i] |= t;
 
         /* remember box-specific peripherals */
-        if (box_id) {
-            g_aipsx_box[box_id][i] |= t;
-        }
-        else {
-            /* box 0 ACLs are applied to all boxes */
-            for (box_count = 0; box_count <= g_vmpu_box_count; box_count++) {
-                g_aipsx_box[box_count][i] |= t;
-            }
-        }
+        g_aipsx_box[box_id][i] |= t;
 
         /* remember exclusive peripherals */
         if( (acl & UVISOR_TACL_SHARED) == 0 )
@@ -115,6 +107,16 @@ int vmpu_aips_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
     }
 
     return 1;
+}
+
+void vmpu_aips_common_add(void)
+{
+    int box, slot;
+    for (box = 1; box <= g_vmpu_box_count; box++) {
+        for (slot = 0; slot < AIPSx_DWORDS; slot++) {
+            g_aipsx_box[box][slot] |= g_aipsx_box[0][slot];
+        }
+    }
 }
 
 uint32_t vmpu_fault_find_acl_aips(uint8_t active_box, uint32_t fault_addr, uint32_t size)
