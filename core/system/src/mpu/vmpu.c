@@ -113,8 +113,14 @@ static void vmpu_load_boxes(void)
     const UvisorBoxConfig **box_cfgtbl;
     uint8_t box_id;
 
-    /* enumerate and initialize boxes */
-    g_vmpu_box_count = 0;
+    /* enumerate boxes */
+    g_vmpu_box_count = (uint32_t) (__uvisor_config.cfgtbl_ptr_end - __uvisor_config.cfgtbl_ptr_start);
+    if (g_vmpu_box_count >= UVISOR_MAX_BOXES) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "box number overflow\n");
+    }
+
+    /* initialize boxes */
+    box_id = 0;
     for(box_cfgtbl = (const UvisorBoxConfig**) __uvisor_config.cfgtbl_ptr_start;
         box_cfgtbl < (const UvisorBoxConfig**) __uvisor_config.cfgtbl_ptr_end;
         box_cfgtbl++
@@ -133,7 +139,7 @@ static void vmpu_load_boxes(void)
         if(((*box_cfgtbl)->magic)!=UVISOR_BOX_MAGIC)
             HALT_ERROR(SANITY_CHECK_FAILED,
                 "box[%i] @0x%08X - invalid magic\n",
-                g_vmpu_box_count,
+                box_id,
                 (uint32_t)(*box_cfgtbl)
             );
 
@@ -141,15 +147,11 @@ static void vmpu_load_boxes(void)
         if(((*box_cfgtbl)->version)!=UVISOR_BOX_VERSION)
             HALT_ERROR(SANITY_CHECK_FAILED,
                 "box[%i] @0x%08X - invalid version (0x%04X!-0x%04X)\n",
-                g_vmpu_box_count,
+                box_id,
                 *box_cfgtbl,
                 (*box_cfgtbl)->version,
                 UVISOR_BOX_VERSION
             );
-
-        /* increment box counter */
-        if((box_id = g_vmpu_box_count++)>=UVISOR_MAX_BOXES)
-            HALT_ERROR(SANITY_CHECK_FAILED, "box number overflow\n");
 
         /* load box ACLs in table */
         DPRINTF("box[%i] ACL list:\n", box_id);
@@ -192,6 +194,8 @@ static void vmpu_load_boxes(void)
                 region++;
             }
         }
+
+        box_id++;
     }
 
     /* load box 0 */

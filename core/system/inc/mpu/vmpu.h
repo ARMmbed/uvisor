@@ -125,6 +125,9 @@ extern void vmpu_init_post(void);
 
 extern void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp);
 
+/* contains the total number of boxes
+ * boxes are enumerated from 0 to (g_vmpu_box_count - 1) and the following
+ * condition must hold: g_vmpu_box_count < UVISOR_MAX_BOXES */
 extern uint32_t  g_vmpu_box_count;
 
 extern uint32_t vmpu_register_gateway(uint32_t addr, uint32_t val);
