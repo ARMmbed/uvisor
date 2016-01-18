@@ -101,7 +101,7 @@ int vmpu_aips_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
         }
         else {
             /* box 0 ACLs are applied to all boxes */
-            for (box_count = 0; box_count <= g_vmpu_box_count; box_count++) {
+            for (box_count = 0; box_count < g_vmpu_box_count; box_count++) {
                 g_aipsx_box[box_count][i] |= t;
             }
         }
