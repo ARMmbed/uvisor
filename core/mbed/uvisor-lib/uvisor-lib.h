@@ -28,6 +28,7 @@
 #include "uvisor-lib/halt_exports.h"
 #include "uvisor-lib/svc_exports.h"
 #include "uvisor-lib/svc_gw_exports.h"
+#include "uvisor-lib/unvic_exports.h"
 
 /* conditionally included header files */
 #if YOTTA_CFG_UVISOR_PRESENT == 1
