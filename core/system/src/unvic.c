@@ -237,11 +237,10 @@ void unvic_irq_priority_set(uint32_t irqn, uint32_t priority)
     }
 
     /* set priority for device specific interrupts */
-    NVIC_SetPriority(irqn, __UVISOR_NVIC_MIN_PRIORITY + priority);
-
     if (is_irqn_registered) {
-        DPRINTF("IRQ %d priority set to %d\n\r", irqn, priority);
-        NVIC_SetPriority(irqn, priority);
+        DPRINTF("IRQ %d priority set to %d (NVIC), %d (virtual)\n\r", irqn, __UVISOR_NVIC_MIN_PRIORITY + priority,
+                                                                            priority);
+        NVIC_SetPriority(irqn, __UVISOR_NVIC_MIN_PRIORITY + priority);
         return;
     }
     else {
