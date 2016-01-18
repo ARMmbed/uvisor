@@ -100,6 +100,7 @@ extern uint8_t g_active_box;
 
 extern void vmpu_acl_add(uint8_t box_id, void *addr,
                          uint32_t size, UvisorBoxAcl acl);
+extern void vmpu_acl_common_add(void);
 extern void vmpu_acl_irq(uint8_t box_id, void *function, uint32_t isr_id);
 extern int  vmpu_acl_dev(UvisorBoxAcl acl, uint16_t device_id);
 extern int  vmpu_acl_mem(UvisorBoxAcl acl, uint32_t addr, uint32_t size);

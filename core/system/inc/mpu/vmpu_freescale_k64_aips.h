@@ -21,6 +21,7 @@
 #define AIPSx_SLOT_MAX     0xFE
 
 extern int vmpu_aips_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl);
+extern void vmpu_aips_common_add(void);
 extern void vmpu_aips_switch(uint8_t src_box, uint8_t dst_box);
 extern uint32_t vmpu_fault_find_acl_aips(uint8_t box_id, uint32_t fault_addr, uint32_t size);
 

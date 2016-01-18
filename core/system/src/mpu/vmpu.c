@@ -194,6 +194,9 @@ static void vmpu_load_boxes(void)
         }
     }
 
+    /* apply box 0 ACLs to other boxes */
+    vmpu_acl_common_add();
+
     /* load box 0 */
     vmpu_load_box(0);
 

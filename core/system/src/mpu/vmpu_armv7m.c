@@ -513,6 +513,10 @@ void vmpu_acl_add(uint8_t box_id, void* addr, uint32_t size, UvisorBoxAcl acl)
     g_mpu_region_count++;
 }
 
+void vmpu_acl_common_add(void)
+{
+}
+
 void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
 {
     int bits, slots_ctx, slots_stack;
