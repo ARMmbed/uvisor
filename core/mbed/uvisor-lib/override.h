@@ -27,6 +27,7 @@
 #include <stdint.h>
 
 extern void vIRQ_SetVectorX(uint32_t irqn, uint32_t vector, uint32_t flag);
+extern void vIRQ_SetVector(uint32_t irqn, uint32_t vector);
 extern uint32_t vIRQ_GetVector(uint32_t irqn);
 extern void vIRQ_EnableIRQ(uint32_t irqn);
 extern void vIRQ_DisableIRQ(uint32_t irqn);
@@ -35,8 +36,6 @@ extern void vIRQ_SetPendingIRQ(uint32_t irqn);
 extern uint32_t vIRQ_GetPendingIRQ(uint32_t irqn);
 extern void vIRQ_SetPriority(uint32_t irqn, uint32_t priority);
 extern uint32_t vIRQ_GetPriority(uint32_t irqn);
-
-#define vIRQ_SetVector(irqn, vector) vIRQ_SetVectorX((uint32_t) (irqn), (uint32_t) (vector), 0)
 
 #if YOTTA_CFG_UVISOR_PRESENT == 1 && !defined(UVISOR_NO_HOOKS)
 
