@@ -17,5 +17,9 @@
 #define FLASH_ORIGIN 0x08000000
 #define FLASH_LENGTH 0x200000
 
+/* 
+ * 0x10000000 is the start address of CCM SRAM,
+ * 0x20000000 is the start address of normal SRAM.
+ */
 #define SRAM_ORIGIN  0x10000000
 #define SRAM_LENGTH  0x10000
