@@ -36,6 +36,6 @@ APP_SRC:=\
 	src/stm32f4_halt.c \
 	src/stm32f4_hw.c \
 	src/stm32f4_memory_map.c \
-	arch/STM32F4/src/stm32f4_memory_map.c
+	arch/STM32F4/src/system.c
 
 include ../../core/Makefile.rules
