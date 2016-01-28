@@ -14,8 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef __SYMBOLS_H__
+#define __SYMBOLS_H__
+
 #define FLASH_ORIGIN 0x08000000
 #define FLASH_LENGTH 0x200000
 
 #define SRAM_ORIGIN  0x10000000
 #define SRAM_LENGTH  0x10000
+
+#endif /* __SYMBOLS_H__ */
