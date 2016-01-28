@@ -125,8 +125,8 @@ Porting Steps
 Assuming you are developing in `~/code/`, we suggest you clone two of the three GitHub repositories locally:
 ```bash
 cd ~/code
-git clone --recursive git@github.com:ARMMbed/uvisor.git
-git clone git@github.com:ARMMbed/uvisor-helloworld.git
+git clone --recursive https://github.com/ARMmbed/uvisor.git
+git clone https://github.com/ARMmbed/uvisor-helloworld.git
 ```
 The `--recursive` option ensures that `uvisor-lib`, a sub-module of `uvisor`, is also cloned. When you run the release script, uVisor will be built from `uvisor` into a binary release that is automatically copied into `uvisor-lib`. When the release script finished, you can use yotta to link the built version of `uvisor-lib` to `uvisor-helloworld`, so that `uvisor-helloworld` uses `uvisor-lib` instead of the official version in the public registry. This allows you to test your own code with Hello World.
 
