@@ -22,12 +22,15 @@ CPU:=$(ARCH)29xx
 CONFIG:=
 CPU_JLINK:=$(ARCH)29ZI
 
+INCLUDE_PATHS:=-I. -Iinc -Iarch/STM32F4 -Iarch/STM32F4/inc
+
 APP_CLEAN:=
-APP_CFLAGS:=-DUVISOR $(CONFIG) -Iinc
+APP_CFLAGS:=-DUVISOR $(CONFIG) $(INCLUDE_PATHS)
 
 APP_SRC:=\
 	src/stm32f4_halt.c \
 	src/stm32f4_hw.c \
-	src/stm32f4_memory_map.c
+	src/stm32f4_memory_map.c \
+	arch/STM32F4/src/stm32f4_memory_map.c
 
 include ../../core/Makefile.rules
