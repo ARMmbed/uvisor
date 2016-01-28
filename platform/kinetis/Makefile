@@ -1,4 +1,9 @@
-PROJECT:=k64f_uvisor
+# Path of the current Makefile
+CURRENT_PATH:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+
+# The project name is given by the top-level platform-specific folder
+PROJECT:=$(shell basename $(CURRENT_PATH))
+
 ARCH:=MK64F
 ARCH_MPU:=$(ARCH)
 CPU:=$(ARCH)N1M0XXX12

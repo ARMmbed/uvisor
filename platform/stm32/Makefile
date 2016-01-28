@@ -16,7 +16,12 @@
 #  limitations under the License.
 #
 ###########################################################################
-PROJECT:=stm32f4_uvisor
+# Path of the current Makefile
+CURRENT_PATH:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+
+# The project name is given by the top-level platform-specific folder
+PROJECT:=$(shell basename $(CURRENT_PATH))
+
 ARCH:=STM32F4
 CPU:=$(ARCH)29xx
 CONFIG:=
