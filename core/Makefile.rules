@@ -29,19 +29,23 @@ JLINK_VIEWER_MASK:=0x7
 AUXHFRCO_FREQ:=0
 JLINK_SWO_PARAM:=
 
-ROOT_DIR:=../..
-CORE_DIR:=$(ROOT_DIR)/core
-
 SYSLIBS:=-lgcc -lc -lnosys
 
-# system paths
+# Root (relative to hardware-specific Makefile)
+ROOT_DIR:=../..
+
+# Top-level folder paths
+CORE_DIR:=$(ROOT_DIR)/core
+PLATFORM_DIR:=$(ROOT_DIR)/platform
+RELEASE_DIR:=$(ROOT_DIR)/release
+TOOLS_DIR:=$(ROOT_DIR)/tools
+
+# Core paths
 CMSIS_DIR:=$(CORE_DIR)/cmsis
 SYSTEM_DIR:=$(CORE_DIR)/system
 MBED_DIR:=$(CORE_DIR)/mbed
 DEBUG_DIR:=$(CORE_DIR)/debug
 LIB_DIR:=$(CORE_DIR)/lib
-DEVICE_DIR:=$(CORE_DIR)/arch/$(ARCH)
-RELEASE_DIR:=$(ROOT_DIR)/release
 
 # mbed origin paths
 MBED_SRC:=$(MBED_DIR)/source
@@ -89,10 +93,10 @@ SOURCES:=\
          $(SYSTEM_DIR)/src/svc.c \
          $(SYSTEM_DIR)/src/svc_cx.c \
          $(SYSTEM_DIR)/src/unvic.c \
+         $(SYSTEM_DIR)/src/mpu/vmpu.c \
          $(DEBUG_DIR)/src/debug.c \
          $(DEBUG_DIR)/src/memory_map.c \
          $(LIB_DIR)/printf/tfp_printf.c \
-         $(SYSTEM_DIR)/src/mpu/vmpu.c \
          $(MPU_SRC) \
          $(APP_SRC)
 
@@ -152,7 +156,6 @@ CFLAGS_PRE:=\
         -I$(CMSIS_DIR)/inc \
         -I$(SYSTEM_DIR)/inc \
         -I$(SYSTEM_DIR)/inc/mpu \
-        -I$(DEVICE_DIR)/inc \
         -I$(DEBUG_DIR)/inc \
         -I$(LIB_DIR)/printf \
         -ffunction-sections \
