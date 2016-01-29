@@ -21,21 +21,21 @@ CURRENT_PATH:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
 # The project name is given by the top-level platform-specific folder
 PROJECT:=$(shell basename $(CURRENT_PATH))
+PROJECT_UPPER:=$(shell echo $(PROJECT) | tr '[:lower:]' '[:upper:]')
 
-ARCH:=STM32F4
-CPU:=$(ARCH)29xx
-CONFIG:=
-CPU_JLINK:=$(ARCH)29ZI
+CONFIGURATION:=STM32F4
 
+# Currently we only support the STM32F429
+CPU:=STM32F429xx
+
+# Default include paths for the project.
 INCLUDE_PATHS:=-I. -Iinc -Iarch/STM32F4 -Iarch/STM32F4/inc
 
-APP_CLEAN:=
 APP_CFLAGS:=-DUVISOR $(CONFIG) $(INCLUDE_PATHS)
-
 APP_SRC:=\
 	src/stm32f4_halt.c \
 	src/stm32f4_hw.c \
 	src/stm32f4_memory_map.c \
-	arch/STM32F4/src/system.c
+	src/system.c
 
 include ../../core/Makefile.rules
