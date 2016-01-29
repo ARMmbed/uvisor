@@ -21,19 +21,36 @@ CURRENT_PATH:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
 # The project name is given by the top-level platform-specific folder
 PROJECT:=$(shell basename $(CURRENT_PATH))
+PROJECT_UPPER:=$(shell echo $(PROJECT) | tr '[:lower:]' '[:upper:]')
 
-ARCH:=MK64F
-ARCH_MPU:=$(ARCH)
-CPU:=$(ARCH)N1M0XXX12
-CONFIG:=
+ARCH_MPU:=MK64F
 
-INCLUDE_PATHS:=-I. -Iinc -Iarch -Iarch/MK64F12/include -Iarch/MK64F12/startup
+# Default include paths for the project.
+# Note: Out of all the chip-specific headers we only need those for the K64F, as
+#       they are only used for MPU symbols
+INCLUDE_PATHS:=-I. -Iinc -Iarch -Iarch/MK64F12 -Iarch/MK64F12/include -Iarch/MK64F12/startup
 
-APP_CLEAN:=
 APP_CFLAGS:=-DUVISOR $(CONFIG) $(INCLUDE_PATHS)
 APP_SRC:=\
 	src/k64f_halt.c \
 	src/k64f_memory_map.c \
-	arch/MK64F/src/system.c
+	src/system.c
+
+# We hardcode the CPU value even if we build for different CPUs. This is
+# possible as we only rely on the NXP MPU symbols, which are the same across the
+# whole Kinetis family.
+CPU:=CPU_MK64FN1M0VLL12
+
+# Export all variables to the sub-make.
+export
+
+# Currently we only support one configuration (for the FRDM-K64F board)
+kinetis: CONFIGURATIONS:= \
+	K64F
+kinetis:
+	$(foreach CONFIGURATION, $(CONFIGURATIONS), \
+		CONFIGURATION=$(CONFIGURATION) \
+		APP_CFLAGS='$(APP_CFLAGS) $(foreach PATH, $(shell find arch/* -type d), -I$(PATH))' \
+		make -f ../../core/Makefile.rules clean release)
 
 include ../../core/Makefile.rules

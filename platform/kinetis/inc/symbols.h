@@ -17,10 +17,15 @@
 #ifndef __SYMBOLS_H__
 #define __SYMBOLS_H__
 
+/* Currently we only support the chip on the FRDM-K64F board. */
+#if defined(CPU_MK64FN1M0VLL12) || \
+    defined(CONFIGURATION_KINETIS_K64F)
+
 #define FLASH_ORIGIN 0x00000000
 #define FLASH_LENGTH 0x100000
-
 #define SRAM_ORIGIN  0x1FFF0000
 #define SRAM_LENGTH  0x40000
+
+#endif
 
 #endif /* __SYMBOLS_H__ */
