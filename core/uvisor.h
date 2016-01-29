@@ -42,7 +42,7 @@
 typedef void (*UnprivilegedBoxEntry)(void);
 
 /* device-specific definitions */
-#include "uvisor-device.h"
+#include "device.h"
 
 /* per-project-configuration */
 #include <config.h>

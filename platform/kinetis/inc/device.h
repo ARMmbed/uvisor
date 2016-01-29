@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -14,17 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __UVISOR_DEVICE_H__
-#define __UVISOR_DEVICE_H__
+#ifndef __DEVICE_H__
+#define __DEVICE_H__
 
-#if   defined(ARCH_EFM32GG)
-#  include <em_device.h>
-#elif defined(ARCH_MK64F)
-#  include <MK64F12.h>
-#elif defined(ARCH_STM32F4)
-#  include <stm32f4xx.h>
-#else
-#  error "unknown ARCH in Makefile"
-#endif
+/* Include the main header file for the Kinetis family. It selects the relevant
+ * header files (chip-specific) depending on the current CPU_XXXXXXXXXX value */
+#include "fsl_device_registers.h"
 
-#endif/*__UVISOR_DEVICE_H__*/
+#endif /* __DEVICE_H__ */
