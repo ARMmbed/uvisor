@@ -62,6 +62,12 @@ typedef struct {
 
     /* address of __uvisor_box_context */
     uint32_t **uvisor_box_context;
+
+    /* Physical memories' boundaries */
+    uint32_t *flash_start;
+    uint32_t *flash_end;
+    uint32_t *sram_start;
+    uint32_t *sram_end;
 } UVISOR_PACKED UvisorConfig;
 
 UVISOR_EXTERN const UvisorConfig __uvisor_config;

@@ -59,16 +59,20 @@ static int vmpu_sanity_checks(void)
     assert(vmpu_bits(0x8001UL) == 16);
     assert(vmpu_bits(1) == 1);
 
-    /* verify that __uvisor_config is within valid flash */
-    assert( ((uint32_t) &__uvisor_config) >= FLASH_ORIGIN );
-    assert( ((((uint32_t) &__uvisor_config) + sizeof(__uvisor_config))
-             <= (FLASH_ORIGIN + FLASH_LENGTH)) );
+    /* Verify that the known hard-coded symbols are equal to the ones taken from
+     * the host linker script. */
+    assert((uint32_t) __uvisor_config.flash_start == FLASH_ORIGIN);
+    assert((uint32_t) __uvisor_config.sram_start == SRAM_ORIGIN);
+
+    /* Verify that the uVisor binary blob is positioned at the flash offset. */
+    assert(((uint32_t) __uvisor_config.flash_start + RESERVED_FLASH) ==
+           (uint32_t) __uvisor_config.main_start);
+
 
     /* verify if configuration mode is inside flash memory */
-    assert((uint32_t)__uvisor_config.mode >= FLASH_ORIGIN);
-    assert((uint32_t)__uvisor_config.mode <= (FLASH_ORIGIN + FLASH_LENGTH - 4));
-    DPRINTF("uvisor_mode: %u\n", *__uvisor_config.mode);
-    assert(*__uvisor_config.mode <= 2);
+    assert(vmpu_flash_addr((uint32_t) __uvisor_config.mode));
+    assert(*(__uvisor_config.mode) <= 2);
+    DPRINTF("uVisor mode: %u\n", *(__uvisor_config.mode));
 
     /* verify SRAM relocation */
     DPRINTF("uvisor_ram : @0x%08X (%u bytes) [config]\n",
@@ -87,17 +91,17 @@ static int vmpu_sanity_checks(void)
                                                         USE_SRAM_SIZE) );
 
     /* verify that secure flash area is accessible and after public code */
-    assert( __uvisor_config.secure_start <= __uvisor_config.secure_end );
-    assert( (uint32_t) __uvisor_config.secure_end <=
-            (uint32_t) (FLASH_ORIGIN + FLASH_LENGTH) );
-    assert( (uint32_t) __uvisor_config.secure_start >=
-            (uint32_t) &vmpu_sanity_checks );
+    assert(vmpu_flash_addr((uint32_t) __uvisor_config.secure_start));
+    assert(vmpu_flash_addr((uint32_t) __uvisor_config.secure_end));
+    assert(__uvisor_config.secure_start <= __uvisor_config.secure_end);
+    assert(__uvisor_config.secure_start >= __uvisor_config.main_end);
 
     /* verify configuration table */
-    assert( __uvisor_config.cfgtbl_ptr_start <= __uvisor_config.cfgtbl_ptr_end );
-    assert( __uvisor_config.cfgtbl_ptr_start >= __uvisor_config.secure_start );
-    assert( (uint32_t) __uvisor_config.cfgtbl_ptr_end <=
-            (uint32_t) (FLASH_ORIGIN + FLASH_LENGTH) );
+    assert(__uvisor_config.cfgtbl_ptr_start <= __uvisor_config.cfgtbl_ptr_end);
+    assert(__uvisor_config.cfgtbl_ptr_start >= __uvisor_config.secure_start);
+    assert(__uvisor_config.cfgtbl_ptr_end <= __uvisor_config.secure_end);
+    assert(vmpu_flash_addr((uint32_t) __uvisor_config.cfgtbl_ptr_start));
+    assert(vmpu_flash_addr((uint32_t) __uvisor_config.cfgtbl_ptr_end));
 
     /* return error if uvisor is disabled */
     if(!__uvisor_config.mode || (*__uvisor_config.mode == 0))
@@ -127,10 +131,8 @@ static void vmpu_load_boxes(void)
         )
     {
         /* ensure that configuration resides in flash */
-        if(!(VMPU_FLASH_ADDR(*box_cfgtbl) &&
-            VMPU_FLASH_ADDR(
-                ((uint8_t*)(*box_cfgtbl)) + (sizeof(**box_cfgtbl)-1)
-            )))
+        if(!(vmpu_flash_addr((uint32_t) *box_cfgtbl) &&
+            vmpu_flash_addr((uint32_t) ((uint8_t*)(*box_cfgtbl)) + (sizeof(**box_cfgtbl)-1))))
             HALT_ERROR(SANITY_CHECK_FAILED,
                 "invalid address - \
                 *box_cfgtbl must point to flash (0x%08X)\n", *box_cfgtbl);
@@ -171,7 +173,7 @@ static void vmpu_load_boxes(void)
             for(i=0; i<count; i++)
             {
                 /* ensure that ACL resides in flash */
-                if(!VMPU_FLASH_ADDR(region))
+                if(!vmpu_flash_addr((uint32_t) region))
                     HALT_ERROR(SANITY_CHECK_FAILED,
                         "box[%i]:acl[%i] must be in code section (@0x%08X)\n",
                         box_id,
@@ -217,7 +219,7 @@ int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint3
     int found;
 
     /* check for attacks */
-    if(!VMPU_FLASH_ADDR(pc))
+    if(!vmpu_flash_addr(pc))
        HALT_ERROR(NOT_ALLOWED, "This is not the PC (0x%08X) your were searching for", pc);
 
     /* check fault register; the following two configurations are allowed:
