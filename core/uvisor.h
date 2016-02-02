@@ -41,9 +41,6 @@
 /* unprivileged box as called by privileged code */
 typedef void (*UnprivilegedBoxEntry)(void);
 
-/* device-specific definitions */
-#include "uvisor-device.h"
-
 /* per-project-configuration */
 #include <config.h>
 

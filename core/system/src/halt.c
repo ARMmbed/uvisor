@@ -45,8 +45,8 @@ void halt_error(THaltError reason, const char *fmt, ...)
     /* final line feed */
     default_putc('\n');
 
-    /* blink & die */
-    halt_led(reason);
+    /* Die. */
+    while(1);
 }
 
 void halt_line(const char *file, uint32_t line, THaltError reason,
@@ -63,12 +63,12 @@ void halt_line(const char *file, uint32_t line, THaltError reason,
     /* final line feed */
     default_putc('\n');
 
-    /* blink & die */
-    halt_led(reason);
+    /* Die. */
+    while(1);
 }
 
 void halt_user_error(THaltUserError reason)
 {
-    /* blink & die */
-    halt_led(reason + __THALTERROR_MAX);
+    /* Die. */
+    while(1);
 }

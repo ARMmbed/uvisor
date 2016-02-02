@@ -32,17 +32,13 @@ typedef enum {
     __THALTERROR_MAX /* always keep as the last element of the enum */
 } THaltError;
 
-#define HALT_INTRA_PATTERN_DELAY 0x400000U
-#define HALT_INTER_PATTERN_DELAY (4*HALT_INTRA_PATTERN_DELAY)
-
 #ifdef  NDEBUG
-#define HALT_ERROR(reason, ...) halt_led(reason)
+#define HALT_ERROR(reason, ...) while(1)
 #else /*NDEBUG*/
 #define HALT_ERROR(reason, ...) \
         halt_line(__FILE__, __LINE__, reason, ##__VA_ARGS__)
 #endif/*NDEBUG*/
 
-extern void halt_led(THaltError reason);
 extern void halt_user_error(THaltUserError reason);
 extern void halt_error(THaltError reason, const char *fmt, ...);
 extern void halt_line(const char *file, uint32_t line, THaltError reason,

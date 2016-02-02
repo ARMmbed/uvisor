@@ -245,17 +245,14 @@ void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
 
         case UsageFault_IRQn:
             DEBUG_FAULT(FAULT_USAGE, lr, lr & 0x4 ? psp : msp);
-            halt_led(FAULT_USAGE);
             break;
 
         case HardFault_IRQn:
             DEBUG_FAULT(FAULT_HARD, lr, lr & 0x4 ? psp : msp);
-            halt_led(FAULT_HARD);
             break;
 
         case DebugMonitor_IRQn:
             DEBUG_FAULT(FAULT_DEBUG, lr, lr & 0x4 ? psp : msp);
-            halt_led(FAULT_DEBUG);
             break;
 
         default:

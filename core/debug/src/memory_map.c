@@ -18,9 +18,15 @@
 #include "memory_map.h"
 #include "halt.h"
 
+static MemMap __not_available;
+
+/* uVisor is hw-agnostic, so we do not include any device memory maps. For
+ * development purposes, you can overwrite this function with one that returns
+ * a valid memory map. */
 const MemMap* UVISOR_WEAK memory_map_name(uint32_t addr)
 {
-    HALT_ERROR(NOT_IMPLEMENTED,
-               "debug_mpu_config needs hw-specific implementation\n\r");
-    return NULL;
+    __not_available.name = "[not available]";
+    __not_available.base = addr;
+    __not_available.end  = addr;
+    return &__not_available;
 }
