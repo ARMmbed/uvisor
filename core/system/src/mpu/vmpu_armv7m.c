@@ -173,7 +173,7 @@ void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
     /* the IPSR enumerates interrupt numbers from 0 up, while *_IRQn numbers are
      * both positive (hardware IRQn) and negative (system IRQn); here we convert
      * the IPSR value to this latter encoding */
-    int ipsr = ((int) (__get_IPSR() & 0x1FF)) - IRQn_OFFSET;
+    int ipsr = ((int) (__get_IPSR() & 0x1FF)) - NVIC_OFFSET;
 
     /* PSP at fault */
     psp = __get_PSP();

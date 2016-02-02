@@ -24,8 +24,8 @@
 #define UNVIC_IS_IRQ_ENABLED(irqn) (NVIC->ISER[(((uint32_t) ((int32_t) (irqn))) >> 5UL)] & \
                                     (uint32_t) (1UL << (((uint32_t) ((int32_t) (irqn))) & 0x1FUL)))
 
-#define IRQn_OFFSET            16
-#define ISR_VECTORS            ((IRQn_OFFSET) + (HW_IRQ_VECTORS))
+#define NVIC_OFFSET 16
+#define ISR_VECTORS ((NVIC_OFFSET) + (NVIC_VECTORS))
 
 typedef void (*TIsrVector)(void);
 
@@ -37,7 +37,7 @@ typedef struct {
 /* defined in system-specific system.h */
 extern const TIsrVector g_isr_vector[ISR_VECTORS];
 /* unprivileged interrupts */
-extern TIsrUVector g_unvic_vector[HW_IRQ_VECTORS];
+extern TIsrUVector g_unvic_vector[NVIC_VECTORS];
 
 extern void     unvic_isr_set(uint32_t irqn, uint32_t vector, uint32_t flag);
 extern uint32_t unvic_isr_get(uint32_t irqn);
@@ -53,20 +53,5 @@ extern int      unvic_irq_level_get(void);
 extern int      unvic_default(uint32_t isr_id);
 
 extern void unvic_init(void);
-
-static inline __attribute__((always_inline)) void unvic_isr_mux(void)
-{
-    /* handle IRQ with an unprivileged handler serving an IRQn in un-privileged
-     * mode is achieved by mean of two SVCalls; the first one de-previliges
-     * execution, the second one re-privileges it note: NONBASETHRDENA (in SCB)
-     * must be set to 1 for this to work */
-    asm volatile(
-        "svc  %[unvic_in]\n"
-        "svc  %[unvic_out]\n"
-        "bx   lr\n"
-        ::[unvic_in]  "i" (UVISOR_SVC_ID_UNVIC_IN),
-          [unvic_out] "i" (UVISOR_SVC_ID_UNVIC_OUT)
-    );
-}
 
 #endif/*__UNVIC_H__*/

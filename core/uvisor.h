@@ -68,7 +68,7 @@ typedef void (*UnprivilegedBoxEntry)(void);
 /* IOT-OS specific includes */
 #include <linker.h>
 
-/* system specific declatiions and IRQ vector table */
-#include <system.h>
+/* System IRQ vector table and default ISRs */
+#include "system.h"
 
 #endif/*__UVISOR_H__*/

@@ -21,7 +21,7 @@
 #include "debug.h"
 
 /* unprivileged vector table */
-TIsrUVector g_unvic_vector[HW_IRQ_VECTORS];
+TIsrUVector g_unvic_vector[NVIC_VECTORS];
 
 /* vmpu_acl_irq to unvic_acl_add */
 void vmpu_acl_irq(uint8_t box_id, void *function, uint32_t irqn)
@@ -29,15 +29,15 @@ void vmpu_acl_irq(uint8_t box_id, void *function, uint32_t irqn)
 
 static void unvic_default_check(uint32_t irqn)
 {
-    /* IRQn goes from 0 to (HW_IRQ_VECTORS - 1) */
-    if(irqn >= HW_IRQ_VECTORS)
+    /* IRQn goes from 0 to (NVIC_VECTORS - 1) */
+    if(irqn >= NVIC_VECTORS)
     {
         HALT_ERROR(NOT_ALLOWED,
                    "Not allowed: IRQ %d is out of range\n\r", irqn);
     }
 
     /* check if uvisor does not already own the IRQn slot */
-    if(g_isr_vector[IRQn_OFFSET + irqn] != &isr_default_handler)
+    if(g_isr_vector[NVIC_OFFSET + irqn] != &isr_default_handler)
     {
         HALT_ERROR(PERMISSION_DENIED,
                    "Permission denied: IRQ %d is owned by uVisor\n\r", irqn);
@@ -263,7 +263,7 @@ int unvic_irq_level_get(void)
     /* the currently active IRQn is the one of the SVCall, while instead we want
      * to know the IRQn at the time of the SVCcall, which is saved on the stack */
     uint32_t ipsr = vmpu_unpriv_uint32_read(__get_PSP() + 4 * 7);
-    uint32_t irqn = (ipsr & 0x1FF) - IRQn_OFFSET;
+    uint32_t irqn = (ipsr & 0x1FF) - NVIC_OFFSET;
 
     /* check if an interrupt is actually active */
     /* note: this includes pending interrupts that are not currently being served */
@@ -320,7 +320,7 @@ uint32_t __unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
 
     /* gather information from IRQn */
     uint32_t ipsr = msp[7];
-    uint32_t irqn = (ipsr & 0x1FF) - IRQn_OFFSET;
+    uint32_t irqn = (ipsr & 0x1FF) - NVIC_OFFSET;
 
     dst_id = g_unvic_vector[irqn].id;
     dst_fn = (uint32_t) g_unvic_vector[irqn].hdlr;

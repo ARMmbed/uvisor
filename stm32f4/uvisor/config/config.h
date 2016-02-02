@@ -19,6 +19,8 @@
 
 #include <uvisor-config.h>
 
+#define NVIC_VECTORS 91
+
 /* memory not to be used by uVisor linker script */
 #define RESERVED_FLASH 0x400
 
