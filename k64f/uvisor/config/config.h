@@ -19,6 +19,8 @@
 
 #include <uvisor-config.h>
 
+#define NVIC_VECTORS 86
+
 #define RESERVED_FLASH 0x410
 #define RESERVED_SRAM  0x200
 
