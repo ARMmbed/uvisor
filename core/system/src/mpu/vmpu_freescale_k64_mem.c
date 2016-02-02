@@ -256,7 +256,8 @@ void vmpu_mem_init(void)
         HALT_ERROR(SANITY_CHECK_FAILED, "failed setting up SRAM_ORIGIN (%i)\n", res);
 
     /* rest of SRAM, accessible to mbed - non-executable for uvisor */
-    res = vmpu_mem_add_int(0, __uvisor_config.bss_end, (SRAM_ORIGIN+SRAM_LENGTH)-((uint32_t)__uvisor_config.bss_end),
+    res = vmpu_mem_add_int(0, __uvisor_config.bss_end,
+        ((uint32_t) __uvisor_config.sram_end) - ((uint32_t) __uvisor_config.bss_end),
         UVISOR_TACL_SREAD|
         UVISOR_TACL_SWRITE|
         UVISOR_TACL_UREAD|

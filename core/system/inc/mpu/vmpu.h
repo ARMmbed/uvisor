@@ -20,9 +20,23 @@
 #include "vmpu_exports.h"
 #include "vmpu_unpriv_access.h"
 
-#define VMPU_FLASH_ADDR_MASK  (~(((uint32_t)(FLASH_LENGTH)) - 1))
-#define VMPU_FLASH_ADDR(addr) ((VMPU_FLASH_ADDR_MASK & (uint32_t)(addr)) == \
-                               (FLASH_ORIGIN & VMPU_FLASH_ADDR_MASK))
+/* Check if the address is in Flash/SRAM. */
+/* Note: Instead of using the '<' check on
+ *          __uvisor_config.{flash, sram}_end
+ *       we use the '<=' check on
+ *          __uvisor_config.{flash, sram}_end - 4
+ *       because unaligned accesses at a physical memory boundary have undefined
+ *       behavior and must be avoided. */
+static inline int vmpu_flash_addr(uint32_t addr)
+{
+    return (((uint32_t) addr >= FLASH_ORIGIN) &&
+            ((uint32_t) addr <= (FLASH_ORIGIN + (uint32_t) __uvisor_config.flash_end - 4)));
+}
+static inline int vmpu_sram_addr(uint32_t addr)
+{
+    return (((uint32_t) addr >= SRAM_ORIGIN) &&
+            ((uint32_t) addr <= (SRAM_ORIGIN + (uint32_t) __uvisor_config.sram_end - 4)));
+}
 
 #define VMPU_REGION_SIZE(p1, p2) ((p1 >= p2) ? 0 : \
                                              ((uint32_t) (p2) - (uint32_t) (p1)))
