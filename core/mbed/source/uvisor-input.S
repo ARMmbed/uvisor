@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "../config/config.h"
+#include "../inc/config.h"
 
 .globl uvisor_init
 .globl uvisor_config
