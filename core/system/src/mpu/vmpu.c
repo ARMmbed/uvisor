@@ -343,9 +343,9 @@ int vmpu_init_pre(void)
 
 void vmpu_init_post(void)
 {
-    /* enable non-base thread mode */
-    /* exceptions can now return to thread mode regardless their origin
-     * (supervisor or thread mode); the opposite is not true */
+    /* Enable non-base thread mode (NONBASETHRDENA).
+     * Exceptions can now return to thread mode regardless their origin
+     * (supervisor or thread mode); the opposite is not true. */
     SCB->CCR |= 1;
 
     /* init memory protection */
