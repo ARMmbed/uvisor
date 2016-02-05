@@ -22,6 +22,7 @@
 
 /* unprivileged vector table */
 TIsrUVector g_unvic_vector[NVIC_VECTORS];
+uint8_t g_nvic_prio_bits;
 
 /* vmpu_acl_irq to unvic_acl_add */
 void vmpu_acl_irq(uint8_t box_id, void *function, uint32_t irqn)
@@ -442,6 +443,15 @@ void __unvic_svc_cx_out(uint32_t *svc_sp, uint32_t *msp)
 
 void unvic_init(void)
 {
+    /* Detect the number of implemented priority bits. */
+    __disable_irq();
+    *((volatile uint8_t *) &(NVIC->IP[0])) = 0xFFU;
+    g_nvic_prio_bits = (uint8_t) __builtin_popcount(*((volatile uint8_t *) &(NVIC->IP[0])));
+    __enable_irq();
+
+    /* Verify that the priority bits read at runtime are realistic. */
+    assert(g_nvic_prio_bits > 0 && g_nvic_prio_bits <= 8);
+
     /* check that minimum priority is still in the range of possible priority
      * levels */
     assert(__UVISOR_NVIC_MIN_PRIORITY < UVISOR_VIRQ_MAX_PRIORITY);
