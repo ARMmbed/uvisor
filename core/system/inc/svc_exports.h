@@ -85,6 +85,18 @@
         res; \
     })
 
+#define UVISOR_FUNCTION_CALL(dst_fn, ...) \
+    ({ \
+        UVISOR_MACRO_REGS_ARGS(uint32_t, ##__VA_ARGS__); \
+        UVISOR_MACRO_REGS_RETVAL(uint32_t, res); \
+        asm volatile( \
+            "bl " UVISOR_TO_STRING(dst_fn) "\n" \
+            : UVISOR_MACRO_GCC_ASM_OUTPUT(res) \
+            : UVISOR_MACRO_GCC_ASM_INPUT(__VA_ARGS__) \
+        ); \
+        res; \
+    })
+
 #endif /* defined(__CC_ARM) || defined(__GNUC__) */
 
 #endif/*__SVC_EXPORTS_H__*/

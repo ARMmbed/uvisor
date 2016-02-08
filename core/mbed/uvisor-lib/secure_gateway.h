@@ -36,8 +36,16 @@
 /* secure gateway */
 #define secure_gateway(dst_box, dst_fn, ...) \
     ({ \
-        uint32_t res = UVISOR_SVC(UVISOR_SVC_ID_SECURE_GATEWAY(UVISOR_MACRO_NARGS(__VA_ARGS__)), \
-                                  __UVISOR_SECURE_GATEWAY_METADATA(dst_box, dst_fn), ##__VA_ARGS__); \
+        uint32_t res; \
+        if (__uvisor_mode != UVISOR_DISABLED) { \
+            res = UVISOR_SVC(UVISOR_SVC_ID_SECURE_GATEWAY(UVISOR_MACRO_NARGS(__VA_ARGS__)), \
+                             __UVISOR_SECURE_GATEWAY_METADATA(dst_box, dst_fn), ##__VA_ARGS__); \
+        } \
+        else { \
+            uvisor_disabled_switch_in(&dst_box ## _cfg_ptr); \
+            res = UVISOR_FUNCTION_CALL(dst_fn, ##__VA_ARGS__); \
+            uvisor_disabled_switch_out(); \
+        } \
         res; \
     })
 
