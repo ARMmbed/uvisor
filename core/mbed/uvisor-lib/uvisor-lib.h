@@ -35,6 +35,7 @@
 
 #include "uvisor-lib/benchmark.h"
 #include "uvisor-lib/box_config.h"
+#include "uvisor-lib/disabled.h"
 #include "uvisor-lib/error.h"
 #include "uvisor-lib/interrupts.h"
 #include "uvisor-lib/register_gateway.h"
