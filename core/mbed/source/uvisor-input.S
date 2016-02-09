@@ -78,6 +78,12 @@ uvisor_config:
     /* pointer to __uvisor_box_context */
     .long __uvisor_box_context
 
+    /* Physical memories' boundaries */
+    .long __uvisor_flash_start;
+    .long __uvisor_flash_end;
+    .long __uvisor_sram_start;
+    .long __uvisor_sram_end;
+
 __uvisor_mode:
     /* uvisor default mode - user can override weak reference */
     .long 0
