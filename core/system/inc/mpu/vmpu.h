@@ -147,4 +147,6 @@ extern uint32_t  g_vmpu_box_count;
 
 extern uint32_t vmpu_register_gateway(uint32_t addr, uint32_t val);
 
+extern int vmpu_box_id_self(void);
+
 #endif/*__VMPU_H__*/

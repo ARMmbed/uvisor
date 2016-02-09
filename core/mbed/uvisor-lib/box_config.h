@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2013-2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -90,5 +90,8 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 
 #define UVISOR_BOX_CONFIG(...) \
     UVISOR_BOX_CONFIG_ACL(__VA_ARGS__)
+
+/* Return the numeric box ID of the current box. */
+UVISOR_EXTERN int uvisor_box_id_self(void);
 
 #endif /* __UVISOR_LIB_BOX_CONFIG_H__ */

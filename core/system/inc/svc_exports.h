@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2013-2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -104,6 +104,7 @@
 #define UVISOR_SVC_ID_BENCHMARK_STOP UVISOR_SVC_CUSTOM_TABLE(12)
 #define UVISOR_SVC_ID_HALT_USER_ERR  UVISOR_SVC_CUSTOM_TABLE(13)
 #define UVISOR_SVC_ID_IRQ_LEVEL_GET  UVISOR_SVC_CUSTOM_TABLE(14)
+#define UVISOR_SVC_ID_BOX_ID_SELF    UVISOR_SVC_CUSTOM_TABLE(15)
 
 /* SVC immediate values for hardcoded table (call from unprivileged) */
 #define UVISOR_SVC_ID_UNVIC_OUT        UVISOR_SVC_FIXED_TABLE(0, 0)
