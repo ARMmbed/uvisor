@@ -53,6 +53,7 @@ const void *g_svc_vtor_tbl[] = {
     unvic_irq_level_get,     // 14
     vmpu_box_id_self,        // 15
     vmpu_box_id_caller,      // 16
+    vmpu_box_name_from_id,   // 17
 };
 
 /*******************************************************************************

@@ -36,7 +36,7 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 #define UVISOR_SET_MODE_ACL(mode, acl_list) \
     UVISOR_SET_MODE_ACL_COUNT(mode, acl_list, UVISOR_ARRAY_COUNT(acl_list))
 
-#define UVISOR_SET_MODE_ACL_COUNT(mode, acl_list, acl_list_count) \
+#define UVISOR_SET_MODE_ACL_COUNT(mode, box_name, acl_list, acl_list_count) \
     UVISOR_EXTERN const uint32_t __uvisor_mode = UVISOR_DISABLED; \
     static const void *main_acl = acl_list; \
     extern const __attribute__((section(".keep.uvisor.cfgtbl_ptr_first"), aligned(4))) void * const main_cfg_ptr = &main_acl;
@@ -60,6 +60,14 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 #define UVISOR_BOX_CONFIG_ACL(...) UVISOR_BOX_CONFIG(__VA_ARGS__)
 
 #define UVISOR_BOX_CONFIG_CTX(...) UVISOR_BOX_CONFIG(__VA_ARGS__)
+
+#define UVISOR_BOX_CONFIG_NAME(...) \
+    __UVISOR_BOX_MACRO(__VA_ARGS__, __UVISOR_BOX_CONFIG_CONTEXT, \
+                                    __UVISOR_BOX_CONFIG_NOCONTEXT)(__VA_ARGS__)
+
+#define UVISOR_BOX_CONFIG_ACL_NAME(...) UVISOR_BOX_CONFIG(__VA_ARGS__)
+
+#define UVISOR_BOX_CONFIG_CTX_NAME(...) UVISOR_BOX_CONFIG(__VA_ARGS__)
 
 /* uvisor-lib/interrupts.h */
 

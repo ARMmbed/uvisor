@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #include <uvisor.h>
+#include "mbed/uvisor-lib/box_config.h"
 #include "vmpu.h"
 #include "svc.h"
 #include "halt.h"
@@ -114,6 +115,48 @@ static int vmpu_sanity_checks(void)
         return 0;
 }
 
+static void vmpu_sanity_check_box_name(uint8_t box_id, const char *const box_name)
+{
+    /* Verify that all characters of the box_name (including the trailing NUL)
+     * are within flash and that the box_name is not too long. It is also okay
+     * for the box name to be NULL. */
+    size_t length = 0;
+
+    if (box_name == NULL) {
+        return;
+    }
+
+    do {
+        /* Check that the address of the character is within flash before
+         * reading the character. */
+        if (!vmpu_flash_addr((uint32_t) &box_name[length])) {
+            HALT_ERROR(SANITY_CHECK_FAILED,
+                "box[%i] @0x%08X - name not entirely in public flash\n",
+                box_id,
+                box_name,
+                UVISOR_MAX_BOX_NAME_LENGTH
+            );
+        }
+
+        if (box_name[length] == '\0') {
+            /* If we reached the end of the string, which we now know is stored
+             * in flash, then we are done. */
+            break;
+        }
+
+        ++length;
+
+        if (length >= UVISOR_MAX_BOX_NAME_LENGTH) {
+            HALT_ERROR(SANITY_CHECK_FAILED,
+                "box[%i] @0x%08X - name too long (length >= %u)\n",
+                g_vmpu_box_count,
+                box_name,
+                UVISOR_MAX_BOX_NAME_LENGTH
+            );
+        }
+    } while (box_name[length]);
+}
+
 static void vmpu_load_boxes(void)
 {
     int i, count;
@@ -158,6 +201,9 @@ static void vmpu_load_boxes(void)
                 (*box_cfgtbl)->version,
                 UVISOR_BOX_VERSION
             );
+
+        /* Check that the box name is not too long. */
+        vmpu_sanity_check_box_name(box_id, (*box_cfgtbl)->name);
 
         /* load box ACLs in table */
         DPRINTF("box[%i] ACL list:\n", box_id);
@@ -383,4 +429,81 @@ int vmpu_box_id_caller(void)
     }
 
     return box_ctx->src_id;
+}
+
+static void vmpu_sanity_check_box_id_valid(int box_id)
+{
+    /* Make sure the box_id is valid, to prevent reading non-box-configuration
+     * data from flash. This function assumes that g_vmpu_box_count is valid,
+     * which happens after vmpu_load_boxes has been called. */
+    if (box_id < 0 || box_id >= g_vmpu_box_count) {
+        HALT_ERROR(SANITY_CHECK_FAILED,
+            "box_id out of range : %u not within 0 - %u\n",
+            box_id, g_vmpu_box_count
+        );
+    }
+}
+
+static char hex_to_char(int hex)
+{
+    char h = hex & 0xF;
+    if (h < 0xA) {
+        return '0' + (hex & 0xF);
+    } else {
+        return 'a' + (hex & 0xF) - 10;
+    }
+}
+
+static int generate_locally_unique_box_name(uintptr_t hex, char *dst_box_name)
+{
+    /* Return a hex string representation of the box struct pointer as a
+     * locally unique box identifier. */
+    static const size_t chars_per_ptr = sizeof(hex) * 2;
+    size_t bytes_to_copy = chars_per_ptr;
+
+    while (bytes_to_copy--) {
+        vmpu_unpriv_uint8_write((uint32_t)&dst_box_name[bytes_to_copy], hex_to_char(hex));
+        hex >>= 4;
+    }
+
+    /* NUL-terminate the dst_box_name. */
+    vmpu_unpriv_uint8_write((uint32_t)&dst_box_name[chars_per_ptr], '\0');
+
+    return chars_per_ptr + 1;
+}
+
+static int copy_box_name(const char *src_box_name, char *dst_box_name)
+{
+    int bytes_copied;
+
+    /* Copy the box name to the client-provided destination. */
+    for (bytes_copied = 0; bytes_copied < UVISOR_MAX_BOX_NAME_LENGTH; bytes_copied++) {
+        vmpu_unpriv_uint8_write((uint32_t)&dst_box_name[bytes_copied], src_box_name[bytes_copied]);
+
+        if (src_box_name[bytes_copied] == '\0') {
+            /* We've reached the end of the box name. */
+            break;
+        }
+    }
+
+    return bytes_copied;
+}
+
+int vmpu_box_name_from_id(int box_id, char *box_name, size_t length)
+{
+    const UvisorBoxConfig **box_cfgtbl;
+    box_cfgtbl = (const UvisorBoxConfig**) __uvisor_config.cfgtbl_ptr_start;
+
+    vmpu_sanity_check_box_id_valid(box_id);
+
+    if (length < UVISOR_MAX_BOX_NAME_LENGTH) {
+        /* Not enough room in the supplied buffer for maximum length name. */
+       return -1;
+    }
+
+    if (box_cfgtbl[box_id]->name == NULL) {
+        return generate_locally_unique_box_name((uintptr_t)box_cfgtbl[box_id], box_name);
+    }
+
+    return copy_box_name(box_cfgtbl[box_id]->name, box_name);
 }

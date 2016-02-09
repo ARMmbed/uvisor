@@ -134,6 +134,7 @@ typedef struct
     uint32_t version;
     uint32_t stack_size;
     uint32_t context_size;
+    const char* name;
 
     const UvisorBoxAclItem* const acl_list;
     uint32_t acl_count;
