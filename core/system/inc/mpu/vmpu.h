@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2013-2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -19,6 +19,7 @@
 
 #include "vmpu_exports.h"
 #include "vmpu_unpriv_access.h"
+#include <stdint.h>
 
 /* Check if the address is in Flash/SRAM. */
 /* Note: Instead of using the '<' check on
