@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 #include <uvisor.h>
+#include "mbed/uvisor-lib/box_config.h"
+#include "mbed/uvisor-lib/error.h"
 #include "vmpu.h"
 #include "svc.h"
 #include "halt.h"
@@ -114,6 +116,48 @@ static int vmpu_sanity_checks(void)
         return 0;
 }
 
+static void vmpu_sanity_check_box_namespace(int box_id, const char *const box_namespace)
+{
+    /* Verify that all characters of the box_namespace (including the trailing
+     * NUL) are within flash and that the box_namespace is not too long. It is
+     * also okay for the box namespace to be NULL. */
+    size_t length = 0;
+
+    if (box_namespace == NULL) {
+        return;
+    }
+
+    do {
+        /* Check that the address of the character is within flash before
+         * reading the character. */
+        if (!vmpu_flash_addr((uint32_t) &box_namespace[length])) {
+            HALT_ERROR(SANITY_CHECK_FAILED,
+                "box[%i] @0x%08X - namespace not entirely in public flash\n",
+                box_id,
+                box_namespace,
+                UVISOR_MAX_BOX_NAMESPACE_LENGTH
+            );
+        }
+
+        if (box_namespace[length] == '\0') {
+            /* If we reached the end of the string, which we now know is stored
+             * in flash, then we are done. */
+            break;
+        }
+
+        ++length;
+
+        if (length >= UVISOR_MAX_BOX_NAMESPACE_LENGTH) {
+            HALT_ERROR(SANITY_CHECK_FAILED,
+                "box[%i] @0x%08X - namespace too long (length >= %u)\n",
+                box_id,
+                box_namespace,
+                UVISOR_MAX_BOX_NAMESPACE_LENGTH
+            );
+        }
+    } while (box_namespace[length]);
+}
+
 static void vmpu_load_boxes(void)
 {
     int i, count;
@@ -158,6 +202,9 @@ static void vmpu_load_boxes(void)
                 (*box_cfgtbl)->version,
                 UVISOR_BOX_VERSION
             );
+
+        /* Check that the box namespace is not too long. */
+        vmpu_sanity_check_box_namespace(box_id, (*box_cfgtbl)->box_namespace);
 
         /* load box ACLs in table */
         DPRINTF("box[%i] ACL list:\n", box_id);
@@ -383,4 +430,54 @@ int vmpu_box_id_caller(void)
     }
 
     return box_ctx->src_id;
+}
+
+static bool vmpu_is_box_id_valid(int box_id)
+{
+    /* Return true if the box_id is valid. This function assumes that
+     * g_vmpu_box_count is valid, which happens after vmpu_load_boxes has been
+     * called. */
+    return box_id >= 0 && box_id < g_vmpu_box_count;
+}
+
+static int copy_box_namespace(const char *src, char *dst)
+{
+    int bytes_copied;
+
+    /* Copy the box namespace to the client-provided destination. */
+    for (bytes_copied = 0; bytes_copied < UVISOR_MAX_BOX_NAMESPACE_LENGTH; bytes_copied++) {
+        vmpu_unpriv_uint8_write((uint32_t)&dst[bytes_copied], src[bytes_copied]);
+
+        if (src[bytes_copied] == '\0') {
+            /* We've reached the end of the box namespace. */
+            break;
+        }
+    }
+
+    return bytes_copied;
+}
+
+int vmpu_box_namespace_from_id(int box_id, char *box_namespace, size_t length)
+{
+    const UvisorBoxConfig **box_cfgtbl;
+    box_cfgtbl = (const UvisorBoxConfig**) __uvisor_config.cfgtbl_ptr_start;
+
+    if (!vmpu_is_box_id_valid(box_id))
+    {
+        /* The box_id is not valid, so return an error to prevent reading
+         * non-box-configuration data from flash. */
+        return UVISOR_ERROR_INVALID_BOX_ID;
+    }
+
+    if (length < UVISOR_MAX_BOX_NAMESPACE_LENGTH) {
+        /* There is not enough room in the supplied buffer for maximum length
+         * namespace. */
+       return UVISOR_ERROR_BUFFER_TOO_SMALL;
+    }
+
+    if (box_cfgtbl[box_id]->box_namespace == NULL) {
+        return UVISOR_ERROR_BOX_NAMESPACE_ANONYMOUS;
+    }
+
+    return copy_box_namespace(box_cfgtbl[box_id]->box_namespace, box_namespace);
 }
