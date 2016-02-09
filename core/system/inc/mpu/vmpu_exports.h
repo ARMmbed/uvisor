@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2013-2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -16,6 +16,9 @@
  */
 #ifndef __VMPU_EXPORTS_H__
 #define __VMPU_EXPORTS_H__
+
+#include "uvisor_exports.h"
+#include <stdint.h>
 
 /* supervisor user access modes */
 #define UVISOR_TACL_UEXECUTE        0x0001UL
