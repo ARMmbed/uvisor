@@ -621,11 +621,11 @@ void vmpu_arch_init(void)
     /* initialize static MPU regions */
     vmpu_arch_init_hw();
 
+    /* finally enable MPU */
+    MPU->CTRL = MPU_CTRL_ENABLE_Msk|MPU_CTRL_PRIVDEFENA_Msk;
+
     /* dump MPU configuration */
 #ifndef NDEBUG
     debug_mpu_config();
 #endif/*NDEBUG*/
-
-    /* finally enable MPU */
-    MPU->CTRL = MPU_CTRL_ENABLE_Msk|MPU_CTRL_PRIVDEFENA_Msk;
 }
