@@ -14,36 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <config.h>
-
 ENTRY(main_entry)
 
-#ifndef RESERVED_FLASH
-#define RESERVED_FLASH 0x0
-#endif/*RESERVED_FLASH*/
+/* Maximum memory available
+ * This is set starting from the minimum memory available from the device
+ * family. If for example a family of devices has Flash memories ranging from
+ * 512KB to 4MB we must ensure that uVisor fits into 512KB (possibly minus the
+ * offset at which uVisor is positioned). */
+#define UVISOR_FLASH_LENGTH_MAX (FLASH_LENGTH_MIN - FLASH_OFFSET)
+#define UVISOR_SRAM_LENGTH_MAX  (SRAM_LENGTH_MIN - SRAM_OFFSET)
 
-#ifndef RESERVED_SRAM
-#define RESERVED_SRAM 0x0
-#endif/*RESERVED_SRAM*/
-
-#define FLASH_MAX (FLASH_LENGTH-RESERVED_FLASH)
-#define SRAM_MAX  (SRAM_LENGTH -RESERVED_SRAM)
-
-#ifdef  USE_FLASH_SIZE
-#if   ((USE_FLASH_SIZE) > (FLASH_MAX))
-#error "USE_FLASH_SIZE needs to be smaller than FLASH_MAX"
-#endif
-#else /*USE_FLASH_SIZE*/
-#define USE_FLASH_SIZE FLASH_MAX
-#endif/*USE_FLASH_SIZE*/
-
-#ifdef  USE_SRAM_SIZE
-#if   ((USE_SRAM_SIZE) > (SRAM_MAX))
-#error "USE_SRAM_SIZE needs to be smaller than SRAM_MAX"
-#endif
-#else /*USE_SRAM_SIZE*/
-#define USE_SRAM_SIZE SRAM_MAX
-#endif/*USE_SRAM_SIZE*/
+/* Check that the uVisor memory requirements can be satisfied */
+#if UVISOR_FLASH_LENGTH > UVISOR_FLASH_LENGTH_MAX
+#error "uVisor does not fit into the target memory. UVISOR_FLASH_LENGTH must be smaller than UVISOR_FLASH_LENGTH_MAX"
+#endif /* UVISOR_FLASH_LENGTH > UVISOR_FLASH_LENGTH_MAX */
+#if UVISOR_SRAM_LENGTH > UVISOR_SRAM_LENGTH_MAX
+#error "uVisor does not fit into the target memory. UVISOR_SRAM_LENGTH must be smaller than UVISOR_SRAM_LENGTH_MAX"
+#endif /* UVISOR_SRAM_LENGTH > UVISOR_SRAM_LENGTH_MAX */
 
 #ifndef STACK_GUARD_BAND
 #define STACK_GUARD_BAND 32
@@ -55,11 +42,11 @@ ENTRY(main_entry)
 
 MEMORY
 {
-  FLASH (rx) : ORIGIN = (FLASH_ORIGIN + RESERVED_FLASH),
-               LENGTH = USE_FLASH_SIZE - RESERVED_FLASH
-  RAM   (rwx): ORIGIN = (SRAM_ORIGIN + RESERVED_SRAM),
-               LENGTH = USE_SRAM_SIZE - RESERVED_SRAM - STACK_SIZE
-  STACK (rw) : ORIGIN = (SRAM_ORIGIN + USE_SRAM_SIZE - STACK_SIZE),
+  FLASH (rx) : ORIGIN = (FLASH_ORIGIN + FLASH_OFFSET),
+               LENGTH = UVISOR_FLASH_LENGTH - FLASH_OFFSET
+  RAM   (rwx): ORIGIN = (SRAM_ORIGIN + SRAM_OFFSET),
+               LENGTH = UVISOR_SRAM_LENGTH - SRAM_OFFSET - STACK_SIZE
+  STACK (rw) : ORIGIN = (SRAM_ORIGIN + UVISOR_SRAM_LENGTH - STACK_SIZE),
                LENGTH = STACK_SIZE
 }
 

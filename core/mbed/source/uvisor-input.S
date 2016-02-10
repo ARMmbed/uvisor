@@ -14,8 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "../config/config.h"
-
 .globl uvisor_init
 .globl uvisor_config
 .globl uvisor_ctx
@@ -94,4 +92,4 @@ uvisor_ctx:
     .long 0
 
 .section .keep.uvisor.bss.main, "awM", @nobits
-    .space USE_SRAM_SIZE
+    .space UVISOR_SRAM_LENGTH
