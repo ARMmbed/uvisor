@@ -83,17 +83,17 @@ void debug_mpu_config(void)
                 size > 4  ? 0x1 << (size % 10) : 0,
                 dim[size / 10],
                 (rasr & MPU_RASR_XN_Msk)  >> MPU_RASR_XN_Pos,
-                (ap  & 0x1) >> 0x0, (ap  & 0x2) >> 0x1, (ap  & 0x4) >> 0x2,
-                (tex & 0x1) >> 0x0, (tex & 0x2) >> 0x1, (tex & 0x4) >> 0x2,
+                (ap  & 0x4) >> 0x2, (ap  & 0x2) >> 0x1, (ap  & 0x1) >> 0x0,
+                (tex & 0x4) >> 0x2, (tex & 0x2) >> 0x1, (tex & 0x1) >> 0x0,
                 (rasr & MPU_RASR_S_Msk)   >> MPU_RASR_S_Pos,
                 (rasr & MPU_RASR_C_Msk)   >> MPU_RASR_C_Pos,
                 (rasr & MPU_RASR_B_Msk)   >> MPU_RASR_B_Pos,
                 (rasr & MPU_RASR_SRD_Msk) >> MPU_RASR_B_Pos);
         dprintf("%d%d%d%d%d%d%d%d %d\n\r",
-                (srd & 0x01) >> 0x0, (srd & 0x02) >> 0x1,
-                (srd & 0x04) >> 0x2, (srd & 0x08) >> 0x3,
-                (srd & 0x10) >> 0x4, (srd & 0x20) >> 0x5,
-                (srd & 0x40) >> 0x6, (srd & 0x80) >> 0x7,
+                (srd & 0x80) >> 0x7, (srd & 0x40) >> 0x6,
+                (srd & 0x20) >> 0x5, (srd & 0x10) >> 0x4,
+                (srd & 0x08) >> 0x3, (srd & 0x04) >> 0x2,
+                (srd & 0x02) >> 0x1, (srd & 0x01) >> 0x0,
                 rasr & MPU_RASR_ENABLE_Msk ? 1 : 0);
     }
     dprintf("\n\r");
