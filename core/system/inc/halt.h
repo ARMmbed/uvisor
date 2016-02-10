@@ -39,7 +39,7 @@ typedef enum {
 #define HALT_ERROR(reason, ...) halt_led(reason)
 #else /*NDEBUG*/
 #define HALT_ERROR(reason, ...) \
-        halt_line(__FILE__, __LINE__, reason, __VA_ARGS__)
+        halt_line(__FILE__, __LINE__, reason, ##__VA_ARGS__)
 #endif/*NDEBUG*/
 
 extern void halt_led(THaltError reason);
