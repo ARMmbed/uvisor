@@ -81,7 +81,7 @@ MPU_SRC:=\
 endif
 
 # Freescale K64 MPU driver
-ifeq ("$(ARCH_MPU)","MK64F")
+ifeq ("$(ARCH_MPU)","KINETIS")
 MPU_SRC:=\
          $(SYSTEM_DIR)/src/mpu/vmpu_freescale_k64.c \
          $(SYSTEM_DIR)/src/mpu/vmpu_freescale_k64_debug.c \
