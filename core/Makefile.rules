@@ -29,35 +29,43 @@ JLINK_VIEWER_MASK:=0x7
 AUXHFRCO_FREQ:=0
 JLINK_SWO_PARAM:=
 
-ROOT_DIR:=../..
-CORE_DIR:=$(ROOT_DIR)/core
-
 SYSLIBS:=-lgcc -lc -lnosys
 
-# system paths
+# Suffix for the exported binary blob
+BINARY_NAME:=$(shell echo $(CONFIGURATION) | tr '[:upper:]' '[:lower:]')
+
+# Root (relative to hardware-specific Makefile)
+ROOT_DIR:=../..
+
+# Top-level folder paths
+CORE_DIR:=$(ROOT_DIR)/core
+PLATFORM_DIR:=$(ROOT_DIR)/platform
+RELEASE_DIR:=$(ROOT_DIR)/release
+TOOLS_DIR:=$(ROOT_DIR)/tools
+
+# Core paths
 CMSIS_DIR:=$(CORE_DIR)/cmsis
 SYSTEM_DIR:=$(CORE_DIR)/system
 MBED_DIR:=$(CORE_DIR)/mbed
 DEBUG_DIR:=$(CORE_DIR)/debug
 LIB_DIR:=$(CORE_DIR)/lib
-DEVICE_DIR:=$(CORE_DIR)/arch/$(ARCH)
-RELEASE_DIR:=$(ROOT_DIR)/release
 
 # mbed origin paths
 MBED_SRC:=$(MBED_DIR)/source
-MBED_SRC_HW:=$(MBED_SRC)/$(CPU)
+MBED_SRC_HW:=$(MBED_SRC)/$(PROJECT)
 MBED_INC:=$(MBED_DIR)/uvisor-lib
 MBED_ASM_INPUT:=$(MBED_SRC)/uvisor-input.S
 MBED_ASM_HEADER:=$(MBED_SRC)/uvisor-header.S
-MBED_ASM:=$(MBED_SRC_HW)/uvisor.s
-MBED_BIN_NAME:=uvisor-$(CPU).box
+MBED_ASM:=$(MBED_SRC_HW)/uvisor_$(BINARY_NAME).s
+MBED_BIN_NAME:=uvisor_$(BINARY_NAME).box
 MBED_BIN:=$(MBED_SRC_HW)/$(MBED_BIN_NAME)
+MBED_CONFIG:=$(PLATFORM_DIR)/$(PROJECT)/mbed/get_configuration.cmake
 
 # mbed release paths
 RELEASE_SRC:=$(RELEASE_DIR)/source
-RELEASE_SRC_HW:=$(RELEASE_SRC)/$(CPU)
+RELEASE_SRC_HW:=$(RELEASE_SRC)/$(PROJECT)
 RELEASE_INC:=$(RELEASE_DIR)/uvisor-lib
-RELEASE_OBJ:=$(RELEASE_SRC_HW)/uvisor.o
+RELEASE_OBJ:=$(RELEASE_SRC_HW)/uvisor_$(BINARY_NAME).o
 RELEASE_VER:=$(RELEASE_SRC_HW)/version.txt
 
 # make ARMv7-M MPU driver the default
@@ -90,10 +98,10 @@ SOURCES:=\
          $(SYSTEM_DIR)/src/svc_cx.c \
          $(SYSTEM_DIR)/src/unvic.c \
          $(SYSTEM_DIR)/src/system.c \
+         $(SYSTEM_DIR)/src/mpu/vmpu.c \
          $(DEBUG_DIR)/src/debug.c \
          $(DEBUG_DIR)/src/memory_map.c \
          $(LIB_DIR)/printf/tfp_printf.c \
-         $(SYSTEM_DIR)/src/mpu/vmpu.c \
          $(MPU_SRC) \
          $(APP_SRC)
 
@@ -101,9 +109,6 @@ DEBUG_HOST:=localhost:2331
 OPT:=-Os -DNDEBUG
 DEBUG:=-g3
 WARNING:=-Wall -Werror
-CPU_LOWER:=$(shell echo $(CPU) | tr '[:upper:]' '[:lower:]')
-ARCH_LOWER:=$(shell echo $(ARCH) | tr '[:upper:]' '[:lower:]')
-FLASH_OFFSET:=0
 
 # determine repository version
 PROGRAM_VERSION:=$(shell git describe --tags --abbrev=4 --dirty 2>/dev/null | sed s/^v//)
@@ -111,22 +116,25 @@ ifeq ("$(PROGRAM_VERSION)","")
          PROGRAM_VERSION:='unknown'
 endif
 
-# allow overriding of JLink debug CPU from application Makefile
-ifeq ("$(CPU_JLINK)","")
-	DEBUG_CPU:=$(CPU)
+# For gdb debugging we need an explicit CPU to be specified. If not, JLink might
+# try to guess it automatically.
+ifeq ("$(CPU)","")
+	JLINK_PARAM:=-if SWD
 else
-	DEBUG_CPU:=$(CPU_JLINK)
+	JLINK_PARAM:=-Device $(CPU) -if SWD
 endif
-JLINK_PARAM:=-Device $(DEBUG_CPU) -if SWD
 
-# read UVISOR_FLASH_SIZE from uVisor config file
+# Read UVISOR_{FLASH, SRAM}_LENGTH from uvisor-config.h.
 ifeq ("$(wildcard  $(CORE_DIR)/uvisor-config.h)","")
-	UVISOR_FLASH_SIZE:=0
+	UVISOR_MAGIC:=0
+	UVISOR_FLASH_LENGTH:=0
+	UVISOR_SRAM_LENGTH:=0
 else
-	UVISOR_FLASH_SIZE:=$(shell grep UVISOR_FLASH_SIZE $(CORE_DIR)/uvisor-config.h | sed -E 's/^.* (0x[0-9A-Fa-f]+).*$\/\1/')
+	UVISOR_MAGIC:=$(shell grep UVISOR_MAGIC $(CORE_DIR)/uvisor-config.h | sed -E 's/^.* (0x[0-9A-Fa-f]+).*$\/\1/')
+	UVISOR_FLASH_LENGTH:=$(shell grep UVISOR_FLASH_LENGTH $(CORE_DIR)/uvisor-config.h | sed -E 's/^.* (0x[0-9A-Fa-f]+).*$\/\1/')
+	UVISOR_SRAM_LENGTH:=$(shell grep UVISOR_SRAM_LENGTH $(CORE_DIR)/uvisor-config.h | sed -E 's/^.* (0x[0-9A-Fa-f]+).*$\/\1/')
 endif
 
-MEM_CONFIG:=$(CORE_DIR)/linker/$(CPU).h
 FLAGS_CM4:=-mcpu=cortex-m4 -march=armv7e-m -mthumb
 
 LDFLAGS:=\
@@ -142,18 +150,14 @@ CFLAGS_PRE:=\
         $(OPT) \
         $(DEBUG) \
         $(WARNING) \
-        -DARCH_$(ARCH) \
         -DARCH_MPU_$(ARCH_MPU) \
-        -D$(CPU) \
+        -DCONFIGURATION_$(CONFIGURATION) \
         -DPROGRAM_VERSION=\"$(PROGRAM_VERSION)\" \
-        -DCPU=$(CPU) \
         $(APP_CFLAGS) \
-        -include $(MEM_CONFIG) \
         -I$(CORE_DIR) \
         -I$(CMSIS_DIR)/inc \
         -I$(SYSTEM_DIR)/inc \
         -I$(SYSTEM_DIR)/inc/mpu \
-        -I$(DEVICE_DIR)/inc \
         -I$(DEBUG_DIR)/inc \
         -I$(LIB_DIR)/printf \
         -ffunction-sections \
@@ -164,6 +168,18 @@ CPPFLAGS:=-fno-exceptions
 
 OBJS:=$(SOURCES:.cpp=.o)
 OBJS:=$(OBJS:.c=.o)
+
+LINKER_CONFIG:=\
+    -DCONFIGURATION_$(CONFIGURATION) \
+    -DUVISOR_FLASH_LENGTH=$(UVISOR_FLASH_LENGTH) \
+    -DUVISOR_SRAM_LENGTH=$(UVISOR_SRAM_LENGTH) \
+    -include $(PLATFORM_DIR)/$(PROJECT)/inc/config.h
+
+BINARY_CONFIG:=\
+    -DUVISOR_FLASH_LENGTH=$(UVISOR_FLASH_LENGTH) \
+    -DUVISOR_SRAM_LENGTH=$(UVISOR_SRAM_LENGTH) \
+    -DUVISOR_MAGIC=$(UVISOR_MAGIC) \
+    -DRELEASE_BIN=\"$(MBED_BIN)\"
 
 .PHONY: debug gdb gdbtui flash erase reset ctags source.c.tags swo
 
@@ -178,8 +194,8 @@ $(PROJECT).elf: $(OBJS) $(PROJECT).linker
 $(PROJECT).bin: $(PROJECT).elf
 	$(OBJCOPY) $< -O binary $@
 
-$(PROJECT).linker: $(MEM_CONFIG) $(CORE_DIR)/linker/default.h
-	$(CPP) -w -P -I$(CORE_DIR) $(APP_CFLAGS) -D$(CPU) -DARCH_$(ARCH) -include $^ -o $@
+$(PROJECT).linker: $(CORE_DIR)/linker/default.h
+	$(CPP) -w -P $(LINKER_CONFIG) $^ -o $@
 
 release: $(MBED_ASM_INPUT) $(PROJECT).bin
 	rm  -f $(RELEASE_INC)/*.h
@@ -195,8 +211,8 @@ release: $(MBED_ASM_INPUT) $(PROJECT).bin
 	find ../.. -name "*_exports.h" -not -path "$(RELEASE_DIR)/*"\
 	     -exec cp {} $(RELEASE_INC)/ \;
 	cp -f $(MBED_ASM_HEADER) $(MBED_ASM)
-	$(CPP) -w -P -I$(CORE_DIR) $(APP_CFLAGS) -DP-D$(CPU) -DARCH_$(ARCH)\
-	       -DRELEASE_BIN=\"$(MBED_BIN)\" $< >> $(MBED_ASM)
+	cp $(MBED_CONFIG) $(RELEASE_SRC_HW)/
+	$(CPP) -w -P $(BINARY_CONFIG) $< > $(MBED_ASM)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $(RELEASE_OBJ) $(MBED_ASM)
 
 swo:
