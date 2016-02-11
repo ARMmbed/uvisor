@@ -52,6 +52,7 @@ const void *g_svc_vtor_tbl[] = {
     halt_user_error,         // 13
     unvic_irq_level_get,     // 14
     vmpu_box_id_self,        // 15
+    vmpu_box_id_caller,      // 16
 };
 
 /*******************************************************************************

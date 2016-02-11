@@ -94,4 +94,8 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 /* Return the numeric box ID of the current box. */
 UVISOR_EXTERN int uvisor_box_id_self(void);
 
+/* Return the numeric box ID of the box that is calling through the most recent
+ * secure gateway. Return -1 if there is no secure gateway calling box. */
+UVISOR_EXTERN int uvisor_box_id_caller(void);
+
 #endif /* __UVISOR_LIB_BOX_CONFIG_H__ */

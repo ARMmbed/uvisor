@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2013-2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -23,9 +23,17 @@
 
 #define SVC_CX_EXC_SF_SIZE 8
 
+typedef enum {
+    TBOXCX_INVALID = 0,
+    TBOXCX_SECURE_GATEWAY,
+    TBOXCX_IRQ,
+    __TBOXCXTYPE_MAX /* The number of possible box context types */
+} TBoxCxType;
+
 typedef struct {
-    uint8_t   rfu[3];  /* for 32 bit alignment */
+    uint8_t   rfu[2];  /* for 32 bit alignment */
     uint8_t   src_id;
+    uint8_t   type;
     uint32_t *src_sp;
 } UVISOR_PACKED TBoxCx;
 
@@ -56,7 +64,7 @@ static inline uint8_t svc_cx_get_curr_id(void)
     return g_svc_cx_curr_id;
 }
 
-static void inline svc_cx_push_state(uint8_t src_id, uint32_t *src_sp,
+static void inline svc_cx_push_state(uint8_t src_id, uint8_t type, uint32_t *src_sp,
                                      uint8_t dst_id)
 {
     /* check state stack overflow */
@@ -65,6 +73,7 @@ static void inline svc_cx_push_state(uint8_t src_id, uint32_t *src_sp,
 
     /* push state */
     g_svc_cx_state[g_svc_cx_state_ptr].src_id = src_id;
+    g_svc_cx_state[g_svc_cx_state_ptr].type = type;
     g_svc_cx_state[g_svc_cx_state_ptr].src_sp = src_sp;
     ++g_svc_cx_state_ptr;
 

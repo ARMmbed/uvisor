@@ -365,3 +365,22 @@ int vmpu_box_id_self(void)
 {
     return g_active_box;
 }
+
+int vmpu_box_id_caller(void)
+{
+    TBoxCx *box_ctx;
+
+    if (g_svc_cx_state_ptr < 1) {
+        /* There is no previous context. */
+        return -1;
+    }
+
+    box_ctx = &g_svc_cx_state[g_svc_cx_state_ptr - 1];
+
+    if (box_ctx->type != TBOXCX_SECURE_GATEWAY) {
+        /* The previous context is not a secure gateway. */
+        return -1;
+    }
+
+    return box_ctx->src_id;
+}

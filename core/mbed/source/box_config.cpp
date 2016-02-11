@@ -21,3 +21,8 @@ int uvisor_box_id_self(void)
 {
     return UVISOR_SVC(UVISOR_SVC_ID_BOX_ID_SELF, "");
 }
+
+int uvisor_box_id_caller(void)
+{
+    return UVISOR_SVC(UVISOR_SVC_ID_BOX_ID_CALLER, "");
+}

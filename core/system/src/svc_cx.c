@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2013-2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -128,7 +128,7 @@ uint32_t __svc_cx_switch_in(uint32_t *svc_sp, uint32_t svc_pc,
     dst_sp[7] = src_sp[7] | (dst_sp_align << 9);          /* xPSR - alignment */
 
     /* save the current state */
-    svc_cx_push_state(src_id, src_sp, dst_id);
+    svc_cx_push_state(src_id, TBOXCX_SECURE_GATEWAY, src_sp, dst_id);
     /* DEBUG_CX_SWITCH_IN(); */
 
     /* set the context stack pointer for the dst box */
