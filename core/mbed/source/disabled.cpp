@@ -99,12 +99,18 @@ void uvisor_disabled_switch_in(const uint32_t *dst_box_cfgtbl_ptr)
     uvisor_ctx = g_uvisor_ctx_array[dst_box_id];
 
     /* Push state. */
+    if (g_call_sp >= UVISOR_SVC_CONTEXT_MAX_DEPTH - 1) {
+        uvisor_error(USER_NOT_ALLOWED);
+    }
     g_call_stack[++g_call_sp] = dst_box_id;
 }
 
 void uvisor_disabled_switch_out(void)
 {
     /* Pop state. */
+    if (g_call_sp <= 0) {
+        uvisor_error(USER_NOT_ALLOWED);
+    }
     uint8_t src_box_id = g_call_stack[--g_call_sp];
 
     /* Restore the source context. */
