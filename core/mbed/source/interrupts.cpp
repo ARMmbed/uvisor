@@ -19,7 +19,7 @@
 void vIRQ_SetVectorX(uint32_t irqn, uint32_t vector, uint32_t flag)
 {
     if(__uvisor_mode == 0) {
-        NVIC_SetVector((IRQn_Type) irqn, vector);
+        uvisor_disabled_set_vector(irqn, vector);
     }
     else {
         UVISOR_SVC(UVISOR_SVC_ID_ISR_SET, "", irqn, vector, flag);
@@ -34,7 +34,7 @@ void vIRQ_SetVector(uint32_t irqn, uint32_t vector)
 uint32_t vIRQ_GetVector(uint32_t irqn)
 {
     if(__uvisor_mode == 0) {
-        return NVIC_GetVector((IRQn_Type) irqn);
+        return uvisor_disabled_get_vector(irqn);
     }
     else {
         return UVISOR_SVC(UVISOR_SVC_ID_ISR_GET, "", irqn);
