@@ -17,13 +17,21 @@
 #ifndef __UVISOR_H__
 #define __UVISOR_H__
 
-/* definitions that are made visible externally */
-#include "uvisor_exports.h"
-
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+
+/* The platform configuration file must be included first. */
+#include "config.h"
+
+/* uVisor configurations */
 #include "uvisor-config.h"
+
+/* CMSIS header files */
+#include "core_generic.h"
+
+/* definitions that are made visible externally */
+#include "uvisor_exports.h"
 
 #ifndef TRUE
 #define TRUE 1
@@ -40,12 +48,6 @@
 
 /* unprivileged box as called by privileged code */
 typedef void (*UnprivilegedBoxEntry)(void);
-
-/* device-specific definitions */
-#include "uvisor-device.h"
-
-/* per-project-configuration */
-#include <config.h>
 
 #ifdef  NDEBUG
 #define DPRINTF(...) {}

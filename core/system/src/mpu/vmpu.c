@@ -26,10 +26,10 @@
 #endif/*MPU_MAX_PRIVATE_FUNCTIONS*/
 
 /* predict SRAM offset */
-#ifdef RESERVED_SRAM
-#  define RESERVED_SRAM_START UVISOR_REGION_ROUND_UP(SRAM_ORIGIN+RESERVED_SRAM)
+#ifdef SRAM_OFFSET
+#  define SRAM_OFFSET_START UVISOR_REGION_ROUND_UP(SRAM_ORIGIN + SRAM_OFFSET)
 #else
-#  define RESERVED_SRAM_START SRAM_ORIGIN
+#  define SRAM_OFFSET_START SRAM_ORIGIN
 #endif
 
 #if (MPU_MAX_PRIVATE_FUNCTIONS>0x100UL)
@@ -65,9 +65,7 @@ static int vmpu_sanity_checks(void)
     assert((uint32_t) __uvisor_config.sram_start == SRAM_ORIGIN);
 
     /* Verify that the uVisor binary blob is positioned at the flash offset. */
-    assert(((uint32_t) __uvisor_config.flash_start + RESERVED_FLASH) ==
-           (uint32_t) __uvisor_config.main_start);
-
+    assert(((uint32_t) __uvisor_config.flash_start + FLASH_OFFSET) == (uint32_t) __uvisor_config.main_start);
 
     /* verify if configuration mode is inside flash memory */
     assert(vmpu_flash_addr((uint32_t) __uvisor_config.mode));
@@ -80,15 +78,15 @@ static int vmpu_sanity_checks(void)
         VMPU_REGION_SIZE(__uvisor_config.bss_main_start,
                          __uvisor_config.bss_main_end));
     DPRINTF("             (0x%08X (%u bytes) [linker]\n",
-            RESERVED_SRAM_START, USE_SRAM_SIZE);
+            SRAM_OFFSET_START, UVISOR_SRAM_LENGTH);
     assert( __uvisor_config.bss_main_end > __uvisor_config.bss_main_start );
     assert( VMPU_REGION_SIZE(__uvisor_config.bss_main_start,
-                             __uvisor_config.bss_main_end) == USE_SRAM_SIZE );
+                             __uvisor_config.bss_main_end) == UVISOR_SRAM_LENGTH );
     assert(&__stack_end__ <= __uvisor_config.bss_main_end);
 
-    assert( (uint32_t) __uvisor_config.bss_main_start == RESERVED_SRAM_START);
-    assert( (uint32_t) __uvisor_config.bss_main_end == (RESERVED_SRAM_START +
-                                                        USE_SRAM_SIZE) );
+    assert( (uint32_t) __uvisor_config.bss_main_start == SRAM_OFFSET_START);
+    assert( (uint32_t) __uvisor_config.bss_main_end == (SRAM_OFFSET_START +
+                                                        UVISOR_SRAM_LENGTH) );
 
     /* verify that secure flash area is accessible and after public code */
     assert(vmpu_flash_addr((uint32_t) __uvisor_config.secure_start));

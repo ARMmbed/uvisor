@@ -38,15 +38,15 @@ UVISOR_NOINLINE void uvisor_init_pre(void)
         VMPU_REGION_SIZE(&__data_start__, &__data_end__)
     );
 
+    /* Initialize the unprivileged NVIC module. */
+    unvic_init();
+
     /* initialize debugging features */
     DEBUG_INIT();
 }
 
 UVISOR_NOINLINE void uvisor_init_post(void)
 {
-        /* vector table initialization */
-        unvic_init();
-
         /* init MPU */
         vmpu_init_post();
 
