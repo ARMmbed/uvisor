@@ -99,7 +99,7 @@ void uvisor_disabled_switch_in(const uint32_t *dst_box_cfgtbl_ptr)
     uvisor_ctx = g_uvisor_ctx_array[dst_box_id];
 
     /* Push state. */
-    g_call_stack[g_call_sp++] = dst_box_id;
+    g_call_stack[++g_call_sp] = dst_box_id;
 }
 
 void uvisor_disabled_switch_out(void)
