@@ -86,10 +86,10 @@ static void uvisor_disabled_init_context(void)
     g_initialized = true;
 }
 
-void uvisor_disabled_switch_in(const void * const * dst_box_cfgtbl_ptr)
+void uvisor_disabled_switch_in(const uint32_t *dst_box_cfgtbl_ptr)
 {
     /* Read the destination box ID. */
-    uint8_t dst_box_id = (uint8_t) ((uint32_t *) dst_box_cfgtbl_ptr - &__uvisor_cfgtbl_ptr_start);
+    uint8_t dst_box_id = (uint8_t) (dst_box_cfgtbl_ptr - &__uvisor_cfgtbl_ptr_start);
 
     /* Allocate the box contexts if they do not exist yet. */
     if (!g_initialized) {

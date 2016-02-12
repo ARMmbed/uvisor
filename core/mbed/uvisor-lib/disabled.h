@@ -17,7 +17,7 @@
 #ifndef __UVISOR_LIB_DISABLED_H__
 #define __UVISOR_LIB_DISABLED_H__
 
-UVISOR_EXTERN void uvisor_disabled_switch_in(const void * const * dst_box_cfgtbl_ptr);
+UVISOR_EXTERN void uvisor_disabled_switch_in(const uint32_t *dst_box_cfgtbl_ptr);
 UVISOR_EXTERN void uvisor_disabled_switch_out(void);
 
 #endif /* __UVISOR_LIB_DISABLED_H__ */
