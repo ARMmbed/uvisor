@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #include "uvisor-lib/uvisor-lib.h"
+#include "cmsis-core/cmsis_nvic.h"
 #include <string.h>
 #include <stddef.h>
 
@@ -43,6 +44,15 @@ static int g_call_sp;
  * It is used to allocate chunks of memories from the allocated pool (uVisor
  * boxes' .bss). */
 static uint32_t g_memory_position;
+
+/* Local vector table
+ * It holds the box ID and the vector for all registered IRQs, so that a context
+ * switch can be triggered before serving an interrupt. */
+typedef struct user_irq {
+    uint8_t box_id;
+    uint32_t vector;
+} user_irq_t;
+user_irq_t g_uvisor_disabled_vectors[NVIC_USER_IRQ_NUMBER];
 
 static void uvisor_disabled_init_context(void)
 {
@@ -88,8 +98,10 @@ static void uvisor_disabled_init_context(void)
 
 void uvisor_disabled_switch_in(const uint32_t *dst_box_cfgtbl_ptr)
 {
+    uint8_t dst_box_id;
+
     /* Read the destination box ID. */
-    uint8_t dst_box_id = (uint8_t) (dst_box_cfgtbl_ptr - &__uvisor_cfgtbl_ptr_start);
+    dst_box_id = (uint8_t) (dst_box_cfgtbl_ptr - &__uvisor_cfgtbl_ptr_start);
 
     /* Allocate the box contexts if they do not exist yet. */
     if (!g_initialized) {
@@ -107,12 +119,86 @@ void uvisor_disabled_switch_in(const uint32_t *dst_box_cfgtbl_ptr)
 
 void uvisor_disabled_switch_out(void)
 {
+    uint8_t src_box_id;
+
     /* Pop state. */
     if (g_call_sp <= 0) {
         uvisor_error(USER_NOT_ALLOWED);
     }
-    uint8_t src_box_id = g_call_stack[--g_call_sp];
+    src_box_id = g_call_stack[--g_call_sp];
 
     /* Restore the source context. */
     uvisor_ctx = g_uvisor_ctx_array[src_box_id];
+}
+
+static void uvisor_disabled_default_vector(void)
+{
+    uint32_t irqn, vector;
+    const uint32_t *dst_box_cfgtbl_ptr;
+    uint8_t dst_box_id;
+    int ipsr;
+
+    /* Get current IRQ number, from the IPSR.
+     * We only allow user IRQs to be registered (NVIC). This is consistent with
+     * the corresponding API when uVisor is enabled. */
+    irqn = 0;
+    ipsr = ((int) (__get_IPSR() & 0x1FF)) - NVIC_USER_IRQ_OFFSET;
+    if (ipsr < 0 || ipsr >= NVIC_USER_IRQ_NUMBER) {
+        uvisor_error(USER_NOT_ALLOWED);
+    } else {
+        irqn = (uint32_t) ipsr;
+    }
+
+    /* Calculate the destination box configuration pointer. */
+    dst_box_id = g_uvisor_disabled_vectors[irqn].box_id;
+    dst_box_cfgtbl_ptr = &__uvisor_cfgtbl_ptr_start + (uint32_t) dst_box_id;
+
+    /* Get the IRQ handler. */
+    vector = g_uvisor_disabled_vectors[irqn].vector;
+    if (!vector) {
+        uvisor_error(USER_NOT_ALLOWED);
+    }
+
+    /* Switch contexts before and after executing the IRQ handler. */
+    uvisor_disabled_switch_in(dst_box_cfgtbl_ptr);
+    ((void (*)(void)) vector)();
+    uvisor_disabled_switch_out();
+}
+
+void uvisor_disabled_set_vector(uint32_t irqn, uint32_t vector)
+{
+    uint8_t box_id;
+
+    /* Check IRQn.
+     * We only allow user IRQs to be registered (NVIC). This is consistent with
+     * the corresponding API when uVisor is enabled. */
+    if (irqn >= NVIC_USER_IRQ_NUMBER) {
+        uvisor_error(USER_NOT_ALLOWED);
+    }
+
+    /* Get current box ID.
+     * We use the call stack pointer to assess the currently active box ID. */
+    box_id = g_call_stack[g_call_sp];
+
+    /* Register IRQ.
+     * If vector is 0 it corresponds to a de-registration. */
+    g_uvisor_disabled_vectors[irqn].box_id = vector ? box_id : 0;
+    g_uvisor_disabled_vectors[irqn].vector = vector;
+
+    /* Register default handler.
+     * The default handler performs the context switch around the actual user
+     * handler. */
+    NVIC_SetVector((IRQn_Type) irqn, (uint32_t) &uvisor_disabled_default_vector);
+}
+
+uint32_t uvisor_disabled_get_vector(uint32_t irqn)
+{
+    /* Check IRQn.
+     * We only allow user IRQs to be registered (NVIC). This is consistent with
+     * the corresponding API when uVisor is enabled. */
+    if (irqn >= NVIC_USER_IRQ_NUMBER) {
+        uvisor_error(USER_NOT_ALLOWED);
+    }
+
+    return g_uvisor_disabled_vectors[irqn].vector;
 }
