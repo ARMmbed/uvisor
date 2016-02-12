@@ -42,7 +42,7 @@
                              __UVISOR_SECURE_GATEWAY_METADATA(dst_box, dst_fn), ##__VA_ARGS__); \
         } \
         else { \
-            uvisor_disabled_switch_in(&dst_box ## _cfg_ptr); \
+            uvisor_disabled_switch_in((const uint32_t *) &dst_box ## _cfg_ptr); \
             res = UVISOR_FUNCTION_CALL(dst_fn, ##__VA_ARGS__); \
             uvisor_disabled_switch_out(); \
         } \
