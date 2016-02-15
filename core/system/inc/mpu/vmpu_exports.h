@@ -52,7 +52,7 @@
 #define UVISOR_TACL_SUBREGIONS_POS  24
 #define UVISOR_TACL_SUBREGIONS_MASK (0xFFUL<<UVISOR_TACL_SUBREGIONS_POS)
 #define UVISOR_TACL_SUBREGIONS(x)   ( (((uint32_t)(x))<<UVISOR_TACL_SUBREGIONS_POS) & UVISOR_TACL_SUBREGIONS_MASK )
-#endif /* defined(ARCH_MPU_ARMv7M) || (defined(YOTTA_CFG_UVISOR_PRESENT) && !defined(TARGET_LIKE_KINETIS)) */
+#endif
 
 #define UVISOR_TACLDEF_SECURE_BSS   (UVISOR_TACL_UREAD          |\
                                      UVISOR_TACL_UWRITE         |\
@@ -98,8 +98,7 @@
 #define UVISOR_STACK_SIZE_ROUND(x)  UVISOR_REGION_ROUND_UP((x) + (UVISOR_STACK_BAND_SIZE * 2))
 #else
 #error "Unknown MPU architecture. uvisor: Check your Makefile. uvisor-lib: Check if uVisor is supported"
-#endif /* defined(ARCH_MPU_ARMv7M) || (defined(YOTTA_CFG_UVISOR_PRESENT) && !defined(TARGET_LIKE_KINETIS)) or
-          defined(ARCH_MPU_KINETIS) || (defined(YOTTA_CFG_UVISOR_PRESENT) && defined(TARGET_LIKE_KINETIS)) */
+#endif
 
 #ifndef UVISOR_BOX_STACK_SIZE
 #define UVISOR_BOX_STACK_SIZE UVISOR_MIN_STACK_SIZE
