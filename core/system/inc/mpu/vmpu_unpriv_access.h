@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2013-2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -20,7 +20,7 @@
 static inline __attribute__((always_inline)) void vmpu_unpriv_uint16_write(uint32_t addr, uint16_t data)
 {
     asm volatile(
-        "strt %[data], [%[addr]]"
+        "strht %[data], [%[addr]]"
     :: [addr] "r" (addr), [data] "r" (data));
 }
 
@@ -35,7 +35,7 @@ static inline __attribute__((always_inline)) uint16_t vmpu_unpriv_uint16_read(ui
 {
     uint16_t res;
     asm volatile(
-        "ldrt %[res], [%[addr]]"
+        "ldrht %[res], [%[addr]]"
     : [res] "=r" (res) : [addr] "r" (addr));
     return res;
 }
