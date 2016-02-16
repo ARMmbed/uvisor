@@ -200,7 +200,7 @@ $(PROJECT).linker: $(CORE_DIR)/linker/default.h
 release: $(MBED_ASM_INPUT) $(PROJECT).bin
 	rm  -f $(RELEASE_INC)/*.h
 	rm  -f $(RELEASE_SRC)/*.cpp
-	rm -rf $(RELEASE_SRC_HW)
+	rm -f $(RELEASE_OBJ) $(RELEASE_VER)
 	mkdir -p $(MBED_SRC_HW)
 	mkdir -p $(RELEASE_INC)
 	mkdir -p $(RELEASE_SRC_HW)
