@@ -37,12 +37,12 @@ CONFIGURATIONS:= \
 kinetis_r:
 	$(foreach CONFIGURATION, \
 	          $(CONFIGURATIONS), \
-	          CONFIGURATION=$(CONFIGURATION) make -f ../../core/Makefile.rules clean release)
+	          CONFIGURATION=$(CONFIGURATION) make -f ../../core/Makefile.rules clean release ; )
 
 kinetis_d:
 	$(foreach CONFIGURATION, \
 	          $(CONFIGURATIONS), \
-	          CONFIGURATION=$(CONFIGURATION) make OPT= -f ../../core/Makefile.rules clean release)
+	          CONFIGURATION=$(CONFIGURATION) make OPT= -f ../../core/Makefile.rules clean release ; )
 
 # We include the main Makefile so that global rules are still available.
 include ../../core/Makefile.rules
