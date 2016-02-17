@@ -18,5 +18,5 @@
 ###########################################################################
 
 if(TARGET_LIKE_STM32F429ZI OR TARGET_LIKE_STM32F429XI)
-    set(UVISOR_CONFIGURATION "stm32_m4_0x10000000_0x0")
+    set(UVISOR_CONFIGURATION "configuration_stm32_m4_0x10000000_0x0")
 endif()

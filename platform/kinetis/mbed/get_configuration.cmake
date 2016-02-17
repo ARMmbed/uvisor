@@ -18,5 +18,5 @@
 ###########################################################################
 
 if(TARGET_LIKE_MK64FN1M0VMD12)
-    set(UVISOR_CONFIGURATION "kinetis_m4_0x1fff0000")
+    set(UVISOR_CONFIGURATION "configuration_kinetis_m4_0x1fff0000")
 endif()

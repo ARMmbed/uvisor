@@ -151,7 +151,7 @@ CFLAGS_PRE:=\
         $(DEBUG) \
         $(WARNING) \
         -DARCH_MPU_$(ARCH_MPU) \
-        -DCONFIGURATION_$(CONFIGURATION) \
+        -D$(CONFIGURATION) \
         -DPROGRAM_VERSION=\"$(PROGRAM_VERSION)\" \
         $(APP_CFLAGS) \
         -I$(CORE_DIR) \
@@ -170,7 +170,7 @@ OBJS:=$(SOURCES:.cpp=.o)
 OBJS:=$(OBJS:.c=.o)
 
 LINKER_CONFIG:=\
-    -DCONFIGURATION_$(CONFIGURATION) \
+    -D$(CONFIGURATION) \
     -DUVISOR_FLASH_LENGTH=$(UVISOR_FLASH_LENGTH) \
     -DUVISOR_SRAM_LENGTH=$(UVISOR_SRAM_LENGTH) \
     -include $(PLATFORM_DIR)/$(PROJECT)/inc/config.h
