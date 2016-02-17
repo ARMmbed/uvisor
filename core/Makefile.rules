@@ -187,6 +187,15 @@ include $(CORE_DIR)/Makefile.scripts
 
 all: $(PROJECT).bin
 
+CONFIGURATION_%:
+	CONFIGURATION=$@ make -f ../../core/Makefile.rules mbed
+
+release:
+	make clean $(CONFIGURATIONS)
+
+debug:
+	make OPT= clean $(CONFIGURATIONS)
+
 $(PROJECT).elf: $(OBJS) $(PROJECT).linker
 	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(SYSLIBS)
 	$(OBJDUMP) -d $@ > $(PROJECT).asm
@@ -197,7 +206,7 @@ $(PROJECT).bin: $(PROJECT).elf
 $(PROJECT).linker: $(CORE_DIR)/linker/default.h
 	$(CPP) -w -P $(LINKER_CONFIG) $^ -o $@
 
-release: $(MBED_ASM_INPUT) $(PROJECT).bin
+mbed: $(MBED_ASM_INPUT) $(PROJECT).bin
 	rm  -f $(RELEASE_INC)/*.h
 	rm  -f $(RELEASE_SRC)/*.cpp
 	rm -f $(RELEASE_OBJ) $(RELEASE_VER)
@@ -247,6 +256,6 @@ reset:
 clean:
 	rm -f $(PROJECT).map $(PROJECT).elf $(PROJECT).bin $(PROJECT).asm\
 	      $(PROJECT).linker gdb.script source.c.tags JLink.log\
-	      $(RELEASE_ASM) $(RELEASE_BIN) $(RELEASE_VER)
+	      $(RELEASE_ASM) $(RELEASE_SRC_HW)/*
 	      $(APP_CLEAN)
 	find . $(CORE_DIR) -iname '*.o' -exec rm -f \{\} \;
