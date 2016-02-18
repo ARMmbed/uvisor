@@ -33,17 +33,7 @@ APP_SRC:=\
 export
 
 CONFIGURATIONS:= \
-	STM32_M4_0x10000000_0x0
-
-stm32_r:
-	$(foreach CONFIGURATION, \
-	          $(CONFIGURATIONS), \
-	          CONFIGURATION=$(CONFIGURATION) make -f ../../core/Makefile.rules clean release)
-
-stm32_d:
-	$(foreach CONFIGURATION, \
-	          $(CONFIGURATIONS), \
-	          CONFIGURATION=$(CONFIGURATION) make OPT= -f ../../core/Makefile.rules clean release)
+	CONFIGURATION_STM32_M4_0x10000000_0x0
 
 # We include the main Makefile so that global rules are still available.
 include ../../core/Makefile.rules
