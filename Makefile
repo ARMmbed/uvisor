@@ -21,13 +21,6 @@ CC:=$(PREFIX)gcc
 CXX:=$(PREFIX)g++
 OBJCOPY:=$(PREFIX)objcopy
 OBJDUMP:=$(PREFIX)objdump
-GDB:=$(PREFIX)gdb
-JLINK:=$(SEGGER)JLinkExe
-JLINK_SERVER:=$(SEGGER)JLinkGDBServer
-JLINK_VIEWER:=$(SEGGER)JLinkSWOViewer
-JLINK_VIEWER_MASK:=0x7
-AUXHFRCO_FREQ:=0
-JLINK_SWO_PARAM:=
 
 SYSLIBS:=-lgcc -lc -lnosys
 
@@ -105,7 +98,6 @@ SOURCES:=\
          $(MPU_SRC) \
          $(APP_SRC)
 
-DEBUG_HOST:=localhost:2331
 OPT:=-Os -DNDEBUG
 DEBUG:=-g3
 WARNING:=-Wall -Werror
@@ -114,14 +106,6 @@ WARNING:=-Wall -Werror
 PROGRAM_VERSION:=$(shell git describe --tags --abbrev=4 --dirty 2>/dev/null | sed s/^v//)
 ifeq ("$(PROGRAM_VERSION)","")
          PROGRAM_VERSION:='unknown'
-endif
-
-# For gdb debugging we need an explicit CPU to be specified. If not, JLink might
-# try to guess it automatically.
-ifeq ("$(CPU)","")
-	JLINK_PARAM:=-if SWD
-else
-	JLINK_PARAM:=-Device $(CPU) -if SWD
 endif
 
 # Read UVISOR_{FLASH, SRAM}_LENGTH from uvisor-config.h.
@@ -224,38 +208,9 @@ mbed: $(MBED_ASM_INPUT) $(PROJECT).bin
 	$(CPP) -w -P $(BINARY_CONFIG) $< > $(MBED_ASM)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $(RELEASE_OBJ) $(MBED_ASM)
 
-swo:
-	$(JLINK_VIEWER) $(JLINK_PARAM) $(APP_JLINK_PARAM) -itmmask $(JLINK_VIEWER_MASK) $(JLINK_SWO_PARAM)
-
-gdbserver:
-	$(JLINK_SERVER) JLinkGDBServer $(JLINK_PARAM) $(APP_JLINK_PARAM)
-
-gdb: gdb.script
-	$(GDB) -x $<
-
-gdbtui: gdb.script
-	$(GDB) -tui -x $<
-
-ctags: source.c.tags
-
-source.c.tags: $(SOURCES)
-	CFLAGS="$(CFLAGS_PRE)" geany -g $@ $^
-
-gdb.script: $(PROJECT).elf
-	@echo "$$__SCRIPT_GDB" > $@
-
-flash: $(PROJECT).bin
-	@echo "$$__SCRIPT_FLASH" | $(JLINK) $(JLINK_PARAM) $(APP_JLINK_PARAM)
-
-erase:
-	@echo "$$__SCRIPT_ERASE" | $(JLINK) $(JLINK_PARAM) $(APP_JLINK_PARAM)
-
-reset:
-	@echo "$$__SCRIPT_RESET" | $(JLINK) $(JLINK_PARAM) $(APP_JLINK_PARAM)
-
 clean:
 	rm -f $(PROJECT).map $(PROJECT).elf $(PROJECT).bin $(PROJECT).asm\
-	      $(PROJECT).linker gdb.script source.c.tags JLink.log\
+	      $(PROJECT).linker source.c.tags \
 	      $(RELEASE_ASM) $(RELEASE_SRC_HW)/*
 	      $(APP_CLEAN)
 	find . $(CORE_DIR) -iname '*.o' -exec rm -f \{\} \;
