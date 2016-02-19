@@ -1,6 +1,6 @@
 ###########################################################################
 #
-#  Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+#  Copyright (c) 2013-2016, ARM Limited, All Rights Reserved
 #  SPDX-License-Identifier: Apache-2.0
 #
 #  Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -16,19 +16,15 @@
 #  limitations under the License.
 #
 ###########################################################################
+# Toolchain
 PREFIX:=arm-none-eabi-
 CC:=$(PREFIX)gcc
 CXX:=$(PREFIX)g++
 OBJCOPY:=$(PREFIX)objcopy
 OBJDUMP:=$(PREFIX)objdump
 
-SYSLIBS:=-lgcc -lc -lnosys
-
-# Suffix for the exported binary blob
-BINARY_NAME:=$(shell echo $(CONFIGURATION) | tr '[:upper:]' '[:lower:]')
-
-# Root (relative to hardware-specific Makefile)
-ROOT_DIR:=../..
+# Root folder
+ROOT_DIR:=.
 
 # Top-level folder paths
 CORE_DIR:=$(ROOT_DIR)/core
@@ -43,23 +39,40 @@ MBED_DIR:=$(CORE_DIR)/mbed
 DEBUG_DIR:=$(CORE_DIR)/debug
 LIB_DIR:=$(CORE_DIR)/lib
 
+# List of supported platforms
+# Note: One could do it in a simpler way but this prevents spurious files in
+# $(PLATFORM_DIR) from getting picked.
+PLATFORMS = $(notdir $(realpath $(dir $(wildcard $(PLATFORM_DIR)/*/))))
+
+# List of uVisor configurations for the given platform
+ifdef PLATFORM
+include $(PLATFORM_DIR)/$(PLATFORM)/Makefile.configurations
+endif
+
+# Platform-specific paths
+PLATFORM_INC:=$(PLATFORM_DIR)/$(PLATFORM)/inc
+PLATFORM_SRC:=$(wildcard $(PLATFORM_DIR)/$(PLATFORM)/src/*.c)
+
+# Configuration-specific paths
+CONFIGURATION_LOWER:=$(shell echo $(CONFIGURATION) | tr '[:upper:]' '[:lower:]')
+CONFIGURATION_PREFIX:=$(PLATFORM_DIR)/$(PLATFORM)/$(CONFIGURATION_LOWER)
+
 # mbed origin paths
 MBED_SRC:=$(MBED_DIR)/source
-MBED_SRC_HW:=$(MBED_SRC)/$(PROJECT)
 MBED_INC:=$(MBED_DIR)/uvisor-lib
-MBED_ASM_INPUT:=$(MBED_SRC)/uvisor-input.S
-MBED_ASM_HEADER:=$(MBED_SRC)/uvisor-header.S
-MBED_ASM:=$(MBED_SRC_HW)/uvisor_$(BINARY_NAME).s
-MBED_BIN_NAME:=uvisor_$(BINARY_NAME).box
-MBED_BIN:=$(MBED_SRC_HW)/$(MBED_BIN_NAME)
-MBED_CONFIG:=$(PLATFORM_DIR)/$(PROJECT)/mbed/get_configuration.cmake
+MBED_BIN:=$(MBED_SRC)/$(CONFIGURATION_LOWER).box
+MBED_CONFIG:=$(PLATFORM_DIR)/$(PLATFORM)/mbed/get_configuration.cmake
 
-# mbed release paths
+# Release binaries' definitions
+BINARY_ASM_HEADER:=$(MBED_SRC)/uvisor-header.S
+BINARY_ASM_INPUT:=$(MBED_SRC)/uvisor-input.S
+BINARY_ASM_OUTPUT:=$(CONFIGURATION_PREFIX).s
+BINARY_RELEASE:=$(MBED_SRC)/$(PLATFORM)/$(CONFIGURATION_LOWER).o
+
+# Released header files
 RELEASE_SRC:=$(RELEASE_DIR)/source
-RELEASE_SRC_HW:=$(RELEASE_SRC)/$(PROJECT)
 RELEASE_INC:=$(RELEASE_DIR)/uvisor-lib
-RELEASE_OBJ:=$(RELEASE_SRC_HW)/uvisor_$(BINARY_NAME).o
-RELEASE_VER:=$(RELEASE_SRC_HW)/version.txt
+RELEASE_BIN:=$(RELEASE_SRC)/$(PLATFORM)/$(CONFIGURATION_LOWER).o
 
 # make ARMv7-M MPU driver the default
 ifeq ("$(ARCH_MPU)","")
@@ -96,8 +109,9 @@ SOURCES:=\
          $(DEBUG_DIR)/src/memory_map.c \
          $(LIB_DIR)/printf/tfp_printf.c \
          $(MPU_SRC) \
-         $(APP_SRC)
+         $(PLATFORM_SRC)
 
+SYSLIBS:=-lgcc -lc -lnosys
 OPT:=-Os -DNDEBUG
 DEBUG:=-g3
 WARNING:=-Wall -Werror
@@ -105,10 +119,10 @@ WARNING:=-Wall -Werror
 # determine repository version
 PROGRAM_VERSION:=$(shell git describe --tags --abbrev=4 --dirty 2>/dev/null | sed s/^v//)
 ifeq ("$(PROGRAM_VERSION)","")
-         PROGRAM_VERSION:='unknown'
+PROGRAM_VERSION:='unknown'
 endif
 
-# Read UVISOR_{FLASH, SRAM}_LENGTH from uvisor-config.h.
+# Read UVISOR_MAGIC and UVISOR_{FLASH, SRAM}_LENGTH from uvisor-config.h.
 ifeq ("$(wildcard  $(CORE_DIR)/uvisor-config.h)","")
 	UVISOR_MAGIC:=0
 	UVISOR_FLASH_LENGTH:=0
@@ -123,12 +137,12 @@ FLAGS_CM4:=-mcpu=cortex-m4 -march=armv7e-m -mthumb
 
 LDFLAGS:=\
         $(FLAGS_CM4) \
-        -T$(PROJECT).linker \
+        -T$(CONFIGURATION_PREFIX).linker \
         -nostartfiles \
         -nostdlib \
         -Xlinker --gc-sections \
         -Xlinker -M \
-        -Xlinker -Map=$(PROJECT).map
+        -Xlinker -Map=$(CONFIGURATION_PREFIX).map
 
 CFLAGS_PRE:=\
         $(OPT) \
@@ -138,6 +152,7 @@ CFLAGS_PRE:=\
         -D$(CONFIGURATION) \
         -DPROGRAM_VERSION=\"$(PROGRAM_VERSION)\" \
         $(APP_CFLAGS) \
+        -I$(PLATFORM_INC) \
         -I$(CORE_DIR) \
         -I$(CMSIS_DIR)/inc \
         -I$(SYSTEM_DIR)/inc \
@@ -157,60 +172,96 @@ LINKER_CONFIG:=\
     -D$(CONFIGURATION) \
     -DUVISOR_FLASH_LENGTH=$(UVISOR_FLASH_LENGTH) \
     -DUVISOR_SRAM_LENGTH=$(UVISOR_SRAM_LENGTH) \
-    -include $(PLATFORM_DIR)/$(PROJECT)/inc/config.h
+    -include $(PLATFORM_DIR)/$(PLATFORM)/inc/config.h
 
 BINARY_CONFIG:=\
     -DUVISOR_FLASH_LENGTH=$(UVISOR_FLASH_LENGTH) \
     -DUVISOR_SRAM_LENGTH=$(UVISOR_SRAM_LENGTH) \
     -DUVISOR_MAGIC=$(UVISOR_MAGIC) \
-    -DRELEASE_BIN=\"$(MBED_BIN)\"
+    -DUVISOR_BIN=\"$(CONFIGURATION_PREFIX).bin\"
 
-.PHONY: debug gdb gdbtui flash erase reset ctags source.c.tags swo
+.PHONY: all fresh __platform/% __configurations __binaries CONFIGURATION_% ctags source.c.tags
 
-include $(CORE_DIR)/Makefile.scripts
+# Build both the release and debug versions for all platforms for all
+# configurations.
+all: $(foreach PLATFORM, $(PLATFORMS), __platform/$(PLATFORM))
 
-all: $(PROJECT).bin
+# Same as all, but clean first.
+fresh: clean all
 
+# This target is used to iterate over all platforms. It builds both the release
+# and debug versions of all the platform-specific configurations.
+# Note: Do not use platform/% as target name to avoid collision wiht the folder
+# name platform/*, which otherwise would be seen as an already met make
+# prerequisite.
+__platform/%:
+	@echo
+	@echo
+	make PLATFORM=$(@F) OPT= __configurations
+	@echo
+	make PLATFORM=$(@F) __configurations
+
+# This middleware target is needed because the parent make does not know the
+# configurations yet (they are platform-specific).
+__configurations: $(CONFIGURATIONS)
+
+# This target is used to iterate over all configurations for the current
+# platform.
 CONFIGURATION_%:
-	CONFIGURATION=$@ make -f ../../core/Makefile.rules mbed
+ifndef PLATFORM
+	$(error "Missing platform. Use PLATFORM=<your_platform> make CONFIGURATION_<your_configuration>")
+else
+	make CONFIGURATION=$@ __binaries yotta
+endif
 
-release:
-	make clean $(CONFIGURATIONS)
+# This middleware target is needed because the parent make does not know the
+# name to give to the binary release yet (it is configuration-specific).
+__binaries: $(BINARY_RELEASE)
+	@echo $(BINARY_RELEASE)
 
-debug:
-	make OPT= clean $(CONFIGURATIONS)
+# Generate the pre-linked uVisor binary for the given platform and configuration.
+$(BINARY_RELEASE): $(CONFIGURATION_PREFIX).bin
+	mkdir -p $(MBED_SRC)/$(PLATFORM)
+	cp -f $(BINARY_ASM_HEADER) $(BINARY_ASM_OUTPUT)
+	$(CPP) -w -P $(BINARY_CONFIG) $(BINARY_ASM_INPUT) > $(BINARY_ASM_OUTPUT)
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $(BINARY_RELEASE) $(BINARY_ASM_OUTPUT)
+	rm -f $(BINARY_ASM_OUTPUT)
 
-$(PROJECT).elf: $(OBJS) $(PROJECT).linker
-	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(SYSLIBS)
-	$(OBJDUMP) -d $@ > $(PROJECT).asm
-
-$(PROJECT).bin: $(PROJECT).elf
-	$(OBJCOPY) $< -O binary $@
-
-$(PROJECT).linker: $(CORE_DIR)/linker/default.h
-	$(CPP) -w -P $(LINKER_CONFIG) $^ -o $@
-
-mbed: $(MBED_ASM_INPUT) $(PROJECT).bin
-	rm  -f $(RELEASE_INC)/*.h
-	rm  -f $(RELEASE_SRC)/*.cpp
+# Copy the release material to the uvisor-lib module.
+yotta: $(BINARY_RELEASE)
+	rm -f $(RELEASE_INC)/*.h
+	rm -f $(RELEASE_SRC)/*.cpp
 	rm -f $(RELEASE_OBJ) $(RELEASE_VER)
-	mkdir -p $(MBED_SRC_HW)
 	mkdir -p $(RELEASE_INC)
-	mkdir -p $(RELEASE_SRC_HW)
-	echo "$(PROGRAM_VERSION)" > $(RELEASE_VER)
-	cp $(PROJECT).bin $(MBED_BIN)
+	mkdir -p $(RELEASE_SRC)/$(PLATFORM)
+	echo "$(PROGRAM_VERSION)" > $(RELEASE_SRC)/$(PLATFORM)/version.txt
 	cp $(MBED_INC)/*.h   $(RELEASE_INC)/
 	cp $(MBED_SRC)/*.cpp $(RELEASE_SRC)/
-	find ../.. -name "*_exports.h" -not -path "$(RELEASE_DIR)/*"\
-	     -exec cp {} $(RELEASE_INC)/ \;
-	cp -f $(MBED_ASM_HEADER) $(MBED_ASM)
-	cp $(MBED_CONFIG) $(RELEASE_SRC_HW)/
-	$(CPP) -w -P $(BINARY_CONFIG) $< > $(MBED_ASM)
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $(RELEASE_OBJ) $(MBED_ASM)
+	find $(ROOT_DIR) -name "*_exports.h" -not -path "$(RELEASE_DIR)/*" -exec cp {} $(RELEASE_INC)/ \;
+	cp $(MBED_CONFIG) $(RELEASE_SRC)/$(PLATFORM)/
+	cp $(BINARY_RELEASE) $(RELEASE_BIN$)
+
+$(CONFIGURATION_PREFIX).bin: $(CONFIGURATION_PREFIX).elf
+	$(OBJCOPY) $< -O binary $@
+
+$(CONFIGURATION_PREFIX).elf: $(OBJS) $(CONFIGURATION_PREFIX).linker
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(SYSLIBS)
+	$(OBJDUMP) -d $@ > $(CONFIGURATION_PREFIX).asm
+
+$(CONFIGURATION_PREFIX).linker: $(CORE_DIR)/linker/default.h
+	$(CPP) -w -P $(LINKER_CONFIG) $^ -o $@
+
+ctags: source.c.tags
+
+source.c.tags: $(SOURCES)
+	CFLAGS="$(CFLAGS_PRE)" geany -g $@ $^
 
 clean:
-	rm -f $(PROJECT).map $(PROJECT).elf $(PROJECT).bin $(PROJECT).asm\
-	      $(PROJECT).linker source.c.tags \
-	      $(RELEASE_ASM) $(RELEASE_SRC_HW)/*
-	      $(APP_CLEAN)
-	find . $(CORE_DIR) -iname '*.o' -exec rm -f \{\} \;
+	rm -f source.c.tags
+	find $(ROOT_DIR). -iname '*.o' -delete
+	find $(ROOT_DIR). -iname '*.asm' -delete
+	find $(ROOT_DIR). -iname '*.bin' -delete
+	find $(ROOT_DIR). -iname '*.elf' -delete
+	find $(ROOT_DIR). -iname '*.map' -delete
+	find $(ROOT_DIR). -iname '*.linker' -delete
+	$(APP_CLEAN)

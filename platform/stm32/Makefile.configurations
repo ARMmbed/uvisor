@@ -16,23 +16,5 @@
 #  limitations under the License.
 #
 ###########################################################################
-# Path of the current Makefile
-CURRENT_PATH:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-
-# The project name is given by the top-level platform-specific folder.
-PROJECT:=$(shell basename $(CURRENT_PATH))
-
-# MPU architecture (default: ARMv7M)
-ARCH_MPU:=KINETIS
-
-# Project-specific flags
-APP_CFLAGS:=-I. -Iinc
-
-# Export all variables to the sub-make.
-export
-
 CONFIGURATIONS:= \
-	CONFIGURATION_KINETIS_M4_0x1FFF0000
-
-# We include the main Makefile so that global rules are still available.
-include ../../core/Makefile.rules
+	CONFIGURATION_STM32_M4_0x10000000_0x0
