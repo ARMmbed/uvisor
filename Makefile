@@ -55,7 +55,7 @@ PLATFORM_SRC:=$(wildcard $(PLATFORM_DIR)/$(PLATFORM)/src/*.c)
 
 # Configuration-specific paths
 CONFIGURATION_LOWER:=$(shell echo $(CONFIGURATION) | tr '[:upper:]' '[:lower:]')
-CONFIGURATION_PREFIX:=$(PLATFORM_DIR)/$(PLATFORM)/$(CONFIGURATION_LOWER)
+CONFIGURATION_PREFIX:=$(PLATFORM_DIR)/$(PLATFORM)/$(BUILD_MODE)/$(CONFIGURATION_LOWER)
 
 # mbed origin paths
 MBED_SRC:=$(MBED_DIR)/source
@@ -67,12 +67,12 @@ MBED_CONFIG:=$(PLATFORM_DIR)/$(PLATFORM)/mbed/get_configuration.cmake
 BINARY_ASM_HEADER:=$(MBED_SRC)/uvisor-header.S
 BINARY_ASM_INPUT:=$(MBED_SRC)/uvisor-input.S
 BINARY_ASM_OUTPUT:=$(CONFIGURATION_PREFIX).s
-BINARY_RELEASE:=$(MBED_SRC)/$(PLATFORM)/$(CONFIGURATION_LOWER).o
+BINARY_RELEASE:=$(MBED_SRC)/$(PLATFORM)/$(BUILD_MODE)/$(CONFIGURATION_LOWER).o
 
 # Released header files
 RELEASE_SRC:=$(RELEASE_DIR)/source
 RELEASE_INC:=$(RELEASE_DIR)/uvisor-lib
-RELEASE_BIN:=$(RELEASE_SRC)/$(PLATFORM)/$(CONFIGURATION_LOWER).o
+RELEASE_BIN:=$(RELEASE_SRC)/$(PLATFORM)/$(BUILD_MODE)/$(CONFIGURATION_LOWER).o
 
 # make ARMv7-M MPU driver the default
 ifeq ("$(ARCH_MPU)","")
@@ -112,9 +112,15 @@ SOURCES:=\
          $(PLATFORM_SRC)
 
 SYSLIBS:=-lgcc -lc -lnosys
-OPT:=-Os -DNDEBUG
 DEBUG:=-g3
 WARNING:=-Wall -Werror
+
+# Select optimizations depending on the build mode.
+ifeq ("$(BUILD_MODE)","debug")
+OPT:=
+else
+OPT:=-Os -DNDEBUG
+endif
 
 # determine repository version
 PROGRAM_VERSION:=$(shell git describe --tags --abbrev=4 --dirty 2>/dev/null | sed s/^v//)
@@ -197,9 +203,9 @@ fresh: clean all
 __platform/%:
 	@echo
 	@echo
-	make PLATFORM=$(@F) OPT= __configurations
+	make BUILD_MODE=debug PLATFORM=$(@F) __configurations
 	@echo
-	make PLATFORM=$(@F) __configurations
+	make BUILD_MODE=release PLATFORM=$(@F) __configurations
 
 # This middleware target is needed because the parent make does not know the
 # configurations yet (they are platform-specific).
@@ -221,7 +227,7 @@ __binaries: $(BINARY_RELEASE)
 
 # Generate the pre-linked uVisor binary for the given platform and configuration.
 $(BINARY_RELEASE): $(CONFIGURATION_PREFIX).bin
-	mkdir -p $(MBED_SRC)/$(PLATFORM)
+	mkdir -p $(dir $(BINARY_RELEASE))
 	cp -f $(BINARY_ASM_HEADER) $(BINARY_ASM_OUTPUT)
 	$(CPP) -w -P $(BINARY_CONFIG) $(BINARY_ASM_INPUT) > $(BINARY_ASM_OUTPUT)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $(BINARY_RELEASE) $(BINARY_ASM_OUTPUT)
@@ -249,7 +255,8 @@ $(CONFIGURATION_PREFIX).elf: $(OBJS) $(CONFIGURATION_PREFIX).linker
 	$(OBJDUMP) -d $@ > $(CONFIGURATION_PREFIX).asm
 
 $(CONFIGURATION_PREFIX).linker: $(CORE_DIR)/linker/default.h
-	$(CPP) -w -P $(LINKER_CONFIG) $^ -o $@
+	mkdir -p $(dir $(CONFIGURATION_PREFIX))
+	$(CPP) -w -P $(LINKER_CONFIG) $< -o $@
 
 ctags: source.c.tags
 
@@ -258,10 +265,11 @@ source.c.tags: $(SOURCES)
 
 clean:
 	rm -f source.c.tags
-	find $(ROOT_DIR). -iname '*.o' -delete
-	find $(ROOT_DIR). -iname '*.asm' -delete
-	find $(ROOT_DIR). -iname '*.bin' -delete
-	find $(ROOT_DIR). -iname '*.elf' -delete
-	find $(ROOT_DIR). -iname '*.map' -delete
-	find $(ROOT_DIR). -iname '*.linker' -delete
+	find $(ROOT_DIR) -iname '*.o' -delete
+	find $(ROOT_DIR) -iname '*.asm' -delete
+	find $(ROOT_DIR) -iname '*.bin' -delete
+	find $(ROOT_DIR) -iname '*.elf' -delete
+	find $(ROOT_DIR) -iname '*.map' -delete
+	find $(ROOT_DIR) -iname '*.linker' -delete
+	rmdir $(foreach MODE, debug release, $(wildcard $(PLATFORM_DIR)/*/$(MODE))) >/dev/null 2>&1 || true
 	$(APP_CLEAN)
