@@ -1,6 +1,6 @@
 ###########################################################################
 #
-#  Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+#  Copyright (c) 2013-2016, ARM Limited, All Rights Reserved
 #  SPDX-License-Identifier: Apache-2.0
 #
 #  Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -16,44 +16,8 @@
 #  limitations under the License.
 #
 ###########################################################################
-define __SCRIPT_GDB
-	target remote $(DEBUG_HOST)
-	monitor endian little
-	monitor reset
-	monitor halt
-	monitor semihosting enable
-	monitor speed 1000
-	monitor loadbin $(TARGET_BIN) 0
-	monitor SWO EnableTarget $(AUXHFRCO_FREQ) 0 $(JLINK_VIEWER_MASK) 0
-	monitor flash device = $(CPU)
-	load $(PROJECT).elf
-	file $(PROJECT).elf
-	$(GDB_DEBUG_UVISOR)
-	b main_entry
-	b isr_default_handler
-endef
-export __SCRIPT_GDB
+# MPU architecture (default: ARMv7M)
+ARCH_MPU:=KINETIS
 
-define __SCRIPT_FLASH
-	h
-	loadbin $(PROJECT).bin $(FLASH_OFFSET)
-	r
-	g
-	q
-endef
-export __SCRIPT_FLASH
-
-define __SCRIPT_ERASE
-	erase
-	q
-endef
-export __SCRIPT_ERASE
-
-define __SCRIPT_RESET
-	device $(CPU)
-	h
-	r
-	g
-	q
-endef
-export __SCRIPT_RESET
+CONFIGURATIONS:= \
+	CONFIGURATION_KINETIS_M4_0x1FFF0000

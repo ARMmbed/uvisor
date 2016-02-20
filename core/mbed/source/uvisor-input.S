@@ -26,7 +26,7 @@
 
 uvisor_init:
     /* uvisor - precompiled blob */
-    .incbin RELEASE_BIN
+    .incbin UVISOR_BIN
 
 uvisor_config:
     /* uvisor expects its configuration section right
