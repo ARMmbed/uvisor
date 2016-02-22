@@ -265,7 +265,7 @@ source.c.tags: $(SOURCES)
 	CFLAGS="$(CFLAGS_PRE)" geany -g $@ $^
 
 __rm_objs:
-	find $(ROOT_DIR) -iname '*.o' -not -path "$(MBED_DIR)/*" -delete
+	find $(ROOT_DIR) -iname '*.o' -not -path "$(RELEASE_DIR)/*" -not -path "$(MBED_DIR)/*" -delete
 
 clean:
 	rm -f source.c.tags
