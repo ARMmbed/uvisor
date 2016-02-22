@@ -6,7 +6,14 @@ The uVisor is a self-contained software hypervisor that creates independent secu
 
 > Are you execited about security and interested in working on uVisor? [Join us](http://careers.peopleclick.com/careerscp/client_arm/external/jobDetails.do?functionName=getJobDetail&jobPostId=23423&localeCode=en-us) at ARM in Cambridge!
 
-### Further reading:
+### Word of Caution
+This version of the uVisor is an early technology preview with an **incomplete implementation of the security features** of the final product. Future versions of uVisor will add these functions.
+
+Some of the open uVisor issues in progress are listed here:
+- [Known issues](https://github.com/ARMmbed/uvisor/issues?q=is%3Aopen+is%3Aissue+label%3Aissue)
+- [FIXMEs](https://github.com/ARMmbed/uvisor/search?utf8=%E2%9C%93&q=FIXME)
+
+### Further reading
 - [Resilient IoT Security](http://www.slideshare.net/FoolsDelight/resilient-iot-security-the-end-of-flat-security-models) slides as presented on ARM TechCon 2015
 - The uVisor [Design Philosophy](#the-uvisor-design-philosophy)
   - [Techical Details](#technical-details)
@@ -28,7 +35,7 @@ The uVisor is a self-contained software hypervisor that creates independent secu
 uVisor in the press:
 - [Q&A with ARM](http://eecatalog.com/IoT/2015/08/18/qa-with-arm-securing-the-iot-using-arm-cortex-processors-and-a-growing-mbed-platform-suite/): Securing the IoT using ARM Cortex Processors, and a growing mbed platform suite
 
-### Warning: Enabling Debug Features on uVisor
+#### Warning: Enabling Debug Features on uVisor
 Please note that currently the latest version of uVisor (the `HEAD` of the `uvisor` repository) does not support the following features:
 * LED blinking patterns
 * Memory mapped debugging
@@ -38,13 +45,6 @@ This means that the support for hardware-specific debugging is temporarily unava
 git clone --recursive -b uvisor_with_memory_map_debug git@github.com:ARMmbed/uvisor.git
 ```
 This command will clone both `uvisor` and `uvisor-lib`. You can then build uVisor as usual, as reported in [the branch `README.md`](https://github.com/ARMmbed/uvisor/blob/uvisor_with_memory_map_debug/README.md).
-
-### Word of Caution
-This version of the uVisor is an early technology preview with an **incomplete implementation of the security features** of the final product. Future versions of uVisor will add these functions.
-
-Some of the open uVisor issues in progress are listed here:
-- [Known issues](https://github.com/ARMmbed/uvisor/issues?q=is%3Aopen+is%3Aissue+label%3Aissue)
-- [FIXMEs](https://github.com/ARMmbed/uvisor/search?utf8=%E2%9C%93&q=FIXME)
 
 ### Supported platforms:
 - [Freescale FRDM-K64F](http://developer.mbed.org/platforms/FRDM-K64F/) ([GCC ARM Embedded toolchain](https://launchpad.net/gcc-arm-embedded)).
