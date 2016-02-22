@@ -186,7 +186,7 @@ BINARY_CONFIG:=\
     -DUVISOR_MAGIC=$(UVISOR_MAGIC) \
     -DUVISOR_BIN=\"$(CONFIGURATION_PREFIX).bin\"
 
-.PHONY: all fresh __platform/% __configurations __binaries CONFIGURATION_% ctags source.c.tags
+.PHONY: all fresh __platform/% __configurations __binaries CONFIGURATION_% __rm_objs clean source.c.tags
 
 # Build both the release and debug versions for all platforms for all
 # configurations.
@@ -213,17 +213,18 @@ __configurations: $(CONFIGURATIONS)
 
 # This target is used to iterate over all configurations for the current
 # platform.
+# Note: We need to remove the object files from a previous build or otherwise
+# the old configurations will be used.
 CONFIGURATION_%:
 ifndef PLATFORM
 	$(error "Missing platform. Use PLATFORM=<your_platform> make CONFIGURATION_<your_configuration>")
 else
-	make CONFIGURATION=$@ __binaries yotta
+	make CONFIGURATION=$@ __rm_objs __binaries yotta
 endif
 
 # This middleware target is needed because the parent make does not know the
 # name to give to the binary release yet (it is configuration-specific).
 __binaries: $(BINARY_RELEASE)
-	@echo $(BINARY_RELEASE)
 
 # Generate the pre-linked uVisor binary for the given platform and configuration.
 $(BINARY_RELEASE): $(CONFIGURATION_PREFIX).bin
@@ -262,6 +263,9 @@ ctags: source.c.tags
 
 source.c.tags: $(SOURCES)
 	CFLAGS="$(CFLAGS_PRE)" geany -g $@ $^
+
+__rm_objs:
+	find $(ROOT_DIR) -iname '*.o' -not -path "$(MBED_DIR)/*" -delete
 
 clean:
 	rm -f source.c.tags
