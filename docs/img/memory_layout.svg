@@ -1,0 +1,753 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="210mm"
+   height="297mm"
+   viewBox="0 0 744.09448819 1052.3622047"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="memory_layout.svg"
+   inkscape:export-filename="/Users/aleang01/code/ARMmbed/uvisor/docs/img/memory_layout.png"
+   inkscape:export-xdpi="600"
+   inkscape:export-ydpi="600">
+  <defs
+     id="defs4">
+    <marker
+       inkscape:stockid="Arrow2Lend"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="Arrow2Lend"
+       style="overflow:visible;"
+       inkscape:isstock="true">
+      <path
+         id="path4891"
+         style="fill-rule:evenodd;stroke-width:0.625;stroke-linejoin:round;stroke:#505555;stroke-opacity:1;fill:#505555;fill-opacity:1"
+         d="M 8.7185878,4.0337352 L -2.2072895,0.016013256 L 8.7185884,-4.0017078 C 6.9730900,-1.6296469 6.9831476,1.6157441 8.7185878,4.0337352 z "
+         transform="scale(1.1) rotate(180) translate(1,0)" />
+    </marker>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.60674323"
+     inkscape:cx="403.41876"
+     inkscape:cy="344.99239"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1280"
+     inkscape:window-height="709"
+     inkscape:window-x="0"
+     inkscape:window-y="1"
+     inkscape:window-maximized="1"
+     showguides="false"
+     showborder="false" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="opacity:0.4;fill:#505555;fill-opacity:1;stroke:none;stroke-width:3;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       id="rect4718"
+       width="171.40694"
+       height="210.33827"
+       x="76.549225"
+       y="418.53986"
+       ry="12.573141"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600"
+       rx="11.537005" />
+    <rect
+       style="opacity:0.4;fill:#505555;fill-opacity:1;stroke:none;stroke-width:3;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       id="rect4434"
+       width="175.93933"
+       height="319.875"
+       x="294.28302"
+       y="674.01691"
+       ry="21.496895"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600" />
+    <rect
+       ry="21.319506"
+       y="407.08301"
+       x="279.65732"
+       height="596.44916"
+       width="205.19075"
+       id="rect4681"
+       style="opacity:1;fill:none;stroke:#505555;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600" />
+    <rect
+       style="fill:none;stroke:#7f8282;stroke-width:1;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       id="rect4189"
+       width="155.0269"
+       height="57.797485"
+       x="84.739243"
+       y="924.19092"
+       ry="14.112693" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:28.41442299px;line-height:100%;font-family:'Gill Sans MT';-inkscape-font-specification:'Gill Sans MT';letter-spacing:0px;word-spacing:0px;fill:#505555;fill-opacity:1;stroke:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       x="162.21851"
+       y="949.83282"
+       id="text4172"
+       sodipodi:linespacing="100%"><tspan
+         sodipodi:role="line"
+         id="tspan4174"
+         x="162.21851"
+         y="949.83282"
+         style="font-size:20px;text-align:center;text-anchor:middle;fill:#505555;stroke-width:1;stroke-miterlimit:5;stroke-dasharray:none">Unprotected</tspan><tspan
+         sodipodi:role="line"
+         x="162.21851"
+         y="969.83282"
+         id="tspan4176"
+         style="font-size:20px;text-align:center;text-anchor:middle;fill:#505555;stroke-width:1;stroke-miterlimit:5;stroke-dasharray:none">vectors</tspan></text>
+    <g
+       id="g4257"
+       transform="translate(-1.5273819,-5.3278577)"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600"
+       style="stroke-width:1;stroke-miterlimit:5;stroke-dasharray:none;stroke:#7f8282">
+      <rect
+         style="fill:none;stroke:#7f8282;stroke-width:1;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+         id="rect4214"
+         width="155.6861"
+         height="15.919081"
+         x="85.937027"
+         y="904.39893"
+         ry="7.9595404" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:28.41442299px;line-height:100%;font-family:'Gill Sans MT';-inkscape-font-specification:'Gill Sans MT';letter-spacing:0px;word-spacing:0px;fill:#505555;fill-opacity:1;stroke:#7f8282;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:5;stroke-dasharray:none"
+         x="157.21759"
+         y="913.3692"
+         id="text4216"
+         sodipodi:linespacing="100%"><tspan
+           sodipodi:role="line"
+           x="157.21759"
+           y="913.3692"
+           id="tspan4220"
+           style="font-size:20px;fill:#505555;stroke-width:1;stroke-miterlimit:5;stroke-dasharray:none;stroke:#7f8282">...</tspan></text>
+    </g>
+    <rect
+       ry="12.223671"
+       y="813.31281"
+       x="84.843102"
+       height="76.453491"
+       width="154.81918"
+       id="rect4224"
+       style="fill:#00c4dc;stroke:none;stroke-width:1.59843349;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600" />
+    <text
+       sodipodi:linespacing="100%"
+       id="text4226"
+       y="850.04822"
+       x="161.96948"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:28.41442299px;line-height:100%;font-family:'Gill Sans MT';-inkscape-font-specification:'Gill Sans MT';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1.37;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       xml:space="preserve"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600"><tspan
+         style="font-size:20px;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:1.37;stroke-miterlimit:5;stroke-dasharray:none"
+         id="tspan4230"
+         y="850.04822"
+         x="161.96948"
+         sodipodi:role="line">uVisor code</tspan><tspan
+         style="font-size:20px;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:1.37;stroke-miterlimit:5;stroke-dasharray:none"
+         y="870.04822"
+         x="161.96948"
+         sodipodi:role="line"
+         id="tspan4482">and .data</tspan></text>
+    <rect
+       ry="17.465063"
+       y="641.30017"
+       x="85.204155"
+       height="161.91341"
+       width="154.09708"
+       id="rect4234"
+       style="fill:none;stroke:#7f8282;stroke-width:1;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600" />
+    <text
+       sodipodi:linespacing="100%"
+       id="text4236"
+       y="709.09772"
+       x="162.448"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:28.41442299px;line-height:100%;font-family:'Gill Sans MT';-inkscape-font-specification:'Gill Sans MT';letter-spacing:0px;word-spacing:0px;fill:#505555;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600"><tspan
+         id="tspan4270"
+         style="font-size:20px;text-align:center;text-anchor:middle;fill:#505555"
+         y="709.09772"
+         x="162.448"
+         sodipodi:role="line">OS/App</tspan><tspan
+         id="tspan4274"
+         style="font-size:20px;text-align:center;text-anchor:middle;fill:#505555"
+         y="729.09772"
+         x="162.448"
+         sodipodi:role="line">code and</tspan><tspan
+         id="tspan4276"
+         style="font-size:20px;text-align:center;text-anchor:middle;fill:#505555"
+         y="749.09772"
+         x="162.448"
+         sodipodi:role="line">.data</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text4292"
+       y="649.07166"
+       x="329.83896"
+       style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         y="649.07166"
+         x="329.83896"
+         id="tspan4294"
+         sodipodi:role="line" /></text>
+    <rect
+       ry="7.9172254"
+       y="577.70673"
+       x="84.615547"
+       height="39.001289"
+       width="155.27429"
+       id="rect4296"
+       style="opacity:1;fill:#00c4dc;stroke:none;stroke-width:1.14333308;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600" />
+    <text
+       sodipodi:linespacing="100%"
+       id="text4300"
+       y="601.82648"
+       x="108.56617"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:28.41442299px;line-height:100%;font-family:'Gill Sans MT';-inkscape-font-specification:'Gill Sans MT';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1.37;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1;"
+       xml:space="preserve"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600"><tspan
+         style="font-size:20px;fill:#ffffff;stroke-width:1.37;stroke-miterlimit:5;stroke-dasharray:none;"
+         id="tspan4302"
+         y="601.82648"
+         x="108.56617"
+         sodipodi:role="line">uVisor config</tspan></text>
+    <rect
+       style="fill:#00c473;stroke:none;stroke-width:1.37;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       id="rect4306"
+       width="153.39951"
+       height="135.19101"
+       x="85.55294"
+       y="430.43845"
+       ry="11.384214"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:28.41442299px;line-height:100%;font-family:'Gill Sans MT';-inkscape-font-specification:'Gill Sans MT';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1.37;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1;"
+       x="110.7732"
+       y="502.65308"
+       id="text4308"
+       sodipodi:linespacing="100%"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600"><tspan
+         sodipodi:role="line"
+         x="110.7732"
+         y="502.65308"
+         id="tspan4310"
+         style="font-size:20px;fill:#ffffff;stroke-width:1.37;stroke-miterlimit:5;stroke-dasharray:none;">Storage pool</tspan></text>
+    <flowRoot
+       style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       id="flowRoot4490"
+       xml:space="preserve"><flowRegion
+         id="flowRegion4492"><rect
+           y="447.49347"
+           x="11.537005"
+           height="142.56442"
+           width="243.92526"
+           id="rect4494" /></flowRegion><flowPara
+         id="flowPara4496" /></flowRoot>    <rect
+       ry="14.112693"
+       y="924.19092"
+       x="304.73926"
+       height="57.797485"
+       width="155.0269"
+       id="rect4611"
+       style="fill:#00c4dc;stroke:none;stroke-width:1.39048517;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600" />
+    <text
+       sodipodi:linespacing="100%"
+       id="text4613"
+       y="949.84259"
+       x="382.13062"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:28.41442299px;line-height:100%;font-family:'Gill Sans MT';-inkscape-font-specification:'Gill Sans MT';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600"><tspan
+         style="font-size:20px;text-align:center;text-anchor:middle;fill:#ffffff"
+         y="949.84259"
+         x="382.13062"
+         id="tspan4615"
+         sodipodi:role="line">Protected</tspan><tspan
+         style="font-size:20px;text-align:center;text-anchor:middle;fill:#ffffff"
+         id="tspan4617"
+         y="969.84259"
+         x="382.13062"
+         sodipodi:role="line">vectors</tspan></text>
+    <rect
+       ry="7.9172254"
+       y="875.80139"
+       x="304.61554"
+       height="39.001289"
+       width="155.27429"
+       id="rect4706"
+       style="opacity:1;fill:#00c4dc;stroke:none;stroke-width:1.14333308;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600" />
+    <text
+       sodipodi:linespacing="100%"
+       id="text4708"
+       y="902.04523"
+       x="333.33179"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:28.41442299px;line-height:100%;font-family:'Gill Sans MT';-inkscape-font-specification:'Gill Sans MT';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1.37;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       xml:space="preserve"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600"><tspan
+         style="font-size:20px;fill:#ffffff;stroke-width:1.37;stroke-miterlimit:5;stroke-dasharray:none"
+         id="tspan4710"
+         y="902.04523"
+         x="333.33179"
+         sodipodi:role="line">uVisor .data</tspan></text>
+    <rect
+       style="opacity:1;fill:#00c4dc;stroke:none;stroke-width:1.14333308;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       id="rect4712"
+       width="155.27429"
+       height="39.001289"
+       x="304.61554"
+       y="827.5354"
+       ry="7.9172254"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:28.41442299px;line-height:100%;font-family:'Gill Sans MT';-inkscape-font-specification:'Gill Sans MT';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1.37;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       x="311.6814"
+       y="853.86224"
+       id="text4714"
+       sodipodi:linespacing="100%"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600"><tspan
+         sodipodi:role="line"
+         x="311.6814"
+         y="853.86224"
+         id="tspan4716"
+         style="font-size:20px;fill:#ffffff;stroke-width:1.37;stroke-miterlimit:5;stroke-dasharray:none">uVisor .bss/.stack</tspan></text>
+    <rect
+       ry="7.0108032"
+       y="733.0423"
+       x="304.58197"
+       height="38.032291"
+       width="155.34146"
+       id="rect4768"
+       style="fill:#00c473;stroke:none;stroke-width:1.07612789;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600" />
+    <text
+       sodipodi:linespacing="100%"
+       id="text4770"
+       y="758.80164"
+       x="317.71655"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:28.41442299px;line-height:100%;font-family:'Gill Sans MT';-inkscape-font-specification:'Gill Sans MT';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1.37;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       xml:space="preserve"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600"><tspan
+         style="font-size:20px;fill:#ffffff;stroke-width:1.37;stroke-miterlimit:5;stroke-dasharray:none"
+         id="tspan4772"
+         y="758.80164"
+         x="317.71655"
+         sodipodi:role="line">Box i memories</tspan><tspan
+         id="tspan4774"
+         style="font-size:20px;fill:#ffffff;stroke-width:1.37;stroke-miterlimit:5;stroke-dasharray:none"
+         y="778.80164"
+         x="317.71655"
+         sodipodi:role="line" /></text>
+    <rect
+       ry="8.8508301"
+       y="627.73584"
+       x="304.59509"
+       height="36.247875"
+       width="155.3152"
+       id="rect4798"
+       style="fill:none;stroke:#7f8282;stroke-width:1;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600" />
+    <text
+       sodipodi:linespacing="100%"
+       id="text4800"
+       y="650.48871"
+       x="381.96948"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:28.41442299px;line-height:100%;font-family:'Gill Sans MT';-inkscape-font-specification:'Gill Sans MT';letter-spacing:0px;word-spacing:0px;fill:#505555;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600"><tspan
+         style="font-size:20px;text-align:center;text-anchor:middle;fill:#505555"
+         id="tspan4804"
+         y="650.48871"
+         x="381.96948"
+         sodipodi:role="line">OS/App .data</tspan></text>
+    <rect
+       style="fill:none;stroke:#7f8282;stroke-width:1;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       id="rect4808"
+       width="155.3152"
+       height="36.247875"
+       x="304.59509"
+       y="578.77795"
+       ry="8.8508301"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:28.41442299px;line-height:100%;font-family:'Gill Sans MT';-inkscape-font-specification:'Gill Sans MT';letter-spacing:0px;word-spacing:0px;fill:#505555;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="382.17944"
+       y="601.53082"
+       id="text4810"
+       sodipodi:linespacing="100%"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600"><tspan
+         sodipodi:role="line"
+         x="382.17944"
+         y="601.53082"
+         id="tspan4812"
+         style="font-size:20px;text-align:center;text-anchor:middle;fill:#505555">OS/App .bss</tspan></text>
+    <rect
+       ry="13.905101"
+       y="508.98166"
+       x="304.73413"
+       height="56.947247"
+       width="155.03712"
+       id="rect4814"
+       style="fill:none;stroke:#7f8282;stroke-width:1;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600" />
+    <text
+       sodipodi:linespacing="100%"
+       id="text4820"
+       y="543.50604"
+       x="382.15503"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:28.41442299px;line-height:100%;font-family:'Gill Sans MT';-inkscape-font-specification:'Gill Sans MT';letter-spacing:0px;word-spacing:0px;fill:#505555;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600"><tspan
+         style="font-size:20px;text-align:center;text-anchor:middle;fill:#505555"
+         id="tspan4822"
+         y="543.50604"
+         x="382.15503"
+         sodipodi:role="line">OS/App .heap</tspan></text>
+    <rect
+       style="fill:none;stroke:#7f8282;stroke-width:1;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       id="rect4824"
+       width="154.89195"
+       height="69.62162"
+       x="304.8067"
+       y="425.89514"
+       ry="16.999868"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:28.41442299px;line-height:100%;font-family:'Gill Sans MT';-inkscape-font-specification:'Gill Sans MT';letter-spacing:0px;word-spacing:0px;fill:#505555;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="381.60815"
+       y="467.85333"
+       id="text4826"
+       sodipodi:linespacing="100%"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600"><tspan
+         sodipodi:role="line"
+         x="381.60815"
+         y="467.85333"
+         id="tspan4828"
+         style="font-size:20px;text-align:center;text-anchor:middle;fill:#505555">OS/App .stack</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text4830"
+       y="363.60278"
+       x="499.96243"
+       style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         y="363.60278"
+         x="499.96243"
+         id="tspan4832"
+         sodipodi:role="line" /></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="86.240601"
+       y="394.24942"
+       id="text4852"
+       sodipodi:linespacing="125%"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600"><tspan
+         sodipodi:role="line"
+         id="tspan4854"
+         x="86.240601"
+         y="394.24942"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:32.5px;font-family:'Gill Sans MT';-inkscape-font-specification:'Gill Sans MT'">Flash</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text4856"
+       y="394.24942"
+       x="302.2406"
+       style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:32.5px;font-family:'Gill Sans MT';-inkscape-font-specification:'Gill Sans MT'"
+         y="394.24942"
+         x="302.2406"
+         id="tspan4858"
+         sodipodi:role="line">SRAM</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="566.39099"
+       y="420.70804"
+       id="text4860"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan4862"
+         x="566.39099"
+         y="420.70804" /></text>
+    <path
+       style="fill:#7f8282;fill-rule:evenodd;stroke:#505555;stroke-width:1.00522172;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
+       d="m 39.31473,1016.1031 0,-634.51787"
+       id="path4864"
+       inkscape:connector-curvature="0"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600" />
+    <text
+       sodipodi:linespacing="100%"
+       id="text5246"
+       y="1014.9233"
+       x="-23.63302"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:28.41442299px;line-height:100%;font-family:'Gill Sans MT';-inkscape-font-specification:'Gill Sans MT';letter-spacing:0px;word-spacing:0px;fill:#505555;fill-opacity:1;stroke:none;stroke-width:1.37;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       xml:space="preserve"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600"><tspan
+         style="font-size:20px;fill:#505555;stroke-width:1.37;stroke-miterlimit:5;stroke-dasharray:none"
+         id="tspan5248"
+         y="1014.9233"
+         x="-23.63302"
+         sodipodi:role="line">Origin</tspan></text>
+    <rect
+       style="fill:#00c4dc;stroke:none;stroke-width:0.43438068;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       id="rect5250"
+       width="29.56562"
+       height="29.565619"
+       x="508.37509"
+       y="436.92151"
+       ry="6.0017929"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600" />
+    <rect
+       style="fill:#00c473;stroke:none;stroke-width:0.43438068;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       id="rect5254"
+       width="29.56562"
+       height="29.565619"
+       x="508.37509"
+       y="472.92151"
+       ry="6.0017929"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600" />
+    <rect
+       ry="6.0017929"
+       y="508.92151"
+       x="508.37509"
+       height="29.565619"
+       width="29.56562"
+       id="rect5256"
+       style="opacity:0.4;fill:#7f8282;stroke:none;stroke-width:0.43438068;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:25px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#505555;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;"
+       x="543.77625"
+       y="459.16037"
+       id="text5258"
+       sodipodi:linespacing="125%"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600"><tspan
+         sodipodi:role="line"
+         id="tspan5260"
+         x="543.77625"
+         y="459.16037"
+         style="font-size:20px;-inkscape-font-specification:'Gill Sans MT';font-family:'Gill Sans MT';font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;fill:#505555;">uVisor internal</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:25px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#505555;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="543.77625"
+       y="493.22186"
+       id="text5266"
+       sodipodi:linespacing="125%"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600"><tspan
+         sodipodi:role="line"
+         id="tspan5268"
+         x="543.77625"
+         y="493.22186"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:20px;font-family:'Gill Sans MT';-inkscape-font-specification:'Gill Sans MT';fill:#505555">Dynamically configured</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text5270"
+       y="529.22192"
+       x="543.77625"
+       style="font-style:normal;font-weight:normal;font-size:25px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#505555;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:20px;font-family:'Gill Sans MT';-inkscape-font-specification:'Gill Sans MT';fill:#505555"
+         y="529.22192"
+         x="543.77625"
+         id="tspan5272"
+         sodipodi:role="line">Background protection</tspan></text>
+    <rect
+       inkscape:export-ydpi="600"
+       inkscape:export-xdpi="600"
+       style="opacity:0.3;fill:none;stroke:#505555;stroke-width:1;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       id="rect4470"
+       width="29.56562"
+       height="29.565619"
+       x="508.37509"
+       y="544.92151"
+       ry="6.0017929" />
+    <text
+       inkscape:export-ydpi="600"
+       inkscape:export-xdpi="600"
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:25px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#505555;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="543.77625"
+       y="565.22192"
+       id="text4472"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan4474"
+         x="543.77625"
+         y="565.22192"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:20px;font-family:'Gill Sans MT';-inkscape-font-specification:'Gill Sans MT';fill:#505555">OS/App</tspan></text>
+    <text
+       inkscape:export-ydpi="600"
+       inkscape:export-xdpi="600"
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:28.41442299px;line-height:100%;font-family:'Gill Sans MT';-inkscape-font-specification:'Gill Sans MT';letter-spacing:0px;word-spacing:0px;fill:#505555;fill-opacity:1;stroke:none;stroke-width:1.37;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       x="279.8205"
+       y="1024.3491"
+       id="text4476"
+       sodipodi:linespacing="100%"><tspan
+         sodipodi:role="line"
+         x="279.8205"
+         y="1024.3491"
+         id="tspan4478"
+         style="font-size:17.5px;fill:#505555;stroke-width:1.37;stroke-miterlimit:5;stroke-dasharray:none">Relative sizes are out of scale</tspan></text>
+    <rect
+       style="fill:#00c473;stroke:none;stroke-width:1.07612789;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       id="rect4521"
+       width="155.34146"
+       height="38.032291"
+       x="304.58197"
+       y="780.27203"
+       ry="7.0108032"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:28.41442299px;line-height:100%;font-family:'Gill Sans MT';-inkscape-font-specification:'Gill Sans MT';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1.37;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       x="314.90405"
+       y="806.03137"
+       id="text4523"
+       sodipodi:linespacing="100%"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600"><tspan
+         sodipodi:role="line"
+         x="314.90405"
+         y="806.03137"
+         id="tspan4525"
+         style="font-size:20px;fill:#ffffff;stroke-width:1.37;stroke-miterlimit:5;stroke-dasharray:none">Box 1 memories</tspan><tspan
+         sodipodi:role="line"
+         x="314.90405"
+         y="826.03137"
+         style="font-size:20px;fill:#ffffff;stroke-width:1.37;stroke-miterlimit:5;stroke-dasharray:none"
+         id="tspan4527" /></text>
+    <rect
+       style="fill:#00c473;stroke:none;stroke-width:1.07612789;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       id="rect4537"
+       width="155.34146"
+       height="38.032291"
+       x="304.58197"
+       y="685.81256"
+       ry="7.0108032"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:28.41442299px;line-height:100%;font-family:'Gill Sans MT';-inkscape-font-specification:'Gill Sans MT';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1.37;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       x="314.90405"
+       y="711.5719"
+       id="text4539"
+       sodipodi:linespacing="100%"
+       inkscape:export-xdpi="600"
+       inkscape:export-ydpi="600"><tspan
+         sodipodi:role="line"
+         x="314.90405"
+         y="711.5719"
+         id="tspan4541"
+         style="font-size:20px;fill:#ffffff;stroke-width:1.37;stroke-miterlimit:5;stroke-dasharray:none">Box n memories</tspan><tspan
+         sodipodi:role="line"
+         x="314.90405"
+         y="731.5719"
+         style="font-size:20px;fill:#ffffff;stroke-width:1.37;stroke-miterlimit:5;stroke-dasharray:none"
+         id="tspan4543" /></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="674.09076"
+       y="735.91864"
+       id="text4549"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan4551"
+         x="674.09076"
+         y="735.91864" /></text>
+    <rect
+       inkscape:export-ydpi="600"
+       inkscape:export-xdpi="600"
+       style="opacity:1;fill:none;stroke:#505555;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+       id="rect4558"
+       width="205.19075"
+       height="596.44916"
+       x="59.657318"
+       y="407.08301"
+       ry="21.319506" />
+  </g>
+</svg>
