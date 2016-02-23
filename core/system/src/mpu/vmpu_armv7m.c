@@ -575,6 +575,11 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
     g_svc_cx_curr_sp[box_id] =
         (uint32_t*)(g_box_mem_pos + size - UVISOR_STACK_BAND_SIZE);
 
+    /* Reset uninitialized secured box context. */
+    if (slots_ctx) {
+        memset((void *) g_box_mem_pos, 0, context_size);
+    }
+
     /* create stack protection region */
     vmpu_acl_add(
         box_id, (void*)g_box_mem_pos, size,
