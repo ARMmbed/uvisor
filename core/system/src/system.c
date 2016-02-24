@@ -78,7 +78,7 @@ void UVISOR_NAKED UVISOR_NORETURN isr_default_handler(void)
         "svc  %[unvic_in]\n"
         "svc  %[unvic_out]\n"
         "bx   lr\n"
-        ::[unvic_in]  "i" (UVISOR_SVC_ID_UNVIC_IN),
-          [unvic_out] "i" (UVISOR_SVC_ID_UNVIC_OUT)
+        ::[unvic_in]  "i" ((UVISOR_SVC_ID_UNVIC_IN) & 0xFF),
+          [unvic_out] "i" ((UVISOR_SVC_ID_UNVIC_OUT) & 0xFF)
     );
 }

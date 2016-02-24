@@ -39,8 +39,7 @@ static inline void svc_gw_check_magic(TSecGw *svc_pc)
         HALT_ERROR(SANITY_CHECK_FAILED,
                    "secure gateway not in flash (0x%08X)", svc_pc);
 
-    if((svc_pc->opcode & ~((uint16_t) UVISOR_SVC_CUSTOM_MSK)) !=
-        UVISOR_SVC_GW_OPCODE)
+    if((svc_pc->opcode & ~((uint16_t) UVISOR_SVC_FAST_NARGS_MASK)) != UVISOR_SVC_GW_OPCODE)
         HALT_ERROR(SANITY_CHECK_FAILED,
                    "secure gateway opcode invalid (0x%08X)\n", &svc_pc->opcode);
 
