@@ -240,7 +240,7 @@ yotta: $(BINARY_RELEASE)
 	rm -f $(RELEASE_SRC)/*.cpp
 	rm -f $(RELEASE_OBJ) $(RELEASE_VER)
 	mkdir -p $(RELEASE_INC)
-	mkdir -p $(RELEASE_SRC)/$(PLATFORM)
+	mkdir -p $(RELEASE_SRC)/$(PLATFORM)/$(BUILD_MODE)
 	echo "$(PROGRAM_VERSION)" > $(RELEASE_SRC)/$(PLATFORM)/version.txt
 	cp $(MBED_INC)/*.h   $(RELEASE_INC)/
 	cp $(MBED_SRC)/*.cpp $(RELEASE_SRC)/
