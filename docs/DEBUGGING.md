@@ -109,4 +109,4 @@ The board provides both an on-board proprietary debugging port (ST-LINK) and a J
 
 If you are using ST-LINK please refer to the [STMicorelectronics website](http://www.st.com/web/catalog/tools/FM146/CL1984/SC724/SS1677/PF251168?sc=internet/evalboard/product/251168.jsp) for information on the tools and drivers needed. Please note that this debugger has not been tested with uVisor.
 
-If instead you want to connect your debugger to the JTAG port you must wire the needed pins to your connector. This [guide](https://www.segger.com/admin/uploads/evalBoardDocs/AN00014_ConnectingJLinkToSTM32F407Discovery.pdf) explains how to do that in details. The guide is specific to the J-Link connectors, but it should be easily generalized to other connectors.
+If instead you want to connect your debugger to the JTAG port you must wire the needed pins to your connector. This [guide](https://www.segger.com/admin/uploads/evalBoardDocs/AN00015_ConnectingJLinkToSTM32F429Discovery.pdf) explains how to do that in details. The guide is specific to the J-Link connectors, but it should be easily generalized to other connectors.
