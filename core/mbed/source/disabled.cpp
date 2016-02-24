@@ -139,11 +139,11 @@ static void uvisor_disabled_default_vector(void)
     int ipsr;
 
     /* Get current IRQ number, from the IPSR.
-     * We only allow user IRQs to be registered (NVIC). This is consistent with
-     * the corresponding API when uVisor is enabled. */
+     * We also allow system IRQs. This is inconsistent with the uVisor API, so
+     * code written before uVisor might stop working when uVisor is enabled. */
     irqn = 0;
     ipsr = ((int) (__get_IPSR() & 0x1FF)) - NVIC_USER_IRQ_OFFSET;
-    if (ipsr < 0 || ipsr >= NVIC_USER_IRQ_NUMBER) {
+    if (ipsr < NonMaskableInt_IRQn || ipsr >= NVIC_USER_IRQ_NUMBER) {
         uvisor_error(USER_NOT_ALLOWED);
     } else {
         irqn = (uint32_t) ipsr;
