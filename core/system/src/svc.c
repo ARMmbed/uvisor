@@ -132,36 +132,36 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
         ".word  __svc_not_implemented\n"
     "jump_table_unpriv_end:\n"
 
-    ".thumb_func\n"                            // needed for correct referencing
+    ".thumb_func\n"                                 // needed for correct referencing
     "custom_table_unpriv:\n"
         /* there is no need to mask the lower 4 bits of the SVC# because
          * custom_table_unpriv is only when SVC# <= 0x0F */
-        "cmp    r2, %[svc_vtor_tbl_count]\n"   // check SVC table overflow
-        "ite    ls\n"                       // note: this ITE order speeds it up
-        "ldrls  r1, =g_svc_vtor_tbl\n"      // fetch handler from table
-        "bxhi   lr\n"                       // abort if overflowing SVC table
-        "add    r1, r1, r2, LSL #2\n"       // SVC table offset
-        "ldr    r1, [r1]\n"                 // SVC handler
-        "push   {lr}\n"                     // save lr for later
-        "ldr    lr, =svc_thunk_unpriv\n"    // after handler return to thunk
-        "push   {r1}\n"                     // save SVC handler to fetch args
-        "ldrt   r3, [r0, #12]\n"            // fetch args (unprivileged)
-        "ldrt   r2, [r0, #8]\n"             // pass args from stack (unpriv)
-        "ldrt   r1, [r0, #4]\n"             // pass args from stack (unpriv)
-        "ldrt   r0, [r0, #0]\n"             // pass args from stack (unpriv)
-        "pop    {pc}\n"                     // execute handler (return to thunk)
+        "cmp    r2, %[svc_vtor_tbl_count]\n"        // check SVC table overflow
+        "ite    ls\n"                               // note: this ITE order speeds it up
+        "ldrls  r1, =g_svc_vtor_tbl\n"              // fetch handler from table
+        "bxhi   lr\n"                               // abort if overflowing SVC table
+        "add    r1, r1, r2, lsl #2\n"               // SVC table offset
+        "ldr    r1, [r1]\n"                         // SVC handler
+        "push   {lr}\n"                             // save lr for later
+        "ldr    lr, =svc_thunk_unpriv\n"            // after handler return to thunk
+        "push   {r1}\n"                             // save SVC handler to fetch args
+        "ldrt   r3, [r0, #12]\n"                    // fetch args (unprivileged)
+        "ldrt   r2, [r0, #8]\n"                     // pass args from stack (unpriv)
+        "ldrt   r1, [r0, #4]\n"                     // pass args from stack (unpriv)
+        "ldrt   r0, [r0, #0]\n"                     // pass args from stack (unpriv)
+        "pop    {pc}\n"                             // execute handler (return to thunk)
 
-    ".thumb_func\n"                            // needed for correct referencing
+    ".thumb_func\n"                                 // needed for correct referencing
     "svc_thunk_unpriv:\n"
-        "mrs    r1, PSP\n"                  // unpriv stack may have changed
-        "strt   r0, [r1]\n"                 // store result on stacked r0
-        "pop    {pc}\n"                     // return from SVCall
+        "mrs    r1, PSP\n"                          // unpriv stack may have changed
+        "strt   r0, [r1]\n"                         // store result on stacked r0
+        "pop    {pc}\n"                             // return from SVCall
 
     "called_from_priv:\n"
-        "mrs    r0, MSP\n"                  // stack pointer
-        "ldr    r1, [r0, #24]\n"            // stacked pc
-        "add    r1, r1, #-2\n"              // pc at SVC call
-        "ldrb   r2, [r1]\n"                 // SVC immediate
+        "mrs    r0, MSP\n"                          // stack pointer
+        "ldr    r1, [r0, #24]\n"                    // stacked pc
+        "add    r1, r1, #-2\n"                      // pc at SVC call
+        "ldrb   r2, [r1]\n"                         // SVC immediate
         /***********************************************************************
          *  ATTENTION
          ***********************************************************************
@@ -200,26 +200,26 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
         ".word  __svc_not_implemented\n"
     "jump_table_priv_end:\n"
 
-    ".thumb_func\n"                            // needed for correct referencing
+    ".thumb_func\n"                                 // needed for correct referencing
     "custom_table_priv:\n"
         /* there is no need to mask the lower 4 bits of the SVC# because
          * custom_table_unpriv is only when SVC# <= 0x0F */
-        "cmp    r2, %[svc_vtor_tbl_count]\n"   // check SVC table overflow
-        "ite    ls\n"                       // note: this ITE order speeds it up
-        "ldrls  r1, =g_svc_vtor_tbl\n"      // fetch handler from table
-        "bxhi   lr\n"                       // abort if overflowing SVC table
-        "add    r1, r1, r2, LSL #2\n"       // SVC table offset
-        "ldr    r1, [r1]\n"                 // SVC handler
-        "push   {lr}\n"                     // save lr for later
-        "ldr    lr, =svc_thunk_priv\n"      // after handler return to thunk
-        "push   {r1}\n"                     // save SVC handler to fetch args
-        "ldm    r0, {r0-r3}\n"              // pass args from stack
-        "pop    {pc}\n"                     // execute handler (return to thunk)
+        "cmp    r2, %[svc_vtor_tbl_count]\n"        // check SVC table overflow
+        "ite    ls\n"                               // note: this ITE order speeds it up
+        "ldrls  r1, =g_svc_vtor_tbl\n"              // fetch handler from table
+        "bxhi   lr\n"                               // abort if overflowing SVC table
+        "add    r1, r1, r2, lsl #2\n"               // SVC table offset
+        "ldr    r1, [r1]\n"                         // SVC handler
+        "push   {lr}\n"                             // save lr for later
+        "ldr    lr, =svc_thunk_priv\n"              // after handler return to thunk
+        "push   {r1}\n"                             // save SVC handler to fetch args
+        "ldm    r0, {r0-r3}\n"                      // pass args from stack
+        "pop    {pc}\n"                             // execute handler (return to thunk)
 
-    ".thumb_func\n"                            // needed for correct referencing
+    ".thumb_func\n"                                 // needed for correct referencing
     "svc_thunk_priv:\n"
-        "str    r0, [sp, #4]\n"             // store result on stacked r0
-        "pop    {pc}\n"                     // return from SVCall
+        "str    r0, [sp, #4]\n"                     // store result on stacked r0
+        "pop    {pc}\n"                             // return from SVCall
 
         :: [svc_mode_mask]       "I" ((UVISOR_SVC_MODE_MASK) & 0xFF),
            [svc_fast_index_mask] "I" ((UVISOR_SVC_FAST_INDEX_MASK) & 0xFF),
