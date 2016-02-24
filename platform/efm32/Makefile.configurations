@@ -1,0 +1,31 @@
+###########################################################################
+#
+#  Copyright 2016 Silicon Laboratories, Inc.
+#  SPDX-License-Identifier: Apache-2.0
+#
+#  Licensed under the Apache License, Version 2.0 (the "License"); you may
+#  not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#  http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#
+###########################################################################
+
+# uVisor configurations for EFM32 devices
+# The M3_P1 configuration supports
+#  - EFM32 Giant Gecko
+#  - EFM32 Leopard Gecko
+#  - EFM32 Jade Gecko
+# The M4_P1 configuration supports
+#  - EFM32 Wonder Gecko
+#  - EFM32 Pearl Gecko
+
+CONFIGURATIONS:=              \
+	CONFIGURATION_EFM32_M3_P1 \
+	CONFIGURATION_EFM32_M4_P1
