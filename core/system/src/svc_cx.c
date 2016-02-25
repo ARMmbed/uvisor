@@ -28,10 +28,7 @@ uint8_t   g_svc_cx_curr_id;
 
 void UVISOR_NAKED svc_cx_thunk(void)
 {
-    asm volatile(
-        "svc %[svc_id]\n"
-        :: [svc_id] "i" (UVISOR_SVC_ID_CX_OUT)
-    );
+    UVISOR_SVC(UVISOR_SVC_ID_CX_OUT, "");
 }
 
 uint32_t *svc_cx_validate_sf(uint32_t *sp)
@@ -95,7 +92,10 @@ uint32_t __svc_cx_switch_in(uint32_t *svc_sp, uint32_t svc_pc,
     uint32_t           dst_sp_align;
 
     /* number of arguments to pass to the target function */
-    uint32_t args = (uint32_t) (svc_id & UVISOR_SVC_CUSTOM_MSK);
+    uint32_t args = (svc_id & UVISOR_SVC_FAST_NARGS_MASK) >> UVISOR_SVC_FAST_NARGS_BIT;
+    if (args > 4) {
+        HALT_ERROR(NOT_ALLOWED, "Max 4 32 bit arguments allowed.\n\r");
+    }
 
     /* gather information from secure gateway */
     svc_gw_check_magic((TSecGw *) svc_pc);
