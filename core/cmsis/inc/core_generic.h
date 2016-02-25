@@ -51,6 +51,10 @@ extern uint8_t g_nvic_prio_bits;
  * configurations. If a symbol is not configured, a warning is issued. */
 #define __CHECK_DEVICE_DEFINES
 
+/* This header file includes the core-specific support for some hardware
+ * features. It might override some of the definitions above. */
+#include "hardware_support.h"
+
 /* Core interrupts */
 typedef enum IRQn {
   NonMaskableInt_IRQn   = -14,

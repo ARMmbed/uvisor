@@ -30,11 +30,27 @@
 #define CORE_REVISTION_MIN 0x2   /* Revision >= r2 */
 #define CORE_VARIANT_MIN   0x0   /* Variant  >= p0 */
 
+/* This setting enables some conditional definitions in the core_cm3.h file. */
+/* Note: Currently (CMSIS v4.10) the __CM3_REV symbol affects the conditional
+ *       definition of the SCnSCB->ACTLR register and of the SCB_VTOR_TBLBASE_*
+ *       ones. The condition on the SCB_VTOR_TBLBASE_* symbols (revision < r2p1)
+ *       is more restrictive than the one for the SCnSCB->CTRL one (>= r2p0).
+ *       Since in uVisor we don't use the SCB_VTOR_TBLBASE_* symbols, we will
+ *       set the revision version to r2p0, which is a minimum requirement for
+ *       uVisor. */
+#define __CM3_REV 0x200
+
 #elif defined(CORE_CORTEX_M4)
 
 #define CORE_PARTNO        0xC24 /* PartNO   == Cortex-M4 */
 #define CORE_REVISTION_MIN 0x0   /* Revision >= r0 */
 #define CORE_VARIANT_MIN   0x0   /* Variant  >= p0 */
+
+/* This setting enables some conditional definitions in the core_cm4.h file. */
+/* Note: Currently (CMSIS v4.10) the __CM4_REV symbol does not affect any
+ *       conditional definition. Hence we will just set it to the uVisor minimum
+ *       requirement, r0p0. */
+#define __CM4_REV 0x0
 
 #else /* defined(CORE_CORTEX_M3) || defined(CORE_CORTEX_M4) */
 
