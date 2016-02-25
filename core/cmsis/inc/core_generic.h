@@ -28,8 +28,8 @@
 #if defined(ARCH_MPU_ARMv7M)
 #define __MPU_PRESENT 1
 #elif defined(ARCH_MPU_KINETIS)
-#else
 #define __MPU_PRESENT 0
+#else
 #error "Unknown MPU architecture. Check your Makefile."
 #endif /* defined(ARCH_MPU_ARMv7M) || defined(ARCH_MPU_KINETIS) */
 
