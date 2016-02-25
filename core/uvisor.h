@@ -30,6 +30,9 @@
 /* CMSIS header files */
 #include "core_generic.h"
 
+/* Definitions and checks for hardware-specific support. */
+#include "hardware_support.h"
+
 /* definitions that are made visible externally */
 #include "uvisor_exports.h"
 

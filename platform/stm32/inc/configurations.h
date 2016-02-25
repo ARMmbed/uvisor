@@ -53,7 +53,6 @@
 #define __STM32_HAS_CCM
 
 /* ARM core selection */
-/* Note: uVisor does not distinguish between Cortex-M3 and -M4 cores. */
 #define CORE_CORTEX_M4
 
 /* Memory boundaries */

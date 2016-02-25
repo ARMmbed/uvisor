@@ -59,6 +59,12 @@ static int vmpu_sanity_checks(void)
     assert(vmpu_bits(0x8001UL) == 16);
     assert(vmpu_bits(1) == 1);
 
+    /* Verify that the core version is the same as expected. */
+    if (!CORE_VERSION_CHECK() || !CORE_REVISION_CHECK()) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "This core is unsupported or there is a mismatch between the uVisor "
+                                        "configuration you are using and the core this configuration supports.\n\r");
+    }
+
     /* Verify that the known hard-coded symbols are equal to the ones taken from
      * the host linker script. */
     assert((uint32_t) __uvisor_config.flash_start == FLASH_ORIGIN);
