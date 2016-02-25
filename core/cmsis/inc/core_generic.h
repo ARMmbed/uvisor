@@ -62,10 +62,9 @@ typedef enum IRQn {
 
 /* Include the CMSIS core header files.
  * The Cortex-M specification must be defined by the release configuration. */
-/* FIXME The Cortex-M3 and -M4 header files also differ for the fact that the
- *       SCnSCB->ACTRL was introduced with REV 0x200. All bus faults on a
- *       Cortex-M3 device produced before that revision will be imprecise. */
-#if defined(CORE_CORTEX_M3) || defined(CORE_CORTEX_M4)
+#if defined(CORE_CORTEX_M3)
+#include "core_cm3.h"
+#elif defined(CORE_CORTEX_M4)
 #include "core_cm4.h"
 #else /* defined(CORE_CORTEX_M3) || defined(CORE_CORTEX_M4) */
 #error "Unsupported ARM core. Make sure CORE_* is defined in your workspace."
