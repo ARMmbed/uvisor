@@ -47,6 +47,10 @@
 extern uint8_t g_nvic_prio_bits;
 #define __NVIC_PRIO_BITS g_nvic_prio_bits
 
+/* This ensures that the CMSIS header files actively check for our
+ * configurations. If a symbol is not configured, a warning is issued. */
+#define __CHECK_DEVICE_DEFINES
+
 /* Core interrupts */
 typedef enum IRQn {
   NonMaskableInt_IRQn   = -14,
