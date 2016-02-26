@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2013-2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -22,10 +22,41 @@
 #include <debug.h>
 #include <memory_map.h>
 
+/* This file contains the configuration-specific symbols. */
+#include "configurations.h"
+
 /* set default MPU region count */
 #ifndef ARMv7M_MPU_REGIONS
 #define ARMv7M_MPU_REGIONS 8
 #endif/*ARMv7M_MPU_REGIONS*/
+
+/* Sanity checks on SRAM boundaries */
+#if SRAM_LENGTH_MIN <= 0
+#error "SRAM_LENGTH_MIN must be strictly positive."
+#endif
+#if HOST_SRAM_LENGTH_MAX <= 0
+#error "HOST_SRAM_LENGTH_MAX must be strictly positive."
+#endif
+
+/* Automatically detect if the uVisor is placed in a standalone SRAM.
+ * We need to check that the uVisor SRAM region and the host whole-SRAM region
+ * do not overlap.
+ * Two ranges A and B do not overlap if either A is fully after B or B is fully
+ * after A. */
+#if ((SRAM_ORIGIN > (HOST_SRAM_ORIGIN_MIN + HOST_SRAM_LENGTH_MAX)) || \
+     ((SRAM_ORIGIN + SRAM_LENGTH_MIN) < HOST_SRAM_ORIGIN_MIN))
+#define UVISOR_IN_STANDALONE_SRAM
+#elif defined(UVISOR_IN_STANDALONE_SRAM)
+#error "UVISOR_IN_STANDALONE_SRAM is defined even if the host SRAM and the uVisor SRAM regions overlap."
+#endif
+
+/* Set number of statically configured regions.
+ * It depends on whether the uVisor shares the SRAM with the host or not. */
+#if defined(UVISOR_IN_STANDALONE_SRAM)
+#define ARMv7M_MPU_RESERVED_REGIONS 2
+#else
+#define ARMv7M_MPU_RESERVED_REGIONS 3
+#endif /* defined(UVISOR_IN_STANDALONE_SRAM) */
 
 /* set default minimum region address alignment */
 #ifndef ARMv7M_MPU_ALIGNMENT_BITS
@@ -630,4 +661,41 @@ void vmpu_arch_init(void)
 #ifndef NDEBUG
     debug_mpu_config();
 #endif/*NDEBUG*/
+}
+
+void vmpu_arch_init_hw(void)
+{
+    /* Enable the public Flash. */
+    vmpu_acl_static_region(
+        0,
+        (void *) FLASH_ORIGIN,
+        ((uint32_t) __uvisor_config.secure_end) - FLASH_ORIGIN,
+        UVISOR_TACLDEF_SECURE_CONST | UVISOR_TACL_EXECUTE
+    );
+
+    /* Enable the public SRAM. */
+    /* Note: This region can be larger than the physical SRAM. */
+    /* Note: This uses the host-related symbols as uVisor might be placed in a
+     *       different SRAM. If the uVisor shares the SRAM with the host, these
+     *       symbols will be identical to the uVisor-related ones. */
+    vmpu_acl_static_region(
+        1,
+        (void *) HOST_SRAM_ORIGIN_MIN,
+        UVISOR_REGION_ROUND_UP(HOST_SRAM_LENGTH_MAX),
+        UVISOR_TACLDEF_DATA | UVISOR_TACL_EXECUTE
+    );
+
+#if !defined(UVISOR_IN_STANDALONE_SRAM)
+    /* Protect the uVisor SRAM.
+     * This region needs protection only if uVisor shares the SRAM with the
+     * host. The configuration requires that uVisor is right at the beginning of
+     * the SRAM. If not, uVisor would end up owning a memory regions that
+     * contains non-uVisor data. */
+    vmpu_acl_static_region(
+        2,
+        (void *) SRAM_ORIGIN,
+        ((uint32_t) __uvisor_config.bss_end) - SRAM_ORIGIN,
+        UVISOR_TACL_SREAD | UVISOR_TACL_SWRITE
+    );
+#endif /* !defined(UVISOR_IN_STANDALONE_SRAM) */
 }
