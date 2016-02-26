@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2013-2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -23,9 +23,16 @@
 
 #define SVC_CX_EXC_SF_SIZE 8
 
+typedef enum {
+    TBOXCX_INVALID = 0,
+    TBOXCX_SECURE_GATEWAY,
+    __TBOXCXTYPE_MAX /* The number of possible box context types */
+} TBoxCxType;
+
 typedef struct {
-    uint8_t   rfu[3];  /* for 32 bit alignment */
+    uint8_t   rfu[2];  /* for 32 bit alignment */
     uint8_t   src_id;
+    uint8_t   type;
     uint32_t *src_sp;
 } UVISOR_PACKED TBoxCx;
 
