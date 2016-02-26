@@ -24,13 +24,13 @@
         switch(sizeof(type)) \
         { \
             case 4: \
-                uvisor_write32((volatile uint32_t *) (addr), (uint32_t) (val)); \
+                uvisor_write32((uint32_t volatile * volatile) (addr), (uint32_t) (val)); \
                 break; \
             case 2: \
-                uvisor_write16((volatile uint16_t *) (addr), (uint16_t) (val)); \
+                uvisor_write16((uint16_t volatile * volatile) (addr), (uint16_t) (val)); \
                 break; \
             case 1: \
-                uvisor_write8(( volatile uint8_t  *) (addr), (uint8_t ) (val)); \
+                uvisor_write8((uint8_t volatile * volatile) (addr), (uint8_t ) (val)); \
                 break; \
             default: \
                 uvisor_error(USER_NOT_ALLOWED); \
@@ -41,9 +41,9 @@
 /* the conditional statement will be optimised away since the compiler already
  * knows the sizeof(type) */
 #define ADDRESS_READ(type, addr) \
-    (sizeof(type) == 4 ? uvisor_read32((volatile uint32_t *) (addr)) : \
-     sizeof(type) == 2 ? uvisor_read16((volatile uint16_t *) (addr)) : \
-     sizeof(type) == 1 ? uvisor_read8(( volatile uint8_t  *) (addr)) : 0)
+    (sizeof(type) == 4 ? uvisor_read32((uint32_t volatile * volatile) (addr)) : \
+     sizeof(type) == 2 ? uvisor_read16((uint16_t volatile * volatile) (addr)) : \
+     sizeof(type) == 1 ? uvisor_read8((uint8_t volatile * volatile) (addr)) : 0)
 
 #define UNION_READ(type, addr, fieldU, fieldB) \
     ({ \
@@ -52,32 +52,32 @@
         res.fieldB; \
     })
 
-static inline UVISOR_FORCEINLINE void uvisor_write32(uint32_t volatile *addr, uint32_t val)
+static inline UVISOR_FORCEINLINE void uvisor_write32(uint32_t volatile * volatile addr, uint32_t val)
 {
     UVISOR_ASM_MEMORY_ACCESS(str, uint32_t, addr, val);
 }
 
-static inline UVISOR_FORCEINLINE void uvisor_write16(uint16_t volatile *addr, uint16_t val)
+static inline UVISOR_FORCEINLINE void uvisor_write16(uint16_t volatile * volatile addr, uint16_t val)
 {
     UVISOR_ASM_MEMORY_ACCESS(strh, uint16_t, addr, val);
 }
 
-static inline UVISOR_FORCEINLINE void uvisor_write8(uint8_t volatile *addr, uint8_t val)
+static inline UVISOR_FORCEINLINE void uvisor_write8(uint8_t volatile * volatile addr, uint8_t val)
 {
     UVISOR_ASM_MEMORY_ACCESS(strb, uint8_t, addr, val);
 }
 
-static inline UVISOR_FORCEINLINE uint32_t uvisor_read32(uint32_t volatile *addr)
+static inline UVISOR_FORCEINLINE uint32_t uvisor_read32(uint32_t volatile * volatile addr)
 {
     return UVISOR_ASM_MEMORY_ACCESS(ldr, uint32_t, addr);
 }
 
-static inline UVISOR_FORCEINLINE uint16_t uvisor_read16(uint16_t volatile *addr)
+static inline UVISOR_FORCEINLINE uint16_t uvisor_read16(uint16_t volatile * volatile addr)
 {
     return UVISOR_ASM_MEMORY_ACCESS(ldrh, uint16_t, addr);
 }
 
-static inline UVISOR_FORCEINLINE uint8_t uvisor_read8(uint8_t volatile *addr)
+static inline UVISOR_FORCEINLINE uint8_t uvisor_read8(uint8_t volatile * volatile addr)
 {
     return UVISOR_ASM_MEMORY_ACCESS(ldrb, uint8_t, addr);
 }
