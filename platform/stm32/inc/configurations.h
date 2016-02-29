@@ -37,6 +37,10 @@
 #define FLASH_ORIGIN 0x08000000
 #define FLASH_OFFSET 0x400
 
+/* Host platform memory requirements */
+#define HOST_SRAM_ORIGIN_MIN 0x20000000
+#define HOST_SRAM_LENGTH_MAX 0x40000
+
 /*******************************************************************************
  * Hardware-specific configurations
  *
@@ -47,10 +51,6 @@
  *
  ******************************************************************************/
 #if defined(CONFIGURATION_STM32_M4_0x10000000_0x0)
-
-/* This symbol is used in the family-specific code to differentiate MPU
- * configurations based on the presence of the CCM. */
-#define __STM32_HAS_CCM
 
 /* ARM core selection */
 #define CORE_CORTEX_M4
@@ -66,4 +66,3 @@
 #endif /* unrecognized configuration */
 
 #endif /* __CONFIGURATIONS_H__ */
-
