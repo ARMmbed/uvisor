@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2013-2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -17,11 +17,18 @@
 #ifndef __UVISOR_LIB_BOX_CONFIG_H__
 #define __UVISOR_LIB_BOX_CONFIG_H__
 
+#include <stddef.h>
+
 UVISOR_EXTERN const uint32_t __uvisor_mode;
 
 #define UVISOR_DISABLED   0
 #define UVISOR_PERMISSIVE 1
 #define UVISOR_ENABLED    2
+
+/* The maximum box namespace length is 37 so that it is exactly big enough for
+ * a human-readable hex string GUID (as formatted by RFC 4122) followed by a
+ * terminating NUL. */
+#define UVISOR_MAX_BOX_NAMESPACE_LENGTH 37
 
 #define UVISOR_SET_MODE(mode) \
     UVISOR_SET_MODE_ACL_COUNT(mode, NULL, 0)
@@ -39,6 +46,7 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
         UVISOR_BOX_VERSION, \
         0, \
         0, \
+        NULL, \
         acl_list, \
         acl_list_count \
     }; \
@@ -58,6 +66,7 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
         UVISOR_BOX_VERSION, \
         UVISOR_MIN_STACK(stack_size), \
         context_size, \
+        __uvisor_box_namespace, \
         acl_list, \
         acl_list_count \
     }; \
@@ -90,5 +99,28 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 
 #define UVISOR_BOX_CONFIG(...) \
     UVISOR_BOX_CONFIG_ACL(__VA_ARGS__)
+
+/* Use this macro before box defintion (for example, UVISOR_BOX_CONFIG) to
+ * define the name of your box. If you don't want a name, use this macro with
+ * box_namespace as NULL. */
+#define UVISOR_BOX_NAMESPACE(box_namespace) \
+    static const char *const __uvisor_box_namespace = box_namespace
+
+
+/* Return the numeric box ID of the current box. */
+UVISOR_EXTERN int uvisor_box_id_self(void);
+
+/* Return the numeric box ID of the box that is calling through the most recent
+ * secure gateway. Return -1 if there is no secure gateway calling box. */
+UVISOR_EXTERN int uvisor_box_id_caller(void);
+
+/* Copy the box namespace of the specified box ID to the memory provided by
+ * box_namespace. The box_namespace's length must be at least
+ * MAX_BOX_NAMESPACE_LENGTH bytes. Return how many bytes were copied into
+ * box_namespace. Return UVISOR_ERROR_INVALID_BOX_ID if the provided box ID is
+ * invalid. Return UVISOR_ERROR_BUFFER_TOO_SMALL if the provided box_namespace
+ * is too small to hold MAX_BOX_NAMESPACE_LENGTH bytes. Return
+ * UVISOR_ERROR_BOX_NAMESPACE_ANONYMOUS if the box is anonymous. */
+UVISOR_EXTERN int uvisor_box_namespace(int box_id, char *box_namespace, size_t length);
 
 #endif /* __UVISOR_LIB_BOX_CONFIG_H__ */

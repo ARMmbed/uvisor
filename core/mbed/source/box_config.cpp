@@ -14,13 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __UVISOR_LIB_ERROR_H__
-#define __UVISOR_LIB_ERROR_H__
 
-#define UVISOR_ERROR_INVALID_BOX_ID (-2)
-#define UVISOR_ERROR_BUFFER_TOO_SMALL (-3)
-#define UVISOR_ERROR_BOX_NAMESPACE_ANONYMOUS (-4)
+#include "uvisor-lib/uvisor-lib.h"
 
-UVISOR_EXTERN void uvisor_error(THaltUserError reason);
+int uvisor_box_id_self(void)
+{
+    return UVISOR_SVC(UVISOR_SVC_ID_BOX_ID_SELF, "");
+}
 
-#endif /* __UVISOR_LIB_ERROR_H__ */
+int uvisor_box_id_caller(void)
+{
+    return UVISOR_SVC(UVISOR_SVC_ID_BOX_ID_CALLER, "");
+}
+
+int uvisor_box_namespace(int box_id, char *box_namespace, size_t length)
+{
+    return UVISOR_SVC(UVISOR_SVC_ID_BOX_NAMESPACE_FROM_ID, "", box_id, box_namespace, length);
+}

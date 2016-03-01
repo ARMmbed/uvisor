@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2013-2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -19,6 +19,7 @@
 
 #include "vmpu_exports.h"
 #include "vmpu_unpriv_access.h"
+#include <stdint.h>
 
 /* Check if the address is in Flash/SRAM. */
 /* Note: Instead of using the '<' check on
@@ -145,5 +146,9 @@ extern void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp);
 extern uint32_t  g_vmpu_box_count;
 
 extern uint32_t vmpu_register_gateway(uint32_t addr, uint32_t val);
+
+extern int vmpu_box_id_self(void);
+extern int vmpu_box_id_caller(void);
+extern int vmpu_box_namespace_from_id(int box_id, char *box_name, size_t length);
 
 #endif/*__VMPU_H__*/
