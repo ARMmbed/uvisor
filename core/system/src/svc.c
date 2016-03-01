@@ -20,6 +20,7 @@
 #include "vmpu.h"
 #include "unvic.h"
 #include "benchmark.h"
+#include "debug.h"
 
 /* these symbols are linked in this scope from the ASM code in __svc_irq and
  * are needed for sanity checks */
@@ -54,6 +55,10 @@ const void *g_svc_vtor_tbl[] = {
     vmpu_box_id_self,           // 15
     vmpu_box_id_caller,         // 16
     vmpu_box_namespace_from_id, // 17
+    debug_reboot,               // 18
+    /* FIXME: This function will be made automatic when the debug box ACL is
+     *        introduced. The initialization will happen at uVisor boot time. */
+    debug_register_driver,      // 19
 };
 
 /*******************************************************************************

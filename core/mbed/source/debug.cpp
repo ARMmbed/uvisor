@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -14,10 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef  __UVISOR_CONFIG_H__
+#include "uvisor-lib/uvisor-lib.h"
 
-#define UVISOR_MAGIC        0x2FE539A6
-#define UVISOR_FLASH_LENGTH 0x8000
-#define UVISOR_SRAM_LENGTH  0x2000
-
-#endif /*__UVISOR_CONFIG_H__*/
+UVISOR_EXTERN void uvisor_debug_init(const TUvisorDebugDriver * const driver)
+{
+    UVISOR_SVC(UVISOR_SVC_ID_DEBUG_REGISTER_BOX, "", (uint32_t) driver);
+}

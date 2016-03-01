@@ -23,6 +23,7 @@
 #include "cmsis-core/cmsis_nvic.h"
 
 /* these header files are included independently from the platform */
+#include "uvisor-lib/debug_exports.h"
 #include "uvisor-lib/uvisor_exports.h"
 #include "uvisor-lib/vmpu_exports.h"
 #include "uvisor-lib/halt_exports.h"
@@ -35,6 +36,7 @@
 
 #include "uvisor-lib/benchmark.h"
 #include "uvisor-lib/box_config.h"
+#include "uvisor-lib/debug.h"
 #include "uvisor-lib/disabled.h"
 #include "uvisor-lib/error.h"
 #include "uvisor-lib/interrupts.h"
