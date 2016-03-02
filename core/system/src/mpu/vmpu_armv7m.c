@@ -304,9 +304,6 @@ void vmpu_switch(uint8_t src_box, uint8_t dst_box)
     if(!g_mpu_region_count || dst_box>=UVISOR_MAX_BOXES)
         HALT_ERROR(SANITY_CHECK_FAILED, "dst_box out of range (%u)", dst_box);
 
-    /* remember active box */
-    g_active_box = dst_box;
-
     /* update target box first to make target stack available */
     mpu_slot = ARMv7M_MPU_RESERVED_REGIONS;
     if (dst_box)

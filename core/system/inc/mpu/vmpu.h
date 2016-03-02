@@ -111,8 +111,6 @@ static inline int vmpu_sram_addr(uint32_t addr)
                                                      ((VMPU_PERIPH_BITBAND_ALIAS_TO_ADDR(alias) - \
                                                      VMPU_PERIPH_START) << 5)) >> 2)
 
-extern uint8_t g_active_box;
-
 extern void vmpu_acl_add(uint8_t box_id, void *addr,
                          uint32_t size, UvisorBoxAcl acl);
 extern void vmpu_acl_irq(uint8_t box_id, void *function, uint32_t isr_id);

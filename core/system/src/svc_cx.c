@@ -24,7 +24,7 @@ TBoxCx    g_svc_cx_state[UVISOR_SVC_CONTEXT_MAX_DEPTH];
 int       g_svc_cx_state_ptr;
 uint32_t *g_svc_cx_curr_sp[UVISOR_MAX_BOXES];
 uint32_t *g_svc_cx_context_ptr[UVISOR_MAX_BOXES];
-uint8_t   g_svc_cx_curr_id;
+uint8_t g_active_box;
 
 void UVISOR_NAKED svc_cx_thunk(void)
 {
@@ -104,7 +104,7 @@ uint32_t __svc_cx_switch_in(uint32_t *svc_sp, uint32_t svc_pc,
 
     /* gather information from current state */
     src_sp = svc_cx_validate_sf(svc_sp);
-    src_id = svc_cx_get_curr_id();
+    src_id = g_active_box;
     dst_sp = svc_cx_get_curr_sp(dst_id);
 
     /* check src and dst IDs */
@@ -161,7 +161,7 @@ void __svc_cx_switch_out(uint32_t *svc_sp)
 
     /* gather information from current state */
     dst_sp = svc_cx_validate_sf(svc_sp);
-    dst_id = svc_cx_get_curr_id();
+    dst_id = g_active_box;
 
     /* gather information from previous state */
     svc_cx_pop_state(dst_id, dst_sp);
