@@ -171,8 +171,7 @@ CFLAGS_PRE:=\
 CFLAGS:=$(FLAGS_CM4) $(CFLAGS_PRE)
 CPPFLAGS:=-fno-exceptions
 
-OBJS:=$(SOURCES:.cpp=.o)
-OBJS:=$(OBJS:.c=.o)
+OBJS:=$(foreach SOURCE, $(SOURCES), $(SOURCE).$(CONFIGURATION_LOWER).$(BUILD_MODE).o)
 
 LINKER_CONFIG:=\
     -D$(CONFIGURATION) \
@@ -186,7 +185,7 @@ BINARY_CONFIG:=\
     -DUVISOR_MAGIC=$(UVISOR_MAGIC) \
     -DUVISOR_BIN=\"$(CONFIGURATION_PREFIX).bin\"
 
-.PHONY: all fresh __platform/% __configurations __binaries CONFIGURATION_% __rm_objs clean source.c.tags
+.PHONY: all fresh __platform/% __configurations __binaries CONFIGURATION_% clean source.c.tags
 
 # Build both the release and debug versions for all platforms for all
 # configurations.
@@ -219,7 +218,7 @@ CONFIGURATION_%:
 ifndef PLATFORM
 	$(error "Missing platform. Use PLATFORM=<your_platform> make CONFIGURATION_<your_configuration>")
 else
-	make CONFIGURATION=$@ __rm_objs __binaries yotta
+	make CONFIGURATION=$@ __binaries yotta
 endif
 
 # This middleware target is needed because the parent make does not know the
@@ -259,13 +258,13 @@ $(CONFIGURATION_PREFIX).linker: $(CORE_DIR)/linker/default.h
 	mkdir -p $(dir $(CONFIGURATION_PREFIX))
 	$(CPP) -w -P $(LINKER_CONFIG) $< -o $@
 
+%.c.$(CONFIGURATION_LOWER).$(BUILD_MODE).o: %.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
 ctags: source.c.tags
 
 source.c.tags: $(SOURCES)
 	CFLAGS="$(CFLAGS_PRE)" geany -g $@ $^
-
-__rm_objs:
-	find $(ROOT_DIR) -iname '*.o' -not -path "$(RELEASE_DIR)/*" -not -path "$(MBED_DIR)/*" -delete
 
 clean:
 	rm -f source.c.tags
