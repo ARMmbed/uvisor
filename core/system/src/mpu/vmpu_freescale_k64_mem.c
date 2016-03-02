@@ -50,9 +50,13 @@ void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
     TBoxACL *box;
     TMemACL *rgd;
 
-    /* get box config */
-    assert(dst_box < UVISOR_MAX_BOXES);
-    assert(src_box < UVISOR_MAX_BOXES);
+    /* Sanity checks. */
+    if (!vmpu_is_box_id_valid(src_box)) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "vMPU switch: The source box ID is out of range (%u).\r\n", src_box);
+    }
+    if (!vmpu_is_box_id_valid(dst_box)) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "vMPU switch: The destination box ID is out of range (%u).\n", dst_box);
+    }
 
     box = &g_mem_box[dst_box];
 
@@ -145,8 +149,9 @@ static int vmpu_mem_add_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
     }
 
     /* get box config */
-    if(box_id >= UVISOR_MAX_BOXES)
-        return -23;
+    if (!vmpu_is_box_id_valid(box_id)) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "vMPU switch: The box ID is out of range (%u).\n", box_id);
+    }
     box = &g_mem_box[box_id];
 
     /* initialize acl pointer */

@@ -39,6 +39,8 @@
 #endif
 
 uint32_t  g_vmpu_box_count;
+bool g_vmpu_boxes_counted;
+uint8_t g_active_box;
 
 static int vmpu_sanity_checks(void)
 {
@@ -169,6 +171,7 @@ static void vmpu_load_boxes(void)
     if (g_vmpu_box_count >= UVISOR_MAX_BOXES) {
         HALT_ERROR(SANITY_CHECK_FAILED, "box number overflow\n");
     }
+    g_vmpu_boxes_counted = TRUE;
 
     /* initialize boxes */
     box_id = 0;

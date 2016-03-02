@@ -301,8 +301,13 @@ void vmpu_switch(uint8_t src_box, uint8_t dst_box)
 
     /* DPRINTF("switching from %i to %i\n\r", src_box, dst_box); */
 
-    if(!g_mpu_region_count || dst_box>=UVISOR_MAX_BOXES)
-        HALT_ERROR(SANITY_CHECK_FAILED, "dst_box out of range (%u)", dst_box);
+    /* Sanity checks */
+    if (!g_mpu_region_count) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "No available MPU regions left.\r\n");
+    }
+    if (!vmpu_is_box_id_valid(dst_box)) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "ACL add: The destination box ID is out of range (%u).\r\n", dst_box);
+    }
 
     /* update target box first to make target stack available */
     mpu_slot = ARMv7M_MPU_RESERVED_REGIONS;
@@ -517,8 +522,9 @@ void vmpu_acl_add(uint8_t box_id, void* addr, uint32_t size, UvisorBoxAcl acl)
     if(g_mpu_region_count>=MPU_REGION_COUNT)
         HALT_ERROR(SANITY_CHECK_FAILED, "vmpu_acl_add ran out of regions\n\r");
 
-    if(box_id>=UVISOR_MAX_BOXES)
-        HALT_ERROR(SANITY_CHECK_FAILED, "box_id out of range\n\r");
+    if (!vmpu_is_box_id_valid(box_id)) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "ACL add: The box id is out of range (%u).\r\n", box_id);
+    }
 
     /* assign box region pointer */
     box = &g_mpu_box[box_id];
