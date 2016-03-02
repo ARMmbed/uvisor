@@ -431,14 +431,6 @@ int vmpu_box_id_caller(void)
     return box_ctx->src_id;
 }
 
-static bool vmpu_is_box_id_valid(int box_id)
-{
-    /* Return true if the box_id is valid. This function assumes that
-     * g_vmpu_box_count is valid, which happens after vmpu_load_boxes has been
-     * called. */
-    return box_id >= 0 && box_id < g_vmpu_box_count;
-}
-
 static int copy_box_namespace(const char *src, char *dst)
 {
     int bytes_copied;

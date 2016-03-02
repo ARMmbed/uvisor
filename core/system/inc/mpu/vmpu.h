@@ -149,4 +149,12 @@ extern int vmpu_box_id_self(void);
 extern int vmpu_box_id_caller(void);
 extern int vmpu_box_namespace_from_id(int box_id, char *box_name, size_t length);
 
+static inline bool vmpu_is_box_id_valid(int box_id)
+{
+    /* Return true if the box_id is valid. This function assumes that
+     * g_vmpu_box_count is valid, which happens after vmpu_load_boxes has been
+     * called. */
+    return box_id >= 0 && box_id < g_vmpu_box_count;
+}
+
 #endif/*__VMPU_H__*/
