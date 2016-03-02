@@ -229,9 +229,6 @@ void vmpu_switch(uint8_t src_box, uint8_t dst_box)
     if(dst_box>=UVISOR_MAX_BOXES)
         HALT_ERROR(SANITY_CHECK_FAILED, "dst_box out of range (%u)", dst_box);
 
-    /* remember active box */
-    g_active_box = dst_box;
-
     /* switch ACLs for peripherals */
     vmpu_aips_switch(src_box, dst_box);
 

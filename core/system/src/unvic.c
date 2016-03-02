@@ -112,7 +112,7 @@ void unvic_isr_set(uint32_t irqn, uint32_t vector, uint32_t flag)
      * note: when an IRQ is released (de-registered) the corresponding IRQn is
      *       disabled, to ensure that no spurious interrupts are served */
     if (vector) {
-        g_unvic_vector[irqn].id = svc_cx_get_curr_id();
+        g_unvic_vector[irqn].id = g_active_box;
     }
     else {
         NVIC_DisableIRQ(irqn);
@@ -126,7 +126,7 @@ void unvic_isr_set(uint32_t irqn, uint32_t vector, uint32_t flag)
     DPRINTF("IRQ %d %s box %d\n\r",
             irqn,
             vector ? "registered to" : "released by",
-            svc_cx_get_curr_id());
+            g_active_box);
 }
 
 uint32_t unvic_isr_get(uint32_t irqn)
@@ -339,7 +339,7 @@ uint32_t __unvic_svc_cx_in(uint32_t *svc_sp, uint32_t svc_pc)
     }
 
     /* gather information from current state */
-    src_id = svc_cx_get_curr_id();
+    src_id = g_active_box;
     src_sp = svc_cx_validate_sf((uint32_t *) __get_PSP());
 
     /* a proper context switch is only needed if changing box */
@@ -414,7 +414,7 @@ void __unvic_svc_cx_out(uint32_t *svc_sp, uint32_t *msp)
     uint32_t *src_sp, *dst_sp;
 
     /* gather information from current state */
-    dst_id = svc_cx_get_curr_id();
+    dst_id = g_active_box;
     dst_sp = svc_cx_validate_sf(svc_sp);
 
     /* gather information from previous state */

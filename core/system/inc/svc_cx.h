@@ -42,7 +42,7 @@ extern TBoxCx    g_svc_cx_state[UVISOR_SVC_CONTEXT_MAX_DEPTH];
 extern int       g_svc_cx_state_ptr;
 extern uint32_t *g_svc_cx_curr_sp[UVISOR_MAX_BOXES];
 extern uint32_t *g_svc_cx_context_ptr[UVISOR_MAX_BOXES];
-extern uint8_t   g_svc_cx_curr_id;
+extern uint8_t g_active_box;
 
 static inline uint8_t svc_cx_get_src_id(void)
 {
@@ -57,11 +57,6 @@ static inline uint32_t *svc_cx_get_src_sp(void)
 static inline uint32_t *svc_cx_get_curr_sp(uint8_t box_id)
 {
     return g_svc_cx_curr_sp[box_id];
-}
-
-static inline uint8_t svc_cx_get_curr_id(void)
-{
-    return g_svc_cx_curr_id;
 }
 
 static void inline svc_cx_push_state(uint8_t src_id, uint8_t type, uint32_t *src_sp,
@@ -81,7 +76,7 @@ static void inline svc_cx_push_state(uint8_t src_id, uint8_t type, uint32_t *src
         g_svc_cx_curr_sp[src_id] = src_sp;
 
     /* update current box id */
-    g_svc_cx_curr_id = dst_id;
+    g_active_box = dst_id;
 }
 
 static inline void svc_cx_pop_state(uint8_t dst_id, uint32_t *dst_sp)
@@ -98,7 +93,7 @@ static inline void svc_cx_pop_state(uint8_t dst_id, uint32_t *dst_sp)
     g_svc_cx_curr_sp[dst_id] = dst_sp + SVC_CX_EXC_SF_SIZE + dst_sp_align;
 
     /* update current box id */
-    g_svc_cx_curr_id = svc_cx_get_src_id();
+    g_active_box = svc_cx_get_src_id();
 }
 
 uint32_t *svc_cx_validate_sf(uint32_t *sp);
