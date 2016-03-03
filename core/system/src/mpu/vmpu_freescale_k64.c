@@ -126,8 +126,9 @@ void vmpu_acl_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 #endif/*NDEBUG*/
 
     /* check for maximum box ID */
-    if(box_id>=UVISOR_MAX_BOXES)
-        HALT_ERROR(SANITY_CHECK_FAILED, "box ID out of range (%i)\n", box_id);
+    if (!vmpu_is_box_id_valid(box_id)) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "ACL add: The box ID is out of range (%u).\r\n", box_id);
+    }
 
     /* check for alignment to 32 bytes */
     if(((uint32_t)start) & 0x1F)
@@ -226,8 +227,9 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
 void vmpu_switch(uint8_t src_box, uint8_t dst_box)
 {
     /* check for errors */
-    if(dst_box>=UVISOR_MAX_BOXES)
-        HALT_ERROR(SANITY_CHECK_FAILED, "dst_box out of range (%u)", dst_box);
+    if (!vmpu_is_box_id_valid(dst_box)) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "vMPU switch: The destination box ID is out of range (%u).\r\n", dst_box);
+    }
 
     /* switch ACLs for peripherals */
     vmpu_aips_switch(src_box, dst_box);

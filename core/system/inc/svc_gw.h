@@ -55,12 +55,17 @@ static inline uint32_t svc_gw_get_dst_fn(TSecGw *svc_pc)
 
 static inline uint8_t svc_gw_get_dst_id(TSecGw *svc_pc)
 {
-    uint32_t box_id = svc_pc->cfg_ptr - __uvisor_config.cfgtbl_ptr_start;
+    uint8_t box_id;
 
-    if(box_id <= 0 || box_id >= g_vmpu_box_count)
-        HALT_ERROR(SANITY_CHECK_FAILED, "box_id out of range (%i)", box_id);
+    box_id = (uint8_t) ((svc_pc->cfg_ptr - __uvisor_config.cfgtbl_ptr_start) & 0xFF);
 
-    return (uint8_t) (box_id & 0xFF);
+    /* We explicitly check that box_id is not 0 as we currently do not allow
+     * secure gateways to box 0. */
+    if (!box_id || !vmpu_is_box_id_valid(box_id)) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "Secure gateway: The box ID is out of range (%i).\r\n", box_id);
+    }
+
+    return box_id;
 }
 
 #endif/*__SVC_GW_H__*/
