@@ -461,8 +461,7 @@ int vmpu_box_namespace_from_id(int box_id, char *box_namespace, size_t length)
     const UvisorBoxConfig **box_cfgtbl;
     box_cfgtbl = (const UvisorBoxConfig**) __uvisor_config.cfgtbl_ptr_start;
 
-    if (!vmpu_is_box_id_valid(box_id))
-    {
+    if (!vmpu_is_box_id_valid(box_id)) {
         /* The box_id is not valid, so return an error to prevent reading
          * non-box-configuration data from flash. */
         return UVISOR_ERROR_INVALID_BOX_ID;
