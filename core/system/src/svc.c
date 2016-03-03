@@ -20,6 +20,7 @@
 #include "vmpu.h"
 #include "unvic.h"
 #include "benchmark.h"
+#include "debug.h"
 
 /* these symbols are linked in this scope from the ASM code in __svc_irq and
  * are needed for sanity checks */
@@ -36,24 +37,28 @@ void __svc_not_implemented(void)
 
 /* SVC handlers */
 const void *g_svc_vtor_tbl[] = {
-    __svc_not_implemented,   //  0
-    unvic_isr_set,           //  1
-    unvic_isr_get,           //  2
-    unvic_irq_enable,        //  3
-    unvic_irq_disable,       //  4
-    unvic_irq_pending_clr,   //  5
-    unvic_irq_pending_set,   //  6
-    unvic_irq_pending_get,   //  7
-    unvic_irq_priority_set,  //  8
-    unvic_irq_priority_get,  //  9
-    benchmark_configure,     // 10
-    benchmark_start,         // 11
-    benchmark_stop,          // 12
-    halt_user_error,         // 13
-    unvic_irq_level_get,     // 14
-    vmpu_box_id_self,        // 15
-    vmpu_box_id_caller,      // 16
+    __svc_not_implemented,      //  0
+    unvic_isr_set,              //  1
+    unvic_isr_get,              //  2
+    unvic_irq_enable,           //  3
+    unvic_irq_disable,          //  4
+    unvic_irq_pending_clr,      //  5
+    unvic_irq_pending_set,      //  6
+    unvic_irq_pending_get,      //  7
+    unvic_irq_priority_set,     //  8
+    unvic_irq_priority_get,     //  9
+    benchmark_configure,        // 10
+    benchmark_start,            // 11
+    benchmark_stop,             // 12
+    halt_user_error,            // 13
+    unvic_irq_level_get,        // 14
+    vmpu_box_id_self,           // 15
+    vmpu_box_id_caller,         // 16
     vmpu_box_namespace_from_id, // 17
+    debug_reboot,               // 18
+    /* FIXME: This function will be made automatic when the debug box ACL is
+     *        introduced. The initialization will happen at uVisor boot time. */
+    debug_register_driver,      // 19
 };
 
 /*******************************************************************************

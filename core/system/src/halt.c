@@ -16,6 +16,7 @@
  */
 #include <uvisor.h>
 #include "halt.h"
+#include "debug.h"
 
 static void halt_putcp(void* p, char c)
 {
@@ -46,7 +47,7 @@ void halt_error(THaltError reason, const char *fmt, ...)
     default_putc('\n');
 
     /* Die. */
-    while(1);
+    debug_halt_error(reason);
 }
 
 void halt_line(const char *file, uint32_t line, THaltError reason,
@@ -64,7 +65,7 @@ void halt_line(const char *file, uint32_t line, THaltError reason,
     default_putc('\n');
 
     /* Die. */
-    while(1);
+    debug_halt_error(reason);
 }
 
 void halt_user_error(THaltUserError reason)

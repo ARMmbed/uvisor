@@ -18,7 +18,18 @@
 #define __DEBUG_H__
 
 #include <uvisor.h>
+#include "debug_exports.h"
 #include "halt.h"
+
+/* Debug box handle.
+ * This is used internally by uVisor to keep track of the registered debug box
+ * and to access its driver when needed. */
+typedef struct TDebugBox {
+    const TUvisorDebugDriver *driver;
+    int initialized;
+    uint8_t box_id;
+} TDebugBox;
+TDebugBox g_debug_box;
 
 void debug_init(void);
 void debug_cx_switch_in(void);
@@ -33,6 +44,10 @@ void debug_fault_mpu(void);
 void debug_fault(THaltError reason, uint32_t lr, uint32_t sp);
 void debug_mpu_config(void);
 void debug_map_addr_to_periph(uint32_t address);
+void debug_register_driver(const TUvisorDebugDriver * const driver);
+uint32_t debug_get_version(void);
+void debug_halt_error(THaltError reason);
+void debug_reboot(void);
 
 #define DEBUG_PRINT_HEAD(x) {\
     DPRINTF("\n***********************************************************\n");\
