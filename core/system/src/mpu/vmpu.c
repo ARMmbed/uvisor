@@ -444,6 +444,7 @@ static int copy_box_namespace(const char *src, char *dst)
 
         if (src[bytes_copied] == '\0') {
             /* We've reached the end of the box namespace. */
+            ++bytes_copied; /* Include the terminating-null in bytes_copied. */
             goto done;
         }
     }
