@@ -33,6 +33,12 @@ static void halt_printf(const char *fmt, ...)
     va_end(va);
 }
 
+void halt(THaltError reason)
+{
+    /* Die. */
+    debug_halt_error(reason);
+}
+
 void halt_error(THaltError reason, const char *fmt, ...)
 {
     halt_printf("HALT_ERROR: ");
