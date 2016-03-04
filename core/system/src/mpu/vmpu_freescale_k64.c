@@ -90,6 +90,7 @@ void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
 
                 /* if recovery was not successful, throw an error and halt */
                 DEBUG_FAULT(FAULT_BUS, lr, psp);
+                VMPU_SCB_BFSR = fault_status;
                 HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied");
             }
             else
