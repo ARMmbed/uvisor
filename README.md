@@ -9,6 +9,7 @@ The uVisor is a self-contained software hypervisor that creates independent secu
 To start using uVisor you will need to include it as a library in your design. We release the uVisor library periodically in the form of a yotta module in the [`uvisor-lib`](https://github.com/ARMmbed/uvisor-lib) repository.
 
 If you want to learn more about the uVisor security model and get an overview of its features this is the right place. In this document you will read about:
+
 * The uVisor design philosophy.
 * A technical overview of the uVisor features:
     * Memory layout.
@@ -23,7 +24,7 @@ Other documents you might be interested in:
 | Know everything I can do with uVisor       | [API documentation](https://github.com/ARmmbed/uvisor-lib/blob/master/DOCUMENTATION.md)       |
 | Enable debug messages                      | [Debugging uVisor](docs/DEBUGGING.md)                                                         |
 | Port uVisor to my platform                 | [Porting guide](docs/PORTING.md)                                                              |
-| Test and experiment with uVisor            | [Developing with uVisor locally](docs/DEVELOPING_LOCALLY.md)                                        |
+| Test and experiment with uVisor            | [Developing with uVisor locally](docs/DEVELOPING_LOCALLY.md)                                  |
 | Contribute to uVisor                       | [Contributing to uVisor](CONTRIBUTING.md)                                                     |
 
 ### Word of caution
@@ -99,7 +100,7 @@ Different memory layouts can be used on different platforms, depending on the im
 
 ![uVisor memory layout](docs/img/memory_layout.png)
 
-The uVisor secures two main memory blocks, in Flash and SRAM respectively. In both cases, it protects its own data and the data of the secure boxes it manages for the unprivileged code.
+The uVisor secures two main memory blocks, in flash and SRAM respectively. In both cases, it protects its own data and the data of the secure boxes it manages for the unprivileged code.
 
 All the unprivileged code that is not protected in a secure domain is referred to as the *main box*.
 

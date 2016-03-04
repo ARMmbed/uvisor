@@ -9,9 +9,10 @@ This guide will help you to port uVisor to your platform.
 ## Overview
 
 This document will cover the following:
-- A quick presentation of the uVisor [repository structure](#repository-structure).
-- A [step-by-step](#porting-steps) porting guide to bring `uvisor` to your platform.
-- How to [integrate](#integrate-uvisor-with-your-code-base) uVisor into your codebase.
+
+* A quick presentation of the uVisor [repository structure](#repository-structure).
+* A [step-by-step](#porting-steps) porting guide to bring `uvisor` to your platform.
+* How to [integrate](#integrate-uvisor-with-your-code-base) uVisor into your codebase.
 
 For the remainder of this guide we will assume that you are porting a whole device family to uVisor, called `${family}`. You can still port a single device, although we strongly advice against it. Porting a whole family ensures that uVisor is kept as general and hardware-agnostic as possible. You will also enjoy the nice benefit of going through the porting process only once for a large set of devices.
 
@@ -76,10 +77,12 @@ In mbed, the linker script is located in the platform yotta target, while the st
 [Go to top](#overview)
 
 We will assume that you are developing in `~/code/`. Clone the uVisor GitHub repository locally:
+
 ```bash
 $ cd ~/code
 $ git clone --recursive git@github.com:ARMMbed/uvisor.git
 ```
+
 The `--recursive` option ensures that `uvisor-lib`, a sub-module of `uvisor`, is also cloned.
 
 **Tip**: We only update the pointer to `uvisor-lib` at the time of a uVisor release, so please rebase it to get the latest version:
@@ -97,19 +100,21 @@ A single family of micro-controllers might trigger different binary releases of 
 
 | Symbol             | Description                                                                |
 |------------------- |----------------------------------------------------------------------------|
-| `FLASH_ORIGIN`     | Origin of the physical Flash memory where uVisor code is placed            |
-| `FLASH_OFFSET`     | Offset in Flash at which uVisor is located                                 |
+| `FLASH_ORIGIN`     | Origin of the physical flash memory where uVisor code is placed            |
+| `FLASH_OFFSET`     | Offset in flash at which uVisor is located                                 |
 | `SRAM_ORIGIN`      | Origin of the physical SRAM memory where uVisor .bss and stacks are placed |
 | `SRAM_OFFSET`      | Offset in SRAM at which uVisor .bss and stacks are located                 |
 | `FLASH_LENGTH_MIN` | min( [`FLASH_LENGTH(i)` for `i` in family's devices] )                     |
 | `SRAM_LENGTH_MIN`  | min( [`SRAM_LENGTH(i)` for `i` in family's devices] )                      |
 | `NVIC_VECTORS`     | max( [`NVIC_VECTORS(i)` for `i` in family's devices] )                     |
 | `CORE_*` *         | Core version (e.g `CORE_CORTEX_M3`)                                        |
+
 **Table 2**. Hardware-specific features that differentiate uVisor binary release
 
 A uVisor *configuration* is defined as the unique combination of the parameters of Table 2. When porting your family to uVisor, you need to make sure that as many binary releases as the possible configurations are generated. Let's use an example.
 
 ---
+
 #### Example
 
 Let's assume for simplicity that the `${family}` that you want to port is made of only 4 devices. These have the following values from Table 2:
@@ -124,15 +129,18 @@ Let's assume for simplicity that the `${family}` that you want to port is made o
 | `SRAM_LENGTH(i)`  | 0x10000      | 0x20000      | 0x10000      | 0x20000      |
 | `NVIC_VECTORS(i)` | 86           | 122          | 86           | 122          |
 | `CORE_`           | `CORTEX_M3`  | `CORTEX_M4`  | `CORTEX_M3`  | `CORTEX_M4`  |
+
 **Table 3**. Example uVisor configuration values
 
 First, the easy ones:
+
 * `NVIC_VECTORS` is the maximum `NVIC_VECTORS(i)`, hence it is 122.
 * `FLASH_LENGTH_MIN` and `SRAM_LENGTH_MIN` are 0x80000 and 0x10000, respectively.
 * `FLASH_ORIGIN` and `FLASH_OFFSET` are the same for all the devices, so they will be common to all configurations.
 * For the core version, uVisor does not distinguish between ARM Cortex-M3 and Cortex-M4 cores, so we will just define `CORE_CORTEX_M4`.
 
 The remaining values must be combined to form distinct configurations. In this case we only need to combine `SRAM_ORIGIN` and `SRAM_OFFSET`. If you look at the table above, you will see that they appear in 2 out of the 4 possible value combinations. Hence, we have a total of 2 uVisor configurations:
+
 ```bash
 CONFIGURATION_${family}_1 = {0x0, 0x400, 0x20000000, 0x200, 0x80000, 0x10000, 122, CORE_CORTEX_M4}
 CONFIGURATION_${family}_2 = {0x0, 0x400, 0x1FFF0000, 0x400, 0x80000, 0x10000, 122, CORE_CORTEX_M4}
@@ -192,9 +200,11 @@ This file configures the build system for your device family. Table 4 shows the 
 |------------------|---------------------------------------------------------------------------|
 | `CONFIGURATIONS` | List of uVisor configurations. They must start with `CONFIGURATION_`      |
 | `ARCH_MPU`       | MPU architecture (if absent defaults to `ARMv7M`; alternative: `KINETIS`) |
+
 **Table 4**. Platform-specific configuration symbols
 
 ---
+
 ### Example
 
 ```bash
@@ -210,7 +220,8 @@ This file configures the build system for your device family. Table 4 shows the 
 ~/code/uvisor/platform/${family}/inc/config.h
 ```
 
-It contains uVisor customizations that are not hardware-specific but can be chosen by each family (e.g. the default stack size).
+This file contains uVisor customizations that are not hardware-specific but can be chosen by each family (e.g. the default stack size).
+
 ```C
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
@@ -236,6 +247,7 @@ The symbols that you can specify here are listed in Table 5.
 | `ARMv7M_ALIGNMENR_BITS`       | TODO        |
 | `ARMv7M_MPU_RESERVED_REGIONS` | TODO        |
 | `UVISOR_MAX_ACLS`             | TODO        |
+
 **Table 5**. Optional hardware-specific `config.h` symbols
 
 **Note**: You must always have a separate `configurations.h` file, even if the remaining `config.h` is empty. This ensures that `configurations.h` (which is possibly auto-generated by a script of yours) does not need to know anything more than the features of Table 2.
@@ -246,7 +258,7 @@ The symbols that you can specify here are listed in Table 5.
 ~/code/uvisor/platform/${family}/inc/configurations.h
 ```
 
-It contains the uVisor configurations for your family. Remember that each configuration triggers a separate release binary. This file should be auto-generated. Symbols that are common to all devices in the family should go first. Configuration-specific symbols are conditionally defined. The condition is based on a macro definition of the form `CONFIGURATION_${CONFIGURATION_NAME}`.
+This file contains the uVisor configurations for your family. Remember that each configuration triggers a separate release binary. This file should be auto-generated. Symbols that are common to all devices in the family should go first. Configuration-specific symbols are conditionally defined. The condition is based on a macro definition of the form `CONFIGURATION_${CONFIGURATION_NAME}`.
 
 The snippet below refers to the values shown in the example above.
 
@@ -304,7 +316,7 @@ Files added to this folder are automatically added to the build system. Generall
 
 ```C
 /* This function sets up the ARMv7M MPU to protect the static MPU regions. It
- * usually requires setting up a r/x region for the Flash and one or more r/w
+ * usually requires setting up a r/x region for the flash and one or more r/w
  * regions for the SRAM. It is hardware-specific as it depends on whether the
  * uVisor uses the same SRAM as mbed or not. */
 void vmpu_arch_init_hw(void) {
@@ -331,11 +343,11 @@ elseif(TARGET_LIKE_${family}              # [*] Insert this.
 endif()
 ```
 
-
 ## Integrate uVisor in your code-base
 [Go to top](#overview)
 
 You can finally generate all the uVisor release binaries:
+
 ```bash
 $ cd ~/code/uvisor
 $ make
@@ -347,9 +359,10 @@ You now need to integrate the uVisor binaries in your code-base. As anticipated 
 
 ### Start-up script
 
-This usually lives in an `mbed-hal-$family` module, if you already ported your platform to mbed. The startup code must call the function `uvisor_init()` right after system initialization (usually called `SystemInit()`) and right before the C/C++ library initialization.
+This usually lives in an `mbed-hal-$family` module, if you already ported your platform to mbed. The start-up code must call the function `uvisor_init()` right after system initialization (usually called `SystemInit()`) and right before the C/C++ library initialization.
 
 In assembly, `startup.S` (GCC syntax):
+
 ```asm
 ResetHandler:
   ...
@@ -362,6 +375,7 @@ ResetHandler:
 ```
 
 In C, `startup.c`:
+
 ```C
 void __attribute__((noreturn, naked)) ResetHandler(void) {
   ...
@@ -398,7 +412,7 @@ SECTIONS
          . = ALIGN(4);
     } > VECTORS
 
-    /* Ensure that the uVisor bss is at the beginning of the Flash memory. */
+    /* Ensure that the uVisor bss is at the beginning of the flash memory. */
     .uvisor.bss (NOLOAD):
     {
         . = ALIGN(32);
@@ -505,7 +519,7 @@ As shown in the snippet above, the uVisor needs the following three regions:
         <code>.uvisor.bss</code>
       </td>
       <td>
-        Contains both uVisor's own memories (coming from <code>uvisor-lib</code>, in <code>.keep.uvisor.bss.main</code>) and the secure boxes' protected memories (in <code>.keep.uvisor.bss.boxes</code>). You must make sure that this region (and hence its first sub-region, <code>.keep.uvisor.bss.boxes</code>) is positioned in SRAM at the same offset that you specified in <code>SRAM_OFFSET</code>. To avoid having data loaded from Flash ending up before uVisor, we strongly suggest to put this section at the top of the linker script.
+        Contains both uVisor's own memories (coming from <code>uvisor-lib</code>, in <code>.keep.uvisor.bss.main</code>) and the secure boxes' protected memories (in <code>.keep.uvisor.bss.boxes</code>). You must make sure that this region (and hence its first sub-region, <code>.keep.uvisor.bss.boxes</code>) is positioned in SRAM at the same offset that you specified in <code>SRAM_OFFSET</code>. To avoid having data loaded from flash ending up before uVisor, we strongly suggest to put this section at the top of the linker script.
       </td>
     </tr>
     <tr>
@@ -513,7 +527,7 @@ As shown in the snippet above, the uVisor needs the following three regions:
         <code>.uvisor.secure</code>
       </td>
       <td>
-        Contains constant data in Flash that describes the configuration of the secure boxes. It comprises the configuration tables (<code>.keep.uvisor.cfgtbl</code>) and the pointers to them (<code>.keep.uvisor.cfgtbl_ptr[_first]</code>), which are used by uVisor for box enumeration.
+        Contains constant data in flash that describes the configuration of the secure boxes. It comprises the configuration tables (<code>.keep.uvisor.cfgtbl</code>) and the pointers to them (<code>.keep.uvisor.cfgtbl_ptr[_first]</code>), which are used by uVisor for box enumeration.
       </td>
     </tr>
   </tbody>
@@ -521,9 +535,9 @@ As shown in the snippet above, the uVisor needs the following three regions:
 
 All these sections and their sub-regions must be preceded and followed by symbols that describe their boundaries, as shown in the template. Note that all symbols prefixed with `.keep` must end up in the final memory map even if they are not explicitly used. Please make sure to use the correct `ld` commands (`KEEP(...)`) or the relevant armcc flag (`--keep=*(.keep*)`).
 
-Once uVisor is active it maintains its own vector table, which the rest of the code can only interact with through uVisor APIs. We still suggest to leave the standard vector table in Flash, so that if uVisor is disabled the classic `NVIC_{S,G}etVector` functions can still work and relocate it to SRAM. This is the same reason why we need an `SRAM_OFFSET` as well, as it reserves the space for relocation of the original OS vector table.
+Once uVisor is active it maintains its own vector table, which the rest of the code can only interact with through uVisor APIs. We still suggest to leave the standard vector table in flash, so that if uVisor is disabled the classic `NVIC_{S,G}etVector` functions can still work and relocate it to SRAM. This is the same reason why we need an `SRAM_OFFSET` as well, as it reserves the space for relocation of the original OS vector table.
 
-Finally, note that at the end of the linker script the physical boundaries for the memories (Flash/SRAM) populated by uVisor are also provided.
+Finally, note that at the end of the linker script the physical boundaries for the memories (flash/SRAM) populated by uVisor are also provided.
 
 **Note**: If you are using armcc, then you have to re-create the same memory map in a scatter file. Additional armlink flags are needed to ensure important symbols are not discarded, and an additional steering file translates armcc-compatible linker symbols to `__uvisor`-namespaced ones. **More on this coming soon**.
 

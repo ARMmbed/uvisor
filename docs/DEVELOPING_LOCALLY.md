@@ -17,14 +17,17 @@ You will need the following:
 ## Build the uVisor locally
 
 We will assume that your development directory is `~/code`. First, you need to clone the uVisor code-base:
+
 ```bash
 $ cd ~/code
 $ git clone --recursive git@github.com:ARMmbed/uvisor.git
 $ cd ~/code/uvisor
 ```
+
 The `uvisor` repository is where the uVisor is developed. The `--recursive` option ensures that the `uvisor-lib` submodule is fetched as well. This submodule is fetched in the `release` folder, where the release process will produce its output.
 
 **Tip**: We only update the pointer to `uvisor-lib` at the time of a uVisor release, so please rebase it to get the latest version:
+
 ```bash
 $ cd ~/code/uvisor/release
 $ git checkout master
@@ -32,35 +35,43 @@ $ git pull --rebase
 ```
 
 Build uVisor. All configurations, for all family, both for debug and release will be built with a single `make` rule:
+
 ```bash
 $ cd ~/code/uvisor
 $ make
 ```
+
 A rule `make fresh` is also provided, that cleans everything before building. This might be useful while you develop.
 
 New binaries have been created, which are located in the `release` folder. We now need to tell yotta to link locally to this module:
+
 ```bash
 $ cd ~/code/uvisor/release
 $ yotta link
 ```
+
 In this way yotta applications can refer to this local version of `uvisor-lib` instead of the one published in the registry.
 
 ## Link your application
 
 If you are just starting to look at uVisor and don't have your own mbed app, we suggest you use our Hello World example:
+
 ```bash
 $ cd ~/code
 $ git clone git@github.com:ARMmbed/uvisor-helloworld.git
 ```
 
 In either case, move to the app folder and select the target:
+
 ```bash
 $ cd ~/code/${your_app}           # or ~/code/uvisor-helloworld
 $ yotta target ${your_target}
 ```
+
 If you are porting uVisor to your platform, `${your_target}` will be your own target, whereas otherwise you can only use the [officially supported targets](../README.md#supported-platforms) for uVisor.
 
 You can now tell yotta to use your local version of uVisor, and finally build:
+
 ```bash
 $ yotta link uvisor-lib
 $ yotta build
@@ -71,6 +82,7 @@ Your application binary will be located in `build/${your_target}/source/${your_a
 ## Debugging uVisor
 
 The above procedure allows you to run a locally built version of uVisor on your device. If you want to enable debug you must build with the `-d` option:
+
 ```bash
 $ yotta build -d
 ```
