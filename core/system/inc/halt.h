@@ -33,13 +33,14 @@ typedef enum {
 } THaltError;
 
 #ifdef  NDEBUG
-#define HALT_ERROR(reason, ...) while(1)
+#define HALT_ERROR(reason, ...) halt(reason)
 #else /*NDEBUG*/
 #define HALT_ERROR(reason, ...) \
         halt_line(__FILE__, __LINE__, reason, ##__VA_ARGS__)
 #endif/*NDEBUG*/
 
 extern void halt_user_error(THaltUserError reason);
+extern void halt(THaltError reason);
 extern void halt_error(THaltError reason, const char *fmt, ...);
 extern void halt_line(const char *file, uint32_t line, THaltError reason,
                       const char *fmt, ...);
