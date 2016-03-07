@@ -444,10 +444,18 @@ static int copy_box_namespace(const char *src, char *dst)
 
         if (src[bytes_copied] == '\0') {
             /* We've reached the end of the box namespace. */
-            break;
+            ++bytes_copied; /* Include the terminating-null in bytes_copied. */
+            goto done;
         }
     }
 
+    /* We did not find a terminating null in the src. The src has been verified
+     * in vmpu_box_namespace_from_id as being in the box config table. It is a
+     * programmer error if the namespace in the box config table is not
+     * null-terminated, so we halt. */
+    HALT_ERROR(SANITY_CHECK_FAILED, "vmpu: Box namespace missing terminating-null\r\n");
+
+done:
     return bytes_copied;
 }
 
