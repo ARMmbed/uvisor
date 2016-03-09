@@ -18,8 +18,55 @@
 #define __UVISOR_LIB_BOX_CONFIG_H__
 
 #include <stddef.h>
+#include <stdbool.h>
 
 UVISOR_EXTERN const uint32_t __uvisor_mode;
+
+/* In an effort to hide the box-local variables that
+ * uvisor_buffer_overlaps_box_context needs from colliding with other boxes,
+ * and to avoid defining uvisor_buffer_overlaps_box_context inside a macro that
+ * would make uvisor_buffer_overlaps_box_context itself box-local, we privately
+ * predeclare those box-local variables as private. The exact mechanism of
+ * privacy differs between C and C++. */
+#ifdef __cplusplus
+/* In C++, we can't predeclare variables that will later be defined as static.
+ * So, we instead define the variables as extern, but in a private anonymous
+ * namespace. */
+namespace
+{
+    extern const uintptr_t __uvisor_ctx_addr;
+    extern const size_t __uvisor_ctx_size;
+}
+#else
+/* In C, we can predeclare variables that will later be defined as static. */
+const size_t __uvisor_ctx_size;
+const uintptr_t __uvisor_ctx_addr;
+#endif
+
+#ifdef __cplusplus
+/* In C++, we define the private variables that
+ * uvisor_buffer_overlaps_box_context needs inside a private anonymous
+ * namespace. */
+#define __UVISOR_DEFINE_CTX_SIZE(box_name) \
+    namespace \
+    { \
+        const size_t __uvisor_ctx_size = sizeof(box_name ## _reserved); \
+    }
+
+#define __UVISOR_DEFINE_CTX_ADDR \
+    namespace \
+    { \
+        const uintptr_t __uvisor_ctx_addr = (uintptr_t) &uvisor_ctx; \
+    }
+#else
+/* In C, we define the private variables that
+ * uvisor_buffer_overlaps_box_context needs as static. */
+#define __UVISOR_DEFINE_CTX_SIZE(box_name) \
+    static const size_t __uvisor_ctx_size = sizeof(box_name ## _reserved);
+
+#define __UVISOR_DEFINE_CTX_ADDR(box_name) \
+    static const size_t __uvisor_ctx_addr = &uvisor_ctx;
+#endif
 
 #define UVISOR_DISABLED   0
 #define UVISOR_PERMISSIVE 1
@@ -71,18 +118,23 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
         acl_list_count \
     }; \
     \
-    extern const __attribute__((section(".keep.uvisor.cfgtbl_ptr"), aligned(4))) void * const box_name ## _cfg_ptr = &box_name ## _cfg;
+    extern const __attribute__((section(".keep.uvisor.cfgtbl_ptr"), aligned(4))) void * const box_name ## _cfg_ptr = &box_name ## _cfg; \
+    __UVISOR_DEFINE_CTX_SIZE(box_name)
 
 #define __UVISOR_BOX_CONFIG_NOCONTEXT(box_name, acl_list, stack_size) \
     __UVISOR_BOX_CONFIG(box_name, acl_list, UVISOR_ARRAY_COUNT(acl_list), stack_size, 0) \
 
+#define __UVISOR_DECLARE_CTX(context_type) \
+    UVISOR_EXTERN context_type * const uvisor_ctx; \
+    __UVISOR_DEFINE_CTX_ADDR
+
 #define __UVISOR_BOX_CONFIG_CONTEXT(box_name, acl_list, stack_size, context_type) \
     __UVISOR_BOX_CONFIG(box_name, acl_list, UVISOR_ARRAY_COUNT(acl_list), stack_size, sizeof(context_type)) \
-    UVISOR_EXTERN context_type * const uvisor_ctx;
+    __UVISOR_DECLARE_CTX(context_type)
 
 #define __UVISOR_BOX_CONFIG_NOACL(box_name, stack_size, context_type) \
     __UVISOR_BOX_CONFIG(box_name, NULL, 0, stack_size, sizeof(context_type)) \
-    UVISOR_EXTERN context_type * const uvisor_ctx;
+    __UVISOR_DECLARE_CTX(context_type)
 
 #define __UVISOR_BOX_CONFIG_NOACL_NOCONTEXT(box_name, stack_size) \
     __UVISOR_BOX_CONFIG(box_name, NULL, 0, stack_size, 0)
@@ -106,6 +158,17 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 #define UVISOR_BOX_NAMESPACE(box_namespace) \
     static const char *const __uvisor_box_namespace = box_namespace
 
+
+/* Return true if (and only if) the specified buffer overlaps box context. */
+static inline bool uvisor_buffer_overlaps_box_context(const void *buffer, size_t length)
+{
+    uintptr_t buffer_addr = (uintptr_t) buffer;
+
+    return (buffer_addr <= __uvisor_ctx_addr &&
+            buffer_addr + length > __uvisor_ctx_addr) ||
+           (__uvisor_ctx_addr <= buffer_addr &&
+            __uvisor_ctx_addr + __uvisor_ctx_size > buffer_addr);
+}
 
 /* Return the numeric box ID of the current box. */
 UVISOR_EXTERN int uvisor_box_id_self(void);
