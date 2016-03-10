@@ -25,11 +25,6 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 #define UVISOR_PERMISSIVE 1
 #define UVISOR_ENABLED    2
 
-/* The maximum box namespace length is 37 so that it is exactly big enough for
- * a human-readable hex string GUID (as formatted by RFC 4122) followed by a
- * terminating NUL. */
-#define UVISOR_MAX_BOX_NAMESPACE_LENGTH 37
-
 #define UVISOR_SET_MODE(mode) \
     UVISOR_SET_MODE_ACL_COUNT(mode, NULL, 0)
 

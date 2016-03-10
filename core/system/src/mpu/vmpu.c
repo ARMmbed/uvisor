@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 #include <uvisor.h>
-#include "mbed/uvisor-lib/box_config.h"
-#include "mbed/uvisor-lib/error.h"
 #include "vmpu.h"
 #include "svc.h"
 #include "halt.h"

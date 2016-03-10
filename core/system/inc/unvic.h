@@ -24,7 +24,6 @@
 #define UNVIC_IS_IRQ_ENABLED(irqn) (NVIC->ISER[(((uint32_t) ((int32_t) (irqn))) >> 5UL)] & \
                                     (uint32_t) (1UL << (((uint32_t) ((int32_t) (irqn))) & 0x1FUL)))
 
-#define NVIC_OFFSET 16
 #define ISR_VECTORS ((NVIC_OFFSET) + (NVIC_VECTORS))
 
 typedef void (*TIsrVector)(void);

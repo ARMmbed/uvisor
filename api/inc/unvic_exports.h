@@ -26,4 +26,7 @@
  * priorities available to them */
 #define UVISOR_VIRQ_MAX_PRIORITY ((uint32_t) (1 << __NVIC_PRIO_BITS) - 1 - __UVISOR_NVIC_MIN_PRIORITY)
 
+/* Offset of NVIC interrupts with respect to handler 0 */
+#define NVIC_OFFSET 16
+
 #endif /* __UVISOR_API_UNVIC_EXPORTS_H__ */
