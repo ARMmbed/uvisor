@@ -1,4 +1,4 @@
-Copyright (c) 2013-2015 ARM Limited
+Copyright (c) 2013-2016 ARM Limited
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,19 +16,11 @@ License Exceptions:
 
  - 3-clause BSD License (see LICENSE-BSD.txt):
 
-    - core/cmsis/inc:
-      Copyright (c) 2009-2015 ARM Limited
+    - core/cmsis/inc/arm* and core/cmsis/inc/core*:
+      Copyright (c) 2009-2016 ARM Limited
 
-    - core/arch/MK64F:
+    - core/cmsis/inc/mpu_kinetis.h:
       Copyright (c) 1997-2014 Freescale Semiconductor, Inc
-
-    - core/arch/STM32F4:
-      Copyright (c) 2015 STMicroelectronics
 
     - core/lib/printf:
       Copyright (c) 2004, 2012 Kustaa Nyholm / SpareTimeLabs
-
- - ZLIB License ( see LICENSE-zlib.txt):
-
-    - core/arch/EFM32GG:
-      Copyright (c) 2012 Energy Micro AS
