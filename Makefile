@@ -22,22 +22,24 @@ CC:=$(PREFIX)gcc
 CXX:=$(PREFIX)g++
 OBJCOPY:=$(PREFIX)objcopy
 OBJDUMP:=$(PREFIX)objdump
+AR:=$(PREFIX)ar
 
 # Root folder
 ROOT_DIR:=.
 
 # Top-level folder paths
+API_DIR:=$(ROOT_DIR)/api
 CORE_DIR:=$(ROOT_DIR)/core
+DOCS_DIR:=$(ROOT_DIR)/docs
 PLATFORM_DIR:=$(ROOT_DIR)/platform
-RELEASE_DIR:=$(ROOT_DIR)/release
 TOOLS_DIR:=$(ROOT_DIR)/tools
 
 # Core paths
-CMSIS_DIR:=$(CORE_DIR)/cmsis
-SYSTEM_DIR:=$(CORE_DIR)/system
-MBED_DIR:=$(CORE_DIR)/mbed
-DEBUG_DIR:=$(CORE_DIR)/debug
-LIB_DIR:=$(CORE_DIR)/lib
+CORE_CMSIS_DIR:=$(CORE_DIR)/cmsis
+CORE_DEBUG_DIR:=$(CORE_DIR)/debug
+CORE_LIB_DIR:=$(CORE_DIR)/lib
+CORE_LINKER_DIR:=$(CORE_DIR)/linker
+CORE_SYSTEM_DIR:=$(CORE_DIR)/system
 
 # List of supported platforms
 # Note: One could do it in a simpler way but this prevents spurious files in
@@ -49,30 +51,23 @@ ifdef PLATFORM
 include $(PLATFORM_DIR)/$(PLATFORM)/Makefile.configurations
 endif
 
-# Platform-specific paths
-PLATFORM_INC:=$(PLATFORM_DIR)/$(PLATFORM)/inc
+# Platform-specific source files
 PLATFORM_SRC:=$(wildcard $(PLATFORM_DIR)/$(PLATFORM)/src/*.c)
 
 # Configuration-specific paths
 CONFIGURATION_LOWER:=$(shell echo $(CONFIGURATION) | tr '[:upper:]' '[:lower:]')
 CONFIGURATION_PREFIX:=$(PLATFORM_DIR)/$(PLATFORM)/$(BUILD_MODE)/$(CONFIGURATION_LOWER)
 
-# mbed origin paths
-MBED_SRC:=$(MBED_DIR)/source
-MBED_INC:=$(MBED_DIR)/uvisor-lib
-MBED_BIN:=$(MBED_SRC)/$(CONFIGURATION_LOWER).box
-MBED_CONFIG:=$(PLATFORM_DIR)/$(PLATFORM)/mbed/get_configuration.cmake
+# Release library definitions
+API_ASM_HEADER:=$(API_DIR)/src/uvisor-header.S
+API_ASM_INPUT:=$(API_DIR)/src/uvisor-input.S
+API_ASM_OUTPUT:=$(API_ASM_INPUT).$(CONFIGURATION_LOWER).$(BUILD_MODE).s
+API_RELEASE:=$(API_DIR)/lib/$(PLATFORM)/$(BUILD_MODE)/$(CONFIGURATION_LOWER).a
+API_VERSION:=$(API_DIR)/lib/$(PLATFORM)/$(BUILD_MODE)/$(CONFIGURATION_LOWER).txt
 
-# Release binaries' definitions
-BINARY_ASM_HEADER:=$(MBED_SRC)/uvisor-header.S
-BINARY_ASM_INPUT:=$(MBED_SRC)/uvisor-input.S
-BINARY_ASM_OUTPUT:=$(CONFIGURATION_PREFIX).s
-BINARY_RELEASE:=$(MBED_SRC)/$(PLATFORM)/$(BUILD_MODE)/$(CONFIGURATION_LOWER).o
-
-# Released header files
-RELEASE_SRC:=$(RELEASE_DIR)/source
-RELEASE_INC:=$(RELEASE_DIR)/uvisor-lib
-RELEASE_BIN:=$(RELEASE_SRC)/$(PLATFORM)/$(BUILD_MODE)/$(CONFIGURATION_LOWER).o
+# Release library source files
+API_SOURCES:=$(wildcard $(API_DIR)/src/*.c)
+API_OBJS:=$(foreach API_SOURCE, $(API_SOURCES), $(API_SOURCE).$(CONFIGURATION_LOWER).$(BUILD_MODE).o) $(API_ASM_OUTPUT:.s=.o)
 
 # make ARMv7-M MPU driver the default
 ifeq ("$(ARCH_MPU)","")
@@ -82,32 +77,32 @@ endif
 # ARMv7-M MPU driver
 ifeq ("$(ARCH_MPU)","ARMv7M")
 MPU_SRC:=\
-         $(SYSTEM_DIR)/src/mpu/vmpu_armv7m.c \
-         $(SYSTEM_DIR)/src/mpu/vmpu_armv7m_debug.c
+         $(CORE_SYSTEM_DIR)/src/mpu/vmpu_armv7m.c \
+         $(CORE_SYSTEM_DIR)/src/mpu/vmpu_armv7m_debug.c
 endif
 
 # Freescale K64 MPU driver
 ifeq ("$(ARCH_MPU)","KINETIS")
 MPU_SRC:=\
-         $(SYSTEM_DIR)/src/mpu/vmpu_freescale_k64.c \
-         $(SYSTEM_DIR)/src/mpu/vmpu_freescale_k64_debug.c \
-         $(SYSTEM_DIR)/src/mpu/vmpu_freescale_k64_aips.c \
-         $(SYSTEM_DIR)/src/mpu/vmpu_freescale_k64_mem.c
+         $(CORE_SYSTEM_DIR)/src/mpu/vmpu_freescale_k64.c \
+         $(CORE_SYSTEM_DIR)/src/mpu/vmpu_freescale_k64_debug.c \
+         $(CORE_SYSTEM_DIR)/src/mpu/vmpu_freescale_k64_aips.c \
+         $(CORE_SYSTEM_DIR)/src/mpu/vmpu_freescale_k64_mem.c
 endif
 
 SOURCES:=\
-         $(SYSTEM_DIR)/src/benchmark.c \
-         $(SYSTEM_DIR)/src/halt.c \
-         $(SYSTEM_DIR)/src/main.c \
-         $(SYSTEM_DIR)/src/stdlib.c \
-         $(SYSTEM_DIR)/src/svc.c \
-         $(SYSTEM_DIR)/src/svc_cx.c \
-         $(SYSTEM_DIR)/src/unvic.c \
-         $(SYSTEM_DIR)/src/system.c \
-         $(SYSTEM_DIR)/src/mpu/vmpu.c \
-         $(DEBUG_DIR)/src/debug.c \
-         $(DEBUG_DIR)/src/memory_map.c \
-         $(LIB_DIR)/printf/tfp_printf.c \
+         $(CORE_SYSTEM_DIR)/src/benchmark.c \
+         $(CORE_SYSTEM_DIR)/src/halt.c \
+         $(CORE_SYSTEM_DIR)/src/main.c \
+         $(CORE_SYSTEM_DIR)/src/stdlib.c \
+         $(CORE_SYSTEM_DIR)/src/svc.c \
+         $(CORE_SYSTEM_DIR)/src/svc_cx.c \
+         $(CORE_SYSTEM_DIR)/src/unvic.c \
+         $(CORE_SYSTEM_DIR)/src/system.c \
+         $(CORE_SYSTEM_DIR)/src/mpu/vmpu.c \
+         $(CORE_DEBUG_DIR)/src/debug.c \
+         $(CORE_DEBUG_DIR)/src/memory_map.c \
+         $(CORE_LIB_DIR)/printf/tfp_printf.c \
          $(MPU_SRC) \
          $(PLATFORM_SRC)
 
@@ -158,13 +153,14 @@ CFLAGS_PRE:=\
         -D$(CONFIGURATION) \
         -DPROGRAM_VERSION=\"$(PROGRAM_VERSION)\" \
         $(APP_CFLAGS) \
-        -I$(PLATFORM_INC) \
+        -I$(ROOT_DIR) \
         -I$(CORE_DIR) \
-        -I$(CMSIS_DIR)/inc \
-        -I$(SYSTEM_DIR)/inc \
-        -I$(SYSTEM_DIR)/inc/mpu \
-        -I$(DEBUG_DIR)/inc \
-        -I$(LIB_DIR)/printf \
+        -I$(CORE_CMSIS_DIR)/inc \
+        -I$(CORE_DEBUG_DIR)/inc \
+        -I$(CORE_LIB_DIR)/printf \
+        -I$(PLATFORM_DIR)/$(PLATFORM)/inc \
+        -I$(CORE_SYSTEM_DIR)/inc \
+        -I$(CORE_SYSTEM_DIR)/inc/mpu \
         -ffunction-sections \
         -fdata-sections
 
@@ -179,13 +175,13 @@ LINKER_CONFIG:=\
     -DUVISOR_SRAM_LENGTH=$(UVISOR_SRAM_LENGTH) \
     -include $(PLATFORM_DIR)/$(PLATFORM)/inc/config.h
 
-BINARY_CONFIG:=\
+API_CONFIG:=\
     -DUVISOR_FLASH_LENGTH=$(UVISOR_FLASH_LENGTH) \
     -DUVISOR_SRAM_LENGTH=$(UVISOR_SRAM_LENGTH) \
     -DUVISOR_MAGIC=$(UVISOR_MAGIC) \
     -DUVISOR_BIN=\"$(CONFIGURATION_PREFIX).bin\"
 
-.PHONY: all fresh __platform/% __configurations __binaries CONFIGURATION_% clean source.c.tags
+.PHONY: all fresh __platform/% __configurations __release CONFIGURATION_% clean source.c.tags
 
 # Build both the release and debug versions for all platforms for all
 # configurations.
@@ -218,34 +214,28 @@ CONFIGURATION_%:
 ifndef PLATFORM
 	$(error "Missing platform. Use PLATFORM=<your_platform> make CONFIGURATION_<your_configuration>")
 else
-	make CONFIGURATION=$@ __binaries yotta
+	make CONFIGURATION=$@ __release
 endif
 
 # This middleware target is needed because the parent make does not know the
 # name to give to the binary release yet (it is configuration-specific).
-__binaries: $(BINARY_RELEASE)
+__release: $(API_RELEASE)
 
 # Generate the pre-linked uVisor binary for the given platform and configuration.
-$(BINARY_RELEASE): $(CONFIGURATION_PREFIX).bin
-	mkdir -p $(dir $(BINARY_RELEASE))
-	cp -f $(BINARY_ASM_HEADER) $(BINARY_ASM_OUTPUT)
-	$(CPP) -w -P $(BINARY_CONFIG) $(BINARY_ASM_INPUT) > $(BINARY_ASM_OUTPUT)
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $(BINARY_RELEASE) $(BINARY_ASM_OUTPUT)
-	rm -f $(BINARY_ASM_OUTPUT)
+# The binary is then packaged with the uVisor library implementations into a
+# unique .a file.
+$(API_RELEASE): $(API_ASM_OUTPUT) $(API_DIR)/lib/$(PLATFORM)/$(BUILD_MODE) $(API_OBJS)
+	$(AR) cr $(API_RELEASE) $(API_OBJS)
+	echo "$(PROGRAM_VERSION)" > $(API_VERSION)
 
-# Copy the release material to the uvisor-lib module.
-yotta: $(BINARY_RELEASE)
-	rm -f $(RELEASE_INC)/*.h
-	rm -f $(RELEASE_SRC)/*.cpp
-	rm -f $(RELEASE_OBJ) $(RELEASE_VER)
-	mkdir -p $(RELEASE_INC)
-	mkdir -p $(RELEASE_SRC)/$(PLATFORM)/$(BUILD_MODE)
-	echo "$(PROGRAM_VERSION)" > $(RELEASE_SRC)/$(PLATFORM)/version.txt
-	cp $(MBED_INC)/*.h   $(RELEASE_INC)/
-	cp $(MBED_SRC)/*.cpp $(RELEASE_SRC)/
-	find $(ROOT_DIR) -name "*_exports.h" -not -path "$(RELEASE_DIR)/*" -exec cp {} $(RELEASE_INC)/ \;
-	cp $(MBED_CONFIG) $(RELEASE_SRC)/$(PLATFORM)/
-	cp $(BINARY_RELEASE) $(RELEASE_BIN$)
+# Generate the output asm file from the asm input file and the INCBIN'ed binary.
+$(API_ASM_OUTPUT): $(CONFIGURATION_PREFIX).bin
+	cp -f $(API_ASM_HEADER) $(API_ASM_OUTPUT)
+	$(CPP) -w -P $(API_CONFIG) $(API_ASM_INPUT) > $(API_ASM_OUTPUT)
+
+# Generate the library folders if they do not exist.
+$(API_DIR)/lib/$(PLATFORM)/$(BUILD_MODE):
+	mkdir -p $(API_DIR)/lib/$(PLATFORM)/$(BUILD_MODE)
 
 $(CONFIGURATION_PREFIX).bin: $(CONFIGURATION_PREFIX).elf
 	$(OBJCOPY) $< -O binary $@
@@ -254,11 +244,14 @@ $(CONFIGURATION_PREFIX).elf: $(OBJS) $(CONFIGURATION_PREFIX).linker
 	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(SYSLIBS)
 	$(OBJDUMP) -d $@ > $(CONFIGURATION_PREFIX).asm
 
-$(CONFIGURATION_PREFIX).linker: $(CORE_DIR)/linker/default.h
+$(CONFIGURATION_PREFIX).linker: $(CORE_LINKER_DIR)/default.h
 	mkdir -p $(dir $(CONFIGURATION_PREFIX))
 	$(CPP) -w -P $(LINKER_CONFIG) $< -o $@
 
 %.c.$(CONFIGURATION_LOWER).$(BUILD_MODE).o: %.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+%.S.$(CONFIGURATION_LOWER).$(BUILD_MODE).o: %.S.$(CONFIGURATION_LOWER).$(BUILD_MODE).s
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 ctags: source.c.tags
@@ -274,5 +267,7 @@ clean:
 	find $(ROOT_DIR) -iname '*.elf' -delete
 	find $(ROOT_DIR) -iname '*.map' -delete
 	find $(ROOT_DIR) -iname '*.linker' -delete
-	rmdir $(foreach MODE, debug release, $(wildcard $(PLATFORM_DIR)/*/$(MODE))) >/dev/null 2>&1 || true
+	find $(ROOT_DIR) -iname '*.*.s' -delete
+	rm -rf $(API_DIR)/lib
+	rm -rf $(foreach MODE, debug release, $(wildcard $(PLATFORM_DIR)/*/$(MODE)))
 	$(APP_CLEAN)
