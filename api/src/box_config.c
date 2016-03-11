@@ -14,9 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "uvisor-lib/uvisor-lib.h"
 
-UVISOR_EXTERN void uvisor_debug_init(const TUvisorDebugDriver * const driver)
+#include "api/inc/uvisor-lib.h"
+
+int uvisor_box_id_self(void)
 {
-    UVISOR_SVC(UVISOR_SVC_ID_DEBUG_REGISTER_BOX, "", (uint32_t) driver);
+    return UVISOR_SVC(UVISOR_SVC_ID_BOX_ID_SELF, "");
+}
+
+int uvisor_box_id_caller(void)
+{
+    return UVISOR_SVC(UVISOR_SVC_ID_BOX_ID_CALLER, "");
+}
+
+int uvisor_box_namespace(int box_id, char *box_namespace, size_t length)
+{
+    return UVISOR_SVC(UVISOR_SVC_ID_BOX_NAMESPACE_FROM_ID, "", box_id, box_namespace, length);
 }

@@ -17,7 +17,7 @@
 #ifndef __HALT_H__
 #define __HALT_H__
 
-#include "halt_exports.h"
+#include "api/inc/halt_exports.h"
 
 typedef enum {
     PERMISSION_DENIED = 1,

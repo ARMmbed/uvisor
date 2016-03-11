@@ -34,7 +34,7 @@
 #include "hardware_support.h"
 
 /* definitions that are made visible externally */
-#include "uvisor_exports.h"
+#include "api/inc/uvisor_exports.h"
 
 #ifndef TRUE
 #define TRUE 1

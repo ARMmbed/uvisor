@@ -19,8 +19,8 @@
 
 #include <uvisor.h>
 #include <vmpu.h>
-#include "svc_exports.h"
-#include "svc_gw_exports.h"
+#include "api/inc/svc_exports.h"
+#include "api/inc/svc_gw_exports.h"
 
 #define UVISOR_SVC_GW_OPCODE (uint16_t) (0xDF00 +                              \
                                          UVISOR_SVC_ID_SECURE_GATEWAY(0))

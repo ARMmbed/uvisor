@@ -19,7 +19,7 @@
 #define __UNVIC_H__
 
 #include "svc.h"
-#include "unvic_exports.h"
+#include "api/inc/unvic_exports.h"
 
 #define UNVIC_IS_IRQ_ENABLED(irqn) (NVIC->ISER[(((uint32_t) ((int32_t) (irqn))) >> 5UL)] & \
                                     (uint32_t) (1UL << (((uint32_t) ((int32_t) (irqn))) & 0x1FUL)))

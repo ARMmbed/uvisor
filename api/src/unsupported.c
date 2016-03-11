@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "uvisor-lib/uvisor-lib.h"
+#include "api/inc/uvisor-lib.h"
 
 /* uvisor hook for unsupported platforms */
 UVISOR_EXTERN void __attribute__((section(".uvisor.main"))) uvisor_init(void)

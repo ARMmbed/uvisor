@@ -17,7 +17,7 @@
 #ifndef __VMPU_EXPORTS_H__
 #define __VMPU_EXPORTS_H__
 
-#include "uvisor_exports.h"
+#include "api/inc/uvisor_exports.h"
 #include <stdint.h>
 
 /* supervisor user access modes */

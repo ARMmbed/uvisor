@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "uvisor-lib/uvisor-lib.h"
+#include "api/inc/uvisor-lib.h"
 #include "cmsis-core/cmsis_nvic.h"
 #include <string.h>
 #include <stddef.h>

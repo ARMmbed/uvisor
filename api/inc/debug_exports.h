@@ -14,20 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef __DEBUG_EXPORTS_H__
+#define __DEBUG_EXPORTS_H__
 
-#include "uvisor-lib/uvisor-lib.h"
+#include "api/inc/uvisor_exports.h"
+#include <stdint.h>
 
-int uvisor_box_id_self(void)
-{
-    return UVISOR_SVC(UVISOR_SVC_ID_BOX_ID_SELF, "");
-}
+/* Debug box driver -- Version 0
+ * A constant instance of this struct must be instantiated by the unprivileged
+ * code to setup a debug box.*/
+typedef struct TUvisorDebugDriver {
+    uint32_t (*get_version)(void);
+    void (*halt_error)(int);
+} TUvisorDebugDriver;
 
-int uvisor_box_id_caller(void)
-{
-    return UVISOR_SVC(UVISOR_SVC_ID_BOX_ID_CALLER, "");
-}
+/* Number of handlers in the debug box driver */
+#define DEBUG_BOX_HANDLERS_NUMBER (sizeof(TUvisorDebugDriver) / sizeof(void *))
 
-int uvisor_box_namespace(int box_id, char *box_namespace, size_t length)
-{
-    return UVISOR_SVC(UVISOR_SVC_ID_BOX_NAMESPACE_FROM_ID, "", box_id, box_namespace, length);
-}
+#endif /* __DEBUG_EXPORTS_H__ */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, ARM Limited, All Rights Reserved
+ * Copyright (c) 2015, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -14,21 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __DEBUG_EXPORTS_H__
-#define __DEBUG_EXPORTS_H__
+#include "api/inc/uvisor-lib.h"
 
-#include "uvisor_exports.h"
-#include <stdint.h>
-
-/* Debug box driver -- Version 0
- * A constant instance of this struct must be instantiated by the unprivileged
- * code to setup a debug box.*/
-typedef struct TUvisorDebugDriver {
-    uint32_t (*get_version)(void);
-    void (*halt_error)(int);
-} TUvisorDebugDriver;
-
-/* Number of handlers in the debug box driver */
-#define DEBUG_BOX_HANDLERS_NUMBER (sizeof(TUvisorDebugDriver) / sizeof(void *))
-
-#endif /* __DEBUG_EXPORTS_H__ */
+void uvisor_error(THaltUserError reason)
+{
+    UVISOR_SVC(UVISOR_SVC_ID_HALT_USER_ERR, "", reason);
+}

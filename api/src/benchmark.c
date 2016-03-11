@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "uvisor-lib/uvisor-lib.h"
+#include "api/inc/uvisor-lib.h"
 
 void uvisor_benchmark_configure(void)
 {

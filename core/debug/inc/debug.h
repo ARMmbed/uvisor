@@ -18,7 +18,7 @@
 #define __DEBUG_H__
 
 #include <uvisor.h>
-#include "debug_exports.h"
+#include "api/inc/debug_exports.h"
 #include "halt.h"
 
 /* Debug box handle.

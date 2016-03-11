@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "uvisor-lib/uvisor-lib.h"
+#include "api/inc/uvisor-lib.h"
 
 void vIRQ_SetVectorX(uint32_t irqn, uint32_t vector, uint32_t flag)
 {
