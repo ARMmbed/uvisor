@@ -17,6 +17,8 @@
 #ifndef __UVISOR_API_UVISOR_EXPORTS_H__
 #define __UVISOR_API_UVISOR_EXPORTS_H__
 
+#include <stdint.h>
+
 /* maximum number of boxes allowed: 1 is the minimum (unprivileged box) */
 #define UVISOR_MAX_BOXES 5U
 

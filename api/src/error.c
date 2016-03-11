@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #include "api/inc/uvisor-lib.h"
+#include "core/uvisor.h"
 
 void uvisor_error(THaltUserError reason)
 {

@@ -17,6 +17,9 @@
 #ifndef __UVISOR_API_BENCHMARK_H__
 #define __UVISOR_API_BENCHMARK_H__
 
+#include "api/inc/uvisor_exports.h"
+#include <stdint.h>
+
 UVISOR_EXTERN void uvisor_benchmark_configure(void);
 UVISOR_EXTERN void uvisor_benchmark_start(void);
 UVISOR_EXTERN uint32_t uvisor_benchmark_stop(void);

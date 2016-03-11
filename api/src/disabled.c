@@ -15,9 +15,11 @@
  * limitations under the License.
  */
 #include "api/inc/uvisor-lib.h"
-#include "cmsis-core/cmsis_nvic.h"
-#include <string.h>
+#include "core/uvisor.h"
+#include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
+#include <string.h>
 
 /* Symbols exported by the mbed linker script */
 UVISOR_EXTERN uint32_t __uvisor_cfgtbl_ptr_start;

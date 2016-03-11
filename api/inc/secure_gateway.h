@@ -17,6 +17,9 @@
 #ifndef __UVISOR_API_SECURE_GATEWAY_H__
 #define __UVISOR_API_SECURE_GATEWAY_H__
 
+#include "api/inc/uvisor_exports.h"
+#include <stdint.h>
+
 /* secure gateway metadata */
 #if defined(__CC_ARM)
 

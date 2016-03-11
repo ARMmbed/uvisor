@@ -17,7 +17,6 @@
 #ifndef __UVISOR_API_DEBUG_EXPORTS_H__
 #define __UVISOR_API_DEBUG_EXPORTS_H__
 
-#include "api/inc/uvisor_exports.h"
 #include <stdint.h>
 
 /* Debug box driver -- Version 0

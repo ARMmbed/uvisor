@@ -17,6 +17,9 @@
 #ifndef __UVISOR_API_DISABLED_H__
 #define __UVISOR_API_DISABLED_H__
 
+#include "api/inc/uvisor_exports.h"
+#include <stdint.h>
+
 UVISOR_EXTERN void uvisor_disabled_switch_in(const uint32_t *dst_box_cfgtbl_ptr);
 UVISOR_EXTERN void uvisor_disabled_switch_out(void);
 

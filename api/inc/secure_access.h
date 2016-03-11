@@ -17,6 +17,10 @@
 #ifndef __UVISOR_API_SECURE_ACCESS_H__
 #define __UVISOR_API_SECURE_ACCESS_H__
 
+#include "api/inc/uvisor_exports.h"
+#include "api/inc/vmpu_exports.h"
+#include <stdint.h>
+
 /* the switch statement will be optimised away since the compiler already knows
  * the sizeof(type) */
 #define ADDRESS_WRITE(type, addr, val) \

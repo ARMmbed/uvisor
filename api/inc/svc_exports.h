@@ -17,6 +17,9 @@
 #ifndef __UVISOR_API_SVC_EXPORTS_H__
 #define __UVISOR_API_SVC_EXPORTS_H__
 
+#include "api/inc/uvisor_exports.h"
+#include <stdint.h>
+
 /* maximum depth of nested context switches
  * this includes both IRQn and secure gateways, as they use the same state stack
  * for their context switches */

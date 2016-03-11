@@ -17,6 +17,9 @@
 #ifndef __UVISOR_API_UNSUPPORTED_H__
 #define __UVISOR_API_UNSUPPORTED_H__
 
+#include "api/inc/uvisor_exports.h"
+#include <stdint.h>
+
 /* uvisor hook for unsupported platforms */
 UVISOR_EXTERN void uvisor_init(void);
 

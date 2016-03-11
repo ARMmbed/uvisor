@@ -17,6 +17,9 @@
 #ifndef __UVISOR_API_REGISTER_GATEWAY_H__
 #define __UVISOR_API_REGISTER_GATEWAY_H__
 
+#include "api/inc/uvisor_exports.h"
+#include <stdint.h>
+
 /* register gateway operations */
 /* note: do not use special characters as these numbers will be stringified */
 #define UVISOR_OP_READ(op)  (op)

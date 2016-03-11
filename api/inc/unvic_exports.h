@@ -17,6 +17,8 @@
 #ifndef __UVISOR_API_UNVIC_EXPORTS_H__
 #define __UVISOR_API_UNVIC_EXPORTS_H__
 
+#include <stdint.h>
+
 /* this value refers to the minimum allowable priority in the physical NVIC
  * module, but not in the virtualised one (vIRQ) */
 #define __UVISOR_NVIC_MIN_PRIORITY ((uint32_t) 1)

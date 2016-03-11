@@ -17,7 +17,9 @@
 #ifndef __UVISOR_API_BOX_CONFIG_H__
 #define __UVISOR_API_BOX_CONFIG_H__
 
+#include "api/inc/uvisor_exports.h"
 #include <stddef.h>
+#include <stdint.h>
 
 UVISOR_EXTERN const uint32_t __uvisor_mode;
 

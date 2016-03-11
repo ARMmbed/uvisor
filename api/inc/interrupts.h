@@ -17,6 +17,9 @@
 #ifndef __UVISOR_API_INTERRUPTS_H__
 #define __UVISOR_API_INTERRUPTS_H__
 
+#include "api/inc/uvisor_exports.h"
+#include <stdint.h>
+
 UVISOR_EXTERN void vIRQ_SetVectorX(uint32_t irqn, uint32_t vector, uint32_t flag);
 UVISOR_EXTERN void vIRQ_SetVector(uint32_t irqn, uint32_t vector);
 UVISOR_EXTERN uint32_t vIRQ_GetVector(uint32_t irqn);

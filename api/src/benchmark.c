@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 #include "api/inc/uvisor-lib.h"
+#include "core/uvisor.h"
+#include <stdint.h>
 
 void uvisor_benchmark_configure(void)
 {

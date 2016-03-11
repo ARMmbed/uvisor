@@ -17,6 +17,9 @@
 #ifndef __UVISOR_API_ERROR_H__
 #define __UVISOR_API_ERROR_H__
 
+#include "api/inc/halt_exports.h"
+#include "api/inc/uvisor_exports.h"
+
 UVISOR_EXTERN void uvisor_error(THaltUserError reason);
 
 #endif /* __UVISOR_API_ERROR_H__ */
