@@ -47,14 +47,31 @@ static int g_call_sp;
  * boxes' .bss). */
 static uint32_t g_memory_position;
 
+/* Forward declaration for the internal IRQ handlers */
+static void __not_implemented(void);
+static void uvisor_disabled_default_vector(void);
+
 /* Local vector table
+ * Whatever the host OS vector table is, we will relocate to this one. */
+static const __attribute__((aligned(512), section(".data"))) uint32_t g_irq_table[NVIC_OFFSET + NVIC_VECTORS] = {
+    [0 ... NVIC_OFFSET - 1] = (uint32_t) __not_implemented,
+    [NVIC_OFFSET ... NVIC_OFFSET + NVIC_VECTORS - 1] = (uint32_t) &uvisor_disabled_default_vector,
+};
+
+/* Dynamic IRQ table
  * It holds the box ID and the vector for all registered IRQs, so that a context
  * switch can be triggered before serving an interrupt. */
-typedef struct user_irq {
+/* Note: The ownership information only applies to NVIC IRQs, not system ones. */
+typedef struct {
     uint8_t box_id;
     uint32_t vector;
-} user_irq_t;
-user_irq_t g_uvisor_disabled_vectors[NVIC_USER_IRQ_NUMBER];
+} TUserIrq;
+TUserIrq g_uvisor_disabled_vectors[NVIC_VECTORS];
+
+static void __not_implemented(void)
+{
+    while(1);
+}
 
 static void uvisor_disabled_init_context(void)
 {
@@ -144,8 +161,8 @@ static void uvisor_disabled_default_vector(void)
      * We only allow user IRQs to be registered (NVIC). This is consistent with
      * the corresponding API when uVisor is enabled. */
     irqn = 0;
-    ipsr = ((int) (__get_IPSR() & 0x1FF)) - NVIC_USER_IRQ_OFFSET;
-    if (ipsr < 0 || ipsr >= NVIC_USER_IRQ_NUMBER) {
+    ipsr = ((int) (__get_IPSR() & 0x1FF)) - NVIC_OFFSET;
+    if (ipsr < 0 || ipsr >= NVIC_VECTORS) {
         uvisor_error(USER_NOT_ALLOWED);
     } else {
         irqn = (uint32_t) ipsr;
@@ -174,7 +191,7 @@ void uvisor_disabled_set_vector(uint32_t irqn, uint32_t vector)
     /* Check IRQn.
      * We only allow user IRQs to be registered (NVIC). This is consistent with
      * the corresponding API when uVisor is enabled. */
-    if (irqn >= NVIC_USER_IRQ_NUMBER) {
+    if (irqn >= NVIC_VECTORS) {
         uvisor_error(USER_NOT_ALLOWED);
     }
 
@@ -182,15 +199,17 @@ void uvisor_disabled_set_vector(uint32_t irqn, uint32_t vector)
      * We use the call stack pointer to assess the currently active box ID. */
     box_id = g_call_stack[g_call_sp];
 
+    /* Setup the vector table relocation (only done once).
+     * No user vector is copied, consistently with the vIRQ APIs. Instead, only
+     * user vectors explicitly set using this API are registered in the table. */
+    if (SCB->VTOR != (uint32_t) g_irq_table) {
+        SCB->VTOR = (uint32_t) g_irq_table;
+    }
+
     /* Register IRQ.
      * If vector is 0 it corresponds to a de-registration. */
     g_uvisor_disabled_vectors[irqn].box_id = vector ? box_id : 0;
     g_uvisor_disabled_vectors[irqn].vector = vector;
-
-    /* Register default handler.
-     * The default handler performs the context switch around the actual user
-     * handler. */
-    NVIC_SetVector((IRQn_Type) irqn, (uint32_t) &uvisor_disabled_default_vector);
 }
 
 uint32_t uvisor_disabled_get_vector(uint32_t irqn)
@@ -198,7 +217,7 @@ uint32_t uvisor_disabled_get_vector(uint32_t irqn)
     /* Check IRQn.
      * We only allow user IRQs to be registered (NVIC). This is consistent with
      * the corresponding API when uVisor is enabled. */
-    if (irqn >= NVIC_USER_IRQ_NUMBER) {
+    if (irqn >= NVIC_VECTORS) {
         uvisor_error(USER_NOT_ALLOWED);
     }
 
