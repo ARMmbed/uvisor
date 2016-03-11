@@ -181,45 +181,41 @@ API_CONFIG:=\
     -DUVISOR_MAGIC=$(UVISOR_MAGIC) \
     -DUVISOR_BIN=\"$(CONFIGURATION_PREFIX).bin\"
 
-.PHONY: all fresh __platform/% __configurations __release CONFIGURATION_% clean source.c.tags
+.PHONY: all fresh configurations release clean ctags
 
 # Build both the release and debug versions for all platforms for all
 # configurations.
-all: $(foreach PLATFORM, $(PLATFORMS), __platform/$(PLATFORM))
+all: $(foreach PLATFORM, $(PLATFORMS), platform-$(PLATFORM))
 
 # Same as all, but clean first.
 fresh: clean all
 
 # This target is used to iterate over all platforms. It builds both the release
 # and debug versions of all the platform-specific configurations.
-# Note: Do not use platform/% as target name to avoid collision wiht the folder
-# name platform/*, which otherwise would be seen as an already met make
-# prerequisite.
-__platform/%:
+platform-%:
 	@echo
+	make BUILD_MODE=debug PLATFORM=$* configurations
 	@echo
-	make BUILD_MODE=debug PLATFORM=$(@F) __configurations
-	@echo
-	make BUILD_MODE=release PLATFORM=$(@F) __configurations
+	make BUILD_MODE=release PLATFORM=$* configurations
 
 # This middleware target is needed because the parent make does not know the
 # configurations yet (they are platform-specific).
-__configurations: $(CONFIGURATIONS)
+configurations: $(CONFIGURATIONS)
 
 # This target is used to iterate over all configurations for the current
 # platform.
-# Note: We need to remove the object files from a previous build or otherwise
-# the old configurations will be used.
 CONFIGURATION_%:
 ifndef PLATFORM
-	$(error "Missing platform. Use PLATFORM=<your_platform> make CONFIGURATION_<your_configuration>")
-else
-	make CONFIGURATION=$@ __release
+	$(error "Missing platform. Use PLATFORM=<platform> BUILD_MODE=<build_mode> make CONFIGURATION_<configuration>")
 endif
+ifndef BUILD_MODE
+	$(error "Missing build mode. Use PLATFORM=<platform> BUILD_MODE=<build_mode> make CONFIGURATION_<configuration>")
+endif
+	make BUILD_MODE=$(BUILD_MODE) PLATFORM=$(PLATFORM) CONFIGURATION=$@ release
 
 # This middleware target is needed because the parent make does not know the
 # name to give to the binary release yet (it is configuration-specific).
-__release: $(API_RELEASE)
+release: $(API_RELEASE)
 
 # Generate the pre-linked uVisor binary for the given platform and configuration.
 # The binary is then packaged with the uVisor library implementations into a
