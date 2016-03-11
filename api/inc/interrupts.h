@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __UVISOR_LIB_INTERRUPTS_H__
-#define __UVISOR_LIB_INTERRUPTS_H__
+#ifndef __UVISOR_API_INTERRUPTS_H__
+#define __UVISOR_API_INTERRUPTS_H__
 
 UVISOR_EXTERN void vIRQ_SetVectorX(uint32_t irqn, uint32_t vector, uint32_t flag);
 UVISOR_EXTERN void vIRQ_SetVector(uint32_t irqn, uint32_t vector);
@@ -29,4 +29,4 @@ UVISOR_EXTERN void vIRQ_SetPriority(uint32_t irqn, uint32_t priority);
 UVISOR_EXTERN uint32_t vIRQ_GetPriority(uint32_t irqn);
 UVISOR_EXTERN int vIRQ_GetLevel(void);
 
-#endif /* __UVISOR_LIB_INTERRUPTS_H__ */
+#endif /* __UVISOR_API_INTERRUPTS_H__ */

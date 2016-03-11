@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __UNVIC_EXPORTS_H__
-#define __UNVIC_EXPORTS_H__
+#ifndef __UVISOR_API_UNVIC_EXPORTS_H__
+#define __UVISOR_API_UNVIC_EXPORTS_H__
 
 /* this value refers to the minimum allowable priority in the physical NVIC
  * module, but not in the virtualised one (vIRQ) */
@@ -26,4 +26,4 @@
  * priorities available to them */
 #define UVISOR_VIRQ_MAX_PRIORITY ((uint32_t) (1 << __NVIC_PRIO_BITS) - 1 - __UVISOR_NVIC_MIN_PRIORITY)
 
-#endif/*__UNVIC_EXPORTS_H__*/
+#endif /* __UVISOR_API_UNVIC_EXPORTS_H__ */

@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __SVC_EXPORTS_H__
-#define __SVC_EXPORTS_H__
+#ifndef __UVISOR_API_SVC_EXPORTS_H__
+#define __UVISOR_API_SVC_EXPORTS_H__
 
 /* maximum depth of nested context switches
  * this includes both IRQn and secure gateways, as they use the same state stack
@@ -157,4 +157,4 @@
 
 #endif /* defined(__CC_ARM) || defined(__GNUC__) */
 
-#endif/*__SVC_EXPORTS_H__*/
+#endif /* __UVISOR_API_SVC_EXPORTS_H__ */

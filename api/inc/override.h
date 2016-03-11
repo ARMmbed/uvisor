@@ -21,8 +21,8 @@
  * is dependent on the YOTTA_CFG_UVISOR_PRESENT symbol (set in the target) and the
  * UVISOR_NO_HOOKS symbol (defined by uVisor) */
 
-#ifndef __UVISOR_LIB_OVERRIDE_H__
-#define __UVISOR_LIB_OVERRIDE_H__
+#ifndef __UVISOR_API_OVERRIDE_H__
+#define __UVISOR_API_OVERRIDE_H__
 
 #include <stdint.h>
 
@@ -52,4 +52,4 @@ extern uint32_t vIRQ_GetPriority(uint32_t irqn);
 
 #endif /* YOTTA_CFG_UVISOR_PRESENT == 1 && !defined(UVISOR_NO_HOOKS) */
 
-#endif /* __UVISOR_LIB_OVERRIDE_H__ */
+#endif /* __UVISOR_API_OVERRIDE_H__ */

@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __UVISOR_LIB_REGISTER_GATEWAY_H__
-#define __UVISOR_LIB_REGISTER_GATEWAY_H__
+#ifndef __UVISOR_API_REGISTER_GATEWAY_H__
+#define __UVISOR_API_REGISTER_GATEWAY_H__
 
 /* register gateway operations */
 /* note: do not use special characters as these numbers will be stringified */
@@ -102,4 +102,4 @@
                    val); \
     })
 
-#endif /* __UVISOR_LIB_REGISTER_GATEWAY_H__ */
+#endif /* __UVISOR_API_REGISTER_GATEWAY_H__ */

@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __UVISOR_LIB_DEBUG_H__
-#define __UVISOR_LIB_DEBUG_H__
+#ifndef __UVISOR_API_DEBUG_H__
+#define __UVISOR_API_DEBUG_H__
 
 UVISOR_EXTERN void uvisor_debug_init(const TUvisorDebugDriver * const driver);
 
-#endif /* __UVISOR_LIB_DEBUG_H__ */
+#endif /* __UVISOR_API_DEBUG_H__ */

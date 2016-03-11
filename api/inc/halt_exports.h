@@ -14,11 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __HALT_EXPORTS_H__
-#define __HALT_EXPORTS_H__
+#ifndef __UVISOR_API_HALT_EXPORTS_H__
+#define __UVISOR_API_HALT_EXPORTS_H__
 
 typedef enum {
     USER_NOT_ALLOWED = 1,
 } THaltUserError;
 
-#endif/*__HALT_EXPORTS_H__*/
+#endif /* __UVISOR_API_HALT_EXPORTS_H__ */

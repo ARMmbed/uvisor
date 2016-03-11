@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __UVISOR_LIB_UNSUPPORTED_H__
-#define __UVISOR_LIB_UNSUPPORTED_H__
+#ifndef __UVISOR_API_UNSUPPORTED_H__
+#define __UVISOR_API_UNSUPPORTED_H__
 
 /* uvisor hook for unsupported platforms */
 UVISOR_EXTERN void uvisor_init(void);
@@ -190,4 +190,4 @@ static inline UVISOR_FORCEINLINE uint8_t uvisor_read8(uint8_t volatile *addr)
 
 #define secure_gateway(dst_box, dst_fn, ...) dst_fn(__VA_ARGS__)
 
-#endif /* __UVISOR_LIB_UNSUPPORTED_H__ */
+#endif /* __UVISOR_API_UNSUPPORTED_H__ */

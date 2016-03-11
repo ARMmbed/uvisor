@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __SVC_GW_EXPORTS_H__
-#define __SVC_GW_EXPORTS_H__
+#ifndef __UVISOR_API_SVC_GW_EXPORTS_H__
+#define __UVISOR_API_SVC_GW_EXPORTS_H__
 
 #define UVISOR_SVC_GW_MAGIC  0xABCDABCD /* FIXME update with correct magic */
 
-#endif/*__SVC_GW_EXPORTS_H__*/
+#endif /* __UVISOR_API_SVC_GW_EXPORTS_H__ */

@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __UVISOR_LIB_BOX_CONFIG_H__
-#define __UVISOR_LIB_BOX_CONFIG_H__
+#ifndef __UVISOR_API_BOX_CONFIG_H__
+#define __UVISOR_API_BOX_CONFIG_H__
 
 #include <stddef.h>
 
@@ -123,4 +123,4 @@ UVISOR_EXTERN int uvisor_box_id_caller(void);
  * UVISOR_ERROR_BOX_NAMESPACE_ANONYMOUS if the box is anonymous. */
 UVISOR_EXTERN int uvisor_box_namespace(int box_id, char *box_namespace, size_t length);
 
-#endif /* __UVISOR_LIB_BOX_CONFIG_H__ */
+#endif /* __UVISOR_API_BOX_CONFIG_H__ */

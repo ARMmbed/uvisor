@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __DEBUG_EXPORTS_H__
-#define __DEBUG_EXPORTS_H__
+#ifndef __UVISOR_API_DEBUG_EXPORTS_H__
+#define __UVISOR_API_DEBUG_EXPORTS_H__
 
 #include "api/inc/uvisor_exports.h"
 #include <stdint.h>
@@ -31,4 +31,4 @@ typedef struct TUvisorDebugDriver {
 /* Number of handlers in the debug box driver */
 #define DEBUG_BOX_HANDLERS_NUMBER (sizeof(TUvisorDebugDriver) / sizeof(void *))
 
-#endif /* __DEBUG_EXPORTS_H__ */
+#endif /* __UVISOR_API_DEBUG_EXPORTS_H__ */
