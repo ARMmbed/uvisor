@@ -21,6 +21,9 @@
 #include <stdint.h>
 #include <string.h>
 
+/* Number of implemented priority bits */
+uint8_t g_nvic_prio_bits;
+
 /* Symbols exported by the mbed linker script */
 UVISOR_EXTERN uint32_t __uvisor_cfgtbl_ptr_start;
 UVISOR_EXTERN uint32_t __uvisor_cfgtbl_ptr_end;
@@ -186,7 +189,8 @@ static void uvisor_disabled_default_vector(void)
 
 void uvisor_disabled_set_vector(uint32_t irqn, uint32_t vector)
 {
-    uint8_t box_id;
+    uint8_t prio_bits, box_id;
+    uint8_t volatile *prio;
 
     /* Check IRQn.
      * We only allow user IRQs to be registered (NVIC). This is consistent with
@@ -204,6 +208,17 @@ void uvisor_disabled_set_vector(uint32_t irqn, uint32_t vector)
      * user vectors explicitly set using this API are registered in the table. */
     if (SCB->VTOR != (uint32_t) g_irq_table) {
         SCB->VTOR = (uint32_t) g_irq_table;
+
+        /* Detect the number of implemented priority bits.
+         * The architecture specifies that unused/not implemented bits in the
+         * NVIC IP registers read back as 0. */
+        __disable_irq();
+        prio = (uint8_t volatile *) &(NVIC->IP[0]);
+        prio_bits = *prio;
+        *prio = 0xFFU;
+        g_nvic_prio_bits = (uint8_t) __builtin_popcount(*prio);
+        *prio = prio_bits;
+        __enable_irq();
     }
 
     /* Register IRQ.
