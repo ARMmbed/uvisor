@@ -318,10 +318,16 @@ uint32_t debug_get_version(void)
 
 void debug_halt_error(THaltError reason)
 {
-    /* The following arguments are passed to the destination function:
-     *   1. reason
-     * Upon return from the debug handler, the system will reboot. */
-    debug_deprivilege_and_return(g_debug_box.driver->halt_error, __debug_reboot, reason, 0, 0, 0);
+    /* If the debug box does not exist (or it has not been initialized yet),
+     * just halt. */
+    if (!g_debug_box.initialized) {
+        while(1);
+    } else {
+        /* The following arguments are passed to the destination function:
+         *   1. reason
+         * Upon return from the debug handler, the system will reboot. */
+        debug_deprivilege_and_return(g_debug_box.driver->halt_error, __debug_reboot, reason, 0, 0, 0);
+    }
 }
 
 void debug_register_driver(const TUvisorDebugDriver * const driver)
