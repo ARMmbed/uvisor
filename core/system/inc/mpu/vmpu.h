@@ -21,18 +21,30 @@
 #include "vmpu_unpriv_access.h"
 #include <stdint.h>
 
-/* Check if the address is in Flash/SRAM. */
+/* Check if the address is in public flash/physical flash/physical SRAM. */
 /* Note: Instead of using the '<' check on
  *          __uvisor_config.{flash, sram}_end
  *       we use the '<=' check on
  *          __uvisor_config.{flash, sram}_end - 4
  *       because unaligned accesses at a physical memory boundary have undefined
  *       behavior and must be avoided. */
+/* Note: From the point of view of uVisor the flash finishes right before the
+ *       uVisor secure section starts in flash. The portion of memory that goes
+ *       from the flash origin to this symbol contains the uVisor and
+ *       main box code and data and excludes the configuration tables. */
+
+static inline int vmpu_public_flash_addr(uint32_t addr)
+{
+    return (((uint32_t) addr >= FLASH_ORIGIN) &&
+            ((uint32_t) addr <= (FLASH_ORIGIN + (uint32_t) __uvisor_config.secure_start - 4)));
+}
+
 static inline int vmpu_flash_addr(uint32_t addr)
 {
     return (((uint32_t) addr >= FLASH_ORIGIN) &&
             ((uint32_t) addr <= (FLASH_ORIGIN + (uint32_t) __uvisor_config.flash_end - 4)));
 }
+
 static inline int vmpu_sram_addr(uint32_t addr)
 {
     return (((uint32_t) addr >= SRAM_ORIGIN) &&

@@ -35,7 +35,7 @@ typedef struct {
 
 static inline void svc_gw_check_magic(TSecGw *svc_pc)
 {
-    if(!vmpu_flash_addr((uint32_t) svc_pc))
+    if(!vmpu_public_flash_addr((uint32_t) svc_pc))
         HALT_ERROR(SANITY_CHECK_FAILED,
                    "secure gateway not in flash (0x%08X)", svc_pc);
 

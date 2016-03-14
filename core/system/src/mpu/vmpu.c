@@ -76,8 +76,8 @@ static int vmpu_sanity_checks(void)
     /* Verify that the uVisor binary blob is positioned at the flash offset. */
     assert(((uint32_t) __uvisor_config.flash_start + FLASH_OFFSET) == (uint32_t) __uvisor_config.main_start);
 
-    /* verify if configuration mode is inside flash memory */
-    assert(vmpu_flash_addr((uint32_t) __uvisor_config.mode));
+    /* verify if configuration mode is inside public flash memory */
+    assert(vmpu_public_flash_addr((uint32_t) __uvisor_config.mode));
     assert(*(__uvisor_config.mode) <= 2);
     DPRINTF("uVisor mode: %u\n", *(__uvisor_config.mode));
 
@@ -98,6 +98,8 @@ static int vmpu_sanity_checks(void)
                                                         UVISOR_SRAM_LENGTH) );
 
     /* verify that secure flash area is accessible and after public code */
+    assert(!vmpu_public_flash_addr((uint32_t) __uvisor_config.secure_start));
+    assert(!vmpu_public_flash_addr((uint32_t) __uvisor_config.secure_end));
     assert(vmpu_flash_addr((uint32_t) __uvisor_config.secure_start));
     assert(vmpu_flash_addr((uint32_t) __uvisor_config.secure_end));
     assert(__uvisor_config.secure_start <= __uvisor_config.secure_end);
@@ -107,6 +109,8 @@ static int vmpu_sanity_checks(void)
     assert(__uvisor_config.cfgtbl_ptr_start <= __uvisor_config.cfgtbl_ptr_end);
     assert(__uvisor_config.cfgtbl_ptr_start >= __uvisor_config.secure_start);
     assert(__uvisor_config.cfgtbl_ptr_end <= __uvisor_config.secure_end);
+    assert(!vmpu_public_flash_addr((uint32_t) __uvisor_config.cfgtbl_ptr_start));
+    assert(!vmpu_public_flash_addr((uint32_t) __uvisor_config.cfgtbl_ptr_end));
     assert(vmpu_flash_addr((uint32_t) __uvisor_config.cfgtbl_ptr_start));
     assert(vmpu_flash_addr((uint32_t) __uvisor_config.cfgtbl_ptr_end));
 
@@ -129,9 +133,13 @@ static void vmpu_sanity_check_box_namespace(int box_id, const char *const box_na
     }
 
     do {
-        /* Check that the address of the character is within flash before
+        /* Check that the address of the character is within public flash before
          * reading the character. */
-        if (!vmpu_flash_addr((uint32_t) &box_namespace[length])) {
+        /* Note: The public flash section is assumed to be monolithic, so if
+         * both the start and end address of an array are inside the public
+         * flash, then the whole array is inside the public flash. */
+        if (!vmpu_public_flash_addr((uint32_t) &box_namespace[0]) ||
+            !vmpu_public_flash_addr((uint32_t) &box_namespace[length])) {
             HALT_ERROR(SANITY_CHECK_FAILED,
                 "box[%i] @0x%08X - namespace not entirely in public flash\n",
                 box_id,
@@ -226,7 +234,7 @@ static void vmpu_load_boxes(void)
             for(i=0; i<count; i++)
             {
                 /* ensure that ACL resides in flash */
-                if(!vmpu_flash_addr((uint32_t) region))
+                if(!vmpu_public_flash_addr((uint32_t) region))
                     HALT_ERROR(SANITY_CHECK_FAILED,
                         "box[%i]:acl[%i] must be in code section (@0x%08X)\n",
                         box_id,
@@ -272,7 +280,7 @@ int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint3
     int found;
 
     /* check for attacks */
-    if(!vmpu_flash_addr(pc))
+    if(!vmpu_public_flash_addr(pc))
        HALT_ERROR(NOT_ALLOWED, "This is not the PC (0x%08X) your were searching for", pc);
 
     /* check fault register; the following two configurations are allowed:
