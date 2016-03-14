@@ -135,7 +135,11 @@ static void vmpu_sanity_check_box_namespace(int box_id, const char *const box_na
     do {
         /* Check that the address of the character is within public flash before
          * reading the character. */
-        if (!vmpu_public_flash_addr((uint32_t) &box_namespace[length])) {
+        /* Note: The public flash section is assumed to be monolithic, so if
+         * both the start and end address of an array are inside the public
+         * flash, then the whole array is inside the public flash. */
+        if (!vmpu_public_flash_addr((uint32_t) &box_namespace[0]) ||
+            !vmpu_public_flash_addr((uint32_t) &box_namespace[length])) {
             HALT_ERROR(SANITY_CHECK_FAILED,
                 "box[%i] @0x%08X - namespace not entirely in public flash\n",
                 box_id,
