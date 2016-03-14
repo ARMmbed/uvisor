@@ -344,9 +344,15 @@ void debug_register_driver(const TUvisorDebugDriver * const driver)
         !vmpu_public_flash_addr((uint32_t) driver + sizeof(TUvisorDebugDriver))) {
         HALT_ERROR(SANITY_CHECK_FAILED, "The debug box driver struct must be stored in public flash.\n\r");
     }
+    if (!driver) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "NULL debug box driver.\r\n");
+    }
     for (i = 0; i < DEBUG_BOX_HANDLERS_NUMBER; i++) {
         if (!vmpu_public_flash_addr(*((uint32_t *) driver + i))) {
             HALT_ERROR(SANITY_CHECK_FAILED, "Each handler in the debug box driver struct must be stored in public flash.\n\r");
+        }
+        if (!*((uint32_t *) driver + i)) {
+            HALT_ERROR(SANITY_CHECK_FAILED, "NULL debug box driver handler.\r\n");
         }
     }
 
