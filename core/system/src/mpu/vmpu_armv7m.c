@@ -104,10 +104,10 @@ typedef struct {
     uint32_t count;
 } TMpuBox;
 
-uint32_t g_mpu_slot;
-uint32_t g_mpu_region_count, g_box_mem_pos;
-TMpuRegion g_mpu_list[MPU_REGION_COUNT];
-TMpuBox g_mpu_box[UVISOR_MAX_BOXES];
+static uint32_t g_mpu_slot;
+static uint32_t g_mpu_region_count, g_box_mem_pos;
+static TMpuRegion g_mpu_list[MPU_REGION_COUNT];
+static TMpuBox g_mpu_box[UVISOR_MAX_BOXES];
 
 static const TMpuRegion* vmpu_fault_find_box_region(uint32_t fault_addr, const TMpuBox *box)
 {
