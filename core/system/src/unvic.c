@@ -443,10 +443,18 @@ void __unvic_svc_cx_out(uint32_t *svc_sp, uint32_t *msp)
 
 void unvic_init(void)
 {
-    /* Detect the number of implemented priority bits. */
+    uint8_t prio_bits;
+    uint8_t volatile *prio;
+
+    /* Detect the number of implemented priority bits.
+     * The architecture specifies that unused/not implemented bits in the
+     * NVIC IP registers read back as 0. */
     __disable_irq();
-    *((volatile uint8_t *) &(NVIC->IP[0])) = 0xFFU;
-    g_nvic_prio_bits = (uint8_t) __builtin_popcount(*((volatile uint8_t *) &(NVIC->IP[0])));
+    prio = (uint8_t volatile *) &(NVIC->IP[0]);
+    prio_bits = *prio;
+    *prio = 0xFFU;
+    g_nvic_prio_bits = (uint8_t) __builtin_popcount(*prio);
+    *prio = prio_bits;
     __enable_irq();
 
     /* Verify that the priority bits read at runtime are realistic. */
