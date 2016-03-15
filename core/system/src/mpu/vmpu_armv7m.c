@@ -630,6 +630,7 @@ void vmpu_arch_init(void)
     /* reset MPU */
     MPU->CTRL = 0;
     /* check MPU region aligment */
+    MPU->RNR = 0;
     MPU->RBAR = MPU_RBAR_ADDR_Msk;
     g_vmpu_aligment_mask = ~MPU->RBAR;
     MPU->RBAR = 0;
