@@ -627,15 +627,15 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
 
 void vmpu_arch_init(void)
 {
-    /* reset MPU */
+    /* Disable the MPU. */
     MPU->CTRL = 0;
-    /* check MPU region aligment */
+    /* Check MPU region alignment using region number zero. */
     MPU->RNR = 0;
     MPU->RBAR = MPU_RBAR_ADDR_Msk;
     g_vmpu_aligment_mask = ~MPU->RBAR;
     MPU->RBAR = 0;
 
-    /* initialize round-robin slot pointer */
+    /* Initialize round-robin slot pointer. */
     g_mpu_slot = ARMv7M_MPU_RESERVED_REGIONS;
 
     /* show basic mpu settings */
@@ -643,26 +643,26 @@ void vmpu_arch_init(void)
     DPRINTF("MPU.ALIGNMENT=0x%08X\r\n", g_vmpu_aligment_mask);
     DPRINTF("MPU.ALIGNMENT_BITS=%i\r\n", vmpu_bits(g_vmpu_aligment_mask));
 
-    /* sanity checks */
+    /* Perform sanity checks. */
     assert(ARMv7M_MPU_REGIONS == ((MPU->TYPE >> MPU_TYPE_DREGION_Pos) & 0xFF));
     assert(ARMv7M_MPU_ALIGNMENT_BITS == vmpu_bits(g_vmpu_aligment_mask));
 
-    /* init protected box memory enumation pointer */
+    /* Init protected box memory enumeration pointer. */
     DPRINTF("\n\rbox stack segment start=0x%08X end=0x%08X (length=%i)\n\r",
         __uvisor_config.bss_boxes_start, __uvisor_config.bss_boxes_start,
         ((uint32_t)__uvisor_config.bss_boxes_end)-((uint32_t)__uvisor_config.bss_boxes_start));
     g_box_mem_pos = (uint32_t)__uvisor_config.bss_boxes_start;
 
-    /* enable mem, bus and usage faults */
+    /* Enable mem, bus and usage faults. */
     SCB->SHCSR |= 0x70000;
 
-    /* initialize static MPU regions */
+    /* Initialize static MPU regions. */
     vmpu_arch_init_hw();
 
-    /* finally enable MPU */
+    /* Finally enable the MPU. */
     MPU->CTRL = MPU_CTRL_ENABLE_Msk|MPU_CTRL_PRIVDEFENA_Msk;
 
-    /* dump MPU configuration */
+    /* Dump MPU configuration in debug mode. */
 #ifndef NDEBUG
     debug_mpu_config();
 #endif/*NDEBUG*/
