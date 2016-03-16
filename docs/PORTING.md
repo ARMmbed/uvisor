@@ -1,20 +1,21 @@
 # uVisor Porting Guide
 
-The uVisor is a low-level security module that creates sandboxed environments on ARM Cortex-M3 and M4 devices. Each sandbox can get hold of a set of private resources for which uVisor grants exclusive access. Calls into sandboxed APIs are only possible through uVisor-managed entry points.
+The uVisor is a low-level security module that creates sandboxed environments on ARM Cortex-M3 and ARM Cortex-M4 devices. Each sandbox can get hold of a set of private resources for which uVisor grants exclusive access. Calls into sandboxed APIs are only possible through uVisor-managed entry points.
 
-The uVisor is released in the form of a binary component, encapsulated in the `uvisor-lib` yotta module. It can be used in all supported mbed platforms, although fallback implementations of low-level APIs are provided for unsupported ones.
+The uVisor is released in the form of a static library. This library contains the implementation of all the uVisor APIs and the uVisor core, which is a pre-linked binary component.
 
-This guide will help you to port uVisor to your platform.
+This guide will help you to port uVisor to your platform and integrate its library in mbed OS.
 
 ## Overview
 
 This document will cover the following:
 
 * A quick presentation of the uVisor [repository structure](#repository-structure).
-* A [step-by-step](#porting-steps) porting guide to bring `uvisor` to your platform.
-* How to [integrate](#integrate-uvisor-with-your-code-base) uVisor into your codebase.
+* A [step-by-step](#porting-steps) porting guide to bring uVisor to your platform.
+* How to [integrate](#integrate-uvisor-in-mbed-os) your new port of uVisor into mbed OS.
 
-For the remainder of this guide we will assume that you are porting a whole device family to uVisor, called `${family}`. You can still port a single device, although we strongly advice against it. Porting a whole family ensures that uVisor is kept as general and hardware-agnostic as possible. You will also enjoy the nice benefit of going through the porting process only once for a large set of devices.
+For the remainder of this guide we will assume that you are porting a whole device family to uVisor, called `${family}`. We strongly suggest to abstract and generalize your port as much as possible. Since a static library is generated for each of your family configurations, a more generalized uVisor port result in the generation — and maintenance — of fewer release libraries. You will also enjoy the nice benefit of going through the porting process only once for a large set of devices.
+
 
 You will need the following:
 * The Launchpad GCC ARM embedded toolchain.
@@ -24,54 +25,16 @@ You will need the following:
 ## Repository Structure
 [Go to top](#overview)
 
-We use three main GitHub repositories for developing, releasing and debugging uVisor:
+The uVisor is developed in the [ARMmbed/uvisor](https://github.com/ARMmbed/uvisor) repository. Most of your porting efforts will happen there.
 
-<table>
-  <tbody>
-    <col width="170">
-    <tr>
-      <th>Repository</th>
-      <th>Description</th>
-    </tr>
-    <tr>
-      <td>
-        <a href="https://github.com/ARMmbed/uvisor">
-          <code>uvisor</code>
-        </a>
-      </td>
-      <td>
-        Main uVisor code-base. We develop the uVisor code here and then generate a self-contained binary release.</code>.
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <a href="https://github.com/ARMmbed/uvisor-lib">
-          <code>uvisor-lib</code>
-        </a>
-      </td>
-      <td>
-        Binary releases of uVisor for mbed, in the form of a yotta module.
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <a href="https://github.com/ARMmbed/uvisor-helloworld">
-          <code>uvisor-helloworld</code>
-        </a>
-      </td>
-      <td>
-        A Hello World application showing uVisor features through a simple challenge. It can also be used as a quick test to verify a correct port.
-      </td>
-  </tbody>
-</table>
-
-**Table 1**: uVisor repository structure
-
-Although uVisor is highly self-contained, it still requires some support from the target platform. There are two files in particular that need to be changed in your code-base:
+Although uVisor is highly self-contained, it still requires some support from the target operating system. There are two files in particular that need to be changed in your code-base:
+1. **Library glue layer**. [ARMmbed/uvisor](https://github.com/ARMmbed/uvisor) provides release and debug libraries for all family configurations. The logic to pick the right build for the right target is OS-specific and must be provided by a glue layer.
 1. **Linker script**. It contains specific memory regions and symbols that uVisor relies on.
 2. **Start-up script**. uVisor boots right after the system basic initialization, and before the C/C++ library initialization. The start-up script needs to call `uvisor_init()` in between those two.
 
-In mbed, the linker script is located in the platform yotta target, while the start-up script lives in the target-specific mbed HAL yotta module.
+If you are porting uVisor to mbed OS, the library glue layer is implemented in [ARMmbed/uvisor-lib](https://github.com/ARMmbed/uvisor-lib), the linker script is located in the platform yotta target, while the start-up script lives in the target-specific mbed HAL yotta module. We will guide you through the modifications needed in those modules later in this guide.
+
+Finally, we provide an example application in [ARMmbed/uvisor-helloworld](https://github.com/ARMmbed/uvisor-helloworld) that shows the main uVisor features on our supported targets. It can be used during the porting process as a quick way of testing that the uVisor is working as expected on your new platform.
 
 ## Porting steps
 [Go to top](#overview)
@@ -80,23 +43,13 @@ We will assume that you are developing in `~/code/`. Clone the uVisor GitHub rep
 
 ```bash
 $ cd ~/code
-$ git clone --recursive git@github.com:ARMMbed/uvisor.git
-```
-
-The `--recursive` option ensures that `uvisor-lib`, a sub-module of `uvisor`, is also cloned.
-
-**Tip**: We only update the pointer to `uvisor-lib` at the time of a uVisor release, so please rebase it to get the latest version:
-
-```bash
-$ cd ~/code/uvisor/release
-$ git checkout master
-$ git pull --rebase
+$ git clone git@github.com:ARMMbed/uvisor.git
 ```
 
 ### The uVisor configurations
 [Go to top](#overview)
 
-A single family of micro-controllers might trigger different binary releases of uVisor. Although we strive to keep uVisor as hardware-agnostic as possible, there are still some hardware-specific features that we need to take into account. These features are described in the table below.
+A single family of micro-controllers might trigger different releases of uVisor. Although we strive to keep uVisor as hardware-agnostic as possible, there are still some hardware-specific features that we need to take into account. These features are described in the table below.
 
 | Symbol             | Description                                                                |
 |------------------- |----------------------------------------------------------------------------|
@@ -109,15 +62,15 @@ A single family of micro-controllers might trigger different binary releases of 
 | `NVIC_VECTORS`     | max( [`NVIC_VECTORS(i)` for `i` in family's devices] )                     |
 | `CORE_*` *         | Core version (e.g `CORE_CORTEX_M3`)                                        |
 
-**Table 2**. Hardware-specific features that differentiate uVisor binary release
+**Table 1**. Hardware-specific features that differentiate uVisor builds
 
-A uVisor *configuration* is defined as the unique combination of the parameters of Table 2. When porting your family to uVisor, you need to make sure that as many binary releases as the possible configurations are generated. Let's use an example.
+A uVisor *configuration* is defined as the unique combination of the parameters of Table 1. When porting your family to uVisor, you need to make sure that as many library releases as the possible configurations are generated. Let's use an example.
 
 ---
 
 #### Example
 
-Let's assume for simplicity that the `${family}` that you want to port is made of only 4 devices. These have the following values from Table 2:
+Let's assume for simplicity that the `${family}` that you want to port is made of only 4 devices. These have the following values from Table 1:
 
 | Symbol            | `${device0}` | `${device1}` | `${device2}` | `${device3}` |
 |-------------------|--------------|--------------|--------------|--------------|
@@ -128,16 +81,15 @@ Let's assume for simplicity that the `${family}` that you want to port is made o
 | `FLASH_LENGTH(i)` | 0x100000     | 0x100000     | 0x80000      | 0x80000      |
 | `SRAM_LENGTH(i)`  | 0x10000      | 0x20000      | 0x10000      | 0x20000      |
 | `NVIC_VECTORS(i)` | 86           | 122          | 86           | 122          |
-| `CORE_`           | `CORTEX_M3`  | `CORTEX_M4`  | `CORTEX_M3`  | `CORTEX_M4`  |
+| `CORE_`           | `CORTEX_M4`  | `CORTEX_M4`  | `CORTEX_M4`  | `CORTEX_M4`  |
 
-**Table 3**. Example uVisor configuration values
+**Table 2**. Example uVisor configuration values
 
-First, the easy ones:
+Following the descriptions of Table 1, some values are common among the 4 devices:
 
 * `NVIC_VECTORS` is the maximum `NVIC_VECTORS(i)`, hence it is 122.
 * `FLASH_LENGTH_MIN` and `SRAM_LENGTH_MIN` are 0x80000 and 0x10000, respectively.
-* `FLASH_ORIGIN` and `FLASH_OFFSET` are the same for all the devices, so they will be common to all configurations.
-* For the core version, uVisor does not distinguish between ARM Cortex-M3 and Cortex-M4 cores, so we will just define `CORE_CORTEX_M4`.
+* `FLASH_ORIGIN` and `FLASH_OFFSET` are the same for all the devices, so they will be common to all configurations. The same applies to the core version, so `CORE_CORTEX_M4` will be defined.
 
 The remaining values must be combined to form distinct configurations. In this case we only need to combine `SRAM_ORIGIN` and `SRAM_OFFSET`. If you look at the table above, you will see that they appear in 2 out of the 4 possible value combinations. Hence, we have a total of 2 uVisor configurations:
 
@@ -155,6 +107,8 @@ CONFIGURATION_${family}_2 = {0x0, 0x400, 0x1FFF0000, 0x400, 0x80000, 0x10000, 12
 
 TODO.
 
+The uVisor expects a distinction between at least two memories: Flash and SRAM. If more than one memory fits this description, you should make an architectural decision about where to put uVisor. We suggest that if you have fast memories you should use those, provided that they offer security features at least equal to those of the regular memories.
+
 ### Platform-specific code
 [Go to top](#overview)
 
@@ -171,19 +125,15 @@ uvisor
 |   └── ${family}              # NEW SUPPORTED FAMILY: You will develop here.
 │       ├── [*] Makefile.configurations
 │       ├── docs
-│       ├── inc
-│       |   ├── [*] config.h
-│       |   └── [*] configurations.h
-│       └── src
-│           └── [*] ...
-│       └── mbed
-│           └── [*] get_configuration.cmake
+│       └── inc
+│           ├── [*] config.h
+│           └── [*] configurations.h
 │
-└── release                    # The auto-generated uvisor-lib module ends up here.
+└── api
     ├── ...
-    └── source
+    └── lib
         ├── ...
-        └── [*] CMakeLists.txt
+        └── ${family}          # The release libraries end up here.
 ```
 
 Each `[*]` indicates a file you must create during the porting process. Details for each of them are presented below. The snippets that we show refer to the configurations discussed in the previous example.
@@ -191,77 +141,12 @@ Each `[*]` indicates a file you must create during the porting process. Details 
 ---
 
 ```bash
-~/code/platform/${family}/Makefile.configurations
-```
-
-This file configures the build system for your device family. Table 4 shows the symbols that can be defined.
-
-| Symbol           | Description                                                               |
-|------------------|---------------------------------------------------------------------------|
-| `CONFIGURATIONS` | List of uVisor configurations. They must start with `CONFIGURATION_`      |
-| `ARCH_MPU`       | MPU architecture (if absent defaults to `ARMv7M`; alternative: `KINETIS`) |
-
-**Table 4**. Platform-specific configuration symbols
-
----
-
-### Example
-
-```bash
-    # uVisor configurations
-    CONFIGURATIONS:=\
-        CONFIGURATION_${family}_1 \
-        CONFIGURATION_${family}_2
-```
-
----
-
-```bash
-~/code/uvisor/platform/${family}/inc/config.h
-```
-
-This file contains uVisor customizations that are not hardware-specific but can be chosen by each family (e.g. the default stack size).
-
-```C
-#ifndef __CONFIG_H__
-#define __CONFIG_H__
-
-#define STACK_SIZE 2048
-#include "configurations.h"
-
-#endif /* __CONFIG_H__ */
-```
-
-The symbols that you can specify here are listed in Table 5.
-
-| Symbol                        | Description |
-|-------------------------------|-------------|
-| `STACK_GUARD_BAND`            | TODO        |
-| `STACK_SIZE`                  | TODO        |
-| `NDEBUG`                      | TODO        |
-| `DEBUG_MAX_BUFFER`            | TODO        |
-| `CHANNEL_DEBUG`               | TODO        |
-| `MPU_MAX_PRIVATE_FUNCTIONS`   | TODO        |
-| `MPU_REGION_COUNT`            | TODO        |
-| `ARMv7M_MPU_REGIONS`          | TODO        |
-| `ARMv7M_ALIGNMENR_BITS`       | TODO        |
-| `ARMv7M_MPU_RESERVED_REGIONS` | TODO        |
-| `UVISOR_MAX_ACLS`             | TODO        |
-
-**Table 5**. Optional hardware-specific `config.h` symbols
-
-**Note**: You must always have a separate `configurations.h` file, even if the remaining `config.h` is empty. This ensures that `configurations.h` (which is possibly auto-generated by a script of yours) does not need to know anything more than the features of Table 2.
-
----
-
-```bash
 ~/code/uvisor/platform/${family}/inc/configurations.h
 ```
 
-This file contains the uVisor configurations for your family. Remember that each configuration triggers a separate release binary. This file should be auto-generated. Symbols that are common to all devices in the family should go first. Configuration-specific symbols are conditionally defined. The condition is based on a macro definition of the form `CONFIGURATION_${CONFIGURATION_NAME}`.
+This file contains the uVisor configurations for your family. Remember that each configuration triggers a separate library release. This file should be auto-generated. Symbols that are common to all devices in the family should go first. Configuration-specific symbols are conditionally defined. The condition is based on a macro definition of the form `CONFIGURATION_${CONFIGURATION_NAME}`.
 
-The snippet below refers to the values shown in the example above.
-
+**Example**
 ```C
 #ifndef __CONFIGURATIONS_H__
 #define __CONFIGURATIONS_H__
@@ -289,119 +174,121 @@ The snippet below refers to the values shown in the example above.
 ---
 
 ```bash
-~/code/uvisor/platform/${family}/mbed/get_configuration.cmake
+~/code/uvisor/platform/${family}/inc/config.h
 ```
 
-This file is used by yotta in `uvisor-lib` at compile time. It allows the `uvisor-lib` CMake system to select the correct release binary based on the target. The snippet below is based on the configurations of the example above.
+This file contains uVisor customizations that are not hardware-specific but can be chosen by each family (e.g. the default stack size).
 
-```bash
-if(TARGET_LIKE_${family}${device0} OR TARGET_LIKE_${family}${device1})
-    set(UVISOR_CONFIGURATION "CONFIGURATION_${family}_1")
-endif()
+The symbols that you can specify here are listed in the table below.
 
-if(TARGET_LIKE_${family}${device2} OR TARGET_LIKE_${family}${device3})
-    set(UVISOR_CONFIGURATION "CONFIGURATION_${family}_2")
-endif()
-```
+| Symbol                        | Description |
+|-------------------------------|-------------|
+| `STACK_GUARD_BAND`            | TODO        |
+| `STACK_SIZE`                  | TODO        |
+| `NDEBUG`                      | TODO        |
+| `DEBUG_MAX_BUFFER`            | TODO        |
+| `CHANNEL_DEBUG`               | TODO        |
+| `MPU_MAX_PRIVATE_FUNCTIONS`   | TODO        |
+| `MPU_REGION_COUNT`            | TODO        |
+| `ARMv7M_MPU_REGIONS`          | TODO        |
+| `ARMv7M_ALIGNMENR_BITS`       | TODO        |
+| `ARMv7M_MPU_RESERVED_REGIONS` | TODO        |
+| `UVISOR_MAX_ACLS`             | TODO        |
 
-The values used for `UVISOR_CONFIGURATION` are the same as those used in the configuration symbol.
+**Table 3**. Optional hardware-specific `config.h` symbols
 
----
+**Note**: You must always have a separate `configurations.h` file, even if the remaining `config.h` is empty. This ensures that `configurations.h` (which is possibly auto-generated by a script of yours) does not need to know anything more than the features of Table 1.
 
-```bash
-~/code/uvisor/platform/${family}/src/*
-```
-
-Files added to this folder are automatically added to the build system. Generally you do not need to develop any additional platform-specific function. Currently, devices with an `ARMv7M` MPU require a single function `void vmpu_arch_init_hw(void)` to be implemented.
-
+**Example**
 ```C
-/* This function sets up the ARMv7M MPU to protect the static MPU regions. It
- * usually requires setting up a r/x region for the flash and one or more r/w
- * regions for the SRAM. It is hardware-specific as it depends on whether the
- * uVisor uses the same SRAM as mbed or not. */
-void vmpu_arch_init_hw(void) {
-    ...
-}
+#ifndef __CONFIG_H__
+#define __CONFIG_H__
+
+#define STACK_SIZE 2048
+#include "configurations.h"
+
+#endif /* __CONFIG_H__ */
 ```
 
 ---
 
 ```bash
-~/code/uvisor/release/source/CMakeLists.txt
+~/code/uvisor/platform/${family}/Makefile.configurations
 ```
 
-This files configures the build system of the `uvisor-lib` yotta module. You only need to add a line that includes your family configurations to the list of possible uVisor families:
+This file configures the build system for your device family. The table below shows the symbols that can be defined.
 
-```cmake
-# Pick the correct folder based on the target family.
-if(TARGET_LIKE_KINETIS)
-    set(UVISOR_FAMILY "kinetis")
-elseif(TARGET_LIKE_STM32)
-    set(UVISOR_FAMILY "stm32")
-elseif(TARGET_LIKE_${family}              # [*] Insert this.
-    set(UVISOR_FAMILY "${family}")        # [*] Insert this.
-endif()
+| Symbol           | Description                                                               |
+|------------------|---------------------------------------------------------------------------|
+| `ARCH_MPU`       | MPU architecture (if absent defaults to `ARMv7M`; alternative: `KINETIS`) |
+| `CONFIGURATIONS` | List of uVisor configurations, as defined in `config.h`.                  |
+
+**Table 4**. Platform-specific configuration symbols
+
+**Example**
+
+```bash
+# MPU architecture
+ARCH_MPU:=ARMv7M
+
+# Family configurations
+CONFIGURATIONS:=\
+    CONFIGURATION_${family}_1 \
+    CONFIGURATION_${family}_2
 ```
 
-## Integrate uVisor in your code-base
+### Build
 [Go to top](#overview)
 
-You can finally generate all the uVisor release binaries:
+You can finally generate all the uVisor library releases:
 
 ```bash
 $ cd ~/code/uvisor
 $ make
 ```
 
-You now need to integrate the uVisor binaries in your code-base. As anticipated above, this involves changing two files, the linker script and the start-up script.
+The build process generates as many static libraries (`*.a` files) as your family configurations, multiplied by 2 (debug and release builds). You can find them in `~/code/uvisor/api/lib/${family}`.
 
----
+
+## Integrate uVisor in mbed OS
+[Go to top](#overview)
+
+You now need to integrate uVisor in your code-base. As anticipated above, this involves changing two files, the linker script and the start-up script. We already implemented the uVisor library glue layer for mbed OS; you can find it at [ARMmbed/uvisor-lib](https://github.com/ARMmbed/uvisor-lib). You only need to add one file to that module to make sure your family is correctly recognised.
 
 ### Start-up script
+[Go to top](#overview)
 
 This usually lives in an `mbed-hal-$family` module, if you already ported your platform to mbed. The start-up code must call the function `uvisor_init()` right after system initialization (usually called `SystemInit()`) and right before the C/C++ library initialization.
 
-In assembly, `startup.S` (GCC syntax):
-
-```asm
-ResetHandler:
-  ...
-  ldr r0, =SystemInit
-  blx r0
-  ldr r0, =uvisor_init    [*] Insert this.
-  blx r0                  [*] Insert this.
-  ldr r0, =__start
-  bx  r0
-```
-
-In C, `startup.c`:
-
 ```C
-void __attribute__((noreturn, naked)) ResetHandler(void) {
-  ...
-  SystemInit();
-  uvisor_init();          [*] Insert this.
-  __start()
-}
+ResetHandler:
+    ...
+    ldr r0, =SystemInit
+    blx r0
+    ldr r0, =uvisor_init    /* [*] Insert this. */
+    blx r0                  /* [*] Insert this. */
+    ldr r0, =__start
+    bx  r0
+    ...
 ```
-
----
 
 ### Linker script
+[Go to top](#overview)
 
-To enforce the security model, we need to place uVisor at a specific location in memory, and give uVisor specific information about the rest of the memory map. These symbols live in the `ld` linker script or in the `armlink` scatter file.
+To enforce the security model, we need to place uVisor at a specific location in memory, and give uVisor specific information about the rest of the memory map. These symbols live in the `ld` linker script.
 
-The snippet below can be used as a template for your `ld` linker script. Note that uVisor expects a distinction between at least two memories: Flash and SRAM. If more than one memory fits this description, you should make an architectural decision about where to put uVisor. We suggest that if you have fast memories you should use those, provided that they offer security features at least equal to those of the regular memories.
+The snippet below can be used as a template for your `ld` linker script.
 
-```ld
+```
 MEMORY
 {
-  VECTORS (rx)          : ORIGIN = 0x00000000, LENGTH = 0x00000400
-  FLASH (rx)            : ORIGIN = 0x00000410, LENGTH = 0x00100000 - 0x00000400
-  RAM (rwx)             : ORIGIN = 0x1FFF0200, LENGTH = 0x00040000 - 0x00000200
+    VECTORS_FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 0x00000400
+    FLASH (rx)         : ORIGIN = 0x00000400, LENGTH = 0x00100000 - 0x00000400
+    VECTORS_RAM (rx)   : ORIGIN = 0x1FFF0000, LENGTH = 0x00000400
+    RAM (rwx)          : ORIGIN = 0x1FFF0400, LENGTH = 0x00040000 - 0x00000400
 }
 
-ENTRY(Reset_Handler)
+ENTRY(ResetHandler)
 
 SECTIONS
 {
@@ -491,9 +378,9 @@ SECTIONS
     ...
 
     /* Provide physical memory boundaries for uVisor. */
-    __uvisor_flash_start = ORIGIN(VECTORS);
+    __uvisor_flash_start = ORIGIN(VECTORS_FLASH);
     __uvisor_flash_end = ORIGIN(FLASH) + LENGTH(FLASH);
-    __uvisor_sram_start = ORIGIN(RAM) - 0x200;
+    __uvisor_sram_start = ORIGIN(VECTORS_RAM);
     __uvisor_sram_end = ORIGIN(RAM) + LENGTH(RAM);
 }
 ```
@@ -511,7 +398,7 @@ As shown in the snippet above, the uVisor needs the following three regions:
         <code>.uvisor.main</code>
       </td>
       <td>
-        Holds the monolithic uVisor binary; its location determines the entry point of uVisor, since <code>uvisor_init</code> points to the first opcode in this binary blob. You should make sure that the linker script has this symbol at the same offset that you specified as <code>FLASH_OFFSET</code> in your configuration.
+        Holds the monolithic uVisor core binary. Its location determines the entry point of uVisor, since <code>uvisor_init</code> points to the first opcode in this binary blob. You should make sure that the linker script has this symbol at the same offset that you specified as <code>FLASH_OFFSET</code> in your configuration.
       </td>
     </tr>
     <tr>
@@ -533,15 +420,70 @@ As shown in the snippet above, the uVisor needs the following three regions:
   </tbody>
 </table>
 
-All these sections and their sub-regions must be preceded and followed by symbols that describe their boundaries, as shown in the template. Note that all symbols prefixed with `.keep` must end up in the final memory map even if they are not explicitly used. Please make sure to use the correct `ld` commands (`KEEP(...)`) or the relevant armcc flag (`--keep=*(.keep*)`).
+All these sections and their sub-regions must be preceded and followed by symbols that describe their boundaries, as shown in the template. Note that all symbols prefixed with `.keep` must end up in the final memory map even if they are not explicitly used. Please make sure to use the correct `ld` commands (`KEEP(...)`).
 
 Once uVisor is active it maintains its own vector table, which the rest of the code can only interact with through uVisor APIs. We still suggest to leave the standard vector table in flash, so that if uVisor is disabled the classic `NVIC_{S,G}etVector` functions can still work and relocate it to SRAM. This is the same reason why we need an `SRAM_OFFSET` as well, as it reserves the space for relocation of the original OS vector table.
 
 Finally, note that at the end of the linker script the physical boundaries for the memories (flash/SRAM) populated by uVisor are also provided.
 
-**Note**: If you are using armcc, then you have to re-create the same memory map in a scatter file. Additional armlink flags are needed to ensure important symbols are not discarded, and an additional steering file translates armcc-compatible linker symbols to `__uvisor`-namespaced ones. **More on this coming soon**.
-
-## Next steps
+### Library glue layer
 [Go to top](#overview)
 
-TODO
+The `uvisor-lib` yotta module ensures that the correct uVisor library release is selected depending on the yotta target, as determined from the built-in `TARGET_LIKE_*` pre-processor symbols.
+
+You only need to add one file to this module. First, clone its repository:
+
+```bash
+$ cd ~/code
+$ git clone git@github.com/ARMmbed/uvisor-lib.git
+```
+
+This repository is configured to have [ARMmbed/uvisor](https://github.com/ARMmbed/uvisor) as a submodule, so that the uVisor libraries and API headers can be included directly without duplicating code. In this case we suggest you do *not* initialize the submodule. Instead, link you local version of [ARMmbed/uvisor](https://github.com/ARMmbed/uvisor) to the current folder:
+
+```bash
+$ cd ~/code/uvisor-lib
+$ ln -s ~/code/uvisor .
+```
+
+The only file that you need to add is named `support_${vendor}.cmake`, and must be located in the `source` folder inside `~/code/uvisor-lib`. This file selects the correct configuration based on your target.
+
+**Example**
+
+```bash
+if(TARGET_LIKE_${family})
+    set(UVISOR_FAMILY "${family}")
+
+    if(TARGET_LIKE_${family}${device0} OR TARGET_LIKE_${family}${device1})
+        set(UVISOR_CONFIGURATION "CONFIGURATION_${family}_1")
+    endif()
+
+    if(TARGET_LIKE_${family}${device2} OR TARGET_LIKE_${family}${device3})
+        set(UVISOR_CONFIGURATION "CONFIGURATION_${family}_2")
+    endif()
+endif()
+```
+
+### Next steps
+[Go to top](#overview)
+
+If you have followed all the steps in this guide, this is what you should have:
+* Your whole family ported to the [ARMmbed/uvisor](https://github.com/ARMmbed/uvisor) code-base.
+* All the uVisor library releases built for your family, saved in `~/code/uvisor/api/lib/${family}`.
+* The uVisor libraries integrated in mbed OS:
+    * The linker script in `target-${your_target}`.
+    * The start-up script in `mbed-hal-${your_target}`.
+    * The CMake logic to include the uVisor libraries in `uvisor-lib`.
+
+You can now activate and test uVisor. This can be done by setting the `uvisor.present` yotta configuration to `1`, in your target's `target.json` file:
+
+```bash
+"config": {
+  ...
+  "uvisor": {
+    "present": 1
+  },
+  ...
+}
+```
+
+You are now ready to test the new port of uVisor with our [ARMmbed/uvisor-helloworld](https://github.com/ARMmbed/uvisor-helloworld) application. Please follow the [Developing with uVisor locally](DEVELOP_LOCALLY.md) document for a step-by-step guide.
