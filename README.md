@@ -31,8 +31,6 @@ Other documents you might be interested in:
 
 This version of the uVisor is an early technology preview with an **incomplete implementation of the security features** of the final product. Future versions of uVisor will add these functions.
 
-> Due to a re-structuring of the uVisor sources for greater portability, the current head of uVisor does not support LED blinking upon fault — you can find [more information here](https://github.com/ARMmbed/uvisor/issues/160)
-
 Some of the open uVisor issues in progress are listed here:
 
 * [Known issues](https://github.com/ARMmbed/uvisor/issues?q=is%3Aopen+is%3Aissue+label%3Aissue)
