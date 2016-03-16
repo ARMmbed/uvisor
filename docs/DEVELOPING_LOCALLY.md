@@ -1,10 +1,10 @@
-# Developing with uVisor locally
+# Developing with uVisor locally in mbed OS
 
 The uVisor is distributed as a pre-linked binary blob. Blobs for different mbed platforms are released in a yotta module called `uvisor-lib`, which you can obtain from the yotta registry. This guide will show you a different way of obtaining those binaries, that is, by building them locally.
 
 There are several reasons why you might want to build uVisor locally:
 * Reproduce a publicly released build.
-* Make modifications and test them before contributing to uVisor on GitHub. See [Contributing to uVisor](CONTRIBUTING.md) for more details.
+* Make modifications and test them before contributing to uVisor on GitHub. See [Contributing to uVisor](../CONTRIBUTING.md) for more details.
 * Preview the latest uVisor features before they are packaged and released.
 * Play and experiment with uVisor.
 
@@ -16,41 +16,33 @@ You will need the following:
 
 ## Build the uVisor locally
 
-We will assume that your development directory is `~/code`. First, you need to clone the uVisor code-base:
+We will assume that your development directory is `~/code`. First, you need to clone the `uvisor-lib` repository:
 
 ```bash
 $ cd ~/code
-$ git clone --recursive git@github.com:ARMmbed/uvisor.git
-$ cd ~/code/uvisor
+$ git clone --recursive git@github.com:ARMmbed/uvisor-lib.git
 ```
 
-The `uvisor` repository is where the uVisor is developed. The `--recursive` option ensures that the `uvisor-lib` submodule is fetched as well. This submodule is fetched in the `release` folder, where the release process will produce its output.
-
-**Tip**: We only update the pointer to `uvisor-lib` at the time of a uVisor release, so please rebase it to get the latest version:
-
-```bash
-$ cd ~/code/uvisor/release
-$ git checkout master
-$ git pull --rebase
-```
+The `--recursive` option ensures that the [ARMmbed/uvisor](https://github.com/ARMmbed/uvisor) submodule is fetched as well. This repository contains the uVisor core code-base and the uVisor APIs.
 
 Build uVisor. All configurations, for all family, both for debug and release will be built with a single `make` rule:
 
 ```bash
-$ cd ~/code/uvisor
+$ cd ~/code/uvisor-lib/uvisor
 $ make
 ```
 
 A rule `make fresh` is also provided, that cleans everything before building. This might be useful while you develop.
 
-New binaries have been created, which are located in the `release` folder. We now need to tell yotta to link locally to this module:
+New release libraries have been created, which are located in the `api/lib` folder inside `~/code/uvisor-lib/uvisor`. We only need to tell yotta to link locally to this module.
 
 ```bash
-$ cd ~/code/uvisor/release
+$ cd ~/code/uvisor-lib
 $ yotta link
 ```
 
-In this way yotta applications can refer to this local version of `uvisor-lib` instead of the one published in the registry.
+In this way yotta applications can refer to this local version of `uvisor-lib` instead of the one published in the registry. This version uses the locally built uVisor libraries.
+
 
 ## Link your application
 
@@ -70,12 +62,14 @@ $ yotta target ${your_target}
 
 If you are porting uVisor to your platform, `${your_target}` will be your own target, whereas otherwise you can only use the [officially supported targets](../README.md#supported-platforms) for uVisor.
 
-You can now tell yotta to use your local version of uVisor, and finally build:
+You can now tell yotta to use your local version of uVisor, and finally build the application:
 
 ```bash
 $ yotta link uvisor-lib
 $ yotta build
 ```
+
+Whenever you want to make a change to uVisor, just run `make` again in the `~/code/uvisor-lib/uvisor` folder. The change will be automatically propagated to this application through the locally linked version of `uvisor-lib`.
 
 Your application binary will be located in `build/${your_target}/source/${your_app}.bin`. You can drag & drop it to the board if it supports it, or use an external debugger to flash the device.
 
