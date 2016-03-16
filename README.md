@@ -6,7 +6,7 @@ The uVisor is a self-contained software hypervisor that creates independent secu
 
 ## Overview
 
-To start using uVisor you will need to include it as a library in your design. We release the uVisor library periodically in the form of a yotta module in the [`uvisor-lib`](https://github.com/ARMmbed/uvisor-lib) repository.
+To start using uVisor you will need to include it as a library in your design. We release the uVisor library periodically in the form of a yotta module in the [ARMmbed/uvisor-lib](https://github.com/ARMmbed/uvisor-lib) repository.
 
 If you want to learn more about the uVisor security model and get an overview of its features this is the right place. In this document you will read about:
 
