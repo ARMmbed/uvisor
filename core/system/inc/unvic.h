@@ -38,7 +38,7 @@ extern const TIsrVector g_isr_vector[ISR_VECTORS];
 /* unprivileged interrupts */
 extern TIsrUVector g_unvic_vector[NVIC_VECTORS];
 
-extern void     unvic_isr_set(uint32_t irqn, uint32_t vector, uint32_t flag);
+extern void     unvic_isr_set(uint32_t irqn, uint32_t vector);
 extern uint32_t unvic_isr_get(uint32_t irqn);
 
 extern void     unvic_irq_enable(uint32_t irqn);

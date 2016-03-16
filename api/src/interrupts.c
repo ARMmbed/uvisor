@@ -18,19 +18,14 @@
 #include "core/uvisor.h"
 #include <stdint.h>
 
-void vIRQ_SetVectorX(uint32_t irqn, uint32_t vector, uint32_t flag)
+void vIRQ_SetVector(uint32_t irqn, uint32_t vector)
 {
     if(__uvisor_mode == 0) {
         uvisor_disabled_set_vector(irqn, vector);
     }
     else {
-        UVISOR_SVC(UVISOR_SVC_ID_ISR_SET, "", irqn, vector, flag);
+        UVISOR_SVC(UVISOR_SVC_ID_ISR_SET, "", irqn, vector);
     }
-}
-
-void vIRQ_SetVector(uint32_t irqn, uint32_t vector)
-{
-    vIRQ_SetVectorX(irqn, vector, 0);
 }
 
 uint32_t vIRQ_GetVector(uint32_t irqn)

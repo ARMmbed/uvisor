@@ -98,8 +98,7 @@ static int unvic_acl_check(int irqn)
     return is_irqn_registered;
 }
 
-/* FIXME flag is currently not implemented */
-void unvic_isr_set(uint32_t irqn, uint32_t vector, uint32_t flag)
+void unvic_isr_set(uint32_t irqn, uint32_t vector)
 {
     /* verify IRQ access privileges */
     unvic_acl_check(irqn);
