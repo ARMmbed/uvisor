@@ -14,16 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __UNVIC_EXPORTS_H__
-#define __UNVIC_EXPORTS_H__
+#ifndef __UVISOR_API_DEBUG_EXPORTS_H__
+#define __UVISOR_API_DEBUG_EXPORTS_H__
 
-/* this value refers to the minimum allowable priority in the physical NVIC
- * module, but not in the virtualised one (vIRQ) */
-#define __UVISOR_NVIC_MIN_PRIORITY ((uint32_t) 1)
+#include <stdint.h>
 
-/* this is the maximum priority allowed for the vIRQ module */
-/* users of uVisor APIs can use this to determine the maximum level of
- * priorities available to them */
-#define UVISOR_VIRQ_MAX_PRIORITY ((uint32_t) (1 << __NVIC_PRIO_BITS) - 1 - __UVISOR_NVIC_MIN_PRIORITY)
+/* Debug box driver -- Version 0
+ * A constant instance of this struct must be instantiated by the unprivileged
+ * code to setup a debug box.*/
+typedef struct TUvisorDebugDriver {
+    uint32_t (*get_version)(void);
+    void (*halt_error)(int);
+} TUvisorDebugDriver;
 
-#endif/*__UNVIC_EXPORTS_H__*/
+/* Number of handlers in the debug box driver */
+#define DEBUG_BOX_HANDLERS_NUMBER (sizeof(TUvisorDebugDriver) / sizeof(void *))
+
+#endif /* __UVISOR_API_DEBUG_EXPORTS_H__ */

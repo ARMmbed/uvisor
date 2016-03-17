@@ -14,9 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "uvisor-lib/uvisor-lib.h"
+#ifndef __UVISOR_API_ERROR_H__
+#define __UVISOR_API_ERROR_H__
 
-UVISOR_EXTERN void uvisor_debug_init(const TUvisorDebugDriver * const driver)
-{
-    UVISOR_SVC(UVISOR_SVC_ID_DEBUG_REGISTER_BOX, "", (uint32_t) driver);
-}
+#include "api/inc/halt_exports.h"
+#include "api/inc/uvisor_exports.h"
+
+UVISOR_EXTERN void uvisor_error(THaltUserError reason);
+
+#endif /* __UVISOR_API_ERROR_H__ */

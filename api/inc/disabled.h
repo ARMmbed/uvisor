@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -14,10 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "uvisor-lib/uvisor-lib.h"
+#ifndef __UVISOR_API_DISABLED_H__
+#define __UVISOR_API_DISABLED_H__
 
-/* uvisor hook for unsupported platforms */
-UVISOR_EXTERN void __attribute__((section(".uvisor.main"))) uvisor_init(void)
-{
-    return;
-}
+#include "api/inc/uvisor_exports.h"
+#include <stdint.h>
+
+UVISOR_EXTERN void uvisor_disabled_switch_in(const uint32_t *dst_box_cfgtbl_ptr);
+UVISOR_EXTERN void uvisor_disabled_switch_out(void);
+
+UVISOR_EXTERN void uvisor_disabled_set_vector(uint32_t irqn, uint32_t vector);
+UVISOR_EXTERN uint32_t uvisor_disabled_get_vector(uint32_t irqn);
+
+#endif /* __UVISOR_API_DISABLED_H__ */

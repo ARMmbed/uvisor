@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -14,11 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __HALT_EXPORTS_H__
-#define __HALT_EXPORTS_H__
+#ifndef __UVISOR_API_DEBUG_H__
+#define __UVISOR_API_DEBUG_H__
 
-typedef enum {
-    USER_NOT_ALLOWED = 1,
-} THaltUserError;
+#include "api/inc/debug_exports.h"
+#include "api/inc/uvisor_exports.h"
 
-#endif/*__HALT_EXPORTS_H__*/
+UVISOR_EXTERN void uvisor_debug_init(const TUvisorDebugDriver * const driver);
+
+#endif /* __UVISOR_API_DEBUG_H__ */

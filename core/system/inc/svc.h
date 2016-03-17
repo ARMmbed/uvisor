@@ -17,7 +17,7 @@
 #ifndef __SVC_H__
 #define __SVC_H__
 
-#include "svc_exports.h"
+#include "api/inc/svc_exports.h"
 
 #include "svc_cx.h"
 #include "svc_gw.h"

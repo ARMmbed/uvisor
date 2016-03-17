@@ -14,11 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __VMPU_EXPORTS_H__
-#define __VMPU_EXPORTS_H__
+#ifndef __UVISOR_API_VMPU_EXPORTS_H__
+#define __UVISOR_API_VMPU_EXPORTS_H__
 
-#include "uvisor_exports.h"
+#include "api/inc/uvisor_exports.h"
 #include <stdint.h>
+
+/* The maximum box namespace length is 37 so that it is exactly big enough for
+ * a human-readable hex string GUID (as formatted by RFC 4122) followed by a
+ * terminating NULL. */
+#define UVISOR_MAX_BOX_NAMESPACE_LENGTH 37
 
 /* supervisor user access modes */
 #define UVISOR_TACL_UEXECUTE        0x0001UL
@@ -160,4 +165,4 @@ static inline int vmpu_bits(uint32_t size)
     return 32 - __builtin_clz(size);
 }
 
-#endif/*__VMPU_EXPORTS_H__*/
+#endif /* __UVISOR_API_VMPU_EXPORTS_H__ */

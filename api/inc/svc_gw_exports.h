@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "uvisor-lib/uvisor-lib.h"
+#ifndef __UVISOR_API_SVC_GW_EXPORTS_H__
+#define __UVISOR_API_SVC_GW_EXPORTS_H__
 
-void uvisor_error(THaltUserError reason)
-{
-    UVISOR_SVC(UVISOR_SVC_ID_HALT_USER_ERR, "", reason);
-}
+#define UVISOR_SVC_GW_MAGIC  0xABCDABCD /* FIXME update with correct magic */
+
+#endif /* __UVISOR_API_SVC_GW_EXPORTS_H__ */

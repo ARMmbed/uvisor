@@ -14,8 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __UVISOR_LIB_SECURE_GATEWAY_H__
-#define __UVISOR_LIB_SECURE_GATEWAY_H__
+#ifndef __UVISOR_API_SECURE_GATEWAY_H__
+#define __UVISOR_API_SECURE_GATEWAY_H__
+
+#include "api/inc/uvisor_exports.h"
+#include <stdint.h>
 
 /* secure gateway metadata */
 #if defined(__CC_ARM)
@@ -49,4 +52,4 @@
         res; \
     })
 
-#endif /* __UVISOR_LIB_SECURE_GATEWAY_H__ */
+#endif /* __UVISOR_API_SECURE_GATEWAY_H__ */

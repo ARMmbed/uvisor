@@ -14,13 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __UVISOR_LIB_DISABLED_H__
-#define __UVISOR_LIB_DISABLED_H__
+#include "api/inc/uvisor-lib.h"
+#include "core/uvisor.h"
+#include <stdint.h>
 
-UVISOR_EXTERN void uvisor_disabled_switch_in(const uint32_t *dst_box_cfgtbl_ptr);
-UVISOR_EXTERN void uvisor_disabled_switch_out(void);
-
-UVISOR_EXTERN void uvisor_disabled_set_vector(uint32_t irqn, uint32_t vector);
-UVISOR_EXTERN uint32_t uvisor_disabled_get_vector(uint32_t irqn);
-
-#endif /* __UVISOR_LIB_DISABLED_H__ */
+UVISOR_EXTERN void uvisor_debug_init(const TUvisorDebugDriver * const driver)
+{
+    UVISOR_SVC(UVISOR_SVC_ID_DEBUG_REGISTER_BOX, "", (uint32_t) driver);
+}

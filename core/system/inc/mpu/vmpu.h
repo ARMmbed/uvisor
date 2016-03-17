@@ -17,7 +17,7 @@
 #ifndef __VMPU_H__
 #define __VMPU_H__
 
-#include "vmpu_exports.h"
+#include "api/inc/vmpu_exports.h"
 #include "vmpu_unpriv_access.h"
 #include <stdint.h>
 

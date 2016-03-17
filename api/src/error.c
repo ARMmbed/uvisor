@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, ARM Limited, All Rights Reserved
+ * Copyright (c) 2015, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -14,9 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __UVISOR_LIB_DEBUG_H__
-#define __UVISOR_LIB_DEBUG_H__
+#include "api/inc/uvisor-lib.h"
+#include "core/uvisor.h"
 
-UVISOR_EXTERN void uvisor_debug_init(const TUvisorDebugDriver * const driver);
-
-#endif /* __UVISOR_LIB_DEBUG_H__ */
+void uvisor_error(THaltUserError reason)
+{
+    UVISOR_SVC(UVISOR_SVC_ID_HALT_USER_ERR, "", reason);
+}

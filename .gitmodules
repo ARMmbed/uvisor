@@ -1,3 +1,0 @@
-[submodule "release"]
-	path = release
-	url = git@github.com:ARMmbed/uvisor-lib.git

@@ -14,8 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __UVISOR_EXPORTS_H__
-#define __UVISOR_EXPORTS_H__
+#ifndef __UVISOR_API_UVISOR_EXPORTS_H__
+#define __UVISOR_API_UVISOR_EXPORTS_H__
+
+#include <stdint.h>
 
 /* maximum number of boxes allowed: 1 is the minimum (unprivileged box) */
 #define UVISOR_MAX_BOXES 5U
@@ -154,4 +156,4 @@
 
 #endif /* defined(__CC_ARM) || defined(__GNUC__) */
 
-#endif/*__UVISOR_EXPORTS_H__*/
+#endif /* __UVISOR_API_UVISOR_EXPORTS_H__ */

@@ -14,21 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __UVISOR_LIB_BOX_CONFIG_H__
-#define __UVISOR_LIB_BOX_CONFIG_H__
+#ifndef __UVISOR_API_BOX_CONFIG_H__
+#define __UVISOR_API_BOX_CONFIG_H__
 
+#include "api/inc/uvisor_exports.h"
 #include <stddef.h>
+#include <stdint.h>
 
 UVISOR_EXTERN const uint32_t __uvisor_mode;
 
 #define UVISOR_DISABLED   0
 #define UVISOR_PERMISSIVE 1
 #define UVISOR_ENABLED    2
-
-/* The maximum box namespace length is 37 so that it is exactly big enough for
- * a human-readable hex string GUID (as formatted by RFC 4122) followed by a
- * terminating NUL. */
-#define UVISOR_MAX_BOX_NAMESPACE_LENGTH 37
 
 #define UVISOR_SET_MODE(mode) \
     UVISOR_SET_MODE_ACL_COUNT(mode, NULL, 0)
@@ -123,4 +120,4 @@ UVISOR_EXTERN int uvisor_box_id_caller(void);
  * UVISOR_ERROR_BOX_NAMESPACE_ANONYMOUS if the box is anonymous. */
 UVISOR_EXTERN int uvisor_box_namespace(int box_id, char *box_namespace, size_t length);
 
-#endif /* __UVISOR_LIB_BOX_CONFIG_H__ */
+#endif /* __UVISOR_API_BOX_CONFIG_H__ */

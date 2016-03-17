@@ -14,8 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __UVISOR_LIB_SECURE_ACCESS_H__
-#define __UVISOR_LIB_SECURE_ACCESS_H__
+#ifndef __UVISOR_API_SECURE_ACCESS_H__
+#define __UVISOR_API_SECURE_ACCESS_H__
+
+#include "api/inc/uvisor_exports.h"
+#include "api/inc/vmpu_exports.h"
+#include <stdint.h>
 
 /* the switch statement will be optimised away since the compiler already knows
  * the sizeof(type) */
@@ -82,4 +86,4 @@ static inline UVISOR_FORCEINLINE uint8_t uvisor_read8(uint8_t volatile * volatil
     return UVISOR_ASM_MEMORY_ACCESS(ldrb, uint8_t, addr);
 }
 
-#endif /* __UVISOR_LIB_SECURE_ACCESS_H__ */
+#endif /* __UVISOR_API_SECURE_ACCESS_H__ */

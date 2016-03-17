@@ -1,5 +1,4 @@
 *.o
-*.a
 *.elf
 *.map
 *.asm
@@ -7,6 +6,7 @@
 *.hex
 *.axf
 *.linker
+*.s
 gdb.script
 jlink.flash
 JLink.log
