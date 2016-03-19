@@ -28,9 +28,10 @@ You will need the following:
 The uVisor is developed in the [ARMmbed/uvisor](https://github.com/ARMmbed/uvisor) repository. Most of your porting efforts will happen there.
 
 Although uVisor is highly self-contained, it still requires some support from the target operating system. There are two files in particular that need to be changed in your code-base:
+
 1. **Library glue layer**. [ARMmbed/uvisor](https://github.com/ARMmbed/uvisor) provides release and debug libraries for all family configurations. The logic to pick the right build for the right target is OS-specific and must be provided by a glue layer.
 1. **Linker script**. It contains specific memory regions and symbols that uVisor relies on.
-2. **Start-up script**. uVisor boots right after the system basic initialization, and before the C/C++ library initialization. The start-up script needs to call `uvisor_init()` in between those two.
+1. **Start-up script**. uVisor boots right after the system basic initialization, and before the C/C++ library initialization. The start-up script needs to call `uvisor_init()` in between those two.
 
 If you are porting uVisor to mbed OS, the library glue layer is implemented in [ARMmbed/uvisor-lib](https://github.com/ARMmbed/uvisor-lib), the linker script is located in the platform yotta target, while the start-up script lives in the target-specific mbed HAL yotta module. We will guide you through the modifications needed in those modules later in this guide.
 
