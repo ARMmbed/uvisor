@@ -50,7 +50,8 @@ $(PROJECT).docx : $(DOCUMENTS)
 	$(TOOL_PANDOC) $(SETTINGS_PANDOC) -o $@ $^
 
 install_fedora:
-	sudo dnf install pandoc texlive-latex-bin
+	sudo dnf install pandoc texlive-latex-bin fedora-repos-rawhide
+	sudo dnf --enablerepo=rawhide update pandoc
 
 clean:
 	rm -f $(EXAMPLES) $(TARGETS)
