@@ -1,6 +1,6 @@
 # Roadmap
 
-For integrating [ARMmbed uVisor](https://github.com/ARMmbed/uvisor/)^[uVisor is avalable at https://github.com/ARMmbed/uvisor/ under Apache 2.0 license] with mbed RTOS we propose the following roadmap as port of the Morpheus project: 
+For integrating [ARMmbed uVisor](https://github.com/ARMmbed/uvisor/)^[uVisor is avalable at https://github.com/ARMmbed/uvisor/ under Apache 2.0 license] with mbed RTOS we propose the following roadmap as part of the Morpheus project:
 
 ## First 15 days
 - Starts at March 21st, terminates at April 1th
@@ -28,11 +28,10 @@ For integrating [ARMmbed uVisor](https://github.com/ARMmbed/uvisor/)^[uVisor is 
  
 ## Final 60 days
 - Starts at April 18th
-- virtualize disable_irq per uVisor context
-- uVisor-aware malloc integration
-- uVisor-aware Thread-Local-Storage (TLS) integration
+- Virtualize disable_irq per uVisor context
+- Implement Interprocess/Interthread Communication
+- uVisor-aware Malloc-integration (Coarse per-Process Blocks & per-Thread blocks)
+- Thread-Local-Storage (TLS) integration
 - Implement Register-Level-Access Gateway
 - Integrate Key-Value store in mbed 2.0 to enable key provisoning services
-- Benchmark uVisor overhead
 - Dogfood uVisor on simple MK64F connected ethernet application (ping network test)
- 
