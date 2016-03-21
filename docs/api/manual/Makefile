@@ -21,7 +21,7 @@ PUBLISH_DIR:=../publish
 #
 # Various Tool Settings
 #
-SETTINGS_PANDOC:=-S --reference-docx $(WORD_TEMPLATE) --number-sections
+SETTINGS_PANDOC:=-S --reference-docx $(WORD_TEMPLATE) -f markdown+multiline_tables --number-sections
 
 #
 # Build System
