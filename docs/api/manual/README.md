@@ -1,8 +1,6 @@
-# uVisor for mbed RTOS
+# Overview
 
 The uVisor is a self-contained software hypervisor that creates independent secure domains on ARM Cortex-M3 and M4 micro-controllers. Its function is to increase resilience against malware and to protect secrets from leaking even among different modules of the same application.
-
-## Overview
 
 The need for security features applies across a wide range of today’s IoT products. We at ARM are convinced that many IoT security problems can be solved using standardized building blocks.
 
@@ -18,7 +16,7 @@ Services built on top of our security layer can safely depend on an unclonable t
 
 You can find more information and a [high level overview here](http://www.slideshare.net/FoolsDelight/resilient-iot-security-the-end-of-flat-security-models).
 
-### Supported platforms
+## Supported platforms
 
 The following hardware platform is currently supported for :
 

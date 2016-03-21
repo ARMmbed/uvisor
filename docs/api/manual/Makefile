@@ -2,6 +2,7 @@ PROJECT:=uvisor-rtos-docs
 WORD_TEMPLATE:=template/pandoc-template.docx
 DOCUMENTS:=\
 	README.md \
+	UseCases.md \
 	Technical.md
 EXAMPLES:=example.docx example.pdf
 TARGETS:=$(PROJECT).docx $(PROJECT).pdf

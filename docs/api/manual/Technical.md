@@ -1,4 +1,4 @@
-## Technical Details
+# Technical Details
 
 The uVisor is initialized right after device reset. For allowing application of System-On-Chip (SoC) specific quirks or clock initialization a the SystemInit hook is available for early hardware clock initialization.
 After initializing the *A*ccess *C*ontrol *L*ists (ACL's) for each individual security domain (process) the uVisor sets up a protected environment using a Memory Protection Unit (the ARM Cortex-M MPU or a vendor-specific alternative).
@@ -11,7 +11,7 @@ To protect from information leakage between mutually distrustful security domain
 Memory access via DMA engines can potentially bypass uVisor security policies - therefore access to security-critical peripherals (like DMA) need to be restricted to permitted memory ranges by SVCall-based APIs.
 
 
-### Unified Inter-Process & Inter-Thread Communication
+## Unified Inter-Process & Inter-Thread Communication
 
 To ensure simplicity and portability of applications, uVisor provides a common API for communicating between threads and secure domains. The API provides simple means to send information packets across threads and processes.
 
@@ -22,7 +22,7 @@ Inter-process Communication Endpoints have three levels of visibility:
 
 Each recipient of a message can determine the origin of that message (sender). uVisor ensures the integrity of the identity information. Each received message has caller-related metadata stored along with it.
 
-#### Sending Messages
+## Sending Messages
 
 The design goal for the inter-process-communication (IPC) is not having to know whether a communication target runs within the same security domain or the security domain of someone else on the same device:
 ```C
@@ -40,11 +40,11 @@ The target queue is only operated through a previously registered callback inter
 
 The IPC_handle both encodes the target process security domain and the corresponding thread ID.
 
-#### Receiving Messages
+### Receiving Messages
 
 Each process that is interested in receiving messages, registers at least one message queue.
 
-#### Message Fragmentation
+### Message Fragmentation
 
 To enable assembly of messages on the fly or fragmentation, also scatter gather is supported:
 ```C
@@ -52,7 +52,7 @@ int ipc_send_sg(const IPC_handle* handle, IPC_Scatter_Gather* msg, int count);
 ```
 Across a security boundary scatter-gather can seamlessly interface with a non-scatter-gather receiver, as uVisor can copy a fragmented message into a non-fragmented receiver queue. In case the target queue is full the individual message too large, the command returns with an error.
 
-### Memory Layout and Management
+## Memory Layout and Management
 
 Different memory layouts can be used on different platforms, depending on the implemented memory protection scheme and on the MPU architecture. The following figure shows the memory layout of a system where the uVisor shares the SRAM module with the operating system (ARMv7-M MPU).
 
@@ -91,8 +91,3 @@ Vector table                Interrupt vectors are relocated to the SRAM
                             but protected by the uVisor. Access to IRQs
                             is made through specific APIs.
 ------------------------------------------------------------------------
-
-### Multithreading
-
-### Thread Local Storage
-
