@@ -2,8 +2,6 @@
 
 The uVisor is a self-contained software hypervisor that creates independent secure domains on ARM Cortex-M3 and M4 micro-controllers. Its function is to increase resilience against malware and to protect secrets from leaking even among different modules of the same application. You can find a [high level overview here](http://www.slideshare.net/FoolsDelight/resilient-iot-security-the-end-of-flat-security-models).
 
-> Are you excited about security and interested in working on uVisor? [Join us](http://careers.peopleclick.com/careerscp/client_arm/external/jobDetails.do?functionName=getJobDetail&jobPostId=23423&localeCode=en-us) at ARM in Cambridge!
-
 ## Overview
 
 To start using uVisor you will need to include it as a library in your design. We release the uVisor library periodically in the form of a yotta module in the [ARMmbed/uvisor-lib](https://github.com/ARMmbed/uvisor-lib) repository.
