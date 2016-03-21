@@ -1,6 +1,7 @@
 PROJECT:=uvisor-rtos-docs
 WORD_TEMPLATE:=template/pandoc-template.docx
 DOCUMENTS:=\
+	Roadmap.md \
 	README.md \
 	UseCases.md \
 	Technical.md
