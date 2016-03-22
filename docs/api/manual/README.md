@@ -20,6 +20,6 @@ You can find more information and a [high level overview here](http://www.slides
 
 The following hardware platform is currently supported for :
 
-* [NXP FRDM-K64F](http://developer.mbed.org/platforms/FRDM-K64F/)
+* [NXP FRDM-K64F](http://developer.mbed.org/platforms/FRDM-K64F/): Freedom Development Platform for Kinetis K64, K63, and K24 MCUs
 
 The uVisor pre-linked binary images are built with the Launchpad [GCC ARM Embedded](https://launchpad.net/gcc-arm-embedded) toolchain. Currently only applications using that toolchain can be built.

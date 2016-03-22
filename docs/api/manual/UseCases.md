@@ -70,12 +70,12 @@ Inter-process Communication Endpoints have three levels of visibility:
 
 Each recipient of a message can determine the origin of that message (sender). uVisor ensures the integrity of the identity information. Each received message has caller-related metadata stored along with it.
 
-### Sending Messages
+### Send Local Messages
 
 The design goal for the inter-process-communication (IPC) is not having to know whether a communication target runs within the same security domain or the security domain of someone else on the same device:
 ```C
 int ipc_send(const IPC_handle* handle, const void* msg, size_t len);
-```
+```https://github.com/ARMmbed/example-uvisor-box-id
 The `ipc_send` call copies the provide `msg` of `len` bytes to the recipients receive queue. After ipc_send's return the caller can assume that the msg buffer is no longer needed. This enables easy assembly of messages on the fly on stack.
 
 uVisor intentionally imposes the restriction not to pass messages by reference, as the layout of the MPU protection is very much runtime-specific and of unpredictable performance due the fragmentation and large count of virtualized MPU regions.
@@ -88,9 +88,28 @@ The target queue is only operated through a previously registered callback inter
 
 The IPC_handle both encodes the target process security domain and the corresponding thread ID.
 
-### Receiving Messages
+### Receiving Local Messages
 
-Each process that is interested in receiving messages, registers at least one message queue.
+Each process that is interested in receiving messages, registers at least one message queue. Using process specific APIs external processes can ask for a specific message queue handle (IPC_handle). A process has the option restrict inbound communication to individual processes for safety reasons. An rogue process can't spam the message queue buffers as a result. The queue implementation supports multiple writers and multiple readers.
+
+For each message queue entry uVisor provides meta data like message size, origin of the message in form of the process ID of the sender. As process IDs can change over time, the process ID can be turned into a process identity using the [Box ID API of uVisor](https://github.com/ARMmbed/uvisor-lib/blob/master/DOCUMENTATION.md#box-identity).
+
+### Receiving Remote Messages
+
+Remote messages interface with the rest of the system through a **message dispatcher**. The delivered messages are expected to be end-to-end secured at least with regard to their authorization. The dispatcher has the responsibility to verify the authorization of messages at the entry to the system. Each message has an untrusted string ID corresponding to the box name space.
+
+After successfully verifying the inbound security message, the dispatcher will to remember the verified senders namespace string and annotate the received payload with the ID of the saved namespace string.
+
+Using the namespace ID the receiving process can query the namespace string using the dispatcher API. These IDs are locally unique, so the namespace lookup only has to be done on the first occurrence of a new ID. On subsequent messages only the numeric IDs need to be checked.
+
+The message dispatcher optionally runs in a dedicated secure process protected by uVisor. Using API calls each process can register a queue name string - making that queue globally available:
+
+```bash
+https://[2001:470:531a::2]/dispatch/com.arm.keyprov/queue.name/key.name
+```
+The receiving process will do a two-step verification:
+- verify the identity of the dispatcher
+- if the identity of the dispatcher is trusted, the receiver can trust the namespace annotation, as the dispatcher is trusted to have performed the verification.
 
 ### Message Fragmentation
 
