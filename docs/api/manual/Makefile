@@ -40,7 +40,7 @@ publish: $(TARGETS) $(EXAMPLES)
 	git -C $(PUBLISH_DIR) push
 
 %.pdf : %.docx
-	$(TOOL_OOWRITER) --headless --convert-to pdf $^
+	$(TOOL_OOWRITER) --headless --convert-to pdf:writer_pdf_Export $^
 
 $(PROJECT).docx : $(DOCUMENTS)
 	$(TOOL_PANDOC) $(SETTINGS_PANDOC) -o $@ $^
