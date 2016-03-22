@@ -12,7 +12,6 @@ TARGETS:=$(PROJECT).docx $(PROJECT).pdf
 # Command Line Tools used
 #
 TOOL_PANDOC:=pandoc
-TOOL_PS2PDF:=ps2pdf14
 TOOL_OOWRITER:=oowriter
 
 #
@@ -40,11 +39,8 @@ publish: $(TARGETS) $(EXAMPLES)
 	git -C $(PUBLISH_DIR) commit -a -m "released DOC & PDF documents"
 	git -C $(PUBLISH_DIR) push
 
-%.pdf : %.ps
-	$(TOOL_PS2PDF) $^ $@
-
-%.ps : %.docx
-	$(TOOL_OOWRITER) --print-to-file --outdir $(dir $@) $^
+%.pdf : %.docx
+	$(TOOL_OOWRITER) --headless --convert-to pdf $^
 
 $(PROJECT).docx : $(DOCUMENTS)
 	$(TOOL_PANDOC) $(SETTINGS_PANDOC) -o $@ $^
@@ -53,7 +49,7 @@ $(PROJECT).docx : $(DOCUMENTS)
 	$(TOOL_PANDOC) $(SETTINGS_PANDOC) -o $@ $^
 
 install_fedora:
-	sudo dnf install pandoc texlive-latex-bin ghostscript-core libreoffice-writer fedora-repos-rawhide
+	sudo dnf install pandoc texlive-latex-bin libreoffice-writer fedora-repos-rawhide
 	sudo dnf --enablerepo=rawhide update pandoc
 
 clean:

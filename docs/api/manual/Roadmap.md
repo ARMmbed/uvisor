@@ -20,12 +20,12 @@ For integrating [ARMmbed uVisor](https://github.com/ARMmbed/uvisor/)^[uVisor is 
 - uVisor RTOS integration prototype
     * extends CMSIS-RTOS APIs
     * two threads, running each in isolated security domain
-    * both thread ping-pong data around in 500ms interval
-    * both thread individualy blink LED to indicate receiving and forwarding of data  
+        - ping-pong data around in 500ms interval
+        - threads individually blink LED to indicate receiving and forwarding of data
 - create streamlined binary library distribution for mbed 2.0
     * include unsupported target for mbed 2.0 for fallback to disable uVisor
 - debug-LED integration
- 
+
 ## Final 60 days
 - Starts at April 18th
 - Virtualize disable_irq per uVisor context
