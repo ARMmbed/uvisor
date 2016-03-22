@@ -73,9 +73,10 @@ Each recipient of a message can determine the origin of that message (sender). u
 ### Send Local Messages
 
 The design goal for the inter-process-communication (IPC) is not having to know whether a communication target runs within the same security domain or the security domain of someone else on the same device:
+
 ```C
 int ipc_send(const IPC_handle* handle, const void* msg, size_t len);
-```https://github.com/ARMmbed/example-uvisor-box-id
+```
 The `ipc_send` call copies the provide `msg` of `len` bytes to the recipients receive queue. After ipc_send's return the caller can assume that the msg buffer is no longer needed. This enables easy assembly of messages on the fly on stack.
 
 uVisor intentionally imposes the restriction not to pass messages by reference, as the layout of the MPU protection is very much runtime-specific and of unpredictable performance due the fragmentation and large count of virtualized MPU regions.
@@ -108,6 +109,7 @@ The message dispatcher optionally runs in a dedicated secure process protected b
 https://[2001:470:531a::2]/dispatch/com.arm.keyprov/queue.name/key.name
 ```
 The receiving process will do a two-step verification:
+
 - verify the identity of the dispatcher
 - if the identity of the dispatcher is trusted, the receiver can trust the namespace annotation, as the dispatcher is trusted to have performed the verification.
 
