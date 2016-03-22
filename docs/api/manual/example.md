@@ -22,6 +22,30 @@ Duis posuere ligula vitae luctus sagittis. Phasellus consequat placerat metus, u
 ## H2
 Vestibulum vehicula nibh ante, sit amet convallis tortor eleifend nec. Duis fringilla neque lacus, eu vulputate mauris eleifend eget. Pellentesque ac aliquam nulla. Phasellus sodales dolor at auctor pretium. Cras euismod orci vel augue ullamcorper, in finibus sapien tempor. Praesent eget semper turpis. Vestibulum facilisis sed est in consectetur. Aenean mattis consequat nisl nec ornare. Fusce laoreet aliquam imperdiet. Nullam ut nunc non elit feugiat consectetur. Ut dictum in tellus vel consectetur. Vivamus tincidunt lectus et urna pharetra gravida. Quisque id purus ante. Nunc sed commodo eros. Aenean blandit nisi nec ipsum ultrices, at sagittis elit feugiat. Nam a elementum lectus.
 
+------------------------------------------------------------------------
+**Memory section**          **Description**
+--------------------------- --------------------------------------------
+uVisor code                 The uVisor code is readable and executable
+                            by unprivileged code, so that code sharing
+                            is facilitated and privileged-unprivileged
+                            transitions are easier.
+
+uVisor data/BSS/stack       The uVisor places all its constants,
+                            initialized and uninitialized data and the
+                            stack in secured areas of memory, separated
+                            from the unprivileged code.
+
+Secure boxes data/BSS/stack Through a configuration process,
+                            unprivileged code can set up a secure
+                            process for which data and stack can be
+                            secured by the uVisor and placed in
+                            isolated and protected memory areas.
+
+Vector table                Interrupt vectors are relocated to the SRAM
+                            but protected by the uVisor. Access to IRQs
+                            is made through specific APIs.
+------------------------------------------------------------------------
+
 ### H3
 Duis euismod maximus dolor sit amet faucibus. Sed id feugiat ligula. Phasellus eget erat in erat posuere rutrum. In hac habitasse platea dictumst. Donec lobortis leo ac neque dignissim placerat. Morbi metus erat, hendrerit sit amet mauris ac, malesuada blandit dui. In porta ante hendrerit, eleifend purus ut, ullamcorper enim. Nullam eget cursus augue.
 
