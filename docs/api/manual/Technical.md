@@ -10,48 +10,6 @@ To protect from information leakage between mutually distrustful security domain
 
 Memory access via DMA engines can potentially bypass uVisor security policies - therefore access to security-critical peripherals (like DMA) need to be restricted to permitted memory ranges by SVCall-based APIs.
 
-
-## Unified Inter-Process & Inter-Thread Communication
-
-To ensure simplicity and portability of applications, uVisor provides a common API for communicating between threads and secure domains. The API provides simple means to send information packets across threads and processes.
-
-Inter-process Communication Endpoints have three levels of visibility:
-- **Anonymous Queues** have only validity within that specific process. The corresponding handles are unknown outside of the process context.
-- **Local Queues** can be written-to across process boundaries on the same device.
-- **Named Queues** combined with the process name-space identifier these queues can be used to address a specific process remotely
-
-Each recipient of a message can determine the origin of that message (sender). uVisor ensures the integrity of the identity information. Each received message has caller-related metadata stored along with it.
-
-## Sending Messages
-
-The design goal for the inter-process-communication (IPC) is not having to know whether a communication target runs within the same security domain or the security domain of someone else on the same device:
-```C
-int ipc_send(const IPC_handle* handle, const void* msg, size_t len);
-```
-The `ipc_send` call copies the provide `msg` of `len` bytes to the recipients receive queue. After ipc_send's return the caller can assume that the msg buffer is no longer needed. This enables easy assembly of messages on the fly on stack.
-
-uVisor intentionally imposes the restriction not to pass messages by reference, as the layout of the MPU protection is very much runtime-specific and of unpredictable performance due the fragmentation and large count of virtualized MPU regions.
-
-Instead uVisor provides means to pass messages effectively by copying data across security boundaries. Advanced implementation can provide reference counted pools to avoid copying messages for the intra-process communication case.
-
-Each target queue imposes custom restrictions for maximum size or slots in the message queue. The message queue is pool-allocation friendly as long as the receiving process or thread implements a ipc_receive_sg call.
-
-The target queue is only operated through a previously registered callback interface API - uVisor does not need to understand the storage format for the message in SRAM. After receiving data the receiving process can notify the thread responsible for handling the message.
-
-The IPC_handle both encodes the target process security domain and the corresponding thread ID.
-
-### Receiving Messages
-
-Each process that is interested in receiving messages, registers at least one message queue.
-
-### Message Fragmentation
-
-To enable assembly of messages on the fly or fragmentation, also scatter gather is supported:
-```C
-int ipc_send_sg(const IPC_handle* handle, IPC_Scatter_Gather* msg, int count);
-```
-Across a security boundary scatter-gather can seamlessly interface with a non-scatter-gather receiver, as uVisor can copy a fragmented message into a non-fragmented receiver queue. In case the target queue is full the individual message too large, the command returns with an error.
-
 ## Memory Layout and Management
 
 Different memory layouts can be used on different platforms, depending on the implemented memory protection scheme and on the MPU architecture. The following figure shows the memory layout of a system where the uVisor shares the SRAM module with the operating system (ARMv7-M MPU).
