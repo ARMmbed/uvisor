@@ -13,7 +13,7 @@ For integrating [ARMmbed uVisor](https://github.com/ARMmbed/uvisor/)^[uVisor is 
     * no RTOS integration - just plain mbedOS
     * run blinky in mbed OS
 - prototype uVisor integration in mbed Classic build process
-- prototype security-aware interprocess communication using CMSIS
+- prototype security-aware interprocess communication APIs in CMSIS-RTOS
 
 ## Next 15 days
 - Starts at April 4th, terminates at April 15th
@@ -24,7 +24,7 @@ For integrating [ARMmbed uVisor](https://github.com/ARMmbed/uvisor/)^[uVisor is 
         - threads individually blink LED to indicate receiving and forwarding of data
 - create streamlined binary library distribution for mbed 2.0
     * include unsupported target for mbed 2.0 for fallback to disable uVisor
-- debug-LED integration
+- debug-LED integration with mbed Classic
 
 ## Final 60 days
 - Starts at April 18th
