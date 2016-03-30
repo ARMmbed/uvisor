@@ -367,14 +367,15 @@ static int vmpu_region_bits(uint32_t size)
 
     bits = vmpu_bits(size)-1;
 
-    /* minimum region size is 32 bytes */
-    if(bits<ARMv7M_MPU_ALIGNMENT_BITS)
-        bits=ARMv7M_MPU_ALIGNMENT_BITS;
-
     /* round up if needed */
     if((1UL << bits) != size)
         bits++;
 
+    /* minimum region size is 32 bytes */
+    if(bits<ARMv7M_MPU_ALIGNMENT_BITS)
+        bits=ARMv7M_MPU_ALIGNMENT_BITS;
+
+    assert(bits == UVISOR_REGION_BITS(size));
     return bits;
 }
 
