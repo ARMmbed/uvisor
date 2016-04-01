@@ -58,6 +58,14 @@ UVISOR_NOINLINE void uvisor_init_post(void)
 
 void main_entry(void)
 {
+    /* Return immediately if the magic is invalid or uVisor is disabled.
+     * This ensures that no uVisor feature that could halt the system is
+     * active in disabled mode (for example, printing debug messages to the
+     * semihosting port). */
+    if (__uvisor_config.magic != UVISOR_MAGIC || !__uvisor_config.mode || *(__uvisor_config.mode) == 0) {
+        return;
+    }
+
     /* initialize uvisor */
     uvisor_init_pre();
 
