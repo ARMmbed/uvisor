@@ -187,7 +187,7 @@ static void uvisor_disabled_default_vector(void)
     uvisor_disabled_switch_out();
 }
 
-void uvisor_disabled_set_vector(uint32_t irqn, uint32_t vector)
+UVISOR_WEAK void uvisor_disabled_set_vector(uint32_t irqn, uint32_t vector)
 {
     uint8_t prio_bits, box_id;
     uint8_t volatile *prio;
@@ -227,7 +227,7 @@ void uvisor_disabled_set_vector(uint32_t irqn, uint32_t vector)
     g_uvisor_disabled_vectors[irqn].vector = vector;
 }
 
-uint32_t uvisor_disabled_get_vector(uint32_t irqn)
+UVISOR_WEAK uint32_t uvisor_disabled_get_vector(uint32_t irqn)
 {
     /* Check IRQn.
      * We only allow user IRQs to be registered (NVIC). This is consistent with
