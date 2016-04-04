@@ -225,7 +225,7 @@ release: $(API_RELEASE)
 # The binary is then packaged with the uVisor library implementations into a
 # unique .a file.
 $(API_RELEASE): $(API_ASM_OUTPUT) $(API_DIR)/lib/$(PLATFORM)/$(BUILD_MODE) $(API_OBJS)
-	$(AR) cr $(API_RELEASE) $(API_OBJS)
+	$(AR) Dcr $(API_RELEASE) $(API_OBJS)
 	echo "$(PROGRAM_VERSION)" > $(API_VERSION)
 
 # Generate the output asm file from the asm input file and the INCBIN'ed binary.
