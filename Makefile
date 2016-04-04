@@ -66,7 +66,10 @@ API_RELEASE:=$(API_DIR)/lib/$(PLATFORM)/$(BUILD_MODE)/$(CONFIGURATION_LOWER).a
 API_VERSION:=$(API_DIR)/lib/$(PLATFORM)/$(BUILD_MODE)/$(CONFIGURATION_LOWER).txt
 
 # Release library source files
+# Note: We explicitly remove unsupported.c from the list of source files. It
+#       will be compiled by the host OS in case uVisor is not supported.
 API_SOURCES:=$(wildcard $(API_DIR)/src/*.c)
+API_SOURCES:=$(filter-out $(API_DIR)/src/unsupported.c, $(API_SOURCES))
 API_OBJS:=$(foreach API_SOURCE, $(API_SOURCES), $(API_SOURCE).$(CONFIGURATION_LOWER).$(BUILD_MODE).o) $(API_ASM_OUTPUT:.s=.o)
 
 # make ARMv7-M MPU driver the default
@@ -149,6 +152,7 @@ CFLAGS_PRE:=\
         $(OPT) \
         $(DEBUG) \
         $(WARNING) \
+        -DUVISOR_PRESENT \
         -DARCH_MPU_$(ARCH_MPU) \
         -D$(CONFIGURATION) \
         -DPROGRAM_VERSION=\"$(PROGRAM_VERSION)\" \

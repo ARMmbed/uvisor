@@ -55,12 +55,16 @@
 #define UVISOR_TACL_USER            0x0800UL
 #define UVISOR_TACL_IRQ             0x1000UL
 
+#if defined(UVISOR_PRESENT) && UVISOR_PRESENT == 1
+
 /* subregion mask for ARMv7M */
-#if defined(ARCH_MPU_ARMv7M) || (YOTTA_CFG_UVISOR_PRESENT == 1 && !defined(TARGET_LIKE_KINETIS))
+#if defined(ARCH_MPU_ARMv7M)
 #define UVISOR_TACL_SUBREGIONS_POS  24
 #define UVISOR_TACL_SUBREGIONS_MASK (0xFFUL<<UVISOR_TACL_SUBREGIONS_POS)
 #define UVISOR_TACL_SUBREGIONS(x)   ( (((uint32_t)(x))<<UVISOR_TACL_SUBREGIONS_POS) & UVISOR_TACL_SUBREGIONS_MASK )
 #endif
+
+#endif /* defined(UVISOR_PRESENT) && UVISOR_PRESENT == 1 */
 
 #define UVISOR_TACLDEF_SECURE_BSS   (UVISOR_TACL_UREAD          |\
                                      UVISOR_TACL_UWRITE         |\
@@ -96,20 +100,26 @@
 #define UVISOR_MIN_STACK_SIZE       1024
 #define UVISOR_MIN_STACK(x)         (((x)<UVISOR_MIN_STACK_SIZE)?UVISOR_MIN_STACK_SIZE:(x))
 
-#if defined(ARCH_MPU_ARMv7M) || (YOTTA_CFG_UVISOR_PRESENT == 1 && !defined(TARGET_LIKE_KINETIS))
+#if defined(UVISOR_PRESENT) && UVISOR_PRESENT == 1
+
+#if defined(ARCH_MPU_ARMv7M)
 #define UVISOR_REGION_ROUND_DOWN(x) ((x) & ~((1UL << UVISOR_REGION_BITS(x)) - 1))
 #define UVISOR_REGION_ROUND_UP(x)   (1UL << UVISOR_REGION_BITS(x))
 #define UVISOR_STACK_SIZE_ROUND(x)  UVISOR_REGION_ROUND_UP(x)
-#elif defined(ARCH_MPU_KINETIS) || (YOTTA_CFG_UVISOR_PRESENT == 1 && defined(TARGET_LIKE_KINETIS))
+#elif defined(ARCH_MPU_KINETIS)
 #define UVISOR_REGION_ROUND_DOWN(x) ((x) & ~0x1FUL)
 #define UVISOR_REGION_ROUND_UP(x)   UVISOR_REGION_ROUND_DOWN((x) + 31UL)
 #define UVISOR_STACK_SIZE_ROUND(x)  UVISOR_REGION_ROUND_UP((x) + (UVISOR_STACK_BAND_SIZE * 2))
-#elif !defined(YOTTA_CFG_UVISOR_PRESENT) || YOTTA_CFG_UVISOR_PRESENT == 0
+#else
+#error "Unknown MPU architecture. uvisor: Check your Makefile. uvisor-lib: Check if uVisor is supported"
+#endif
+
+#else /* defined(UVISOR_PRESENT) && UVISOR_PRESENT == 1 */
+
 #define UVISOR_REGION_ROUND_DOWN(x) (x)
 #define UVISOR_REGION_ROUND_UP(x)   (x)
 #define UVISOR_STACK_SIZE_ROUND(x)  (x)
-#else
-#error "Unknown MPU architecture. uvisor: Check your Makefile. uvisor-lib: Check if uVisor is supported"
+
 #endif
 
 #ifndef UVISOR_BOX_STACK_SIZE
