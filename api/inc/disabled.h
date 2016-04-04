@@ -23,6 +23,8 @@
 UVISOR_EXTERN void uvisor_disabled_switch_in(const uint32_t *dst_box_cfgtbl_ptr);
 UVISOR_EXTERN void uvisor_disabled_switch_out(void);
 
+/* The host OS can override the implementations of these functions in case a
+ * different handling of IRQs is required when uVisor is disabled. */
 UVISOR_EXTERN void uvisor_disabled_set_vector(uint32_t irqn, uint32_t vector);
 UVISOR_EXTERN uint32_t uvisor_disabled_get_vector(uint32_t irqn);
 
