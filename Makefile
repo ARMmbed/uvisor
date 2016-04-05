@@ -152,7 +152,7 @@ CFLAGS_PRE:=\
         $(OPT) \
         $(DEBUG) \
         $(WARNING) \
-        -DUVISOR_PRESENT \
+        -DUVISOR_PRESENT=1 \
         -DARCH_MPU_$(ARCH_MPU) \
         -D$(CONFIGURATION) \
         -DPROGRAM_VERSION=\"$(PROGRAM_VERSION)\" \
