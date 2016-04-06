@@ -239,13 +239,13 @@ For each message queue entry uVisor provides meta data like message size, origin
 
 ### Receiving Remote Messages
 
-Remote messages interface with the rest of the system through a **message dispatcher**. The delivered messages are expected to be end-to-end secured at least with regard to their authorization. The dispatcher has the responsibility to verify the authorization of messages at the entry to the system. Each message has an untrusted string ID corresponding to the box name space.
+Remote messages interface with the rest of the system through a **message dispatcher**. The delivered messages are expected to be end-to-end secured at least with regard to their authentication. The dispatcher has the responsibility to verify the authorization of messages at the entry to the system. Each message has an untrusted string ID corresponding to the box name space.
 
-After successfully verifying the inbound security message, the dispatcher will to remember the verified senders namespace string and annotate the received payload with the ID of the saved namespace string.
+After successfully verifying the inbound security message, the dispatcher will remember the verified senders namespace string and annotate the received payload with the ID of the saved namespace string.
 
 Using the namespace ID the receiving process can query the namespace string using the dispatcher API. These IDs are locally unique, so the namespace lookup only has to be done on the first occurrence of a new ID. On subsequent messages only the numeric IDs need to be checked.
 
-The message dispatcher optionally runs in a dedicated secure process protected by uVisor. Using API calls each process can register a queue name string - making that queue globally available:
+The message dispatcher optionally runs in a dedicated secure process protected by uVisor. Using API calls, each process can register a queue name string - making that queue globally available:
 
 ```bash
 https://[2001:470:531a::2]/dispatch/com.arm.keyprov/queue.name/key.name
