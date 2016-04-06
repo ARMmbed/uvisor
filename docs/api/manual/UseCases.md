@@ -217,9 +217,9 @@ Each recipient of a message can determine the origin of that message (sender). u
 The design goal for the inter-process-communication (IPC) is not having to know whether a communication target runs within the same security domain or the security domain of someone else on the same device:
 
 ```C
-int ipc_send(const IPC_handle* handle, const void* msg, size_t len);
+int uvisor_ipc_send(uvisor_handle_t handle, const void* msg, size_t len);
 ```
-The `ipc_send` call copies the provide `msg` of `len` bytes to the recipients receive queue. After ipc_send's return the caller can assume that the msg buffer is no longer needed. This enables easy assembly of messages on the fly on stack.
+The `ipc_send` call copies the provided `msg` of `len` bytes to the recipients receive queue. After ipc_send's return, the caller can assume that the msg buffer is no longer needed. This enables easy assembly of messages on the fly on stack.
 
 uVisor intentionally imposes the restriction not to pass messages by reference, as the layout of the MPU protection is very much runtime-specific and of unpredictable performance due the fragmentation and large count of virtualized MPU regions.
 
@@ -229,17 +229,59 @@ Each target queue imposes custom restrictions for maximum size or slots in the m
 
 The target queue is only operated through a previously registered callback interface API - uVisor does not need to understand the storage format for the message in SRAM. After receiving data the receiving process can notify the thread responsible for handling the message.
 
-The IPC_handle both encodes the target process security domain and the corresponding thread ID.
+The uvisor_handle_t handle for a queue encodes the target process security domain.
 
-### Receiving Local Messages
+### Creating Queues
 
-Each process that is interested in receiving messages, registers at least one message queue. Using process specific APIs external processes can ask for a specific message queue handle (IPC_handle). A process has the option restrict inbound communication to individual processes for safety reasons. An rogue process can't spam the message queue buffers as a result. The queue implementation supports multiple writers and multiple readers.
+```C
+uvisor_handle_t uvisor_ipc_create_queue(const char *name, size_t max_messages, size_t message_size);
+```
+
+Each process that is interested in receiving messages, creates at least one message queue.
+
+A queue can have a name. If multiple processes register a queue with the same name, the first process wins. There can not be multiple readers in different processes for the same named queue.
+
+If the provided `name` for the queue is `NULL`, then `uvisor_ipc_create_queue` will create an anonymous queue. Anonymous queues are only accessible by handle and are restricted to the local process.
+
+```C
+void uvisor_ipc_destroy_queue(uvisor_handle_t queue);
+```
+
+When a process is done with a queue, the process destroys the queue. This frees up the queue and any of its associated resources.
+
+### Discovering Queues
+
+Using process specific APIs, external processes can ask for a specific message queue handle (uvisor_handle_t). A process has the option to restrict inbound communication to individual processes for safety reasons. An rogue process can't spam the message queue buffers as a result.
+
+```C
+uvisor_handle_t uvisor_get_queue(const char *name);
+```
+
+Named queues can be discovered using a `uvisor_get_queue`. Any number of different processes can send messages to this named queue.
+
+### Receiving Messages
+
+```C
+int uvisor_ipc_receive(uvisor_handle_t handle, void** msg, size_t *len);
+```
+
+A process can receive messages into a queue it created with `uvisor_ipc_receive`. Only the process that created the queue can read from the queue; multiple processes can not read from a single queue.
+
+```C
+void uvisor_ipc_free(uvisor_handle_t handle, struct uvisor_ipc_msg *msg);
+```
+
+After the receiver is done with the message, it must free resources backing the message.
+
+The queue implementation supports multiple writers (in any threads in any process) and multiple readers (in any threads within the one process that created the queue).
 
 For each message queue entry uVisor provides meta data like message size, origin of the message in form of the process ID of the sender. As process IDs can change over time, the process ID can be turned into a process identity using the [Box ID API of uVisor](https://github.com/ARMmbed/uvisor-lib/blob/master/DOCUMENTATION.md#box-identity).
 
 ### Receiving Remote Messages
 
-Remote messages interface with the rest of the system through a **message dispatcher**. The delivered messages are expected to be end-to-end secured at least with regard to their authentication. The dispatcher has the responsibility to verify the authorization of messages at the entry to the system. Each message has an untrusted string ID corresponding to the box name space.
+uVisor delivers remote messages to a process. uVisor guarantees that the memory backing the messages is always local and accessible to the receiving process.
+
+Remote messages interface with the rest of the system through a **messagedispatcher**. The delivered messages are expected to be end-to-end secured at least with regard to their authentication. The dispatcher has the responsibility to verify the authorization of messages at the entry to the system. Each message has an untrusted string ID corresponding to the box name space.
 
 After successfully verifying the inbound security message, the dispatcher will remember the verified senders namespace string and annotate the received payload with the ID of the saved namespace string.
 
