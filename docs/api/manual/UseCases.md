@@ -2,7 +2,7 @@
 
 ## Memory Allocation System
 
-Although many processes or secure domains might be fine with just using statically allocated memories, there's a need for reliable, safe and secure memory allocation. This need for dynamic memory allocation is difficult to satisfy on Cortex-M microcontrollers due to the lack of a Memory Management Unit (MMU). 
+Although many processes or secure domains might be fine with just using statically allocated memories, there's a need for reliable, safe and secure memory allocation. This need for dynamic memory allocation is difficult to satisfy on Cortex-M microcontrollers due to the lack of a Memory Management Unit (MMU).
 
 To avoid memory fragmentation uVisor uses a nested memory allocator.
 
@@ -12,38 +12,176 @@ On the top level three methods exist for allocating memories for a process or th
 
 - One static memory region per security context as implemented by uVisor today. The allocation happens during link time and can be influenced by compile time box configuration options. This region contains heap, stack and the thread-local storage.
 - After subtracting the per-process memories and the global stack, the remaining memory is split into a coarse set of equally sized large memory pages. For an instance it might make sense to split a 64kb large SRAM block into 8kb pool memory chunks.
-- Traditional `sbrk()`-compatible interface:
-    * sbrk() grows upwards block by block
-    * stack grows downwards block by block - never frees a block even if the stack shrinks. 
-    * the pool-allocator sits in-between and expands in both directions 
 
-The recommended operation for a process is to keep static memory consumption as low as possible. For occasional device operations with large dynamic memory consumption, the corresponding process temporarily allocates one or more blocks of from the memory pool.
+The recommended operation for a process is to keep static memory consumption as low as possible. For occasional device operations with large dynamic memory consumption, the corresponding process temporarily allocates one or more pages of from the memory pool.
 
-### Per-Process Memory Allocator
+### Tier-1 Page Allocator
+
+The tier-1 page allocator hands out pages and secures access to them. It is part of the uVisor core functionality, and therefore is only accessible via a secure gateway.
+
+On boot, it initializes the heap memory into correctly aligned and equally-sized memory pages.
+The page size is known at compile time, however, the number of pages is known only to the allocator and only at runtime, due to alignment requirements.
+
+#### Requesting Pages
+
+```C
+int uvisor_page_malloc(uvisor_page_table_t *const table);
+```
+
+A process can request pages by passing a page table to the allocator containing the number of required pages, the required page size as well as the page table.
+Note that the tier-1 allocator does not allocate any memory for the page table, but works on the memory provided.
+If the tier-2 allocator request 5 pages, it needs to make sure the page table is large enough to hold 5 page origins!
+This allows the use of statically as well as dynamically allocated page tables.
+
+A page table looks like this:
+```C
+typedef struct {
+    size_t page_size;       //< the page size in bytes
+    size_t page_count;      //< the number of pages in the page table
+    void* page_origins[1];  //< table of pointer to the origins of a page
+} uvisor_page_table_t;
+```
+
+If enough free pages are available, the allocator will mark them as in use by this process, add them to the process's ACLs, zero them, and write each page origin into the page table.
+
+Note that the returned pages are absolutely not guaranteed to be allocated consecutively.
+It is the responsibility of the tier-2 allocator to make sure that memory requests that exceed the requested page size are blocked.
+
+However, it is possible to request pages sizes that are multiples of the physical page sizes.
+So, if the physical page size is 8kB, but the tier-2 allocator needs to have at least 12kB of continuous memory, it may request one page with a size of 16kB, instead of two pages with a size of 8kB.
+The tier-1 allocator will then try to find two free pages next to each other and return them as one big page.
+
+#### Freeing pages
+
+```C
+int uvisor_page_free(const uvisor_page_table_t *const table);
+```
+A process can free pages by passing a page table to the allocator.
+The allocator first checks the validity of the page table, to make sure the pages are owned by the calling process, their origins pointer make sense, etc.
+Only then will the allocator return the pages to the pool.
+
+Hint: Use the page table that was returned on allocation. :-)
+
+
+### Tier-2 Memory Allocator
+
+The tier-2 memory allocator provides a common interface to manage memory backed by tier-1 allocated pages or statically allocated memory. The tier-2 allocator is part of the uVisor library and calls to it do not require a secure gateway, since it can only operate on memory owned by the process anyway.
+
+All memory management data is contained within the memory pool and its overhead depends on the management algorithm.
+An allocator handle is simply an opaque pointer.
+```C
+typedef void* uvisor_allocator_t;
+```
+
+#### Initializing Static Memory
+
+The process heap is allocated statically, therefore the tier-2 allocator is constrained to this pool:
+```C
+uvisor_allocator_t uvisor_allocator_create_with_pool(
+    void* mem,      ///< origin of pool
+    size_t bytes);  ///< size of pool in bytes
+```
+Note that the process heap is initialized by uVisor-lib when setting up the environment for each process!
+
+#### Initializing Page-Backed Memory
+
+```C
+/* Places both the stack and heap in the same page(s) */
+uvisor_allocator_t uvisor_allocator_create_with_pages(
+    size_t heap_size,       ///< total heap size, can be fragmented
+    size_t max_heap_alloc); ///< maximum continuous heap allocation
+```
+
+The tier-2 allocator computes the required page size and page count from the `heap` size, taking account the requirement that the `max_heap_alloc` needs to be placed in one continuous memory section.
+
+For example: With a heap size of 12kB (6kB continuous) and a physical page size of 8kB, two non-consecutive pages would satisfy this requirement.
+However, if instead of 6kB we would need 9kB of continuous heap allocation, we would require one page of 16kB, ie. two consecutive 8kB.
+
+Note that no guarantee can be made that the maximum continuous heap allocation will be available to the caller.
+This depends on the fragmentation properties of the tier-2 memory management algorithm.
+This computation only makes it physically possible to perform such a continuous allocation!
+
+Note that the memory for the page table is dynamically allocated inside the process heap!
+
+#### Allocator Lifetime
+
+An allocator for static memory cannot be destroyed during program execution.
+Attempting to do so will result in an error.
+
+An allocator for page-backed memory is bound to a process thread. It will be destroyed and its backing pages released only when the thread is destroyed as well.
+Other threads within the same process are not allowed to allocate inside the page-backed memory of another thread.
+However, they may of course write and read into the page-backed memory of another thread, but that thread must first allocate memory for it and pass the pointer to the other thread.
+
+This restriction ensures that when a thread finishes execution, it is safe to return all its pages to the memory pool, without the risk of deleting an allocation from another thread.
+It also removes the need to keep track which thread allocated in what page.
+
+```C
+int uvisor_allocator_destroy(uvisor_allocator_t allocator);
+```
+
+#### Memory Management
+
+Three functions are provided to manage memory in a process:
+```C
+void* uvisor_malloc(uvisor_allocator_t allocator, size_t size);
+void* uvisor_realloc(uvisor_allocator_t allocator, void *ptr, size_t size);
+void uvisor_free(uvisor_allocator_t allocator, void *ptr);
+```
+
+These functions simply multiplex the `malloc`, `realloc` and `free` to chosen allocator.
+This automatically takes into account non-consecutive page tables.
+
+The tier-2 allocator uses the CMSIS-RTOS `rt_memory` allocator as a backend to provide thread-safe access to memory pools.
+An alternative backend is the Two-Level Segregated Fit (TLSF) algorithm, a real-time O(1) algorithm, which is  not thread-safe, however.
+`dlmalloc` was also briefly considered as a backend, however, it does not deal with multiple memory pools, and adding that functionality is difficult.
+
+### Allocator Management
+
+The current allocator is swapped out by the scheduler to provide the canonical memory management functions `malloc`, `realloc` and `free` to processes and threads.
+The escalation scheme used for this is "Page-backed Thread Heap" -> "Static Process Heap" -> "Static Legacy Process Heap":
+
+1. In a thread with its own page-backed heap, allocations will only be services from its own heap, not the process heap. If it runs out of memory, no fallback is provided.
+2. In a thread without its own page-backed heap, allocations will be serviced from the statically allocated process heap. If it runs out of memory, no fallback is provided.
+3. In a process with statically allocated heap, allocations will be serviced from this heap. If it runs out of memory, no fallback is provided.
+4. In a process without statically allocated heap, allocations will be serviced from the statically allocated insecure process heap.
+
+A thread may force an allocation on the process heap using the `ps_malloc`, `ps_realloc` and `ps_free` functions.
+This enables a worker thread with page-backed heap to store for example its final computation result on the process heap, and notify its completion, and then stop execution without having to wait for another thread to copy this result out of its heap.
+
+#### Per-Process Memory Allocator
 
 The Process memory-allocator by default uses the the heap as optionally reserved per process through link time. In a uVisor-less environment the whole program runs in one process.
 
 When starting a seldom-running, but high-memory-impact thread, the developer has the choice to tie the thread to a thread-specific heap. In a uVisor-less environment that would look like this:
 
 ```C
-/* rounded to block size, */
-uint8_t* thread_mem = malloc_block(MAX_UPDATE_HEAP_SIZE+MAX_UPDATE_STACK_SIZE);
-if(thread_heap)
+uvisor_stack_t thread_stack = process_create_stack(3kB);
+uvisor_allocator_t thread_heap = uvisor_allocator_create_with_pages(
+    12kB,           /* total heap size */
+    6kB);           /* max continuous heap allocation */
+/* alternative: allocate stack inside thread_heap */
+thread_stack = process_create_stack_with_allocator(thread_heap);
+if(thread_stack && thread_heap)
 {
-    /* create thread with default heap size and stack size, heap pointer
-       and heap size are optional and can be set to zero - allocations
-       within the thread will happen in the process heap. 
-     */  
     handle = create_thread(
         NORMAL_PRIORITY,
-        thread_mem+MAX_UPDATE_STACK_SIZE, /* heap above stack */
-        MAX_UPDATE_HEAP_SIZE,
-        thread_mem, /* stack below heap */
-        MAX_UPDATE_STACK_SIZE)
+        &thread_stack,
+        &thread_heap);
+}
 
-    /* do error handling here */
+/* thread is using no dynamic memory, or allocates on the process heap */
+uvisor_stack_t thread_stack = process_create_stack(3kB);
+if (thread_stack)
+{
+    handle = create_thread(
+        NORMAL_PRIORITY,
+        &thread_stack,
+        NULL);
 }
 ```
+
+Note: `process_create_stack(size_t stack_size)` allocates memory depending on the processes preference.
+It may allocate on the static process heap, or may request an external page and allocate stacks for multiple threads in this one page. The thread stack may also be allocated inside the page-backed memory.
 
 All memories allocated outside of the thread will be either allocated on the static heap of the process. In case a thread does set the heap pointer to NULL or the heap size to zero, memory allocations will be forwarded to the processes memory.
 
