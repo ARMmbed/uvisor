@@ -17,7 +17,7 @@ The recommended operation for a process is to keep static memory consumption as 
 
 ### Tier-1 Page Allocator
 
-The tier-1 page allocator hands out pages and secures access to them. It is part of the uVisor core functionality, and therefore is only accessible via a secure gateway.
+The tier-1 page allocator hands out pages and secures access to them. It is part of the uVisor core functionality, and therefore is only accessible via the SVC-based uVisor API.
 
 On boot, it initializes the heap memory into correctly aligned and equally-sized memory pages.
 The page size is known at compile time, however, the number of pages is known only to the allocator and only at runtime, due to alignment requirements.
@@ -30,8 +30,8 @@ int uvisor_page_malloc(uvisor_page_table_t *const table);
 
 A process can request pages by passing a page table to the allocator containing the number of required pages, the required page size as well as the page table.
 Note that the tier-1 allocator does not allocate any memory for the page table, but works on the memory provided.
-If the tier-2 allocator request 5 pages, it needs to make sure the page table is large enough to hold 5 page origins!
-This allows the use of statically as well as dynamically allocated page tables.
+If the tier-2 allocator requests 5 pages, it needs to make sure the page table is large enough to hold 5 page origins!
+This allows the passing statically as well as dynamically allocated page tables.
 
 A page table looks like this:
 ```C
@@ -47,9 +47,13 @@ If enough free pages are available, the allocator will mark them as in use by th
 Note that the returned pages are absolutely not guaranteed to be allocated consecutively.
 It is the responsibility of the tier-2 allocator to make sure that memory requests that exceed the requested page size are blocked.
 
+<!--
+>>> Comment: This concept has been rejected for now, since this is prone to fragmentation.
+
 However, it is possible to request pages sizes that are multiples of the physical page sizes.
 So, if the physical page size is 8kB, but the tier-2 allocator needs to have at least 12kB of continuous memory, it may request one page with a size of 16kB, instead of two pages with a size of 8kB.
 The tier-1 allocator will then try to find two free pages next to each other and return them as one big page.
+-->
 
 #### Freeing pages
 
@@ -65,10 +69,10 @@ Hint: Use the page table that was returned on allocation. :-)
 
 ### Tier-2 Memory Allocator
 
-The tier-2 memory allocator provides a common interface to manage memory backed by tier-1 allocated pages or statically allocated memory. The tier-2 allocator is part of the uVisor library and calls to it do not require a secure gateway, since it can only operate on memory owned by the process anyway.
+The tier-2 memory allocator provides a common interface to manage memory backed by tier-1 allocated pages or statically allocated memory. The tier-2 allocator is part of the uVisor library and calls to it does not require a secure gateway, since it can only operate on memory owned by the process anyway.
 
 All memory management data is contained within the memory pool and its overhead depends on the management algorithm.
-An allocator handle is simply an opaque pointer.
+An allocator handle is a simple opaque pointer.
 ```C
 typedef void* uvisor_allocator_t;
 ```
@@ -81,7 +85,7 @@ uvisor_allocator_t uvisor_allocator_create_with_pool(
     void* mem,      ///< origin of pool
     size_t bytes);  ///< size of pool in bytes
 ```
-Note that the process heap is initialized by uVisor-lib when setting up the environment for each process!
+Note that the process heap is initialized by uVisor-lib when setting up the environment for each process.
 
 #### Initializing Page-Backed Memory
 
@@ -95,7 +99,7 @@ uvisor_allocator_t uvisor_allocator_create_with_pages(
 The tier-2 allocator computes the required page size and page count from the `heap` size, taking account the requirement that the `max_heap_alloc` needs to be placed in one continuous memory section.
 
 For example: With a heap size of 12kB (6kB continuous) and a physical page size of 8kB, two non-consecutive pages would satisfy this requirement.
-However, if instead of 6kB we would need 9kB of continuous heap allocation, we would require one page of 16kB, ie. two consecutive 8kB.
+However, if instead of 6kB we would need 9kB of continuous heap allocation, we would require one page of 16kB, ie. two consecutive 8kB pages. This is not be guaranteed by the tier-1 allocator, therefore the physical page size needs to be increased to 16kB for this allocation to succeed.
 
 Note that no guarantee can be made that the maximum continuous heap allocation will be available to the caller.
 This depends on the fragmentation properties of the tier-2 memory management algorithm.
@@ -165,8 +169,8 @@ if(thread_stack && thread_heap)
 {
     handle = create_thread(
         NORMAL_PRIORITY,
-        &thread_stack,
-        &thread_heap);
+        thread_stack,
+        thread_heap);
 }
 
 /* thread is using no dynamic memory, or allocates on the process heap */
@@ -175,7 +179,7 @@ if (thread_stack)
 {
     handle = create_thread(
         NORMAL_PRIORITY,
-        &thread_stack,
+        thread_stack,
         NULL);
 }
 ```
