@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2013-2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -48,6 +48,7 @@
 #include "api/inc/halt_exports.h"
 #include "api/inc/secure_gateway_exports.h"
 #include "api/inc/svc_exports.h"
+#include "api/inc/priv_sys_irq_hook_exports.h"
 #include "api/inc/unvic_exports.h"
 #include "api/inc/uvisor_exports.h"
 #include "api/inc/vmpu_exports.h"

@@ -286,6 +286,14 @@ void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
             DEBUG_FAULT(FAULT_DEBUG, lr, lr & 0x4 ? psp : msp);
             break;
 
+        case PendSV_IRQn:
+            HALT_ERROR(NOT_IMPLEMENTED, "No PendSV IRQ hook registered");
+            break;
+
+        case SysTick_IRQn:
+            HALT_ERROR(NOT_IMPLEMENTED, "No SysTick IRQ hook registered");
+            break;
+
         default:
             HALT_ERROR(NOT_ALLOWED, "Active IRQn is not a system interrupt");
             break;

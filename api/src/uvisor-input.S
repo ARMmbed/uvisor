@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2013-2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -19,6 +19,7 @@
 .globl uvisor_ctx
 .type  uvisor_init, %function
 .weak  __uvisor_mode
+.globl __uvisor_priv_sys_irq_hooks
 
 .section .uvisor.main, "x"
     .thumb
@@ -81,6 +82,9 @@ uvisor_config:
     .long __uvisor_flash_end;
     .long __uvisor_sram_start;
     .long __uvisor_sram_end;
+
+    /* Privileged system IRQ hooks */
+    .long __uvisor_priv_sys_irq_hooks
 
 __uvisor_mode:
     /* uvisor default mode - user can override weak reference */
