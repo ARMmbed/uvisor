@@ -45,6 +45,8 @@
  * what to do with any failures. */
 UVISOR_EXTERN int uvisor_lib_init(void);
 
+#include "api/inc/page_allocator.h"
+
 /* Include all exported header files used by uVisor internally.
  * These are included independently on whether uVisor is supported or not by the
  * target platform. */
