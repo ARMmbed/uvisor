@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -14,21 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __UVISOR_API_HALT_EXPORTS_H__
-#define __UVISOR_API_HALT_EXPORTS_H__
+#include "api/inc/uvisor-lib.h"
+#include "core/uvisor.h"
+#include <stdint.h>
 
-#define UVISOR_ERROR_INVALID_BOX_ID             (-2)
-#define UVISOR_ERROR_BUFFER_TOO_SMALL           (-3)
-#define UVISOR_ERROR_BOX_NAMESPACE_ANONYMOUS    (-4)
+int uvisor_page_malloc(UvisorPageTable * const table)
+{
+    return UVISOR_SVC(UVISOR_SVC_ID_PAGE_MALLOC, "", table);
+}
 
-
-#define UVISOR_ERROR_CLASS_MASK     (0xFFFF0000UL)
-#define UVISOR_ERROR_MASK           (0x0000FFFFUL)
-
-#define UVISOR_ERROR_CLASS_PAGE     (1UL << 16)
-
-typedef enum {
-    USER_NOT_ALLOWED = 1,
-} THaltUserError;
-
-#endif /* __UVISOR_API_HALT_EXPORTS_H__ */
+int uvisor_page_free(const UvisorPageTable * const table)
+{
+    return UVISOR_SVC(UVISOR_SVC_ID_PAGE_FREE, "", table);
+}
