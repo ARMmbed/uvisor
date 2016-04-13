@@ -20,6 +20,7 @@
 .globl uvisor_ctx
 .type  uvisor_init, %function
 .weak  __uvisor_mode
+.weak  __uvisor_page_size
 .globl __uvisor_priv_sys_irq_hooks
 
 .section .uvisor.main, "x"
@@ -84,6 +85,11 @@ uvisor_config:
     /* pointer to __uvisor_box_context */
     .long __uvisor_box_context
 
+    /* start and end address and page size of page heap */
+    .long __uvisor_page_start
+    .long __uvisor_page_end
+    .long __uvisor_page_size
+
     /* Physical memories' boundaries */
     .long __uvisor_flash_start;
     .long __uvisor_flash_end;
@@ -96,6 +102,10 @@ uvisor_config:
 __uvisor_mode:
     /* uvisor default mode - user can override weak reference */
     .long 0
+
+__uvisor_page_size:
+    /* uvisor default page size is 16kB - user can override weak reference */
+    .long 16384
 
 .section .bss
 __uvisor_box_context:
