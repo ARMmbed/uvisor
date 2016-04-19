@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 .globl uvisor_init
+.globl uvisor_export_table_size
 .globl uvisor_config
 .globl uvisor_ctx
 .type  uvisor_init, %function
@@ -28,6 +29,12 @@
 uvisor_init:
     /* uvisor - precompiled blob */
     .incbin UVISOR_BIN
+
+/* The size of the uVisor export table is a uint32_t located at the end of the
+ * uVisor binary. The uVisor export table is located at size number of bytes
+ * before the end of the uVisor binary. Size includes the 4 bytes for size
+ * itself. */
+.set uvisor_export_table_size, uvisor_config - 4
 
 uvisor_config:
     /* uvisor expects its configuration section right
