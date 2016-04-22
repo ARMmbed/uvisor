@@ -309,18 +309,26 @@ Across a security boundary scatter-gather can seamlessly interface with a non-sc
 
 IPC firewalls help cope with denial of service (DOS) attacks on queues by malicious (or misbehaving) processes.
 
-A queue owner can register a callback to perform any arbitrary business logic before deciding whether or not to accept a message into their queue. The callback returns either "allow always", "allow once", "allow never", or "retry". uVisor will then enforce the filter, based on the caller's ID and the callback's response, on the queue owner's behalf to filter messages before such messages reach the queue.
+A queue owner can register a callback to perform any arbitrary business logic before deciding to accept a message into its queue. The callback hook function returns either "allow always", "allow once", "allow never" or "retry". uVisor will then enforce the filter, based on the caller's ID and the callback's response, on the queue owner's behalf to filter messages before such messages reach the queue of the recipient.
 
-A queue owner can also define other properties that uVisor will enforce on the queue owner's behalf. One property that can be defined per-queue is a limit on the number of inflight messages per sender; for instance, only allowing one incoming message per sender at a time.
+A queue owner can also define other properties for uVisor to enforce on the queue owner's behalf. One queue property that can be defined is a limit on the number of queued messages per sender. A meaningful restriction might be to allow only one message per sender at any time to be queued.
 
-It is important that uVisor enforce the IPC firewall on behalf of the queue owner. uVisor can cope with device-local DOS attacks due to queue flooding. With a uVisor-enforced IPC firewall in place, device-local senders are only wasting their own time slice when sending, and not wasting any of the target queue owner's time slice (for running the firewall callback) nor memory (because the message is blocked before reaching the queue). If the firewall callback results are not cached, attackers can waste time in the target queue owner's time slice (but not memory); if we didn't count the callback time towards the process time slice, then a misbehaving process could take up a bunch of time in the callback, preventing other processes from running.
+It is important that uVisor enforces the IPC firewall on behalf of the queue owner. uVisor can cope efficiently with device-local DOS attacks like queue flooding. With a uVisor-enforced IPC firewall in place, device-local senders can only waste their own time slice when sending, but not waste any of the target queue owner's processor time or memory.
 
+If the target box delcares in the firewall callback to not cache the decision to allow or disallow queuing, attackers can waste time in the target queue owner's time slice but not its memory.
 
 ### Secure Gateways
 
-Secure gateways as they are currently implemented no longer exist. Secure gateways in a threaded environment don't work because: when a thread crosses a secure boundary, it either needs a new stack allocated for it, or to use the process heap. Instead, a source-level compatible secure gateway implemented in terms of uVisor IPC is provided. New applications can use uVisor IPC directly.
+Secure gateways as they are currently implemented no longer exist. Secure gateways in a threaded environment don't work because when crossing a process boundary within a thread, there's a risk of muliple callers overwriting each others stack in the target context.
 
-Allocating a new stack for every secure gateway call is not feasible for at least two reasons. One, allocating a new stack can fail, so one cannot know when their secure gateway calls will succeed. An attacker can exploit this and cause behavior changes in another process's inter-process actions by allocating different numbers of pages. Two, allocating a new stack also quickly exhausts the available pages when pages are large. We want large pages to avoid MPU fragmentation and slow downs due to excessive memory faults.
+Solving this issue would require per-caller stacks which results in memory fragmentation and leftover unused stacks. Instead, a source-level compatible secure gateway based on uVisor IPC is provided. Applications have the choice to use uVisor IPC directly for complex data structures when the 4-parameter/1-result limitation of the traditional call gateway is not sufficient.
+
+#### Secure Gateway Calls Background
+
+Allocating a new stack for every secure gateway call is not feasible for at least two reasons:
+
+- Allocating a new stack can fail, so one cannot know when their secure gateway calls will succeed. An attacker can exploit this and cause behavior changes in another process's inter-process actions by allocating different numbers of pages.
+- Allocating a new stack also quickly exhausts the available pages when pages are large. We want large pages to avoid MPU fragmentation and slow downs due to excessive memory faults.
 
 Likewise, using the process stack for thread stacks is also not feasible. This is because multiple threads cannot share the same stack if they are not guaranteed to stack and unstack in a consistent order (first in, first out). Consider the situation where a thread performs a secure gateway to another process, and then yields and gets swapped out by the RTOS, saving its registers on the process stack. Next, a different thread performs a secure gateway to this same process, and it also yields and gets swapped out. Now, the RTOS wants to swap back in the original thread. The RTOS uses the stack pointer for that thread and the registers are restored without any issue. The original thread then does a stack allocation that blaps over the saved state of the second thread, and the original thread then yields and gets swapped out. Finally, the RTOS wants to swap back in the second thread. It uses the stack pointer for the second thread, but this pointer is now pointed to some "garbage" data leftover from the first thread's stack allocation.
 
