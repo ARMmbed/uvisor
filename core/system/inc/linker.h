@@ -95,6 +95,13 @@ typedef struct {
 
     /* Privileged system IRQ hooks */
     UvisorPrivSystemIRQHooks const * const priv_sys_irq_hooks;
+
+    /* uVisor Lib Functions for use by uVisor */
+    void (*box_main_handler)(
+        void (*function)(void const *),
+        int32_t priority,
+        uint32_t stack_pointer,
+        uint32_t stack_size);
 } UVISOR_PACKED UvisorConfig;
 
 extern UvisorConfig const __uvisor_config;

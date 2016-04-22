@@ -16,6 +16,7 @@
  */
 #include <uvisor.h>
 #include "api/inc/export_table_exports.h"
+#include "api/inc/svc_exports.h"
 #include "api/inc/vmpu_exports.h"
 #include "context.h"
 #include "halt.h"
@@ -114,6 +115,15 @@ static void thread_switch(void * c)
     }
 }
 
+static void box_mains_create(void)
+{
+    /* Tell uVisor to create all box main threads. */
+
+    /* This must be called from unprivileged mode in order for the recursive
+     * gateway chaining to work properly. */
+    UVISOR_SVC(UVISOR_SVC_ID_BOX_MAIN_NEXT, "");
+}
+
 /* This table must be located at the end of the uVisor binary so that this
  * table can be exported correctly. Placing this table into the .export_table
  * section locates this table at the end of the uVisor binary. */
@@ -123,6 +133,7 @@ const TUvisorExportTable __uvisor_export_table = {
     .version = UVISOR_EXPORT_VERSION,
     .os_event_observer = {
         .version = 0,
+        .pre_start = box_mains_create,
         .thread_create = thread_create,
         .thread_destroy = thread_destroy,
         .thread_switch = thread_switch,

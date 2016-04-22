@@ -106,6 +106,9 @@ uvisor_config:
     /* Privileged system IRQ hooks */
     .long __uvisor_priv_sys_irq_hooks
 
+    /* uVisor Lib Functions for use by uVisor */
+    .long __uvisor_lib_box_main_handler
+
 /* uVisor mode of operation
  * Modes available: UVISOR_ENABLED, UVISOR_DISABLED, UVISOR_PERMISSIVE. */
 __uvisor_mode:
