@@ -222,7 +222,7 @@ static void debug_deprivilege_and_return(void *debug_handler, void *return_handl
     dst_sp[7] = src_sp[7] | (dst_sp_align << 9);
 
     /* Set the context stack pointer for the destination box. */
-    *(__uvisor_config.uvisor_box_context) = (uint32_t *) g_context_current_states[dst_id].context;
+    *(__uvisor_config.uvisor_box_context) = (uint32_t *) g_context_current_states[dst_id].bss;
 
     /* Switch boxes. */
     vmpu_switch(src_id, dst_id);
