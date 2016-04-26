@@ -117,7 +117,7 @@ __uvisor_box_index_size:
     /* default index size is 64B - user can override weak reference */
     .long 64
 
-.section .bss
+.section .uninitialized
 __uvisor_box_context:
 uvisor_ctx:
     .long 0
