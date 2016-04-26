@@ -43,6 +43,8 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
         UVISOR_BOX_VERSION, \
         0, \
         0, \
+        0, \
+        0, \
         NULL, \
         acl_list, \
         acl_list_count \
@@ -56,13 +58,23 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 #define __UVISOR_BOX_CONFIG(box_name, acl_list, acl_list_count, stack_size, context_size) \
     \
     uint8_t __attribute__((section(".keep.uvisor.bss.boxes"), aligned(32))) \
-        box_name ## _reserved[UVISOR_STACK_SIZE_ROUND(((UVISOR_MIN_STACK(stack_size) + (context_size))*8)/6)]; \
+        box_name ## _reserved[ \
+            UVISOR_STACK_SIZE_ROUND( \
+                ( \
+                    (UVISOR_MIN_STACK(stack_size) + \
+                    (context_size) + \
+                    (__uvisor_box_heapsize) + \
+                    sizeof(RtxBoxIndex)) \
+                *8) \
+            /6)]; \
     \
     static const __attribute__((section(".keep.uvisor.cfgtbl"), aligned(4))) UvisorBoxConfig box_name ## _cfg = { \
         UVISOR_BOX_MAGIC, \
         UVISOR_BOX_VERSION, \
+        (context_size) + (__uvisor_box_heapsize) + sizeof(RtxBoxIndex), \
         UVISOR_MIN_STACK(stack_size), \
         context_size, \
+        __uvisor_box_heapsize, \
         __uvisor_box_namespace, \
         acl_list, \
         acl_list_count \
@@ -102,6 +114,9 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
  * box_namespace as NULL. */
 #define UVISOR_BOX_NAMESPACE(box_namespace) \
     static const char *const __uvisor_box_namespace = box_namespace
+
+#define UVISOR_BOX_HEAPSIZE(heap_size) \
+    static const uint32_t __uvisor_box_heapsize = heap_size;
 
 
 /* Return the numeric box ID of the current box. */

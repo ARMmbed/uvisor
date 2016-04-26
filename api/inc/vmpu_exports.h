@@ -147,10 +147,20 @@ typedef struct {
 typedef struct {
     uint32_t magic;
     uint32_t version;
+
+    /* contains all volatile memory of the box */
+    uint32_t bss_size;
+    /* bss memory is broken into:
+       - box index structure
+       - stack size for process
+       - context size for user provided structure
+       - heap for dynamic memory allocation
+    */
     uint32_t stack_size;
     uint32_t context_size;
-    const char * box_namespace;
+    uint32_t heap_size;
 
+    const char * box_namespace;
     const UvisorBoxAclItem * const acl_list;
     uint32_t acl_count;
 } UVISOR_PACKED UvisorBoxConfig;
