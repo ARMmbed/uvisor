@@ -192,7 +192,7 @@ void context_switch_in(TContextSwitchType context_type, uint8_t dst_id, uint32_t
     /* The source/destination box IDs can be the same (for example, in IRQs). */
     if (src_id != dst_id) {
         /* Update the context pointer to the one of the destination box. */
-        *(__uvisor_config.uvisor_box_context) = (uint32_t *) g_context_current_states[dst_id].context;
+        *(__uvisor_config.uvisor_box_context) = (uint32_t *) g_context_current_states[dst_id].bss;
 
         /* Update the ID of the currently active box. */
         g_active_box = dst_id;
@@ -261,7 +261,7 @@ TContextPreviousState * context_switch_out(TContextSwitchType context_type)
         g_active_box = src_id;
 
         /* Update the context pointer to the one of the source box. */
-        *(__uvisor_config.uvisor_box_context) = (uint32_t *) g_context_current_states[src_id].context;
+        *(__uvisor_config.uvisor_box_context) = (uint32_t *) g_context_current_states[src_id].bss;
 
         /* Switch MPU configurations. */
         /* This function halts if it finds an error. */

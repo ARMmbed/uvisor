@@ -168,20 +168,20 @@ void vmpu_acl_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
             HALT_ERROR(SANITY_CHECK_FAILED, "ACL sanity check failed [%i]\n", res);
 }
 
-void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
+void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
 {
     /* handle main box */
     if(!box_id)
     {
-        DPRINTF("ctx=%i stack=%i\n\r", context_size, stack_size);
+        DPRINTF("ctx=%i stack=%i\n\r", bss_size, stack_size);
         /* non-important sanity checks */
-        assert(context_size == 0);
+        assert(bss_size == 0);
         assert(stack_size == 0);
 
         /* assign main box stack pointer to existing
          * unprivileged stack pointer */
         g_context_current_states[0].sp = __get_PSP();
-        g_context_current_states[0].context = (uint32_t) NULL;
+        g_context_current_states[0].bss = (uint32_t) NULL;
         return;
     }
 
@@ -203,34 +203,34 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
     g_box_mem_pos += UVISOR_STACK_BAND_SIZE;
 
     /* add context ACL if needed */
-    if(!context_size)
-        g_context_current_states[box_id].context = (uint32_t) NULL;
+    if(!bss_size)
+        g_context_current_states[box_id].bss = (uint32_t) NULL;
     else
     {
-        context_size = UVISOR_REGION_ROUND_UP(context_size);
-        g_context_current_states[box_id].context = g_box_mem_pos;
+        bss_size = UVISOR_REGION_ROUND_UP(bss_size);
+        g_context_current_states[box_id].bss = g_box_mem_pos;
 
         DPRINTF("erasing box context at 0x%08X (%u bytes)\n",
             g_box_mem_pos,
-            context_size
+            bss_size
         );
 
         /* reset uninitialized secured box context */
         memset(
             (void *) g_box_mem_pos,
             0,
-            context_size
+            bss_size
         );
 
         /* add context ACL */
         vmpu_acl_add(
             box_id,
             (void*)g_box_mem_pos,
-            context_size,
+            bss_size,
             UVISOR_TACLDEF_DATA
         );
 
-        g_box_mem_pos += context_size + UVISOR_STACK_BAND_SIZE;
+        g_box_mem_pos += bss_size + UVISOR_STACK_BAND_SIZE;
     }
 }
 

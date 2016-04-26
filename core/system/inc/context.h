@@ -67,8 +67,8 @@ typedef struct {
 
 /** Current state of a box
  *
- * This struct contains the stack pointer and the context pointer for all boxes.
- * The context pointer is not expected to change once a box has been
+ * This struct contains the stack pointer and the bss pointer for all boxes.
+ * The bss pointer is expected not to change once a box has been
  * initialized. Instead, the stack pointer is updated at every context switch.
  *
  * @warning The stack pointer field is not an accurate snapshot of the boxes'
@@ -76,7 +76,7 @@ typedef struct {
  */
 typedef struct {
     uint32_t sp;        /**< Stack pointer */
-    uint32_t context;   /**< Context pointer */
+    uint32_t bss;       /**< Bss pointer */
 } TContextCurrentState;
 
 /** Currently active box */
