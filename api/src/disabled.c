@@ -31,7 +31,7 @@ UVISOR_EXTERN uint32_t __uvisor_bss_boxes_start;
 
 /* The pointer to the uVisor context is declared by each box separately. Each
  * declaration will have its own type. */
-UVISOR_EXTERN void *uvisor_ctx;
+void *uvisor_ctx;
 
 /* Flag to check that contexts have been initialized */
 static bool g_initialized = false;

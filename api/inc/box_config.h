@@ -87,11 +87,11 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 
 #define __UVISOR_BOX_CONFIG_CONTEXT(box_name, acl_list, stack_size, context_type) \
     __UVISOR_BOX_CONFIG(box_name, acl_list, UVISOR_ARRAY_COUNT(acl_list), stack_size, sizeof(context_type)) \
-    UVISOR_EXTERN context_type * const uvisor_ctx;
+    UVISOR_EXTERN context_type *const *const __uvisor_ps;
 
 #define __UVISOR_BOX_CONFIG_NOACL(box_name, stack_size, context_type) \
     __UVISOR_BOX_CONFIG(box_name, NULL, 0, stack_size, sizeof(context_type)) \
-    UVISOR_EXTERN context_type * const uvisor_ctx;
+    UVISOR_EXTERN context_type *const *const __uvisor_ps;
 
 #define __UVISOR_BOX_CONFIG_NOACL_NOCONTEXT(box_name, stack_size) \
     __UVISOR_BOX_CONFIG(box_name, NULL, 0, stack_size, 0)
@@ -118,6 +118,7 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 #define UVISOR_BOX_HEAPSIZE(heap_size) \
     static const uint32_t __uvisor_box_heapsize = heap_size;
 
+#define uvisor_ctx (*__uvisor_ps)
 
 /* Return the numeric box ID of the current box. */
 UVISOR_EXTERN int uvisor_box_id_self(void);
