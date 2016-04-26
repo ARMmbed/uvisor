@@ -221,7 +221,7 @@ static void vmpu_load_boxes(void)
          * sizes are resolved later in vmpu_initialize_stacks */
         vmpu_acl_stack(
             box_id,
-            (*box_cfgtbl)->context_size,
+            (*box_cfgtbl)->bss_size,
             (*box_cfgtbl)->stack_size
         );
 
