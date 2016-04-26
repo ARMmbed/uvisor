@@ -155,6 +155,24 @@ typedef struct {
     uint32_t acl_count;
 } UVISOR_PACKED UvisorBoxConfig;
 
+typedef struct
+{
+    /* Pointer to the user context */
+    void * ctx;
+    /* Pointer to the box heap */
+    void * process_heap;
+    /* Size of the box heap */
+    uint32_t process_heap_size;
+    /* Pointer to the currently active heap.
+     * This is set to `NULL` by uVisor, signalling to the user lib, that the
+     * process heap needs to be initialized before use! */
+    void * active_heap;
+    /* Cache of the box_id */
+    int box_id;
+    /* pointer to the box config */
+    const UvisorBoxConfig * config;
+} UVISOR_PACKED UvisorBoxIndex;
+
 /*
  * only use this macro for rounding const values during compile time:
  * for variables please use uvisor_region_bits(x) instead
