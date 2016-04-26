@@ -87,6 +87,10 @@ uvisor_config:
     .long __uvisor_box_context
     .long __uvisor_box_index_size
 
+    /* start and end address of box zero heap */
+    .long __uvisor_heap_start
+    .long __uvisor_heap_end
+
     /* start and end address and page size of page heap */
     .long __uvisor_page_start
     .long __uvisor_page_end
