@@ -55,7 +55,12 @@ static int init_allocator()
 {
     int ret = 0;
     if (__uvisor_ps == NULL) {
+#if defined(UVISOR_PRESENT) && (UVISOR_PRESENT == 1)
         return -1;
+#else
+        extern void secure_malloc_init(void);
+        secure_malloc_init();
+#endif
     }
 
     if ((__uvisor_ps->mutex_id == NULL) && is_kernel_initialized()) {
