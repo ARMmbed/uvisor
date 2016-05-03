@@ -382,3 +382,60 @@ Secure gateway calls are synchronous, to avoid changing semantics. When the targ
 
 An asynchronous secure gateway is also introduced, to make asynchronous RPC easier than setting up a queue and using `uvisor_ipc_send`.
 -->
+
+
+### RTOS Integration Mechanics
+
+As currently integrated with uVisor, the RTOS runs with uVisor privileges. This must be fixed. [This issue is tracked on GitHub at
+https://github.com/ARMmbed/uvisor/issues/235](https://github.com/ARMmbed/uvisor/issues/235). For now, the RTOS is a privileged component of the overall system, sharing privileged residence with uVisor. uVisor and the RTOS must trust each other because of this. Generally, uVisor is the manager of interrupts and the MPU, and the RTOS is the manager of context switching.
+
+Three new capabilities are added to uVisor to support RTOS integration.
+  - Ability for a box to specify a main thread
+  - Ability for a privileged mode RTOS to call uVisor without an SVC
+  - Ability for a privileged mode RTOS to specify privileged PendSV, SysTick, and SVC 0 hooks in uVisor config
+
+#### Ability for a box to specify a main thread
+
+A box's main thread is where code execution begins in that box. Each box has one main thread, with the exception of the main box (box 0). The box's "Box Config" specifies the function to use for that box's main thread.
+
+The following is an example of box configuration. Note the use of the `UVISOR_BOX_MAIN` macro to specify the function to use as the body of the box's main thread.
+```C
+/* Pre-declaration of box main thread function */
+static void example_box_main(const void *);
+
+/* Box configuration */
+UVISOR_BOX_NAMESPACE(NULL);
+UVISOR_BOX_HEAPSIZE(8192);
+UVISOR_BOX_MAIN(example_box_main, osPriorityNormal);
+UVISOR_BOX_CONFIG(example_box, acl, UVISOR_BOX_STACK_SIZE, box_context);
+```
+
+The main box's code execution starts the same way that it starts when uVisor is not present.
+
+For all boxes other than the main box: after libc, the RTOS, and C++ statically constructed objects are initialized, and the RTOS is about to start, the RTOS asks uVisor to handle the "pre-start" event. uVisor then creates main threads for each box. The main threads use the box stack as their stack. These threads do not start until after the RTOS scheduler starts (which is after pre-start is finished).
+
+#### Ability for a privileged mode RTOS to call uVisor without an SVC
+
+A privileged call mechanism (privcall) is introduced that allows privileged code to call into uVisor without performing an SVC. This mechanism is necessary because an SVC handler can't perform another SVC (unless it first deprivileges along the way, but that would be inefficient). The only client of the privcall interface is the RTOS, which is trusted.
+
+The RTOS needs to call uVisor to perform the following tasks:
+  - Notify uVisor of thread creation (`thread_create`)
+    - uVisor uses this to track which thread belongs to which box. The box that is active when a thread is created is the box that owns that thread.
+  - Notify uVisor of thread destruction (`thread_destroy`)
+    - uVisor uses this to forget about threads it doesn't need to track anymore.
+  - Notify uVisor of thread switching (`thread_switch`)
+    - In this privcall, uVisor switches the box context to the owner of the thread.
+  - Notify uVisor that the RTOS is about to start (`pre_start`)
+    - uVisor will create the main threads for all boxes
+
+#### Ability for a privileged mode RTOS to specify privileged PendSV, SysTick, and SVC 0 hooks in uVisor config
+
+uVisor config is stored in flash, which is trusted. As such, it's the best place for privileged subsystems, like an RTOS, to register privileged handlers. uVisor config is extended to allow the specification of the following handlers via "Privileged system IRQ hooks".
+
+The Privileged system IRQ hooks can be used to specify the following handlers:
+  - PendSV
+    - RTX would register for handling PendSV to perform thread context switching
+  - SysTick
+    - RTX would register for handling SysTick (if a better periodic timer suitable for the RTX scheduler isn't available)
+  - SVC 0
+    - RTX would register for handling SVC 0, with which RTX handles its own syscalls
