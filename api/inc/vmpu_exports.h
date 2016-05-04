@@ -170,9 +170,22 @@ typedef struct
     28:(((x)<=536870912UL)?29:(((x)<=1073741824UL)?30:(((x)<=2147483648UL)?\
     31:32)))))))))))))))))))))))))))
 
+#if defined (__ICCARM__)
+
+static inline int vmpu_bits(uint32_t value)
+{
+    int result;
+    __asm volatile ("clz %0, %1" : "=r" (result) : "r" (value));
+    return 32 - result;
+}
+
+#else
+
 static inline int vmpu_bits(uint32_t size)
 {
     return 32 - __builtin_clz(size);
 }
+
+#endif
 
 #endif /* __UVISOR_API_VMPU_EXPORTS_H__ */

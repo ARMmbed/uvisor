@@ -35,6 +35,17 @@
 #endif
 
 /* compiler attributes */
+#if defined (__ICCARM__)
+#define UVISOR_FORCEINLINE
+#define UVISOR_NOINLINE
+#define UVISOR_PACKED      __packed
+#define UVISOR_WEAK        __weak
+#define UVISOR_ALIAS(f)
+#define UVISOR_LINKTO(f)
+#define UVISOR_NORETURN    __noreturn
+#define UVISOR_NAKED
+#define UVISOR_RAMFUNC     __ramfunc
+#else
 #define UVISOR_FORCEINLINE __attribute__((always_inline))
 #define UVISOR_NOINLINE    __attribute__((noinline))
 #define UVISOR_PACKED      __attribute__((packed))
@@ -44,6 +55,7 @@
 #define UVISOR_NORETURN    __attribute__((noreturn))
 #define UVISOR_NAKED       __attribute__((naked))
 #define UVISOR_RAMFUNC     __attribute__ ((section (".ramfunc"), noinline))
+#endif
 
 /* array count macro */
 #define UVISOR_ARRAY_COUNT(x) (sizeof(x)/sizeof(x[0]))

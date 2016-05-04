@@ -140,23 +140,12 @@ static inline UVISOR_FORCEINLINE void uvisor_write(uint32_t addr, uint32_t val, 
      sizeof(type) == 2 ? uvisor_read16((volatile uint16_t *) (addr)) : \
      sizeof(type) == 1 ? uvisor_read8((volatile uint8_t *) (addr)) : 0)
 
-/* The switch statement will be optimised away since the compiler already knows
- * the sizeof(type). */
+/* The conditional statement will be optimised away since the compiler already
+ * knows the sizeof(type). */
 #define ADDRESS_WRITE(type, addr, val) \
-    { \
-        switch(sizeof(type)) \
-        { \
-            case 4: \
-                uvisor_write32((volatile uint32_t *) (addr), (uint32_t) (val)); \
-                break; \
-            case 2: \
-                uvisor_write16((volatile uint16_t *) (addr), (uint16_t) (val)); \
-                break; \
-            case 1: \
-                uvisor_write8((volatile uint8_t *) (addr), (uint8_t) (val)); \
-                break; \
-        } \
-    }
+    ((void)(sizeof(type) == 4 ? uvisor_write32((volatile uint32_t *) (addr), (uint32_t) (val)), 0 : \
+     sizeof(type) == 2 ? uvisor_write16((volatile uint16_t *) (addr), (uint16_t) (val)), 0 : \
+     sizeof(type) == 1 ? uvisor_write8((volatile uint8_t *) (addr), (uint8_t) (val)), 0 : 0))
 
 #define UNION_READ(type, addr, fieldU, fieldB) ((*((volatile type *) (addr))).fieldB)
 
