@@ -59,8 +59,7 @@ static UVISOR_FORCEINLINE uint32_t *svc_cx_get_curr_sp(uint8_t box_id)
     return g_svc_cx_curr_sp[box_id];
 }
 
-static UVISOR_FORCEINLINE void svc_cx_push_state(uint8_t src_id, uint8_t type, uint32_t *src_sp,
-                                     uint8_t dst_id)
+static UVISOR_FORCEINLINE void svc_cx_push_state(uint8_t src_id, uint8_t type, uint32_t *src_sp, uint8_t dst_id)
 {
     /* check state stack overflow */
     if(g_svc_cx_state_ptr == UVISOR_SVC_CONTEXT_MAX_DEPTH)
