@@ -67,6 +67,13 @@ typedef void (*UnprivilegedBoxEntry)(void);
 #endif
 #endif/*CHANNEL_DEBUG*/
 
+/* Core-only compiler attributes
+ * These definitions should be shared by the uVisor library. */
+#define UVISOR_NOINLINE    __attribute__((noinline))
+#define UVISOR_ALIAS(f)    __attribute__((weak, alias (#f)))
+#define UVISOR_LINKTO(f)   __attribute__((alias (#f)))
+#define UVISOR_NAKED       __attribute__((naked))
+
 /* system wide error codes  */
 #include <iot-error.h>
 
