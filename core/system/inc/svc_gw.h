@@ -33,7 +33,7 @@ typedef struct {
     uint32_t *cfg_ptr;
 } UVISOR_PACKED TSecGw;
 
-static inline void svc_gw_check_magic(TSecGw *svc_pc)
+static UVISOR_FORCEINLINE void svc_gw_check_magic(TSecGw *svc_pc)
 {
     if(!vmpu_public_flash_addr((uint32_t) svc_pc))
         HALT_ERROR(SANITY_CHECK_FAILED,
@@ -48,12 +48,12 @@ static inline void svc_gw_check_magic(TSecGw *svc_pc)
                    "secure gateway magic invalid (0x%08X)\n", &svc_pc->magic);
 }
 
-static inline uint32_t svc_gw_get_dst_fn(TSecGw *svc_pc)
+static UVISOR_FORCEINLINE uint32_t svc_gw_get_dst_fn(TSecGw *svc_pc)
 {
     return svc_pc->dst_fn;
 }
 
-static inline uint8_t svc_gw_get_dst_id(TSecGw *svc_pc)
+static UVISOR_FORCEINLINE uint8_t svc_gw_get_dst_id(TSecGw *svc_pc)
 {
     uint8_t box_id;
 

@@ -171,7 +171,7 @@ typedef struct
     31:32)))))))))))))))))))))))))))
 
 #if defined(UVISOR_PRESENT) && UVISOR_PRESENT == 1
-static inline int vmpu_bits(uint32_t size)
+static UVISOR_FORCEINLINE int vmpu_bits(uint32_t size)
 {
     return 32 - __builtin_clz(size);
 }

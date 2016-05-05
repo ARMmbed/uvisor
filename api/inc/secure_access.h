@@ -56,32 +56,32 @@
         res.fieldB; \
     })
 
-static inline UVISOR_FORCEINLINE void uvisor_write32(uint32_t volatile * volatile addr, uint32_t val)
+static UVISOR_FORCEINLINE void uvisor_write32(uint32_t volatile * volatile addr, uint32_t val)
 {
     UVISOR_ASM_MEMORY_ACCESS(str, uint32_t, addr, val);
 }
 
-static inline UVISOR_FORCEINLINE void uvisor_write16(uint16_t volatile * volatile addr, uint16_t val)
+static UVISOR_FORCEINLINE void uvisor_write16(uint16_t volatile * volatile addr, uint16_t val)
 {
     UVISOR_ASM_MEMORY_ACCESS(strh, uint16_t, addr, val);
 }
 
-static inline UVISOR_FORCEINLINE void uvisor_write8(uint8_t volatile * volatile addr, uint8_t val)
+static UVISOR_FORCEINLINE void uvisor_write8(uint8_t volatile * volatile addr, uint8_t val)
 {
     UVISOR_ASM_MEMORY_ACCESS(strb, uint8_t, addr, val);
 }
 
-static inline UVISOR_FORCEINLINE uint32_t uvisor_read32(uint32_t volatile * volatile addr)
+static UVISOR_FORCEINLINE uint32_t uvisor_read32(uint32_t volatile * volatile addr)
 {
     return UVISOR_ASM_MEMORY_ACCESS(ldr, uint32_t, addr);
 }
 
-static inline UVISOR_FORCEINLINE uint16_t uvisor_read16(uint16_t volatile * volatile addr)
+static UVISOR_FORCEINLINE uint16_t uvisor_read16(uint16_t volatile * volatile addr)
 {
     return UVISOR_ASM_MEMORY_ACCESS(ldrh, uint16_t, addr);
 }
 
-static inline UVISOR_FORCEINLINE uint8_t uvisor_read8(uint8_t volatile * volatile addr)
+static UVISOR_FORCEINLINE uint8_t uvisor_read8(uint8_t volatile * volatile addr)
 {
     return UVISOR_ASM_MEMORY_ACCESS(ldrb, uint8_t, addr);
 }

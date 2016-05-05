@@ -90,7 +90,7 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 /* Default mask for whole register operatins */
 #define __UVISOR_OP_DEFAULT_MASK 0x0
 
-static inline UVISOR_FORCEINLINE uint32_t uvisor_read(uint32_t addr, uint32_t op, uint32_t mask)
+static UVISOR_FORCEINLINE uint32_t uvisor_read(uint32_t addr, uint32_t op, uint32_t mask)
 {
     switch(op)
     {
@@ -110,7 +110,7 @@ static inline UVISOR_FORCEINLINE uint32_t uvisor_read(uint32_t addr, uint32_t op
 
 #define uvisor_read(addr) uvisor_read((uint32_t) (addr), UVISOR_OP_READ(UVISOR_OP_NOP), __UVISOR_OP_DEFAULT_MASK)
 
-static inline UVISOR_FORCEINLINE void uvisor_write(uint32_t addr, uint32_t val, uint32_t op, uint32_t mask)
+static UVISOR_FORCEINLINE void uvisor_write(uint32_t addr, uint32_t val, uint32_t op, uint32_t mask)
 {
     switch(op)
     {
@@ -160,32 +160,32 @@ static inline UVISOR_FORCEINLINE void uvisor_write(uint32_t addr, uint32_t val, 
 
 #define UNION_READ(type, addr, fieldU, fieldB) ((*((volatile type *) (addr))).fieldB)
 
-static inline UVISOR_FORCEINLINE void uvisor_write32(uint32_t volatile *addr, uint32_t val)
+static UVISOR_FORCEINLINE void uvisor_write32(uint32_t volatile *addr, uint32_t val)
 {
     *(addr) = val;
 }
 
-static inline UVISOR_FORCEINLINE void uvisor_write16(uint16_t volatile *addr, uint16_t val)
+static UVISOR_FORCEINLINE void uvisor_write16(uint16_t volatile *addr, uint16_t val)
 {
     *(addr) = val;
 }
 
-static inline UVISOR_FORCEINLINE void uvisor_write8(uint8_t volatile *addr, uint8_t val)
+static UVISOR_FORCEINLINE void uvisor_write8(uint8_t volatile *addr, uint8_t val)
 {
     *(addr) = val;
 }
 
-static inline UVISOR_FORCEINLINE uint32_t uvisor_read32(uint32_t volatile *addr)
+static UVISOR_FORCEINLINE uint32_t uvisor_read32(uint32_t volatile *addr)
 {
     return *(addr);
 }
 
-static inline UVISOR_FORCEINLINE uint16_t uvisor_read16(uint16_t volatile *addr)
+static UVISOR_FORCEINLINE uint16_t uvisor_read16(uint16_t volatile *addr)
 {
     return *(addr);
 }
 
-static inline UVISOR_FORCEINLINE uint8_t uvisor_read8(uint8_t volatile *addr)
+static UVISOR_FORCEINLINE uint8_t uvisor_read8(uint8_t volatile *addr)
 {
     return *(addr);
 }

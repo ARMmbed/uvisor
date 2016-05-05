@@ -33,19 +33,19 @@
  *       from the flash origin to this symbol contains the uVisor and
  *       main box code and data and excludes the configuration tables. */
 
-static inline int vmpu_public_flash_addr(uint32_t addr)
+static UVISOR_FORCEINLINE int vmpu_public_flash_addr(uint32_t addr)
 {
     return (((uint32_t) addr >= FLASH_ORIGIN) &&
             ((uint32_t) addr <= (FLASH_ORIGIN + (uint32_t) __uvisor_config.secure_start - 4)));
 }
 
-static inline int vmpu_flash_addr(uint32_t addr)
+static UVISOR_FORCEINLINE int vmpu_flash_addr(uint32_t addr)
 {
     return (((uint32_t) addr >= FLASH_ORIGIN) &&
             ((uint32_t) addr <= (FLASH_ORIGIN + (uint32_t) __uvisor_config.flash_end - 4)));
 }
 
-static inline int vmpu_sram_addr(uint32_t addr)
+static UVISOR_FORCEINLINE int vmpu_sram_addr(uint32_t addr)
 {
     return (((uint32_t) addr >= SRAM_ORIGIN) &&
             ((uint32_t) addr <= (SRAM_ORIGIN + (uint32_t) __uvisor_config.sram_end - 4)));
@@ -162,7 +162,7 @@ extern int vmpu_box_id_self(void);
 extern int vmpu_box_id_caller(void);
 extern int vmpu_box_namespace_from_id(int box_id, char *box_name, size_t length);
 
-static inline bool vmpu_is_box_id_valid(int box_id)
+static UVISOR_FORCEINLINE bool vmpu_is_box_id_valid(int box_id)
 {
     /* Return true if the box_id is valid.
      * This function checks box_id against UVISOR_MAX_BOXES if boxes have not

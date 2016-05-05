@@ -34,8 +34,12 @@
 #define asm __asm__
 #endif
 
-/* compiler attributes */
-#define UVISOR_FORCEINLINE __attribute__((always_inline))
+/* Shared compiler attributes */
+#if defined(__ICCARM__)
+#define UVISOR_FORCEINLINE inline
+#else
+#define UVISOR_FORCEINLINE inline __attribute__((always_inline))
+#endif
 #define UVISOR_NOINLINE    __attribute__((noinline))
 #define UVISOR_PACKED      __attribute__((packed))
 #define UVISOR_WEAK        __attribute__((weak))
