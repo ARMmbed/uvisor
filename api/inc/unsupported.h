@@ -18,6 +18,7 @@
 #define __UVISOR_API_UNSUPPORTED_H__
 
 #include "uvisor/api/inc/uvisor_exports.h"
+#include <stddef.h>
 #include <stdint.h>
 
 /* uVisor hook for unsupported platforms */
@@ -90,7 +91,7 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 /* Default mask for whole register operatins */
 #define __UVISOR_OP_DEFAULT_MASK 0x0
 
-static inline UVISOR_FORCEINLINE uint32_t uvisor_read(uint32_t addr, uint32_t op, uint32_t mask)
+static UVISOR_FORCEINLINE uint32_t uvisor_read(uint32_t addr, uint32_t op, uint32_t mask)
 {
     switch(op)
     {
@@ -110,7 +111,7 @@ static inline UVISOR_FORCEINLINE uint32_t uvisor_read(uint32_t addr, uint32_t op
 
 #define uvisor_read(addr) uvisor_read((uint32_t) (addr), UVISOR_OP_READ(UVISOR_OP_NOP), __UVISOR_OP_DEFAULT_MASK)
 
-static inline UVISOR_FORCEINLINE void uvisor_write(uint32_t addr, uint32_t val, uint32_t op, uint32_t mask)
+static UVISOR_FORCEINLINE void uvisor_write(uint32_t addr, uint32_t val, uint32_t op, uint32_t mask)
 {
     switch(op)
     {
@@ -133,62 +134,63 @@ static inline UVISOR_FORCEINLINE void uvisor_write(uint32_t addr, uint32_t val, 
 
 /* uvisor-lib/secure_access.h */
 
+static UVISOR_FORCEINLINE void uvisor_write32(uint32_t volatile *addr, uint32_t val)
+{
+    *(addr) = val;
+}
+
+static UVISOR_FORCEINLINE void uvisor_write16(uint16_t volatile *addr, uint16_t val)
+{
+    *(addr) = val;
+}
+
+static UVISOR_FORCEINLINE void uvisor_write8(uint8_t volatile *addr, uint8_t val)
+{
+    *(addr) = val;
+}
+
+static UVISOR_FORCEINLINE uint32_t uvisor_read32(uint32_t volatile *addr)
+{
+    return *(addr);
+}
+
+static UVISOR_FORCEINLINE uint16_t uvisor_read16(uint16_t volatile *addr)
+{
+    return *(addr);
+}
+
+static UVISOR_FORCEINLINE uint8_t uvisor_read8(uint8_t volatile *addr)
+{
+    return *(addr);
+}
+
 /* The conditional statement will be optimised away since the compiler already
  * knows the sizeof(type). */
 #define ADDRESS_READ(type, addr) \
-    (sizeof(type) == 4 ? uvisor_read32((volatile uint32_t *) (addr)) : \
-     sizeof(type) == 2 ? uvisor_read16((volatile uint16_t *) (addr)) : \
-     sizeof(type) == 1 ? uvisor_read8((volatile uint8_t *) (addr)) : 0)
+    (sizeof(type) == 4 ? uvisor_read32((volatile uint32_t * volatile) (addr)) : \
+     sizeof(type) == 2 ? uvisor_read16((volatile uint16_t * volatile) (addr)) : \
+     sizeof(type) == 1 ? uvisor_read8((volatile uint8_t * volatile) (addr)) : 0)
 
 /* The switch statement will be optimised away since the compiler already knows
- * the sizeof(type). */
-#define ADDRESS_WRITE(type, addr, val) \
-    { \
-        switch(sizeof(type)) \
-        { \
-            case 4: \
-                uvisor_write32((volatile uint32_t *) (addr), (uint32_t) (val)); \
-                break; \
-            case 2: \
-                uvisor_write16((volatile uint16_t *) (addr), (uint16_t) (val)); \
-                break; \
-            case 1: \
-                uvisor_write8((volatile uint8_t *) (addr), (uint8_t) (val)); \
-                break; \
-        } \
+ * the sizeof_type. */
+static UVISOR_FORCEINLINE void __address_write(size_t sizeof_type, volatile uint32_t *addr, uint32_t val)
+{
+    switch(sizeof_type) {
+        case 4:
+            uvisor_write32((volatile uint32_t * volatile) addr, (uint32_t) val);
+            break;
+        case 2:
+            uvisor_write16((volatile uint16_t * volatile) addr, (uint16_t) val);
+            break;
+        case 1:
+            uvisor_write8((volatile uint8_t * volatile) addr, (uint8_t) val);
+            break;
     }
+}
+
+#define ADDRESS_WRITE(type, addr, val) __address_write(sizeof(type), (volatile uint32_t *) addr, (uint32_t) val)
 
 #define UNION_READ(type, addr, fieldU, fieldB) ((*((volatile type *) (addr))).fieldB)
-
-static inline UVISOR_FORCEINLINE void uvisor_write32(uint32_t volatile *addr, uint32_t val)
-{
-    *(addr) = val;
-}
-
-static inline UVISOR_FORCEINLINE void uvisor_write16(uint16_t volatile *addr, uint16_t val)
-{
-    *(addr) = val;
-}
-
-static inline UVISOR_FORCEINLINE void uvisor_write8(uint8_t volatile *addr, uint8_t val)
-{
-    *(addr) = val;
-}
-
-static inline UVISOR_FORCEINLINE uint32_t uvisor_read32(uint32_t volatile *addr)
-{
-    return *(addr);
-}
-
-static inline UVISOR_FORCEINLINE uint16_t uvisor_read16(uint16_t volatile *addr)
-{
-    return *(addr);
-}
-
-static inline UVISOR_FORCEINLINE uint8_t uvisor_read8(uint8_t volatile *addr)
-{
-    return *(addr);
-}
 
 /* uvisor-lib/secure_gateway.h */
 

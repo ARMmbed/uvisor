@@ -170,9 +170,11 @@ typedef struct
     28:(((x)<=536870912UL)?29:(((x)<=1073741824UL)?30:(((x)<=2147483648UL)?\
     31:32)))))))))))))))))))))))))))
 
-static inline int vmpu_bits(uint32_t size)
+#if defined(UVISOR_PRESENT) && UVISOR_PRESENT == 1
+static UVISOR_FORCEINLINE int vmpu_bits(uint32_t size)
 {
     return 32 - __builtin_clz(size);
 }
+#endif /* defined(UVISOR_PRESENT) && UVISOR_PRESENT == 1 */
 
 #endif /* __UVISOR_API_VMPU_EXPORTS_H__ */
