@@ -167,9 +167,9 @@ static UVISOR_FORCEINLINE uint8_t uvisor_read8(uint8_t volatile *addr)
 /* The conditional statement will be optimised away since the compiler already
  * knows the sizeof(type). */
 #define ADDRESS_READ(type, addr) \
-    (sizeof(type) == 4 ? uvisor_read32((volatile uint32_t *) (addr)) : \
-     sizeof(type) == 2 ? uvisor_read16((volatile uint16_t *) (addr)) : \
-     sizeof(type) == 1 ? uvisor_read8((volatile uint8_t *) (addr)) : 0)
+    (sizeof(type) == 4 ? uvisor_read32((volatile uint32_t * volatile) (addr)) : \
+     sizeof(type) == 2 ? uvisor_read16((volatile uint16_t * volatile) (addr)) : \
+     sizeof(type) == 1 ? uvisor_read8((volatile uint8_t * volatile) (addr)) : 0)
 
 /* The switch statement will be optimised away since the compiler already knows
  * the sizeof_type. */
