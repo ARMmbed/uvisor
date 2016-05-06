@@ -63,6 +63,9 @@ typedef struct {
     /* address of __uvisor_box_context */
     uint32_t **uvisor_box_context;
 
+    /* heap for page allocator */
+    uint32_t *page_start, *page_end;
+
     /* Physical memories' boundaries */
     uint32_t *flash_start;
     uint32_t *flash_end;

@@ -19,6 +19,7 @@
 #include "svc.h"
 #include "unvic.h"
 #include "debug.h"
+#include "page_allocator.h"
 
 TIsrVector g_isr_vector_prev;
 
@@ -49,6 +50,9 @@ UVISOR_NOINLINE void uvisor_init_post(void)
 {
         /* init MPU */
         vmpu_init_post();
+
+        /* init page allocator */
+        page_init(__uvisor_config.page_start, __uvisor_config.page_end);
 
         /* init SVC call interface */
         svc_init();

@@ -21,6 +21,7 @@
 #include "unvic.h"
 #include "benchmark.h"
 #include "debug.h"
+#include "page_allocator.h"
 
 /* these symbols are linked in this scope from the ASM code in __svc_irq and
  * are needed for sanity checks */
@@ -59,6 +60,8 @@ const void *g_svc_vtor_tbl[] = {
     /* FIXME: This function will be made automatic when the debug box ACL is
      *        introduced. The initialization will happen at uVisor boot time. */
     debug_register_driver,      // 19
+    page_malloc,                // 20
+    page_free,                  // 21
 };
 
 /*******************************************************************************

@@ -76,6 +76,10 @@ uvisor_config:
     /* pointer to __uvisor_box_context */
     .long __uvisor_box_context
 
+    /* start and end address of page heap */
+    .long __uvisor_page_start
+    .long __uvisor_page_end
+
     /* Physical memories' boundaries */
     .long __uvisor_flash_start;
     .long __uvisor_flash_end;
