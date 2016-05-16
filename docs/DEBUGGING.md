@@ -5,6 +5,7 @@ The uVisor is distributed as a pre-linked binary blob. Blobs for different mbed 
 If you only want to use the uVisor debug features on an already supported platform, you do not need to clone it and build it locally. If you instead want to make modifications to uVisor (or port it to your platform) and test the modifications locally with your app, please follow the [Developing with uVisor locally](DEVELOPING_LOCALLY.md) guide first.
 
 In this quick guide we will show you how to enable the default debug features on uVisor, and how to instrument it to get even more debug information. You will need the following:
+
 * A GDB-enabled board (and the related tools).
 * yotta.
 
@@ -14,7 +15,7 @@ The uVisor provides two main sources of debug information:
 
 1. Runtime messages. These are delivered through [semihosting](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0471l/pge1358787045051.html), which requires a debugger to be connected to the device. Currently debug messages are used to instrument some of the security-critical features of uVisor, like boot and start-up configuration, interrupts management, and context switching. A post-mortem screen is also output when the system is halted due to a fault.
 
-2. Debug box drivers. We call a *debug box* a secure box that registers with uVisor to handle debug events and messages. The uVisor provides a predefined function table that describes the driver and its capabilities. Different debug boxes can implement these handlers differently, independently from uVisor. All handlers are executed in unprivileged mode.
+1. Debug box drivers. We call a *debug box* a secure box that registers with uVisor to handle debug events and messages. The uVisor provides a predefined function table that describes the driver and its capabilities. Different debug boxes can implement these handlers differently, independently from uVisor. All handlers are executed in unprivileged mode.
 
 Runtime messages and debug box handlers are independent from each other. Even if an application does not include a debug box, the uVisor is still able to deliver basic runtime messages. Conversely, an application that includes a debug box will handle debug events even if the release build of uVisor is used and possibly even without a debugger connected.
 
@@ -82,6 +83,7 @@ $ nc localhost 2333
 Similarly to the GDB server, the port can be changed, if you want.
 
 Currently the following messages are printed:
+
 * Start-up and initialization routines.
 * Runtime assertions (failed sanity checks).
 * vIRQ operations: Registering, enabling, disabling, and releasing interrupts.

@@ -3,12 +3,14 @@
 The uVisor is distributed as a pre-linked binary blob. Blobs for different mbed platforms are released in a yotta module called `uvisor-lib`, which you can obtain from the yotta registry. This guide will show you a different way of obtaining those binaries, that is, by building them locally.
 
 There are several reasons why you might want to build uVisor locally:
+
 * Reproduce a publicly released build.
 * Make modifications and test them before contributing to uVisor on GitHub. See [Contributing to uVisor](../CONTRIBUTING.md) for more details.
 * Preview the latest uVisor features before they are packaged and released.
 * Play and experiment with uVisor.
 
 You will need the following:
+
 * The Launchpad GCC ARM embedded toolchain.
 * GNU make.
 * yotta.
@@ -42,7 +44,6 @@ $ yotta link
 ```
 
 In this way yotta applications can refer to this local version of `uvisor-lib` instead of the one published in the registry. This version uses the locally built uVisor libraries.
-
 
 ## Link your application
 
