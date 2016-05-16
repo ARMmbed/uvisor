@@ -138,17 +138,17 @@ If you want to know how to use the uVisor APIs to setup a secure box please refe
 The uVisor is initialised right after device start-up and takes ownership of its most critical assets, like privileged peripherals, the vector table and memory management. The boot process involves the following steps, in this order:
 
 1. Several sanity checks are performed, to verify integrity of the memory structure as expected by the uVisor.
-2. The uVisor `bss` section is zeroed, the uVisor `data` section initialised.
-3. The uVisor takes ownership of the vector table
-4. The virtual Memory Protection Unit (vMPU) is initialized:
+1. The uVisor `bss` section is zeroed, the uVisor `data` section initialised.
+1. The uVisor takes ownership of the vector table
+1. The virtual Memory Protection Unit (vMPU) is initialized:
     * Secure boxes are loaded. For each of them:
         * The `bss` section is zeroed.
         * Access Control Lists (ACLs) are registered.
         * Stacks are initialised.
         * A private box context is initialized, if required.
     * The MPU (ARM or third-party) is configured.
-5. Privileged and unprivileged stack pointers are initialised.
-6. Execution is de-privileged and handed over to the unprivileged code.
+1. Privileged and unprivileged stack pointers are initialised.
+1. Execution is de-privileged and handed over to the unprivileged code.
 
 From this moment on, the operating system/application runs in unprivileged mode and in the default context, which is the one of the main box.
 
@@ -157,6 +157,7 @@ From this moment on, the operating system/application runs in unprivileged mode 
 The uVisor is able to set up a secure execution environment for itself and for each configured secure box. Whenever an event or an explicit call must be run in a specific environment, a context switch is triggered.
 
 During a context switch, the uVisor stores the state of the previous context and then:
+
 * It re-configures the stack pointer and the box context pointer.
 * It re-configures the MPU and the peripherals protection.
 * It hands the execution to the target context.

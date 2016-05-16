@@ -10,7 +10,7 @@ welcome contributions and [bug reports](../../issues).
   [Contributor Agreement](http://developer.mbed.org/contributor_agreement/)
   that must be agreed to before contributions can be merged. To agree to the
   contributor agreement, you need to have an mbed.com account and be logged in.
-  **We only accept [bug reports](../../issues) and pull requests [via GitHub](../../)**
+  **We only accept [bug reports](../../issues) and pull requests [via GitHub](../../)**.
 
 * If you have a question about how to use mbed OS, please search the
   [mbed forums](http://forums.mbed.com/c/mbed-os), and if you still need help,
