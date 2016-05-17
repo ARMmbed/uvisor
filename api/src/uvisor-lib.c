@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #include "api/inc/export_table_exports.h"
+#include "rt_OsEventObserver.h"
 
 int uvisor_lib_init(void)
 {
@@ -36,6 +37,12 @@ int uvisor_lib_init(void)
         /* The version we understand is not the version we found. */
         return -1;
     }
+
+    /* osRegisterForOsEvents won't allow a second call. For systems that don't
+     * make use of osRegisterForOsEvents we recommend to
+     * osRegisterForOsEvents(NULL) to disable further registrations (which if
+     * allowed would be a backdoor). */
+     osRegisterForOsEvents(&uvisor_export_table->os_event_observer);
 
     return 0;
 }
