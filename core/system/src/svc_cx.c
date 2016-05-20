@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 #include <uvisor.h>
+#include "debug.h"
 #include "svc.h"
 #include "vmpu.h"
-#include "debug.h"
 
 /* state variables */
 TBoxCx    g_svc_cx_state[UVISOR_SVC_CONTEXT_MAX_DEPTH];

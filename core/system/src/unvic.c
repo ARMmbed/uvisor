@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 #include <uvisor.h>
-#include "halt.h"
-#include "unvic.h"
-#include "svc.h"
 #include "debug.h"
+#include "halt.h"
+#include "svc.h"
+#include "unvic.h"
 
 /* unprivileged vector table */
 TIsrUVector g_unvic_vector[NVIC_VECTORS];

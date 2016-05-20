@@ -18,7 +18,7 @@
 #define __SVC_GW_H__
 
 #include <uvisor.h>
-#include <vmpu.h>
+#include "vmpu.h"
 #include "api/inc/svc_exports.h"
 #include "api/inc/svc_gw_exports.h"
 
