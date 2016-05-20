@@ -54,6 +54,33 @@ extern int      unvic_default(uint32_t isr_id);
 
 extern void unvic_init(void);
 
+/** Perform a context switch-in as a result of an interrupt request.
+ *
+ * This function uses information from an SVCall to retrieve an interrupt
+ * handler, validate it, and use its metadata to perform the context switch. It
+ * should not be called directly by new code, as it is mapped to the hardcoded
+ * table of SVCall handlers in uVisor.
+ *
+ * @warning This function trusts the SVCall parameters that are passed to it.
+ *
+ * @param svc_sp[in]    Unprivileged stack pointer at the time of the secure
+ *                      gateway
+ * @param svc_pc[in]    Program counter at the time of the secure gateway */
+void UVISOR_NAKED unvic_gateway_in(uint32_t svc_sp, uint32_t svc_pc);
+
+/** Perform a context switch-out as a result of an interrupt request.
+ *
+ * This function uses information from an SVCall to return from a previously
+ * switched-in unprivileged interrupt handler. It should not be called directly
+ * by new code, as it is mapped to the hardcoded table of SVCall handlers in
+ * uVisor.
+ *
+ * @warning This function trusts the SVCall parameters that are passed to it.
+ *
+ * @param svc_sp[in]    Unprivileged stack pointer at the time of the secure
+ *                      gateway return handler (thunk) */
+void UVISOR_NAKED unvic_gateway_out(uint32_t svc_sp);
+
 /** Disable all interrupts for the currently active box.
  *
  * This function selectively disables all interrupts that belong to the current

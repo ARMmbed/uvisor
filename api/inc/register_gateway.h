@@ -42,7 +42,7 @@
 /* 1 argument: simple read, no mask */
 #define __UVISOR_REGISTER_GATEWAY_METADATA1(src_box, addr) \
     "b.n skip_args%=\n" \
-    ".word " UVISOR_TO_STRING(UVISOR_SVC_GW_MAGIC) "\n" \
+    ".word " UVISOR_TO_STRING(UVISOR_SECURE_GATEWAY_MAGIC) "\n" \
     ".word " UVISOR_TO_STRING(addr) "\n" \
     ".word " UVISOR_TO_STRING(src_box) "_cfg_ptr\n" \
     ".word " UVISOR_TO_STRING(UVISOR_OP_READ(UVISOR_OP_NOP)) "\n" \
@@ -52,7 +52,7 @@
 /* 2 arguments: simple write, no mask */
 #define __UVISOR_REGISTER_GATEWAY_METADATA2(src_box, addr, val) \
     "b.n skip_args%=\n" \
-    ".word " UVISOR_TO_STRING(UVISOR_SVC_GW_MAGIC) "\n" \
+    ".word " UVISOR_TO_STRING(UVISOR_SECURE_GATEWAY_MAGIC) "\n" \
     ".word " UVISOR_TO_STRING(addr) "\n" \
     ".word " UVISOR_TO_STRING(src_box) "_cfg_ptr\n" \
     ".word " UVISOR_TO_STRING(UVISOR_OP_WRITE(UVISOR_OP_NOP)) "\n" \
@@ -62,7 +62,7 @@
 /* 3 arguments: masked read */
 #define __UVISOR_REGISTER_GATEWAY_METADATA3(src_box, addr, op, mask) \
     "b.n skip_args%=\n" \
-    ".word " UVISOR_TO_STRING(UVISOR_SVC_GW_MAGIC) "\n" \
+    ".word " UVISOR_TO_STRING(UVISOR_SECURE_GATEWAY_MAGIC) "\n" \
     ".word " UVISOR_TO_STRING(addr) "\n" \
     ".word " UVISOR_TO_STRING(src_box) "_cfg_ptr\n" \
     ".word " UVISOR_TO_STRING(UVISOR_OP_READ(op)) "\n" \
@@ -72,7 +72,7 @@
 /* 4 arguments: masked write */
 #define __UVISOR_REGISTER_GATEWAY_METADATA4(src_box, addr, val, op, mask) \
     "b.n skip_args%=\n" \
-    ".word " UVISOR_TO_STRING(UVISOR_SVC_GW_MAGIC) "\n" \
+    ".word " UVISOR_TO_STRING(UVISOR_SECURE_GATEWAY_MAGIC) "\n" \
     ".word " UVISOR_TO_STRING(addr) "\n" \
     ".word " UVISOR_TO_STRING(src_box) "_cfg_ptr\n" \
     ".word " UVISOR_TO_STRING(UVISOR_OP_WRITE(op)) "\n" \

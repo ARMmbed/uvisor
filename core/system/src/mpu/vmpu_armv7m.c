@@ -16,6 +16,7 @@
  */
 #include <uvisor.h>
 #include "debug.h"
+#include "context.h"
 #include "halt.h"
 #include "memory_map.h"
 #include "svc.h"
@@ -559,8 +560,8 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
 
         /* assign main box stack pointer to existing
          * unprivileged stack pointer */
-        g_svc_cx_curr_sp[0] = (uint32_t*)__get_PSP();
-        g_svc_cx_context_ptr[0] = NULL;
+        g_context_current_states[0].sp = __get_PSP();
+        g_context_current_states[0].context = (uint32_t) NULL;
         return;
     }
 
@@ -603,11 +604,11 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
         HALT_ERROR(SANITY_CHECK_FAILED, "slots_stack underrun\n\r");
 
     /* allocate context pointer */
-    g_svc_cx_context_ptr[box_id] =
-        slots_ctx ? (uint32_t*)g_box_mem_pos : NULL;
+    g_context_current_states[box_id].context =
+        slots_ctx ? g_box_mem_pos : (uint32_t) NULL;
     /* ensure stack band on top for stack underflow dectection */
-    g_svc_cx_curr_sp[box_id] =
-        (uint32_t*)(g_box_mem_pos + size - UVISOR_STACK_BAND_SIZE);
+    g_context_current_states[box_id].sp =
+        (g_box_mem_pos + size - UVISOR_STACK_BAND_SIZE);
 
     /* Reset uninitialized secured box context. */
     if (slots_ctx) {

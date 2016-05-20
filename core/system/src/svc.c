@@ -18,6 +18,7 @@
 #include "benchmark.h"
 #include "debug.h"
 #include "halt.h"
+#include "secure_gateway.h"
 #include "svc.h"
 #include "unvic.h"
 #include "vmpu.h"
@@ -124,9 +125,9 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
         "ldr    pc, [r12, r3, lsl #2]\n"            // branch to handler
         ".align 4\n"                                // the jump table must be aligned
     "jump_table_unpriv:\n"
-        ".word  unvic_svc_cx_out\n"
-        ".word  svc_cx_switch_in\n"
-        ".word  svc_cx_switch_out\n"
+        ".word  unvic_gateway_out\n"
+        ".word  secure_gateway_in\n"
+        ".word  secure_gateway_out\n"
         ".word  vmpu_register_gateway\n"
         ".word  __svc_not_implemented\n"
         ".word  __svc_not_implemented\n"
@@ -192,7 +193,7 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
         "ldr    pc, [r12, r3, lsl #2]\n"            // branch to handler
         ".align 4\n"                                // the jump table must be aligned
     "jump_table_priv:\n"
-        ".word  unvic_svc_cx_in\n"
+        ".word  unvic_gateway_in\n"
         ".word  __svc_not_implemented\n"
         ".word  __svc_not_implemented\n"
         ".word  __svc_not_implemented\n"
