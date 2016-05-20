@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 #include <uvisor.h>
-#include "vmpu.h"
-#include "svc.h"
+#include "debug.h"
 #include "halt.h"
 #include "memory_map.h"
-#include "debug.h"
+#include "svc.h"
+#include "vmpu.h"
 
 #ifndef MPU_MAX_PRIVATE_FUNCTIONS
 #define MPU_MAX_PRIVATE_FUNCTIONS 16

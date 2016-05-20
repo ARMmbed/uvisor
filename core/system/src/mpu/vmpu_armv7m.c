@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 #include <uvisor.h>
-#include <vmpu.h>
-#include <svc.h>
-#include <unvic.h>
-#include <halt.h>
-#include <debug.h>
-#include <memory_map.h>
+#include "debug.h"
+#include "halt.h"
+#include "memory_map.h"
+#include "svc.h"
+#include "unvic.h"
+#include "vmpu.h"
 
 /* This file contains the configuration-specific symbols. */
 #include "configurations.h"

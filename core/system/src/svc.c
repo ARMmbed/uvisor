@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 #include <uvisor.h>
-#include "svc.h"
-#include "halt.h"
-#include "vmpu.h"
-#include "unvic.h"
 #include "benchmark.h"
 #include "debug.h"
+#include "halt.h"
+#include "svc.h"
+#include "unvic.h"
+#include "vmpu.h"
 
 /* these symbols are linked in this scope from the ASM code in __svc_irq and
  * are needed for sanity checks */

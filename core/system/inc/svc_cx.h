@@ -20,6 +20,7 @@
 #include <uvisor.h>
 #include "halt.h"
 #include "vmpu.h"
+#include "api/inc/svc_exports.h"
 
 #define SVC_CX_EXC_SF_SIZE 8
 

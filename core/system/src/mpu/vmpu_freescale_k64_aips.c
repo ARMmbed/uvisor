@@ -14,10 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include <uvisor.h>
-#include <svc.h>
-#include <vmpu.h>
+#include "svc.h"
+#include "vmpu.h"
 #include "vmpu_freescale_k64_aips.h"
 
 #define AIPSx_DWORDS       ((AIPSx_SLOT_MAX+31)/32)
