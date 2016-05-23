@@ -648,7 +648,7 @@ void vmpu_arch_init(void)
     if (ARMv7M_MPU_REGIONS != ((MPU->TYPE >> MPU_TYPE_DREGION_Pos) & 0xFF)) {
         HALT_ERROR(SANITY_CHECK_FAILED, "ARMv7M_MPU_REGIONS is inconsistent with actual region count.\n\r");
     }
-    if (ARMv7M_MPU_ALIGNMENT_BITS == vmpu_bits(aligment_mask)) {
+    if (ARMv7M_MPU_ALIGNMENT_BITS != vmpu_bits(aligment_mask)) {
         HALT_ERROR(SANITY_CHECK_FAILED, "ARMv7M_MPU_ALIGNMENT_BITS are inconsistent with actual MPU alignment\n\r");
     }
     /* Init protected box memory enumeration pointer. */
