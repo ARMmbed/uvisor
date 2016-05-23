@@ -165,6 +165,41 @@ static void vmpu_sanity_check_box_namespace(int box_id, const char *const box_na
     } while (box_namespace[length]);
 }
 
+static void vmpu_box_index_init(uint8_t box_id, uint32_t context_size, uint32_t heap_size)
+{
+    if (box_id == 0)
+    {
+        /* box 0 still uses the main heap to be backwards compatible */
+        g_svc_cx_context_ptr[0] = __uvisor_config.heap_start;
+        heap_size = ((void*)__uvisor_config.heap_end -
+                     (void*)__uvisor_config.heap_start) -
+                    sizeof(UvisorBoxIndex);
+    }
+
+    void *box_bss = g_svc_cx_context_ptr[box_id];
+
+    /* the box index is at the beginning of the bss section */
+    UvisorBoxIndex *const index = box_bss;
+    box_bss += sizeof(UvisorBoxIndex);
+    /* initialize user context */
+    index->ctx = context_size ? box_bss : NULL;
+    box_bss += context_size;
+    /* initialize process heap */
+    index->process_heap = heap_size ? box_bss : NULL;
+    index->process_heap_size = heap_size;
+    /* active heap pointer is NULL */
+    index->active_heap = NULL;
+
+    memset(index->mutex_data, 0, sizeof(index->mutex_data));
+    /* point the mutex pointer to the data */
+    index->mutex = &(index->mutex_data);
+    /* set the id to NULL */
+    index->mutex_id = NULL;
+
+    /* cache the box id */
+    index->box_id = box_id;
+}
+
 static void vmpu_load_boxes(void)
 {
     int i, count;
@@ -221,8 +256,15 @@ static void vmpu_load_boxes(void)
          * sizes are resolved later in vmpu_initialize_stacks */
         vmpu_acl_stack(
             box_id,
-            (*box_cfgtbl)->context_size,
+            (*box_cfgtbl)->bss_size,
             (*box_cfgtbl)->stack_size
+        );
+
+        /* initialize box index */
+        vmpu_box_index_init(
+            box_id,
+            (*box_cfgtbl)->context_size,
+            (*box_cfgtbl)->heap_size
         );
 
         /* enumerate box ACLs */
@@ -261,6 +303,7 @@ static void vmpu_load_boxes(void)
 
     /* load box 0 */
     vmpu_load_box(0);
+    *(__uvisor_config.uvisor_box_context) = g_svc_cx_context_ptr[0];
 
     DPRINTF("vmpu_load_boxes [DONE]\n");
 }

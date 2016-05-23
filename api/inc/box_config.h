@@ -18,6 +18,7 @@
 #define __UVISOR_API_BOX_CONFIG_H__
 
 #include "api/inc/uvisor_exports.h"
+#include "api/inc/vmpu_exports.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -43,6 +44,8 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
         UVISOR_BOX_VERSION, \
         0, \
         0, \
+        0, \
+        0, \
         NULL, \
         acl_list, \
         acl_list_count \
@@ -56,13 +59,23 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 #define __UVISOR_BOX_CONFIG(box_name, acl_list, acl_list_count, stack_size, context_size) \
     \
     uint8_t __attribute__((section(".keep.uvisor.bss.boxes"), aligned(32))) \
-        box_name ## _reserved[UVISOR_STACK_SIZE_ROUND(((UVISOR_MIN_STACK(stack_size) + (context_size))*8)/6)]; \
+        box_name ## _reserved[ \
+            UVISOR_STACK_SIZE_ROUND( \
+                ( \
+                    (UVISOR_MIN_STACK(stack_size) + \
+                    (context_size) + \
+                    (__uvisor_box_heapsize) + \
+                    sizeof(UvisorBoxIndex)) \
+                *8) \
+            /6)]; \
     \
     static const __attribute__((section(".keep.uvisor.cfgtbl"), aligned(4))) UvisorBoxConfig box_name ## _cfg = { \
         UVISOR_BOX_MAGIC, \
         UVISOR_BOX_VERSION, \
+        (context_size) + (__uvisor_box_heapsize) + sizeof(UvisorBoxIndex), \
         UVISOR_MIN_STACK(stack_size), \
         context_size, \
+        __uvisor_box_heapsize, \
         __uvisor_box_namespace, \
         acl_list, \
         acl_list_count \
@@ -75,11 +88,11 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 
 #define __UVISOR_BOX_CONFIG_CONTEXT(box_name, acl_list, stack_size, context_type) \
     __UVISOR_BOX_CONFIG(box_name, acl_list, UVISOR_ARRAY_COUNT(acl_list), stack_size, sizeof(context_type)) \
-    UVISOR_EXTERN context_type * const uvisor_ctx;
+    UVISOR_EXTERN context_type *const *const __uvisor_ps;
 
 #define __UVISOR_BOX_CONFIG_NOACL(box_name, stack_size, context_type) \
     __UVISOR_BOX_CONFIG(box_name, NULL, 0, stack_size, sizeof(context_type)) \
-    UVISOR_EXTERN context_type * const uvisor_ctx;
+    UVISOR_EXTERN context_type *const *const __uvisor_ps;
 
 #define __UVISOR_BOX_CONFIG_NOACL_NOCONTEXT(box_name, stack_size) \
     __UVISOR_BOX_CONFIG(box_name, NULL, 0, stack_size, 0)
@@ -103,6 +116,10 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 #define UVISOR_BOX_NAMESPACE(box_namespace) \
     static const char *const __uvisor_box_namespace = box_namespace
 
+#define UVISOR_BOX_HEAPSIZE(heap_size) \
+    static const uint32_t __uvisor_box_heapsize = heap_size;
+
+#define uvisor_ctx (*__uvisor_ps)
 
 /* Return the numeric box ID of the current box. */
 UVISOR_EXTERN int uvisor_box_id_self(void);

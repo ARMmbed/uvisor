@@ -16,7 +16,7 @@
  */
 .globl uvisor_init
 .globl uvisor_config
-.globl uvisor_ctx
+.globl __uvisor_ps
 .type  uvisor_init, %function
 .weak  __uvisor_mode
 
@@ -76,6 +76,15 @@ uvisor_config:
     /* pointer to __uvisor_box_context */
     .long __uvisor_box_context
 
+    /* start and end address of box zero heap */
+    .long __uvisor_heap_start
+    .long __uvisor_heap_end
+
+    /* start and end address and page size of page heap */
+    .long __uvisor_page_start
+    .long __uvisor_page_end
+    .long UVISOR_PAGE_SIZE
+
     /* Physical memories' boundaries */
     .long __uvisor_flash_start;
     .long __uvisor_flash_end;
@@ -86,9 +95,9 @@ __uvisor_mode:
     /* uvisor default mode - user can override weak reference */
     .long 0
 
-.section .bss
+.section .uninitialized
 __uvisor_box_context:
-uvisor_ctx:
+__uvisor_ps:
     .long 0
 
 .section .keep.uvisor.bss.main, "awM", @nobits

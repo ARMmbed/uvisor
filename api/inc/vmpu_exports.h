@@ -147,13 +147,44 @@ typedef struct
 {
     uint32_t magic;
     uint32_t version;
+
+    /* contains all volatile memory of the box */
+    uint32_t bss_size;
+    /* bss memory is broken into:
+       - box index structure
+       - stack size for process
+       - context size for user provided structure
+       - heap for dynamic memory allocation
+    */
     uint32_t stack_size;
     uint32_t context_size;
-    const char* box_namespace;
+    uint32_t heap_size;
 
+    const char* box_namespace;
     const UvisorBoxAclItem* const acl_list;
     uint32_t acl_count;
 } UVISOR_PACKED UvisorBoxConfig;
+
+typedef struct
+{
+    /* pointer to the user context */
+    void *ctx;
+    /* pointer to the box heap */
+    void *process_heap;
+    /* size of the box heap */
+    uint32_t process_heap_size;
+    /* pointer to the currently active heap */
+    void *active_heap;
+    /* cache of the box_id */
+    int box_id;
+
+    /* id of the mutex */
+    void *mutex_id;
+    /* pointer to the data of the mutex */
+    void *mutex;
+    /* internal data of the mutex */
+    int32_t mutex_data[4];
+} UVISOR_PACKED UvisorBoxIndex;
 
 /*
  * only use this macro for rounding const values during compile time:

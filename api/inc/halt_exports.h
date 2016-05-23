@@ -17,9 +17,15 @@
 #ifndef __UVISOR_API_HALT_EXPORTS_H__
 #define __UVISOR_API_HALT_EXPORTS_H__
 
-#define UVISOR_ERROR_INVALID_BOX_ID (-2)
-#define UVISOR_ERROR_BUFFER_TOO_SMALL (-3)
-#define UVISOR_ERROR_BOX_NAMESPACE_ANONYMOUS (-4)
+#define UVISOR_ERROR_INVALID_BOX_ID             (-2)
+#define UVISOR_ERROR_BUFFER_TOO_SMALL           (-3)
+#define UVISOR_ERROR_BOX_NAMESPACE_ANONYMOUS    (-4)
+
+
+#define UVISOR_ERROR_CLASS_MASK     (0xffff0000)
+#define UVISOR_ERROR_MASK           (0x0000ffff)
+
+#define UVISOR_ERROR_CLASS_PAGE     (1ul << 16)
 
 typedef enum {
     USER_NOT_ALLOWED = 1,

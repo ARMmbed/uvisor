@@ -544,7 +544,7 @@ void vmpu_acl_add(uint8_t box_id, void* addr, uint32_t size, UvisorBoxAcl acl)
     g_mpu_region_count++;
 }
 
-void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
+void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
 {
     int bits, slots_ctx, slots_stack;
     uint32_t size, block_size;
@@ -552,9 +552,9 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
     /* handle main box */
     if(!box_id)
     {
-        DPRINTF("ctx=%i stack=%i\n\r", context_size, stack_size);
+        DPRINTF("ctx=%i stack=%i\n\r", bss_size, stack_size);
         /* non-important sanity checks */
-        assert(context_size == 0);
+        assert(bss_size == 0);
         assert(stack_size == 0);
 
         /* assign main box stack pointer to existing
@@ -569,7 +569,7 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
 
     /* ensure that 2/8th are available for protecting stack from
      * context - include rounding error margin */
-    bits = vmpu_region_bits(((stack_size + context_size)*8)/6);
+    bits = vmpu_region_bits(((stack_size + bss_size)*8)/6);
 
     /* ensure MPU region size of at least 256 bytes for
      * subregion support */
@@ -578,8 +578,8 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
     size = 1UL << bits;
     block_size = size/8;
 
-    DPRINTF("\tbox[%i] stack=%i context=%i rounded=%i\n\r" , box_id,
-        stack_size, context_size, size);
+    DPRINTF("\tbox[%i] stack=%i bss=%i rounded=%i\n\r" , box_id,
+        stack_size, bss_size, size);
 
     /* check for correct context address alignment:
      * alignment needs to be a muiltiple of the size */
@@ -593,11 +593,11 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
             "allocation\n\r");
 
     /* round context sizes, leave one free slot */
-    slots_ctx = (context_size + block_size - 1)/block_size;
+    slots_ctx = (bss_size + block_size - 1)/block_size;
     slots_stack = slots_ctx ? (8-slots_ctx-1) : 8;
 
     /* final sanity checks */
-    if( (slots_ctx * block_size) < context_size )
+    if( (slots_ctx * block_size) < bss_size )
         HALT_ERROR(SANITY_CHECK_FAILED, "slots_ctx underrun\n\r");
     if( (slots_stack * block_size) < stack_size )
         HALT_ERROR(SANITY_CHECK_FAILED, "slots_stack underrun\n\r");
@@ -611,7 +611,7 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
 
     /* Reset uninitialized secured box context. */
     if (slots_ctx) {
-        memset((void *) g_box_mem_pos, 0, context_size);
+        memset((void *) g_box_mem_pos, 0, bss_size);
     }
 
     /* create stack protection region */
