@@ -58,6 +58,33 @@ void vIRQ_DisableIRQ(uint32_t irqn)
     }
 }
 
+/** Disable all interrupts for the currently active box.
+ *
+ * @internal */
+void vIRQ_DisableAll(void)
+{
+    if(__uvisor_mode == 0) {
+        __disable_irq();
+    }
+    else {
+        UVISOR_SVC(UVISOR_SVC_ID_IRQ_DISABLE_ALL, "");
+    }
+}
+
+/** Re-enable all interrupts that were previously disabled for the currently
+ *  active box.
+ *
+ * @internal */
+void vIRQ_EnableAll(void)
+{
+    if(__uvisor_mode == 0) {
+        __enable_irq();
+    }
+    else {
+        UVISOR_SVC(UVISOR_SVC_ID_IRQ_ENABLE_ALL, "");
+    }
+}
+
 void vIRQ_ClearPendingIRQ(uint32_t irqn)
 {
     if(__uvisor_mode == 0) {

@@ -59,6 +59,8 @@ const void *g_svc_vtor_tbl[] = {
     /* FIXME: This function will be made automatic when the debug box ACL is
      *        introduced. The initialization will happen at uVisor boot time. */
     debug_register_driver,      // 19
+    unvic_irq_disable_all,      // 20
+    unvic_irq_enable_all,       // 21
 };
 
 /*******************************************************************************
