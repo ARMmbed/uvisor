@@ -229,6 +229,13 @@ void unvic_irq_disable_all(void)
 
     /* Increase the counter. */
     g_irq_disable_all_counter[g_active_box]++;
+
+    if (g_irq_disable_all_counter[g_active_box] == 1) {
+        DPRINTF("All IRQs for box %d have been disabled.\r\n", g_active_box);
+    } else {
+        DPRINTF("IRQs still disabled for box %d. Counter: %d.\r\n",
+                g_active_box, g_irq_disable_all_counter[g_active_box]);
+    }
 }
 
 /** Re-enable all previously interrupts for the currently active box.
@@ -268,6 +275,13 @@ void unvic_irq_enable_all(void)
              * disable-all one. */
             g_unvic_vector[irqn].was_enabled = false;
         }
+    }
+
+    if (!g_irq_disable_all_counter[g_active_box]) {
+        DPRINTF("All IRQs for box %d have been re-enabled.\r\n", g_active_box);
+    } else {
+        DPRINTF("IRQs still disabled for box %d. Counter: %d.\r\n",
+                g_active_box, g_irq_disable_all_counter[g_active_box]);
     }
 }
 
