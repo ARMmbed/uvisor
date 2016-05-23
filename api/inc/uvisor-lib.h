@@ -46,8 +46,8 @@
  * target platform. */
 #include "api/inc/debug_exports.h"
 #include "api/inc/halt_exports.h"
+#include "api/inc/secure_gateway_exports.h"
 #include "api/inc/svc_exports.h"
-#include "api/inc/svc_gw_exports.h"
 #include "api/inc/unvic_exports.h"
 #include "api/inc/uvisor_exports.h"
 #include "api/inc/vmpu_exports.h"

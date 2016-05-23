@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 #include <uvisor.h>
-#include <vmpu.h>
-#include <svc.h>
-#include <unvic.h>
-#include <halt.h>
-#include <debug.h>
-#include <memory_map.h>
+#include "debug.h"
+#include "context.h"
+#include "halt.h"
+#include "memory_map.h"
+#include "svc.h"
+#include "unvic.h"
+#include "vmpu.h"
 #include "vmpu_freescale_k64_aips.h"
 #include "vmpu_freescale_k64_mem.h"
 
@@ -171,8 +172,8 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
 
         /* assign main box stack pointer to existing
          * unprivileged stack pointer */
-        g_svc_cx_curr_sp[0] = (uint32_t*)__get_PSP();
-        g_svc_cx_context_ptr[0] = NULL;
+        g_context_current_states[0].sp = __get_PSP();
+        g_context_current_states[0].context = (uint32_t) NULL;
         return;
     }
 
@@ -189,17 +190,17 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
 
     /* set stack pointer to box stack size minus guard band */
     g_box_mem_pos += stack_size;
-    g_svc_cx_curr_sp[box_id] = (uint32_t*)g_box_mem_pos;
+    g_context_current_states[box_id].sp = g_box_mem_pos;
     /* add stack protection band */
     g_box_mem_pos += UVISOR_STACK_BAND_SIZE;
 
     /* add context ACL if needed */
     if(!context_size)
-        g_svc_cx_context_ptr[box_id] = NULL;
+        g_context_current_states[box_id].context = (uint32_t) NULL;
     else
     {
         context_size = UVISOR_REGION_ROUND_UP(context_size);
-        g_svc_cx_context_ptr[box_id] = (uint32_t*)g_box_mem_pos;
+        g_context_current_states[box_id].context = g_box_mem_pos;
 
         DPRINTF("erasing box context at 0x%08X (%u bytes)\n",
             g_box_mem_pos,

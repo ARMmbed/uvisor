@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 #include <uvisor.h>
-#include "vmpu.h"
-#include "svc.h"
+#include "debug.h"
+#include "context.h"
 #include "halt.h"
 #include "memory_map.h"
-#include "debug.h"
+#include "svc.h"
+#include "vmpu.h"
 
 #ifndef MPU_MAX_PRIVATE_FUNCTIONS
 #define MPU_MAX_PRIVATE_FUNCTIONS 16
@@ -38,7 +39,6 @@
 
 uint32_t  g_vmpu_box_count;
 bool g_vmpu_boxes_counted;
-uint8_t g_active_box;
 
 static int vmpu_sanity_checks(void)
 {
@@ -423,21 +423,20 @@ int vmpu_box_id_self(void)
 
 int vmpu_box_id_caller(void)
 {
-    TBoxCx *box_ctx;
+    TContextPreviousState * previous_state;
 
-    if (g_svc_cx_state_ptr < 1) {
+    previous_state = context_state_previous();
+    if (previous_state == NULL) {
         /* There is no previous context. */
         return -1;
     }
 
-    box_ctx = &g_svc_cx_state[g_svc_cx_state_ptr - 1];
-
-    if (box_ctx->type != TBOXCX_SECURE_GATEWAY) {
+    if (previous_state->type != CONTEXT_SWITCH_FUNCTION_GATEWAY) {
         /* The previous context is not a secure gateway. */
         return -1;
+    } else {
+        return previous_state->src_id;
     }
-
-    return box_ctx->src_id;
 }
 
 static int copy_box_namespace(const char *src, char *dst)

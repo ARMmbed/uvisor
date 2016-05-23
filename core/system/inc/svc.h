@@ -19,9 +19,6 @@
 
 #include "api/inc/svc_exports.h"
 
-#include "svc_cx.h"
-#include "svc_gw.h"
-
 void svc_init(void);
 
 #endif/*__SVC_H__*/
