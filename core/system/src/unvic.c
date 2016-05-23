@@ -179,6 +179,57 @@ void unvic_irq_disable(uint32_t irqn)
     }
 }
 
+/** Disable all interrupts for the currently active box.
+ *
+ * @internal
+ *
+ * This function keeps a state in the unprivileged vector table that will be
+ * used later on, in ::unvic_irq_enable_all to re-enabled previously disabled
+ * IRQs. */
+void unvic_irq_disable_all(void)
+{
+    int i;
+
+    /* Iterate over all the IRQs owned by the currently active box. */
+    for (i = 0; i < NVIC_VECTORS; i++) {
+        if (g_unvic_vector[i].id == g_active_box) {
+            /* Remember the state for this IRQ. The state is the NVIC one, so we
+             * are sure we don't enable spurious interrupts. */
+            g_unvic_vector[i].was_enabled = (bool) UNVIC_IS_IRQ_ENABLED(i);
+
+            /* Disable the IRQ. */
+            NVIC_DisableIRQ(i);
+        }
+    }
+}
+
+/** Re-enable all previously interrupts for the currently active box.
+ *
+ * @internal
+ *
+ * The state that was previously set in ::unvic_irq_enable_all is reset, so that
+ * spurious calls to this function do not mistakenly enable IRQs that are
+ * supposed to be disabled. */
+void unvic_irq_enable_all(void)
+{
+    int i;
+
+    /* Iterate over all the IRQs owned by the currently active box. */
+    for (i = 0; i < NVIC_VECTORS; i++) {
+        if (g_unvic_vector[i].id == g_active_box) {
+            /* Re-enable the previously disabled IRQ. */
+            if (g_unvic_vector[i].was_enabled) {
+                NVIC_EnableIRQ(i);
+
+                /* Reset the state. This is only needed in case someone calls
+                 * this function without having previously called the
+                 * disable-all one. */
+                g_unvic_vector[i].was_enabled = false;
+            }
+        }
+    }
+}
+
 void unvic_irq_pending_clr(uint32_t irqn)
 {
     int is_irqn_registered;

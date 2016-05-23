@@ -31,4 +31,15 @@ UVISOR_EXTERN void vIRQ_SetPriority(uint32_t irqn, uint32_t priority);
 UVISOR_EXTERN uint32_t vIRQ_GetPriority(uint32_t irqn);
 UVISOR_EXTERN int vIRQ_GetLevel(void);
 
+/** Disable all interrupts for the currently active box. */
+UVISOR_EXTERN void vIRQ_DisableAll(void);
+
+/** Re-enable all interrupts that were previously disabled for the currently
+ *  active box.
+ *
+ * An internal state ensures that this function only changes the IRQ state if
+ * the ::vIRQ_DisableAll function was previously called to disable all IRQs for
+ * the currently active box. */
+UVISOR_EXTERN void vIRQ_EnableAll(void);
+
 #endif /* __UVISOR_API_INTERRUPTS_H__ */
