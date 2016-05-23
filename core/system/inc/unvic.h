@@ -29,8 +29,9 @@
 typedef void (*TIsrVector)(void);
 
 typedef struct {
-    TIsrVector hdlr;
-    uint8_t    id;
+    TIsrVector hdlr;        /**< Unprivileged ISR tied to the IRQn slot. 0 if the slot is unregistered. */
+    bool       was_enabled; /**< State kept across a virtualized __disable_irq()/__enable_irq() function call. */
+    uint8_t    id;          /**< Box ID of the IRQn owner. If the handler is set to 0 this field has no meaning. */
 } TIsrUVector;
 
 /* defined in system-specific system.h */
@@ -52,5 +53,19 @@ extern int      unvic_irq_level_get(void);
 extern int      unvic_default(uint32_t isr_id);
 
 extern void unvic_init(void);
+
+/** Disable all interrupts for the currently active box.
+ *
+ * This function selectively disables all interrupts that belong to the current
+ * box and keeps a state on whether they were enabled before this operation. The
+ * state is then used when re-enabiling the interrupts later on, in
+ * ::unvic_irq_enable_all. */
+extern void     unvic_irq_disable_all(void);
+
+/** Re-enable all previously interrupts for the currently active box.
+ *
+ * This function re-enables all interrupts that belong to the current box and
+ * that were previously disabled with the ::unvic_irq_disable_all function. */
+extern void     unvic_irq_enable_all(void);
 
 #endif/*__UNVIC_H__*/

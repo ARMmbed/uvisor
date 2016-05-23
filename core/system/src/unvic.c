@@ -24,6 +24,16 @@
 TIsrUVector g_unvic_vector[NVIC_VECTORS];
 uint8_t g_nvic_prio_bits;
 
+/* Counter to keep track of how many times a disable-all function has been
+ * called for each box.
+ *
+ * @internal
+ *
+ * If multiple disable-/re-enable-all functions are called in the same box, a
+ * counter is respectively incremented/drecremented so that it never happens
+ * that a nested function re-enables IRQs for the caller. */
+uint32_t g_irq_disable_all_counter[UVISOR_MAX_BOXES];
+
 /* vmpu_acl_irq to unvic_acl_add */
 void vmpu_acl_irq(uint8_t box_id, void *function, uint32_t irqn)
      UVISOR_LINKTO(unvic_acl_add);
@@ -143,10 +153,19 @@ void unvic_irq_enable(uint32_t irqn)
     /* verify IRQ access privileges */
     is_irqn_registered = unvic_acl_check(irqn);
 
-    /* enable IRQ */
+    /* Enable the IRQ, but only if IRQs are not globally disabled for the
+     * currently active box. */
     if (is_irqn_registered) {
-        DPRINTF("IRQ %d enabled\n\r", irqn);
-        NVIC_EnableIRQ(irqn);
+        /* If the counter of nested disable-all IRQs is set to 0, it means that
+         * IRQs are not globally disabled for the current box. */
+        if (!g_irq_disable_all_counter[g_active_box]) {
+            DPRINTF("IRQ %d enabled\n\r", irqn);
+            NVIC_EnableIRQ(irqn);
+        } else {
+            /* We do not enable the IRQ directly, but notify uVisor to enable it
+             * when IRQs will be re-enabled globally for the current box. */
+            g_unvic_vector[irqn].was_enabled = true;
+        }
         return;
     }
     else if (UNVIC_IS_IRQ_ENABLED(irqn)) {
@@ -176,6 +195,79 @@ void unvic_irq_disable(uint32_t irqn)
     }
     else {
         HALT_ERROR(NOT_ALLOWED, "IRQ %d is unregistered; state cannot be changed", irqn);
+    }
+}
+
+/** Disable all interrupts for the currently active box.
+ *
+ * @internal
+ *
+ * This function keeps a state in the unprivileged vector table that will be
+ * used later on, in ::unvic_irq_enable_all, to re-enabled previously disabled
+ * IRQs. */
+void unvic_irq_disable_all(void)
+{
+    int irqn;
+
+    /* Iterate over all the IRQs owned by the currently active box and disable
+     * them if they were active before the function call. */
+    for (irqn = 0; irqn < NVIC_VECTORS; irqn++) {
+        if (g_unvic_vector[irqn].id == g_active_box && UNVIC_IS_IRQ_ENABLED(irqn)) {
+            /* Note: We only disable the IRQs if the counter is 0. */
+            if (!g_irq_disable_all_counter[g_active_box]) {
+                /* Remember the state for this IRQ. The state is the NVIC one,
+                 * so we are sure we don't enable spurious interrupts. */
+                g_unvic_vector[irqn].was_enabled = true;
+
+                /* Disable the IRQ. */
+                NVIC_DisableIRQ(irqn);
+            }
+        } else {
+            g_unvic_vector[irqn].was_enabled = false;
+        }
+    }
+
+    /* Increase the counter. */
+    g_irq_disable_all_counter[g_active_box]++;
+}
+
+/** Re-enable all previously interrupts for the currently active box.
+ *
+ * @internal
+ *
+ * The state that was previously set in ::unvic_irq_enable_all is reset, so that
+ * spurious calls to this function do not mistakenly enable IRQs that are
+ * supposed to be disabled.
+ *
+ * IRQs are only re-enabled if the internal counter set by
+ * ::unvic_irq_disable_all reaches 0. */
+void unvic_irq_enable_all(void)
+{
+    int irqn;
+
+    /* Decrease the counter.
+     * We do not fail explicitly if the counter is 0, because it just means
+     * someone enabled all IRQs without having disabled them first, which is
+     * acceptable (in one single box). */
+    if (g_irq_disable_all_counter[g_active_box]) {
+        g_irq_disable_all_counter[g_active_box]--;
+    }
+
+    /* Iterate over all the IRQs owned by the currently active box and
+     * re-enable them if they were either (i.) enabled before the disable-all
+     * phase, or (ii.) enabled during the disable-all phase. */
+    /* Note: IRQs are re-enabled only if the counter is 0. */
+    for (irqn = 0; irqn < NVIC_VECTORS; irqn++) {
+        if (g_unvic_vector[irqn].id == g_active_box && g_unvic_vector[irqn].was_enabled &&
+            !g_irq_disable_all_counter[g_active_box]) {
+            /* Re-enable the IRQ. */
+            NVIC_EnableIRQ(irqn);
+
+            /* Reset the state. This is only needed in case someone calls
+             * this function without having previously called the
+             * disable-all one. */
+            g_unvic_vector[irqn].was_enabled = false;
+        }
     }
 }
 
