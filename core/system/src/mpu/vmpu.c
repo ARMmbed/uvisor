@@ -95,6 +95,11 @@ static int vmpu_sanity_checks(void)
     assert( (uint32_t) __uvisor_config.bss_main_end == (SRAM_OFFSET_START +
                                                         UVISOR_SRAM_LENGTH) );
 
+    /* Verify OS private BSS */
+    assert(__uvisor_config.os_priv_end >= __uvisor_config.os_priv_start);
+    assert(__uvisor_config.os_priv_start == __uvisor_config.bss_main_end);
+    assert(__uvisor_config.os_priv_end > __uvisor_config.bss_main_start);
+
     /* verify that secure flash area is accessible and after public code */
     assert(!vmpu_public_flash_addr((uint32_t) __uvisor_config.secure_start));
     assert(!vmpu_public_flash_addr((uint32_t) __uvisor_config.secure_end));

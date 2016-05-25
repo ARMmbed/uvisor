@@ -38,42 +38,46 @@ uvisor_config:
     /* MBED_VERSION */
     .long 0
 
-    /* uvisor mode
+    /* uVisor mode
        0: disabled
        1: permissive
        2: enabled */
     .long __uvisor_mode
 
-    /* start and end address of protected bss */
+    /* Start and end address of protected bss */
     .long __uvisor_bss_start
     .long __uvisor_bss_end
 
-    /* start and end address of uvisor main bss */
+    /* Start and end address of uvisor main bss */
     .long __uvisor_bss_main_start
     .long __uvisor_bss_main_end
 
-    /* start and end address of uvisor secure boxes bss */
+    /* Start and end address of OS private bss */
+    .long __uvisor_os_priv_start
+    .long __uvisor_os_priv_end
+
+    /* Start and end address of uvisor secure boxes bss */
     .long __uvisor_bss_boxes_start
     .long __uvisor_bss_boxes_end
 
-    /* start and end address of uvisor code and data */
+    /* Start and end address of uvisor code and data */
     .long __uvisor_main_start
     .long __uvisor_main_end
 
-    /* start and end address of protected flash region
+    /* Start and end address of protected flash region
     /* note: remaining flash size is available for configuration storage */
     .long __uvisor_secure_start
     .long __uvisor_secure_end
 
-     /* start and end address of boxes configuration tables */
+     /* Start and end address of boxes configuration tables */
     .long __uvisor_cfgtbl_start
     .long __uvisor_cfgtbl_end
 
-    /* start and end address of list of pointers to boxes configuration tables */
+    /* Start and end address of list of pointers to boxes configuration tables */
     .long __uvisor_cfgtbl_ptr_start
     .long __uvisor_cfgtbl_ptr_end
 
-    /* pointer to __uvisor_box_context */
+    /* Pointer to __uvisor_box_context */
     .long __uvisor_box_context
 
     /* Physical memories' boundaries */
@@ -83,7 +87,7 @@ uvisor_config:
     .long __uvisor_sram_end;
 
 __uvisor_mode:
-    /* uvisor default mode - user can override weak reference */
+    /* uVisor default mode - user can override weak reference */
     .long 0
 
 .section .bss

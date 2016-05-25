@@ -45,6 +45,9 @@ typedef struct {
         /* uvisor main bss */
     uint32_t *bss_main_start, *bss_main_end;
 
+    /* OS private BSS */
+    uint32_t *os_priv_start, *os_priv_end;
+
         /* secure boxes bss */
     uint32_t *bss_boxes_start, *bss_boxes_end;
 
