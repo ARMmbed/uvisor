@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2013-2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -68,6 +68,11 @@ typedef struct {
     uint32_t *flash_end;
     uint32_t *sram_start;
     uint32_t *sram_end;
+
+    /* Privileged handlers */
+    void (*priv_svc_0)(void);
+    void (*priv_pendsv)(void);
+    void (*priv_systick)(void);
 } UVISOR_PACKED UvisorConfig;
 
 UVISOR_EXTERN const UvisorConfig __uvisor_config;

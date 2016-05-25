@@ -24,8 +24,37 @@ void UVISOR_ALIAS(isr_default_sys_handler) BusFault_IRQn_Handler(void);
 void UVISOR_ALIAS(isr_default_sys_handler) UsageFault_IRQn_Handler(void);
 void UVISOR_ALIAS(isr_default_sys_handler) SVCall_IRQn_Handler(void);
 void UVISOR_ALIAS(isr_default_sys_handler) DebugMonitor_IRQn_Handler(void);
-void UVISOR_ALIAS(isr_default_sys_handler) PendSV_IRQn_Handler(void);
-void UVISOR_ALIAS(isr_default_sys_handler) SysTick_IRQn_Handler(void);
+
+/* Privileged PendSV and SysTick handlers assume that they are called as the by
+ * the hardware. So, these handlers need their stack frame to look exactly like
+ * they were called directly by hardware. This means LR needs to be EXC_RETURN,
+ * not some value placed there by the C compiler when it does a branch with
+ * link. */
+void UVISOR_NAKED PendSV_IRQn_Handler(void)
+{
+    asm volatile(
+        "ldr  r0, =__uvisor_config\n"
+        "ldr  r0, [r0, %[priv_pendsv]]\n"
+        "cmp  r0, #0\n"                  // Was a handler registered?
+        "it   ne\n"
+        "bxne r0\n"                      // Yes, jump to it.
+        "b    isr_default_sys_handler\n" // No, run the default handler.
+        :: [priv_pendsv] "i" (offsetof(UvisorConfig, priv_pendsv))
+    );
+}
+
+void UVISOR_NAKED SysTick_IRQn_Handler(void)
+{
+    asm volatile(
+        "ldr  r0, =__uvisor_config\n"
+        "ldr  r0, [r0, %[priv_systick]]\n"
+        "cmp  r0, #0\n"                  // Was a handler registered?
+        "it   ne\n"
+        "bxne r0\n"                      // Yes, jump to it.
+        "b    isr_default_sys_handler\n" // No, run the default handler.
+        :: [priv_systick] "i" (offsetof(UvisorConfig, priv_systick))
+    );
+}
 
 /* Default vector table (placed in Flash) */
 __attribute__((section(".isr"))) const TIsrVector g_isr_vector[ISR_VECTORS] =

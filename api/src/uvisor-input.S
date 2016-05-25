@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2013-2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -15,10 +15,14 @@
  * limitations under the License.
  */
 .globl uvisor_init
+.globl uvisor_export_table_size
 .globl uvisor_config
 .globl uvisor_ctx
 .type  uvisor_init, %function
 .weak  __uvisor_mode
+.weak  SVC_Handler
+.weak  PendSV_Handler
+.weak  SysTick_Handler
 
 .section .uvisor.main, "x"
     .thumb
@@ -27,6 +31,12 @@
 uvisor_init:
     /* uvisor - precompiled blob */
     .incbin UVISOR_BIN
+
+/* The size of the uVisor export table is a uint32_t located at the end of the
+ * uVisor binary. The uVisor export table is located at size number of bytes
+ * before the end of the uVisor binary. Size includes the 4 bytes for size
+ * itself. */
+.set uvisor_export_table_size, uvisor_config - 4
 
 uvisor_config:
     /* uvisor expects its configuration section right
@@ -82,8 +92,26 @@ uvisor_config:
     .long __uvisor_sram_start;
     .long __uvisor_sram_end;
 
+    /* Privileged handlers */
+    /* These have the same name as the CMSIS interrupt handlers on purpose, so
+     * we can re-use those already defined handlers and avoid modifying
+     * pre-existing applications for uVisor compatibility. */
+    .long SVC_Handler
+    .long PendSV_Handler
+    .long SysTick_Handler
+
 __uvisor_mode:
     /* uvisor default mode - user can override weak reference */
+    .long 0
+
+    /* Default privileged handlers */
+SVC_Handler:
+    .long 0
+
+PendSV_Handler:
+    .long 0
+
+SysTick_Handler:
     .long 0
 
 .section .bss

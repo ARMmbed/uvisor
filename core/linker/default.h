@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2013-2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -83,6 +83,11 @@ SECTIONS
         *(.ramfunc.*)
         *(.data)
         *(.data.*)
+
+        /* The __uvisor_export_table must be placed at the end of flash to work
+         * correctly. */
+        KEEP(*(.uvisor_export_table))
+
         . = ALIGN(4);
         /* All data end */
         __data_end__ = .;
