@@ -36,19 +36,19 @@
 static UVISOR_FORCEINLINE int vmpu_public_flash_addr(uint32_t addr)
 {
     return (((uint32_t) addr >= FLASH_ORIGIN) &&
-            ((uint32_t) addr <= (FLASH_ORIGIN + (uint32_t) __uvisor_config.secure_start - 4)));
+            ((uint32_t) addr <= ((uint32_t) __uvisor_config.secure_start - 4)));
 }
 
 static UVISOR_FORCEINLINE int vmpu_flash_addr(uint32_t addr)
 {
     return (((uint32_t) addr >= FLASH_ORIGIN) &&
-            ((uint32_t) addr <= (FLASH_ORIGIN + (uint32_t) __uvisor_config.flash_end - 4)));
+            ((uint32_t) addr <= ((uint32_t) __uvisor_config.flash_end - 4)));
 }
 
 static UVISOR_FORCEINLINE int vmpu_sram_addr(uint32_t addr)
 {
     return (((uint32_t) addr >= SRAM_ORIGIN) &&
-            ((uint32_t) addr <= (SRAM_ORIGIN + (uint32_t) __uvisor_config.sram_end - 4)));
+            ((uint32_t) addr <= ((uint32_t) __uvisor_config.sram_end - 4)));
 }
 
 #define VMPU_REGION_SIZE(p1, p2) ((p1 >= p2) ? 0 : \
