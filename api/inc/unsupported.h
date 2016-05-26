@@ -73,6 +73,8 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 #define vIRQ_GetVector(irqn)                NVIC_GetVector((IRQn_Type) (irqn))
 #define vIRQ_EnableIRQ(irqn)                NVIC_EnableIRQ((IRQn_Type) (irqn))
 #define vIRQ_DisableIRQ(irqn)               NVIC_DisableIRQ((IRQn_Type) (irqn))
+#define vIRQ_DisableAll                     __disable_irq
+#define vIRQ_EnableAll                      __enable_irq
 #define vIRQ_ClearPendingIRQ(irqn)          NVIC_ClearPendingIRQ((IRQn_Type) (irqn))
 #define vIRQ_SetPendingIRQ(irqn)            NVIC_SetPendingIRQ((IRQn_Type) (irqn))
 #define vIRQ_GetPendingIRQ(irqn)            NVIC_GetPendingIRQ((IRQn_Type) (irqn))
