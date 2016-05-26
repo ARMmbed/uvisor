@@ -209,26 +209,31 @@ void unvic_irq_disable_all(void)
 {
     int irqn;
 
-    /* Iterate over all the IRQs owned by the currently active box and disable
-     * them if they were active before the function call. */
-    for (irqn = 0; irqn < NVIC_VECTORS; irqn++) {
-        if (g_unvic_vector[irqn].id == g_active_box && UNVIC_IS_IRQ_ENABLED(irqn)) {
-            /* Note: We only disable the IRQs if the counter is 0. */
-            if (!g_irq_disable_all_counter[g_active_box]) {
+    /* Only disable all IRQs if this is the first time that this function is
+     * called. */
+    if (g_irq_disable_all_counter[g_active_box] == 0) {
+        /* Iterate over all the IRQs owned by the currently active box and
+         * disable them if they were active before the function call. */
+        for (irqn = 0; irqn < NVIC_VECTORS; irqn++) {
+            if (g_unvic_vector[irqn].id == g_active_box && UNVIC_IS_IRQ_ENABLED(irqn)) {
                 /* Remember the state for this IRQ. The state is the NVIC one,
                  * so we are sure we don't enable spurious interrupts. */
                 g_unvic_vector[irqn].was_enabled = true;
 
                 /* Disable the IRQ. */
                 NVIC_DisableIRQ(irqn);
+            } else {
+                g_unvic_vector[irqn].was_enabled = false;
             }
-        } else {
-            g_unvic_vector[irqn].was_enabled = false;
         }
     }
 
-    /* Increase the counter. */
-    g_irq_disable_all_counter[g_active_box]++;
+    /* Increment the counter of disable-all calls. */
+    if (g_irq_disable_all_counter[g_active_box] < UINT32_MAX - 1) {
+        g_irq_disable_all_counter[g_active_box]++;
+    } else {
+        HALT_ERROR(SANITY_CHECK_FAILED, "Overflow of the disable-all calls counter.");
+    }
 
     if (g_irq_disable_all_counter[g_active_box] == 1) {
         DPRINTF("All IRQs for box %d have been disabled.\r\n", g_active_box);
@@ -252,29 +257,31 @@ void unvic_irq_enable_all(void)
 {
     int irqn;
 
-    /* Decrease the counter.
-     * We do not fail explicitly if the counter is 0, because it just means
-     * someone enabled all IRQs without having disabled them first, which is
-     * acceptable (in one single box). */
-    if (g_irq_disable_all_counter[g_active_box]) {
-        g_irq_disable_all_counter[g_active_box]--;
+    /* Only re-enable all IRQs if this is the last time that this function is
+     * called. */
+    if (g_irq_disable_all_counter[g_active_box] == 1) {
+        /* Iterate over all the IRQs owned by the currently active box and
+         * re-enable them if they were either (i.) enabled before the
+         * disable-all phase, or (ii.) enabled during the disable-all phase. */
+        for (irqn = 0; irqn < NVIC_VECTORS; irqn++) {
+            if (g_unvic_vector[irqn].id == g_active_box && g_unvic_vector[irqn].was_enabled) {
+                /* Re-enable the IRQ. */
+                NVIC_EnableIRQ(irqn);
+
+                /* Reset the state. This is only needed in case someone calls
+                 * this function without having previously called the
+                 * disable-all one. */
+                g_unvic_vector[irqn].was_enabled = false;
+            }
+        }
     }
 
-    /* Iterate over all the IRQs owned by the currently active box and
-     * re-enable them if they were either (i.) enabled before the disable-all
-     * phase, or (ii.) enabled during the disable-all phase. */
-    /* Note: IRQs are re-enabled only if the counter is 0. */
-    for (irqn = 0; irqn < NVIC_VECTORS; irqn++) {
-        if (g_unvic_vector[irqn].id == g_active_box && g_unvic_vector[irqn].was_enabled &&
-            !g_irq_disable_all_counter[g_active_box]) {
-            /* Re-enable the IRQ. */
-            NVIC_EnableIRQ(irqn);
-
-            /* Reset the state. This is only needed in case someone calls
-             * this function without having previously called the
-             * disable-all one. */
-            g_unvic_vector[irqn].was_enabled = false;
-        }
+    /* Decrease the counter of calls to disable-all. */
+    /* Note: We do not fail explicitly if the counter is 0, because it just
+     * means someone enabled all IRQs without having disabled them first, which
+     * is acceptable (in one single box). */
+    if (g_irq_disable_all_counter[g_active_box] > 0) {
+        g_irq_disable_all_counter[g_active_box]--;
     }
 
     if (!g_irq_disable_all_counter[g_active_box]) {
