@@ -17,6 +17,7 @@
 #ifndef __UVISOR_API_EXPORT_TABLE_EXPORTS_H__
 #define __UVISOR_API_EXPORT_TABLE_EXPORTS_H__
 
+#include "rt_OsEventObserver.h"
 #include <stdint.h>
 
 /* If this magic doesn't match what you get in a TUvisorExportTable, then you
@@ -35,6 +36,8 @@ typedef struct {
      * be interpreted correctly. */
     uint32_t magic;
     uint32_t version;
+
+    OsEventObserver os_event_observer;
 
     /* This must be the last element of the table so that uvisor-input.S can
      * export the size statically. */
