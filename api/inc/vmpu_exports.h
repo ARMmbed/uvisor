@@ -41,10 +41,12 @@
                                      UVISOR_TACL_SWRITE         |\
                                      UVISOR_TACL_SEXECUTE)
 
-#define UVISOR_TACL_EXECUTE (UVISOR_TACL_UEXECUTE | UVISOR_TACL_SEXECUTE)
+#define UVISOR_TACL_EXECUTE         (UVISOR_TACL_UEXECUTE       |\
+                                     UVISOR_TACL_SEXECUTE)
 
 /* all possible access control flags */
-#define UVISOR_TACL_ACCESS          (UVISOR_TACL_UACL | UVISOR_TACL_SACL)
+#define UVISOR_TACL_ACCESS          (UVISOR_TACL_UACL           |\
+                                     UVISOR_TACL_SACL)
 
 /* various modes */
 #define UVISOR_TACL_STACK           0x0040UL
@@ -60,8 +62,8 @@
 /* subregion mask for ARMv7M */
 #if defined(ARCH_MPU_ARMv7M)
 #define UVISOR_TACL_SUBREGIONS_POS  24
-#define UVISOR_TACL_SUBREGIONS_MASK (0xFFUL<<UVISOR_TACL_SUBREGIONS_POS)
-#define UVISOR_TACL_SUBREGIONS(x)   ( (((uint32_t)(x))<<UVISOR_TACL_SUBREGIONS_POS) & UVISOR_TACL_SUBREGIONS_MASK )
+#define UVISOR_TACL_SUBREGIONS_MASK (0xFFUL << UVISOR_TACL_SUBREGIONS_POS)
+#define UVISOR_TACL_SUBREGIONS(x)   ( (((uint32_t) (x)) << UVISOR_TACL_SUBREGIONS_POS) & UVISOR_TACL_SUBREGIONS_MASK )
 #endif
 
 #endif /* defined(UVISOR_PRESENT) && UVISOR_PRESENT == 1 */
@@ -98,7 +100,7 @@
 #define UVISOR_MEM_SIZE_ROUND(x)    UVISOR_REGION_ROUND_UP(x)
 
 #define UVISOR_MIN_STACK_SIZE       1024
-#define UVISOR_MIN_STACK(x)         (((x)<UVISOR_MIN_STACK_SIZE)?UVISOR_MIN_STACK_SIZE:(x))
+#define UVISOR_MIN_STACK(x)         (((x) < UVISOR_MIN_STACK_SIZE) ? UVISOR_MIN_STACK_SIZE : (x))
 
 #if defined(UVISOR_PRESENT) && UVISOR_PRESENT == 1
 
@@ -136,22 +138,20 @@
 
 typedef uint32_t UvisorBoxAcl;
 
-typedef struct
-{
-    void* param1;
+typedef struct {
+    void * param1;
     uint32_t param2;
     UvisorBoxAcl acl;
 } UVISOR_PACKED UvisorBoxAclItem;
 
-typedef struct
-{
+typedef struct {
     uint32_t magic;
     uint32_t version;
     uint32_t stack_size;
     uint32_t context_size;
-    const char* box_namespace;
+    const char * box_namespace;
 
-    const UvisorBoxAclItem* const acl_list;
+    const UvisorBoxAclItem * const acl_list;
     uint32_t acl_count;
 } UVISOR_PACKED UvisorBoxConfig;
 
