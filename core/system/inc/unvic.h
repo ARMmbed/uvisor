@@ -60,12 +60,12 @@ extern void unvic_init(void);
  * box and keeps a state on whether they were enabled before this operation. The
  * state is then used when re-enabiling the interrupts later on, in
  * ::unvic_irq_enable_all. */
-extern void     unvic_irq_disable_all(void);
+extern void unvic_irq_disable_all(void);
 
 /** Re-enable all previously interrupts for the currently active box.
  *
  * This function re-enables all interrupts that belong to the current box and
  * that were previously disabled with the ::unvic_irq_disable_all function. */
-extern void     unvic_irq_enable_all(void);
+extern void unvic_irq_enable_all(void);
 
 #endif/*__UNVIC_H__*/
