@@ -33,7 +33,6 @@
 #include "api/inc/interrupts.h"
 #include "api/inc/register_gateway.h"
 #include "api/inc/secure_access.h"
-#include "api/inc/secure_gateway.h"
 
 #else /* defined(UVISOR_PRESENT) && UVISOR_PRESENT == 1 */
 
@@ -46,7 +45,6 @@
  * target platform. */
 #include "api/inc/debug_exports.h"
 #include "api/inc/halt_exports.h"
-#include "api/inc/secure_gateway_exports.h"
 #include "api/inc/svc_exports.h"
 #include "api/inc/unvic_exports.h"
 #include "api/inc/uvisor_exports.h"
