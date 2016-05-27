@@ -63,11 +63,23 @@ typedef struct {
     /* address of __uvisor_box_context */
     uint32_t **uvisor_box_context;
 
+    /* heap for box zero */
+    uint32_t * heap_start, * heap_end;
+
+    /* heap for page allocator */
+    uint32_t * page_start, * page_end;
+    uint32_t page_size;
+
     /* Physical memories' boundaries */
     uint32_t *flash_start;
     uint32_t *flash_end;
     uint32_t *sram_start;
     uint32_t *sram_end;
+
+    /* Privileged handlers */
+    void (*priv_svc_0)(void);
+    void (*priv_pendsv)(void);
+    void (*priv_systick)(void);
 } UVISOR_PACKED UvisorConfig;
 
 UVISOR_EXTERN const UvisorConfig __uvisor_config;

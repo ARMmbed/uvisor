@@ -83,6 +83,11 @@ SECTIONS
         *(.ramfunc.*)
         *(.data)
         *(.data.*)
+
+        /* The __uvisor_export_table must be placed at the end of flash to work
+         * correctly. */
+        KEEP(*(.uvisor_export_table))
+
         . = ALIGN(4);
         /* All data end */
         __data_end__ = .;

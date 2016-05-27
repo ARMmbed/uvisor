@@ -28,4 +28,12 @@ UVISOR_EXTERN void uvisor_init(void)
     return;
 }
 
+int uvisor_post_init(void)
+{
+    extern const TUvisorExportTable __uvisor_export_table;
+    extern void osRegisterThreadObserver(const ThreadObserver *);
+    osRegisterThreadObserver(&__uvisor_export_table.thread_observer);
+    return 0;
+}
+
 #endif

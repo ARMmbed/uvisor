@@ -147,13 +147,50 @@ typedef struct
 {
     uint32_t magic;
     uint32_t version;
+
+    /* contains all volatile memory of the box */
+    uint32_t bss_size;
+    /* bss memory is broken into:
+       - box index structure
+       - stack size for process
+       - context size for user provided structure
+       - heap for dynamic memory allocation
+    */
     uint32_t stack_size;
     uint32_t context_size;
-    const char* box_namespace;
+    uint32_t heap_size;
 
+    const char* box_namespace;
     const UvisorBoxAclItem* const acl_list;
     uint32_t acl_count;
 } UVISOR_PACKED UvisorBoxConfig;
+
+typedef struct
+{
+    /* Pointer to the user context */
+    void * ctx;
+    /* Pointer to the box heap */
+    void * process_heap;
+    /* Size of the box heap */
+    uint32_t process_heap_size;
+    /* Pointer to the currently active heap */
+    void * active_heap;
+    /* Cache of the box_id */
+    int box_id;
+} UVISOR_PACKED UvisorBoxIndex;
+
+/* XXX Move into CMSIS-RTOS! */
+typedef struct
+{
+    UvisorBoxIndex index;
+
+    /* Id of the mutex */
+    void * mutex_id;
+    /* Pointer to the data of the mutex */
+    void * mutex;
+    /* Internal data of the mutex */
+    int32_t mutex_data[4];
+} UVISOR_PACKED UvisorBoxIndexOS;
 
 /*
  * only use this macro for rounding const values during compile time:
@@ -170,11 +207,9 @@ typedef struct
     28:(((x)<=536870912UL)?29:(((x)<=1073741824UL)?30:(((x)<=2147483648UL)?\
     31:32)))))))))))))))))))))))))))
 
-#if defined(UVISOR_PRESENT) && UVISOR_PRESENT == 1
 static UVISOR_FORCEINLINE int vmpu_bits(uint32_t size)
 {
     return 32 - __builtin_clz(size);
 }
-#endif /* defined(UVISOR_PRESENT) && UVISOR_PRESENT == 1 */
 
 #endif /* __UVISOR_API_VMPU_EXPORTS_H__ */

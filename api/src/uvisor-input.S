@@ -15,10 +15,15 @@
  * limitations under the License.
  */
 .globl uvisor_init
+.globl uvisor_export_table_size
 .globl uvisor_config
-.globl uvisor_ctx
+.globl __uvisor_ps
 .type  uvisor_init, %function
 .weak  __uvisor_mode
+.weak  __uvisor_page_size
+.weak  SVC_Handler
+.weak  PendSV_Handler
+.weak  SysTick_Handler
 
 .section .uvisor.main, "x"
     .thumb
@@ -27,6 +32,12 @@
 uvisor_init:
     /* uvisor - precompiled blob */
     .incbin UVISOR_BIN
+
+/* The size of the uVisor export table is a uint32_t located at the end of the
+ * uVisor binary. The uVisor export table is located at size number of bytes
+ * before the end of the uVisor binary. Size includes the 4 bytes for size
+ * itself. */
+.set uvisor_export_table_size, uvisor_config - 4
 
 uvisor_config:
     /* uvisor expects its configuration section right
@@ -76,19 +87,50 @@ uvisor_config:
     /* pointer to __uvisor_box_context */
     .long __uvisor_box_context
 
+    /* start and end address of box zero heap */
+    .long __uvisor_heap_start
+    .long __uvisor_heap_end
+
+    /* start and end address and page size of page heap */
+    .long __uvisor_page_start
+    .long __uvisor_page_end
+    .long __uvisor_page_size
+
     /* Physical memories' boundaries */
     .long __uvisor_flash_start;
     .long __uvisor_flash_end;
     .long __uvisor_sram_start;
     .long __uvisor_sram_end;
 
+    /* Privileged handlers */
+    /* These have the same name as the CMSIS interrupt handlers on purpose, so
+     * we can re-use those already defined handlers and avoid modifying
+     * pre-existing applications for uVisor compatibility. */
+    .long SVC_Handler
+    .long PendSV_Handler
+    .long SysTick_Handler
+
 __uvisor_mode:
     /* uvisor default mode - user can override weak reference */
     .long 0
 
-.section .bss
+__uvisor_page_size:
+    /* uvisor default page size is 16kB - user can override weak reference */
+    .long 16384
+
+    /* Default privileged handlers */
+SVC_Handler:
+    .long 0
+
+PendSV_Handler:
+    .long 0
+
+SysTick_Handler:
+    .long 0
+
+.section .uninitialized
 __uvisor_box_context:
-uvisor_ctx:
+__uvisor_ps:
     .long 0
 
 .section .keep.uvisor.bss.main, "awM", @nobits
