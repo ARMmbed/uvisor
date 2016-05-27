@@ -105,6 +105,11 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
         "ldrt   r1, [r0, #24]\n"            // stacked pc
         "add    r1, r1, #-2\n"              // pc at SVC call
         "ldrbt  r2, [r1]\n"                 // SVC immediate
+        // Call the priviliged SVC 0 handler, keeping LR as EXC_RETURN.
+        "cbnz   r2, uvisor_unpriv_svc_handler\n" // If SVC is not 0: run uVisor handler
+        "ldr    r0, %[priv_svc_0]\n"
+        "bx     r0\n"                       // Run the priv_svc_0 hook.
+    "uvisor_unpriv_svc_handler:\n"
         /***********************************************************************
          *  ATTENTION
          ***********************************************************************
@@ -173,6 +178,11 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
         "ldr    r1, [r0, #24]\n"                    // stacked pc
         "add    r1, r1, #-2\n"                      // pc at SVC call
         "ldrb   r2, [r1]\n"                         // SVC immediate
+        // Call the priviliged SVC 0 handler, keeping LR as EXC_RETURN.
+        "cbnz   r2, uvisor_priv_svc_handler\n"      // If SVC is not 0: run uVisor handler
+        "ldr    r0, %[priv_svc_0]\n"
+        "bx     r0\n"                               // Run the priv_svc_0 hook.
+    "uvisor_priv_svc_handler:\n"
         /***********************************************************************
          *  ATTENTION
          ***********************************************************************
@@ -234,7 +244,8 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
 
         :: [svc_mode_mask]       "I" ((UVISOR_SVC_MODE_MASK) & 0xFF),
            [svc_fast_index_mask] "I" ((UVISOR_SVC_FAST_INDEX_MASK) & 0xFF),
-           [svc_vtor_tbl_count]  "i" (UVISOR_ARRAY_COUNT(g_svc_vtor_tbl) - 1)
+           [svc_vtor_tbl_count]  "i" (UVISOR_ARRAY_COUNT(g_svc_vtor_tbl) - 1),
+           [priv_svc_0]          "m" (g_priv_sys_irq_hooks.priv_svc_0)
     );
 }
 

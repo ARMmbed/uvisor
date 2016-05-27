@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2013-2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -111,6 +111,14 @@ void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
 
         case DebugMonitor_IRQn:
             DEBUG_FAULT(FAULT_DEBUG, lr, lr & 0x4 ? psp : msp);
+            break;
+
+        case PendSV_IRQn:
+            HALT_ERROR(NOT_IMPLEMENTED, "No PendSV IRQ hook registered");
+            break;
+
+        case SysTick_IRQn:
+            HALT_ERROR(NOT_IMPLEMENTED, "No SysTick IRQ hook registered");
             break;
 
         default:

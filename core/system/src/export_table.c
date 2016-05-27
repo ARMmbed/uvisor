@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, ARM Limited, All Rights Reserved
+ * Copyright (c) 2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -14,23 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "uvisor-lib/uvisor-lib.h"
+#include "api/inc/export_table_exports.h"
 
-#if !(defined(UVISOR_PRESENT) && (UVISOR_PRESENT == 1))
-
-/* Note: This file is not included in the uVisor release library. Instead, the
- *       host OS needs to compile it separately if a platform does not support
- *       uVisor (but uVisor API header files are still used). */
-
-/* uVisor hook for unsupported platforms */
-UVISOR_EXTERN void uvisor_init(void)
-{
-    return;
-}
-
-int uvisor_lib_init(void)
-{
-    return 0;
-}
-
-#endif
+/* This table must be located at the end of the uVisor binary so that this
+ * table can be exported correctly. Placing this table into the .export_table
+ * section locates this table at the end of the uVisor binary. */
+__attribute__((section(".export_table")))
+static const TUvisorExportTable __uvisor_export_table = {
+    .magic = UVISOR_EXPORT_MAGIC,
+    .version = UVISOR_EXPORT_VERSION,
+    .size = sizeof(TUvisorExportTable)
+};

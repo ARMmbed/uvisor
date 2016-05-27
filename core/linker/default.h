@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2013-2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -60,7 +60,7 @@ SECTIONS
         . = ALIGN(512);
         *(.isr*)
         PROVIDE(__data_start_src__ = LOADADDR(.data));
-        PROVIDE(__uvisor_config = LOADADDR(.data) + SIZEOF(.data));
+        PROVIDE(__uvisor_config = LOADADDR(.export_table) + SIZEOF(.export_table));
         PROVIDE(__stack_start__ = ORIGIN(STACK));
         PROVIDE(__stack_top__ = ORIGIN(STACK) + LENGTH(STACK) - STACK_GUARD_BAND);
         PROVIDE(__stack_end__ = ORIGIN(STACK) + LENGTH(STACK));
@@ -87,6 +87,13 @@ SECTIONS
         /* All data end */
         __data_end__ = .;
     } > RAM AT>FLASH
+
+    .export_table :
+    {
+        /* The __uvisor_export_table must be placed at the very end of the
+         * uVisor binary to work correctly. */
+        KEEP(*(.export_table))
+    } > FLASH
 
     .bss (NOLOAD):
     {
