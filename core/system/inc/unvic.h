@@ -63,9 +63,8 @@ extern void unvic_init(void);
  *
  * @warning This function trusts the SVCall parameters that are passed to it.
  *
- * @param svc_sp[in]    Unprivileged stack pointer at the time of the secure
- *                      gateway
- * @param svc_pc[in]    Program counter at the time of the secure gateway */
+ * @param svc_sp[in]    Unprivileged stack pointer at the time of the interrupt
+ * @param svc_pc[in]    Program counter at the time of the interrupt */
 void UVISOR_NAKED unvic_gateway_in(uint32_t svc_sp, uint32_t svc_pc);
 
 /** Perform a context switch-out as a result of an interrupt request.
@@ -77,8 +76,8 @@ void UVISOR_NAKED unvic_gateway_in(uint32_t svc_sp, uint32_t svc_pc);
  *
  * @warning This function trusts the SVCall parameters that are passed to it.
  *
- * @param svc_sp[in]    Unprivileged stack pointer at the time of the secure
- *                      gateway return handler (thunk) */
+ * @param svc_sp[in]    Unprivileged stack pointer at the time of the interrupt
+ *                      return handler (thunk) */
 void UVISOR_NAKED unvic_gateway_out(uint32_t svc_sp);
 
 /** Disable all interrupts for the currently active box.
