@@ -69,6 +69,10 @@ typedef struct {
     uint32_t * cfgtbl_ptr_start;
     uint32_t * cfgtbl_ptr_end;
 
+    /* Pointers to the secure boxes register gateways */
+    uint32_t * register_gateway_ptr_start;
+    uint32_t * register_gateway_ptr_end;
+
     /* Address of __uvisor_box_context */
     uint32_t * * uvisor_box_context;
 
