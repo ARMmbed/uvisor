@@ -42,7 +42,7 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
         UVISOR_BOX_MAGIC, \
         UVISOR_BOX_VERSION, \
         0, \
-        sizeof(UvisorBoxIndex), \
+        sizeof(RtxBoxIndex), \
         0, \
         0, \
         NULL, \
@@ -64,7 +64,7 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
                     (UVISOR_MIN_STACK(stack_size) + \
                     (context_size) + \
                     (__uvisor_box_heapsize) + \
-                    sizeof(UvisorBoxIndex) \
+                    sizeof(RtxBoxIndex) \
                 ) \
             * 8) \
         / 6)]; \
@@ -73,7 +73,7 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
         UVISOR_BOX_MAGIC, \
         UVISOR_BOX_VERSION, \
         UVISOR_MIN_STACK(stack_size), \
-        sizeof(UvisorBoxIndex), \
+        sizeof(RtxBoxIndex), \
         context_size, \
         __uvisor_box_heapsize, \
         __uvisor_box_namespace, \
