@@ -22,6 +22,7 @@
 .weak  __uvisor_mode
 .weak  __uvisor_page_size
 .globl __uvisor_priv_sys_irq_hooks
+.weak  __uvisor_box_index_size
 
 .section .uvisor.main, "x"
     .thumb
@@ -84,6 +85,7 @@ uvisor_config:
 
     /* pointer to __uvisor_box_context */
     .long __uvisor_box_context
+    .long __uvisor_box_index_size
 
     /* start and end address and page size of page heap */
     .long __uvisor_page_start
@@ -106,6 +108,10 @@ __uvisor_mode:
 __uvisor_page_size:
     /* uvisor default page size is 16kB - user can override weak reference */
     .long 16384
+
+__uvisor_box_index_size:
+    /* default index size is 64B - user can override weak reference */
+    .long 64
 
 .section .bss
 __uvisor_box_context:
