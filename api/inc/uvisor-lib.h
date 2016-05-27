@@ -33,7 +33,6 @@
 #include "api/inc/interrupts.h"
 #include "api/inc/register_gateway.h"
 #include "api/inc/secure_access.h"
-#include "api/inc/secure_gateway.h"
 
 #else /* defined(UVISOR_PRESENT) && UVISOR_PRESENT == 1 */
 
@@ -52,7 +51,6 @@ UVISOR_EXTERN int uvisor_lib_init(void);
 #include "api/inc/debug_exports.h"
 #include "api/inc/export_table_exports.h"
 #include "api/inc/halt_exports.h"
-#include "api/inc/secure_gateway_exports.h"
 #include "api/inc/svc_exports.h"
 #include "api/inc/priv_sys_irq_hook_exports.h"
 #include "api/inc/unvic_exports.h"
