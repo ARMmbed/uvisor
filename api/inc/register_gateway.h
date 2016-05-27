@@ -32,8 +32,8 @@
 #error "Unsupported instruction set. The ARM Thumb-2 instruction set must be supported."
 #endif /* __thumb__ && __thumb2__ */
 
-/* register gateway operations */
-/* note: do not use special characters as these numbers will be stringified */
+/* Register gateway operations */
+/* Note: Do not use special characters as these numbers will be stringified. */
 #define UVISOR_OP_READ(op)  (op)
 #define UVISOR_OP_WRITE(op) ((1 << 4) | (op))
 #define UVISOR_OP_NOP       0x0
@@ -41,17 +41,17 @@
 #define UVISOR_OP_OR        0x2
 #define UVISOR_OP_XOR       0x3
 
-/* default mask for whole register operatins */
+/* Default mask for whole register operatins. */
 #define __UVISOR_OP_DEFAULT_MASK 0x0
 
-/* register gateway metadata */
+/* Register gateway metadata */
 #if defined(__CC_ARM)
 
 /* TODO/FIXME */
 
 #elif defined(__GNUC__)
 
-/* 1 argument: simple read, no mask */
+/* 1 argument: Simple read, no mask */
 #define __UVISOR_REGISTER_GATEWAY_METADATA1(src_box, addr) \
     "b.n skip_args%=\n" \
     ".word " UVISOR_TO_STRING(UVISOR_REGISTER_GATEWAY_MAGIC) "\n" \
@@ -61,7 +61,7 @@
     ".word " UVISOR_TO_STRING(__UVISOR_OP_DEFAULT_MASK) "\n" \
     "skip_args%=:\n"
 
-/* 2 arguments: simple write, no mask */
+/* 2 arguments: Simple write, no mask */
 #define __UVISOR_REGISTER_GATEWAY_METADATA2(src_box, addr, val) \
     "b.n skip_args%=\n" \
     ".word " UVISOR_TO_STRING(UVISOR_REGISTER_GATEWAY_MAGIC) "\n" \
@@ -71,7 +71,7 @@
     ".word " UVISOR_TO_STRING(__UVISOR_OP_DEFAULT_MASK) "\n" \
     "skip_args%=:\n"
 
-/* 3 arguments: masked read */
+/* 3 arguments: Masked read */
 #define __UVISOR_REGISTER_GATEWAY_METADATA3(src_box, addr, op, mask) \
     "b.n skip_args%=\n" \
     ".word " UVISOR_TO_STRING(UVISOR_REGISTER_GATEWAY_MAGIC) "\n" \
@@ -81,7 +81,7 @@
     ".word " UVISOR_TO_STRING(mask) "\n" \
     "skip_args%=:\n"
 
-/* 4 arguments: masked write */
+/* 4 arguments: Masked write */
 #define __UVISOR_REGISTER_GATEWAY_METADATA4(src_box, addr, val, op, mask) \
     "b.n skip_args%=\n" \
     ".word " UVISOR_TO_STRING(UVISOR_REGISTER_GATEWAY_MAGIC) "\n" \
@@ -98,10 +98,11 @@
                                               __UVISOR_REGISTER_GATEWAY_METADATA3, \
                                               __UVISOR_REGISTER_GATEWAY_METADATA2, \
                                               __UVISOR_REGISTER_GATEWAY_METADATA1, \
-                                              /* no macro for 0 args */          )(src_box, ##__VA_ARGS__)
+                                              /* No macro for 0 args */          )(src_box, ##__VA_ARGS__)
 
-/* register-level gateway - read */
-/* FIXME currently only a hardcoded 32bit constant can be used for the addr field */
+/* Rregister-level gateway - Read */
+/* FIXME: Currently only a hardcoded 32bit constant can be used for the addr
+ *        field. */
 #define uvisor_read(src_box, ...) \
     ({ \
         uint32_t res = UVISOR_SVC(UVISOR_SVC_ID_REGISTER_GATEWAY, \
@@ -109,7 +110,7 @@
         res; \
     })
 
-/* register-level gateway - write */
+/* Register-level gateway - Write */
 #define uvisor_write(src_box, addr, val, ...) \
     ({ \
         UVISOR_SVC(UVISOR_SVC_ID_REGISTER_GATEWAY, \
