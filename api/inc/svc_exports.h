@@ -120,6 +120,9 @@
 /* SVC immediate values for hardcoded table (call from privileged) */
 #define UVISOR_SVC_ID_UNVIC_IN         UVISOR_SVC_FIXED_TABLE(0, 0)
 
+/** Generate the SVCall opcode from the SVC ID. */
+#define UVISOR_SVC_OPCODE(id) ((uint16_t) 0xDF00 | (uint8_t) ((id) & 0xFF))
+
 /* macro to execute an SVCall; additional metadata can be provided, which will
  * be appended right after the svc instruction */
 /* note: the macro is implicitly overloaded to allow 0 to 4 32bits arguments */

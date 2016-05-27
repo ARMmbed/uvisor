@@ -79,6 +79,10 @@ uvisor_config:
     .long __uvisor_cfgtbl_ptr_start
     .long __uvisor_cfgtbl_ptr_end
 
+    /* Pointers to the secure boxes register gateways */
+    .long __uvisor_register_gateway_ptr_start
+    .long __uvisor_register_gateway_ptr_end
+
     /* Address of __uvisor_box_context */
     .long __uvisor_box_context
 
