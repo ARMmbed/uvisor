@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 #include <uvisor.h>
-#include "vmpu.h"
+#include "debug.h"
 #include "svc.h"
 #include "unvic.h"
-#include "debug.h"
+#include "vmpu.h"
 
 TIsrVector g_isr_vector_prev;
 

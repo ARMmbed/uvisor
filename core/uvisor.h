@@ -75,10 +75,10 @@ typedef void (*UnprivilegedBoxEntry)(void);
 #define UVISOR_NAKED       __attribute__((naked))
 
 /* system wide error codes  */
-#include <iot-error.h>
+#include "iot-error.h"
 
 /* IOT-OS specific includes */
-#include <linker.h>
+#include "linker.h"
 
 /* System IRQ vector table and default ISRs */
 #include "system.h"

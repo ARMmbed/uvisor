@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 #include <uvisor.h>
-#include "halt.h"
 #include "debug.h"
+#include "halt.h"
 
 static void halt_putcp(void* p, char c)
 {

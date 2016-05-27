@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2013-2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -14,11 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __SVC_H__
-#define __SVC_H__
+#ifndef __UVISOR_SECURE_GATEWAY_EXPORTS_H__
+#define __UVISOR_SECURE_GATEWAY_EXPORTS_H__
 
-#include "api/inc/svc_exports.h"
+/** Magic value used to identify a secure gateway in flash. */
+#define UVISOR_SECURE_GATEWAY_MAGIC 0xABCDABCD
 
-void svc_init(void);
-
-#endif/*__SVC_H__*/
+#endif /* __UVISOR_SECURE_GATEWAY_EXPORTS_H__ */
