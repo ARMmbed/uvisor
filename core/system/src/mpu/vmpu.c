@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 #include <uvisor.h>
-#include "vmpu.h"
-#include "svc.h"
+#include "debug.h"
+#include "context.h"
 #include "halt.h"
 #include "memory_map.h"
-#include "debug.h"
+#include "svc.h"
+#include "vmpu.h"
 
 #ifndef MPU_MAX_PRIVATE_FUNCTIONS
 #define MPU_MAX_PRIVATE_FUNCTIONS 16
@@ -38,7 +39,6 @@
 
 uint32_t  g_vmpu_box_count;
 bool g_vmpu_boxes_counted;
-uint8_t g_active_box;
 
 static int vmpu_sanity_checks(void)
 {
@@ -165,6 +165,48 @@ static void vmpu_sanity_check_box_namespace(int box_id, const char *const box_na
     } while (box_namespace[length]);
 }
 
+static void vmpu_box_index_init(uint8_t box_id, const UvisorBoxConfig *const config)
+{
+    void *box_bss;
+    UvisorBoxIndex *index;
+    uint32_t heap_size = config->heap_size;
+    const uint32_t index_size = __uvisor_config.box_index_size;
+
+    if (box_id == 0)
+    {
+        /* box 0 still uses the main heap to be backwards compatible */
+        g_context_current_states[0].context = (uint32_t) __uvisor_config.heap_start;
+        heap_size = ((void*)__uvisor_config.heap_end -
+                     (void*)__uvisor_config.heap_start) -
+                    index_size;
+    }
+
+    box_bss = (void *) g_context_current_states[box_id].context;
+
+    /* The box index is at the beginning of the bss section */
+    index = box_bss;
+    /* Zero the _entire_ index, so that user data inside the box index is in a
+     * known state! This allows checking variables for `NULL`, or `0`, which
+     * indicates an initialization requirement. */
+    memset(box_bss, 0, index_size);
+    box_bss += index_size;
+    /* Initialize user context */
+    index->ctx = config->context_size ? box_bss : NULL;
+    box_bss += config->context_size;
+    /* Initialize process heap */
+    index->process_heap = heap_size ? box_bss : NULL;
+    index->process_heap_size = heap_size;
+    /* Active heap pointer is NULL, indicating that the process heap needs to
+     * be initialized on first malloc call! */
+    index->active_heap = NULL;
+
+    /* Cache the box id */
+    index->box_id = box_id;
+
+    /* point to the box config */
+    index->config = config;
+}
+
 static void vmpu_load_boxes(void)
 {
     int i, count;
@@ -221,8 +263,14 @@ static void vmpu_load_boxes(void)
          * sizes are resolved later in vmpu_initialize_stacks */
         vmpu_acl_stack(
             box_id,
-            (*box_cfgtbl)->context_size,
+            (*box_cfgtbl)->bss_size,
             (*box_cfgtbl)->stack_size
+        );
+
+        /* initialize box index */
+        vmpu_box_index_init(
+            box_id,
+            *box_cfgtbl
         );
 
         /* enumerate box ACLs */
@@ -261,6 +309,7 @@ static void vmpu_load_boxes(void)
 
     /* load box 0 */
     vmpu_load_box(0);
+    *(__uvisor_config.uvisor_box_context) = (uint32_t *) g_context_current_states[0].context;
 
     DPRINTF("vmpu_load_boxes [DONE]\n");
 }
@@ -423,21 +472,20 @@ int vmpu_box_id_self(void)
 
 int vmpu_box_id_caller(void)
 {
-    TBoxCx *box_ctx;
+    TContextPreviousState * previous_state;
 
-    if (g_svc_cx_state_ptr < 1) {
+    previous_state = context_state_previous();
+    if (previous_state == NULL) {
         /* There is no previous context. */
         return -1;
     }
 
-    box_ctx = &g_svc_cx_state[g_svc_cx_state_ptr - 1];
-
-    if (box_ctx->type != TBOXCX_SECURE_GATEWAY) {
+    if (previous_state->type != CONTEXT_SWITCH_FUNCTION_GATEWAY) {
         /* The previous context is not a secure gateway. */
         return -1;
+    } else {
+        return previous_state->src_id;
     }
-
-    return box_ctx->src_id;
 }
 
 static int copy_box_namespace(const char *src, char *dst)

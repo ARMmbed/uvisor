@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2013-2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -16,6 +16,8 @@
  */
 #ifndef __LINKER_H__
 #define __LINKER_H__
+
+#include "api/inc/priv_sys_irq_hook_exports.h"
 
 UVISOR_EXTERN const uint32_t __code_end__;
 UVISOR_EXTERN const uint32_t __stack_start__;
@@ -62,12 +64,23 @@ typedef struct {
 
     /* address of __uvisor_box_context */
     uint32_t **uvisor_box_context;
+    uint32_t box_index_size;
+
+    /* heap for box zero */
+    uint32_t * heap_start, * heap_end;
+
+    /* heap for page allocator */
+    uint32_t * page_start, * page_end;
+    uint32_t page_size;
 
     /* Physical memories' boundaries */
     uint32_t *flash_start;
     uint32_t *flash_end;
     uint32_t *sram_start;
     uint32_t *sram_end;
+
+    /* Privileged system IRQ hooks */
+    const UvisorPrivSystemIRQHooks * const priv_sys_irq_hooks;
 } UVISOR_PACKED UvisorConfig;
 
 UVISOR_EXTERN const UvisorConfig __uvisor_config;

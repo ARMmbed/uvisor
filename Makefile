@@ -95,12 +95,14 @@ endif
 
 SOURCES:=\
          $(CORE_SYSTEM_DIR)/src/benchmark.c \
+         $(CORE_SYSTEM_DIR)/src/context.c \
          $(CORE_SYSTEM_DIR)/src/halt.c \
          $(CORE_SYSTEM_DIR)/src/main.c \
+         $(CORE_SYSTEM_DIR)/src/page_allocator.c \
          $(CORE_SYSTEM_DIR)/src/stdlib.c \
          $(CORE_SYSTEM_DIR)/src/svc.c \
-         $(CORE_SYSTEM_DIR)/src/svc_cx.c \
          $(CORE_SYSTEM_DIR)/src/unvic.c \
+         $(CORE_SYSTEM_DIR)/src/export_table.c \
          $(CORE_SYSTEM_DIR)/src/system.c \
          $(CORE_SYSTEM_DIR)/src/mpu/vmpu.c \
          $(CORE_DEBUG_DIR)/src/debug.c \

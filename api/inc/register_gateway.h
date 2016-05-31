@@ -20,6 +20,18 @@
 #include "api/inc/uvisor_exports.h"
 #include <stdint.h>
 
+/* The following magic is used to verify that a register gateway structure. It
+ * has been generated starting from the ARM Thumb/Thumb-2 invalid opcode.
+ * ARM Thumb (w/o the Thumb-2 extension): 0xF7FxAxxx (32 bits)
+ * The 'x's can be freely chosen (they have been chosen randomly here).
+ * This requires the Thumb-2 extensions because otherwise only 16 bits opcodes
+ * are accepted.*/
+#if defined(__thumb__) && defined(__thumb2__)
+#define UVISOR_REGISTER_GATEWAY_MAGIC 0xF7F3A89E
+#else
+#error "Unsupported instruction set. The ARM Thumb-2 instruction set must be supported."
+#endif /* __thumb__ && __thumb2__ */
+
 /* register gateway operations */
 /* note: do not use special characters as these numbers will be stringified */
 #define UVISOR_OP_READ(op)  (op)
@@ -42,7 +54,7 @@
 /* 1 argument: simple read, no mask */
 #define __UVISOR_REGISTER_GATEWAY_METADATA1(src_box, addr) \
     "b.n skip_args%=\n" \
-    ".word " UVISOR_TO_STRING(UVISOR_SVC_GW_MAGIC) "\n" \
+    ".word " UVISOR_TO_STRING(UVISOR_REGISTER_GATEWAY_MAGIC) "\n" \
     ".word " UVISOR_TO_STRING(addr) "\n" \
     ".word " UVISOR_TO_STRING(src_box) "_cfg_ptr\n" \
     ".word " UVISOR_TO_STRING(UVISOR_OP_READ(UVISOR_OP_NOP)) "\n" \
@@ -52,7 +64,7 @@
 /* 2 arguments: simple write, no mask */
 #define __UVISOR_REGISTER_GATEWAY_METADATA2(src_box, addr, val) \
     "b.n skip_args%=\n" \
-    ".word " UVISOR_TO_STRING(UVISOR_SVC_GW_MAGIC) "\n" \
+    ".word " UVISOR_TO_STRING(UVISOR_REGISTER_GATEWAY_MAGIC) "\n" \
     ".word " UVISOR_TO_STRING(addr) "\n" \
     ".word " UVISOR_TO_STRING(src_box) "_cfg_ptr\n" \
     ".word " UVISOR_TO_STRING(UVISOR_OP_WRITE(UVISOR_OP_NOP)) "\n" \
@@ -62,7 +74,7 @@
 /* 3 arguments: masked read */
 #define __UVISOR_REGISTER_GATEWAY_METADATA3(src_box, addr, op, mask) \
     "b.n skip_args%=\n" \
-    ".word " UVISOR_TO_STRING(UVISOR_SVC_GW_MAGIC) "\n" \
+    ".word " UVISOR_TO_STRING(UVISOR_REGISTER_GATEWAY_MAGIC) "\n" \
     ".word " UVISOR_TO_STRING(addr) "\n" \
     ".word " UVISOR_TO_STRING(src_box) "_cfg_ptr\n" \
     ".word " UVISOR_TO_STRING(UVISOR_OP_READ(op)) "\n" \
@@ -72,7 +84,7 @@
 /* 4 arguments: masked write */
 #define __UVISOR_REGISTER_GATEWAY_METADATA4(src_box, addr, val, op, mask) \
     "b.n skip_args%=\n" \
-    ".word " UVISOR_TO_STRING(UVISOR_SVC_GW_MAGIC) "\n" \
+    ".word " UVISOR_TO_STRING(UVISOR_REGISTER_GATEWAY_MAGIC) "\n" \
     ".word " UVISOR_TO_STRING(addr) "\n" \
     ".word " UVISOR_TO_STRING(src_box) "_cfg_ptr\n" \
     ".word " UVISOR_TO_STRING(UVISOR_OP_WRITE(op)) "\n" \

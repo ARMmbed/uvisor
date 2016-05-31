@@ -18,8 +18,8 @@
 #define __DEBUG_H__
 
 #include <uvisor.h>
-#include "api/inc/debug_exports.h"
 #include "halt.h"
+#include "api/inc/debug_exports.h"
 
 /* Debug box handle.
  * This is used internally by uVisor to keep track of the registered debug box

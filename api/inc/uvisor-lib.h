@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2013-2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -33,7 +33,6 @@
 #include "api/inc/interrupts.h"
 #include "api/inc/register_gateway.h"
 #include "api/inc/secure_access.h"
-#include "api/inc/secure_gateway.h"
 
 #else /* defined(UVISOR_PRESENT) && UVISOR_PRESENT == 1 */
 
@@ -41,15 +40,25 @@
 
 #endif /* defined(UVISOR_PRESENT) && UVISOR_PRESENT == 1 */
 
+/* The host startup needs to call this after osKernelInitialize to initialize
+ * uvisor-lib. The function can fail. It's up the the host startup to decide
+ * what to do with any failures. */
+UVISOR_EXTERN int uvisor_lib_init(void);
+
+#include "api/inc/page_allocator.h"
+
 /* Include all exported header files used by uVisor internally.
  * These are included independently on whether uVisor is supported or not by the
  * target platform. */
 #include "api/inc/debug_exports.h"
+#include "api/inc/export_table_exports.h"
 #include "api/inc/halt_exports.h"
 #include "api/inc/svc_exports.h"
-#include "api/inc/svc_gw_exports.h"
+#include "api/inc/priv_sys_irq_hook_exports.h"
 #include "api/inc/unvic_exports.h"
 #include "api/inc/uvisor_exports.h"
 #include "api/inc/vmpu_exports.h"
+#include "api/inc/vmpu_unpriv_access_exports.h"
+#include "api/inc/page_allocator_exports.h"
 
 #endif /* __UVISOR_API_UVISOR_LIB_H__ */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2013-2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -15,10 +15,14 @@
  * limitations under the License.
  */
 .globl uvisor_init
+.globl uvisor_export_table_size
 .globl uvisor_config
-.globl uvisor_ctx
+.globl __uvisor_ps
 .type  uvisor_init, %function
 .weak  __uvisor_mode
+.weak  __uvisor_page_size
+.globl __uvisor_priv_sys_irq_hooks
+.weak  __uvisor_box_index_size
 
 .section .uvisor.main, "x"
     .thumb
@@ -27,6 +31,12 @@
 uvisor_init:
     /* uvisor - precompiled blob */
     .incbin UVISOR_BIN
+
+/* The size of the uVisor export table is a uint32_t located at the end of the
+ * uVisor binary. The uVisor export table is located at size number of bytes
+ * before the end of the uVisor binary. Size includes the 4 bytes for size
+ * itself. */
+.set uvisor_export_table_size, uvisor_config - 4
 
 uvisor_config:
     /* uvisor expects its configuration section right
@@ -75,6 +85,16 @@ uvisor_config:
 
     /* pointer to __uvisor_box_context */
     .long __uvisor_box_context
+    .long __uvisor_box_index_size
+
+    /* start and end address of box zero heap */
+    .long __uvisor_heap_start
+    .long __uvisor_heap_end
+
+    /* start and end address and page size of page heap */
+    .long __uvisor_page_start
+    .long __uvisor_page_end
+    .long __uvisor_page_size
 
     /* Physical memories' boundaries */
     .long __uvisor_flash_start;
@@ -82,13 +102,24 @@ uvisor_config:
     .long __uvisor_sram_start;
     .long __uvisor_sram_end;
 
+    /* Privileged system IRQ hooks */
+    .long __uvisor_priv_sys_irq_hooks
+
 __uvisor_mode:
     /* uvisor default mode - user can override weak reference */
     .long 0
 
-.section .bss
+__uvisor_page_size:
+    /* uvisor default page size is 16kB - user can override weak reference */
+    .long 16384
+
+__uvisor_box_index_size:
+    /* default index size is 64B - user can override weak reference */
+    .long 64
+
+.section .uninitialized
 __uvisor_box_context:
-uvisor_ctx:
+__uvisor_ps:
     .long 0
 
 .section .keep.uvisor.bss.main, "awM", @nobits

@@ -28,4 +28,9 @@ UVISOR_EXTERN void uvisor_init(void)
     return;
 }
 
+int uvisor_lib_init(void)
+{
+    return 0;
+}
+
 #endif

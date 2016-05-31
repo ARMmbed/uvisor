@@ -79,9 +79,10 @@
  * the call interface (number of arguments).
  * This is needed for context switches, since the stack manipulation routines
  * need to know how many arguments to copy from source to destination. */
-#define UVISOR_SVC_FAST_NARGS_BIT    4
-#define UVISOR_SVC_FAST_NARGS_MASK   ((uint8_t) (0x7 << UVISOR_SVC_FAST_NARGS_BIT))
-#define UVISOR_SVC_FAST_NARGS(nargs) ((uint8_t) (((nargs) << UVISOR_SVC_FAST_NARGS_BIT) & UVISOR_SVC_FAST_NARGS_MASK))
+#define UVISOR_SVC_FAST_NARGS_BIT         4
+#define UVISOR_SVC_FAST_NARGS_MASK        ((uint8_t) (0x7 << UVISOR_SVC_FAST_NARGS_BIT))
+#define UVISOR_SVC_FAST_NARGS_SET(nargs)  ((uint8_t) (((nargs) << UVISOR_SVC_FAST_NARGS_BIT) & UVISOR_SVC_FAST_NARGS_MASK))
+#define UVISOR_SVC_FAST_NARGS_GET(svc_id) (((uint8_t) (svc_id) & UVISOR_SVC_FAST_NARGS_MASK) >> UVISOR_SVC_FAST_NARGS_BIT)
 
 /* Macros to build the SVCall imm8 field.
  * For slow APIs only the SVC handler index is needed.
@@ -90,7 +91,7 @@
                                                    UVISOR_SVC_SLOW_INDEX(index)))
 #define UVISOR_SVC_FIXED_TABLE(index, nargs) ((uint8_t) (UVISOR_SVC_MODE(UVISOR_SVC_MODE_FAST) | \
                                                          UVISOR_SVC_FAST_INDEX(index) | \
-                                                         UVISOR_SVC_FAST_NARGS(nargs)))
+                                                         UVISOR_SVC_FAST_NARGS_SET(nargs)))
 
 /* SVC immediate values for custom table */
 #define UVISOR_SVC_ID_ISR_SET               UVISOR_SVC_CUSTOM_TABLE(1)
@@ -112,6 +113,10 @@
 #define UVISOR_SVC_ID_BOX_NAMESPACE_FROM_ID UVISOR_SVC_CUSTOM_TABLE(17)
 #define UVISOR_SVC_ID_DEBUG_REBOOT          UVISOR_SVC_CUSTOM_TABLE(18)
 #define UVISOR_SVC_ID_DEBUG_REGISTER_BOX    UVISOR_SVC_CUSTOM_TABLE(19)
+#define UVISOR_SVC_ID_IRQ_DISABLE_ALL       UVISOR_SVC_CUSTOM_TABLE(20)
+#define UVISOR_SVC_ID_IRQ_ENABLE_ALL        UVISOR_SVC_CUSTOM_TABLE(21)
+#define UVISOR_SVC_ID_PAGE_MALLOC           UVISOR_SVC_CUSTOM_TABLE(22)
+#define UVISOR_SVC_ID_PAGE_FREE             UVISOR_SVC_CUSTOM_TABLE(23)
 
 /* SVC immediate values for hardcoded table (call from unprivileged) */
 #define UVISOR_SVC_ID_UNVIC_OUT        UVISOR_SVC_FIXED_TABLE(0, 0)
