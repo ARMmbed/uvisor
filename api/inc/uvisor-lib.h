@@ -51,6 +51,7 @@ UVISOR_EXTERN int uvisor_lib_init(void);
  * These are included independently on whether uVisor is supported or not by the
  * target platform. */
 #include "api/inc/debug_exports.h"
+#include "api/inc/context_exports.h"
 #include "api/inc/export_table_exports.h"
 #include "api/inc/halt_exports.h"
 #include "api/inc/svc_exports.h"
