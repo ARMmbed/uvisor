@@ -17,13 +17,15 @@
 #ifndef __VMPU_UNPRIV_ACCESS_H__
 #define __VMPU_UNPRIV_ACCESS_H__
 
+#include "api/inc/uvisor_exports.h"
+#include <stdint.h>
+
 /** Write an 8-bit value to an address as if in unprivileged mode.
  *
  * This function can be used even if the MPU is disabled, but the architectural
  * restrictions on privileged-only registers still apply.
  *
  * @warning: Upon failure this function triggers a fault (MemManage if enabled,
- * otherwise HardFault).
  *
  * @param addr[in]  Address to write to.
  * @param data[in]  8-bit data to write.
