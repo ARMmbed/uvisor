@@ -19,50 +19,56 @@
 
 static UVISOR_FORCEINLINE void vmpu_unpriv_uint8_write(uint32_t addr, uint8_t data)
 {
-    asm volatile(
-        "strbt %[data], [%[addr]]"
-    :: [addr] "r" (addr), [data] "r" (data));
+    asm volatile (
+        "strbt %[data], [%[addr]]\n"
+        :: [addr] "r" (addr), [data] "r" (data)
+    );
 }
 
 static UVISOR_FORCEINLINE void vmpu_unpriv_uint16_write(uint32_t addr, uint16_t data)
 {
-    asm volatile(
-        "strht %[data], [%[addr]]"
-    :: [addr] "r" (addr), [data] "r" (data));
+    asm volatile (
+        "strht %[data], [%[addr]]\n"
+        :: [addr] "r" (addr), [data] "r" (data)
+    );
 }
 
 static UVISOR_FORCEINLINE void vmpu_unpriv_uint32_write(uint32_t addr, uint32_t data)
 {
-    asm volatile(
-        "strt %[data], [%[addr]]"
-    :: [addr] "r" (addr), [data] "r" (data));
+    asm volatile (
+        "strt %[data], [%[addr]]\n"
+        :: [addr] "r" (addr), [data] "r" (data));
 }
 
 static UVISOR_FORCEINLINE uint8_t vmpu_unpriv_uint8_read(uint32_t addr)
 {
     uint8_t res;
-    asm volatile(
-        "ldrbt %[res], [%[addr]]"
-    : [res] "=r" (res) : [addr] "r" (addr));
+    asm volatile (
+        "ldrbt %[res], [%[addr]]\n"
+        : [res] "=r" (res)
+        : [addr] "r" (addr));
     return res;
 }
 
 static UVISOR_FORCEINLINE uint16_t vmpu_unpriv_uint16_read(uint32_t addr)
 {
     uint16_t res;
-    asm volatile(
-        "ldrht %[res], [%[addr]]"
-    : [res] "=r" (res) : [addr] "r" (addr));
+    asm volatile (
+        "ldrht %[res], [%[addr]]\n"
+        : [res] "=r" (res)
+        : [addr] "r" (addr));
     return res;
 }
 
 static UVISOR_FORCEINLINE uint32_t vmpu_unpriv_uint32_read(uint32_t addr)
 {
     uint32_t res;
-    asm volatile(
-        "ldrt %[res], [%[addr]]"
-    : [res] "=r" (res) : [addr] "r" (addr));
+    asm volatile (
+        "ldrt %[res], [%[addr]]\n"
+        : [res] "=r" (res)
+        : [addr] "r" (addr)
+    );
     return res;
 }
 
-#endif/*__VMPU_UNPRIV_ACCESS_H__*/
+#endif /* __VMPU_UNPRIV_ACCESS_H__ */
