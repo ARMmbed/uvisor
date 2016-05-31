@@ -101,8 +101,15 @@ static UVISOR_FORCEINLINE int vmpu_sram_addr(uint32_t addr)
 #define VMPU_SRAM_BITBAND_START   0x22000000
 #define VMPU_SRAM_BITBAND_END     0x23FFFFFF
 #define VMPU_PERIPH_START         0x40000000
+#define VMPU_PERIPH_MASK          0xFFF00000
 #define VMPU_PERIPH_BITBAND_START 0x42000000
 #define VMPU_PERIPH_BITBAND_END   0x43FFFFFF
+#define VMPU_PERIPH_BITBAND_MASK  0xFE000000
+#define VMPU_PERIPH_FULL_MASK     0xFC000000
+
+/* ROM Table region boundaries */
+#define VMPU_ROMTABLE_START 0xE00FF000UL
+#define VMPU_ROMTABLE_MASK  0xFFFFF000UL
 
 /* bit-banding aliases macros
  * physical address ---> bit-banded alias
@@ -155,8 +162,6 @@ extern void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp);
  * condition must hold: g_vmpu_box_count < UVISOR_MAX_BOXES */
 extern uint32_t  g_vmpu_box_count;
 bool g_vmpu_boxes_counted;
-
-extern uint32_t vmpu_register_gateway(uint32_t addr, uint32_t val);
 
 extern int vmpu_box_id_self(void);
 extern int vmpu_box_id_caller(void);
