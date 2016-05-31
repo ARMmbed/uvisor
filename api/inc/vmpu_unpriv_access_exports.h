@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __VMPU_UNPRIV_ACCESS_H__
-#define __VMPU_UNPRIV_ACCESS_H__
+#ifndef __UVISOR_API_VMPU_UNPRIV_ACCESS_H__
+#define __UVISOR_API_VMPU_UNPRIV_ACCESS_H__
 
 #include "api/inc/uvisor_exports.h"
 #include <stdint.h>
@@ -139,4 +139,4 @@ static UVISOR_FORCEINLINE uint32_t vmpu_unpriv_uint32_read(uint32_t addr)
     return res;
 }
 
-#endif /* __VMPU_UNPRIV_ACCESS_H__ */
+#endif /* __UVISOR_API_VMPU_UNPRIV_ACCESS_H__ */
