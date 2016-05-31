@@ -112,6 +112,24 @@ static int vmpu_sanity_checks(void)
     assert(vmpu_flash_addr((uint32_t) __uvisor_config.cfgtbl_ptr_start));
     assert(vmpu_flash_addr((uint32_t) __uvisor_config.cfgtbl_ptr_end));
 
+    /* Verify the register gateway pointers section. */
+    assert(__uvisor_config.register_gateway_ptr_start <= __uvisor_config.register_gateway_ptr_end);
+    assert(__uvisor_config.register_gateway_ptr_start >= __uvisor_config.secure_start);
+    assert(__uvisor_config.register_gateway_ptr_end <= __uvisor_config.secure_end);
+    assert(!vmpu_public_flash_addr((uint32_t) __uvisor_config.register_gateway_ptr_start));
+    assert(!vmpu_public_flash_addr((uint32_t) __uvisor_config.register_gateway_ptr_end));
+    assert(vmpu_flash_addr((uint32_t) __uvisor_config.register_gateway_ptr_start));
+    assert(vmpu_flash_addr((uint32_t) __uvisor_config.register_gateway_ptr_end));
+
+    /* Verify that every register gateway in memory is aligned to 4 bytes. */
+    uint32_t * register_gateway = __uvisor_config.register_gateway_ptr_start;
+    for (; register_gateway < __uvisor_config.register_gateway_ptr_end; register_gateway++) {
+        if (*register_gateway & 0x3) {
+            HALT_ERROR(SANITY_CHECK_FAILED, "Register gateway 0x%08X is not aligned to 4 bytes",
+                       (uint32_t) register_gateway);
+        }
+    }
+
     /* return error if uvisor is disabled */
     if(!__uvisor_config.mode || (*__uvisor_config.mode == 0))
         return -1;
@@ -331,11 +349,6 @@ static void vmpu_load_boxes(void)
     *(__uvisor_config.uvisor_box_context) = (uint32_t *) g_context_current_states[0].bss;
 
     DPRINTF("vmpu_load_boxes [DONE]\n");
-}
-
-uint32_t vmpu_register_gateway(uint32_t addr, uint32_t val)
-{
-    return 0;
 }
 
 int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint32_t fault_status)
