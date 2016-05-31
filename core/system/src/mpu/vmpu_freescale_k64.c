@@ -272,7 +272,6 @@ uint32_t vmpu_fault_find_acl(uint32_t fault_addr, uint32_t size)
     }
 }
 
-
 void vmpu_load_box(uint8_t box_id)
 {
     if(box_id != 0)
@@ -295,4 +294,37 @@ void vmpu_arch_init(void)
 
     /* init memory protection */
     vmpu_mem_init();
+}
+
+int vmpu_is_region_size_valid(uint32_t size)
+{
+    /* Align size to 32B. */
+    const uint32_t masked_size = size & ~31;
+    if (masked_size < 32 || (1 << 29) < masked_size) {
+        /* 2^5 == 32, which is the minimum region size. */
+        /* 2^29 == 512M, which is the maximum region size. */
+        return 0;
+    }
+    /* There is no rounding, we only care about an exact match! */
+    return (masked_size == size);
+}
+
+uint32_t vmpu_round_up_region(uint32_t addr, uint32_t size)
+{
+    if (!vmpu_is_region_size_valid(size)) {
+        /* Region size must be valid! */
+        return 0;
+    }
+    /* Alignment is always 32B. */
+    const uint32_t mask = 31;
+
+    /* Adding the mask can overflow. */
+    const uint32_t rounded_addr = addr + mask;
+    /* Check for overflow. */
+    if (rounded_addr < addr) {
+        /* This means the address was too large to align. */
+        return 0;
+    }
+    /* Mask the rounded address to get the aligned address. */
+    return (rounded_addr & ~mask);
 }
