@@ -717,3 +717,42 @@ void vmpu_arch_init_hw(void)
     );
 #endif /* !defined(UVISOR_IN_STANDALONE_SRAM) */
 }
+
+int vmpu_is_region_size_valid(uint32_t size)
+{
+    /* Get the MSB of the size. */
+    const int bits = vmpu_bits(size) - 1;
+    if (bits < ARMv7M_MPU_ALIGNMENT_BITS || 29 < bits) {
+        /* 2^5 == 32, which is the minimum region size. */
+        /* 2^29 == 512M, which is the maximum region size. */
+        return 0;
+    }
+    /* Compute the size from MSB. */
+    const int bit_size = (1UL << bits);
+    /* There is no round up. */
+
+    /* We only care about an exact match! */
+    return (bit_size == size);
+}
+
+uint32_t vmpu_round_up_region(uint32_t addr, uint32_t size)
+{
+    if (!vmpu_is_region_size_valid(size)) {
+        /* Region size must be valid! */
+        return 0;
+    }
+    /* Size is 2*N, can be used directly for alignment. */
+    /* Create the LSB mask: Example 0x80 -> 0x7F. */
+    const uint32_t mask = size - 1;
+    /* Mask is 31 <= mask <= (1 << 29) - 1. */
+
+    /* Adding the mask can overflow. */
+    const uint32_t rounded_addr = addr + mask;
+    /* Check for overflow. */
+    if (rounded_addr < addr) {
+        /* This means the address was too large to align. */
+        return 0;
+    }
+    /* Mask the rounded address to get the aligned address. */
+    return (rounded_addr & ~mask);
+}
