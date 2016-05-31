@@ -20,11 +20,6 @@
 #include "api/inc/uvisor_exports.h"
 #include <stdint.h>
 
-/* maximum depth of nested context switches
- * this includes both IRQn and secure gateways, as they use the same state stack
- * for their context switches */
-#define UVISOR_SVC_CONTEXT_MAX_DEPTH 0x10
-
 /* An SVCall takes a 8bit immediate, which is used as follows:
  *
  * For fast APIs:
@@ -120,15 +115,10 @@
 
 /* SVC immediate values for hardcoded table (call from unprivileged) */
 #define UVISOR_SVC_ID_UNVIC_OUT        UVISOR_SVC_FIXED_TABLE(0, 0)
-#define UVISOR_SVC_ID_CX_IN(nargs)     UVISOR_SVC_FIXED_TABLE(1, nargs)
-#define UVISOR_SVC_ID_CX_OUT           UVISOR_SVC_FIXED_TABLE(2, 0)
 #define UVISOR_SVC_ID_REGISTER_GATEWAY UVISOR_SVC_FIXED_TABLE(3, 0)
 
 /* SVC immediate values for hardcoded table (call from privileged) */
 #define UVISOR_SVC_ID_UNVIC_IN         UVISOR_SVC_FIXED_TABLE(0, 0)
-
-/* unprivileged code uses a secure gateway to switch context */
-#define UVISOR_SVC_ID_SECURE_GATEWAY(nargs) UVISOR_SVC_ID_CX_IN(nargs)
 
 /* macro to execute an SVCall; additional metadata can be provided, which will
  * be appended right after the svc instruction */
