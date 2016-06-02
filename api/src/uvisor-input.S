@@ -26,8 +26,11 @@
     .thumb
     .thumb_func
 
+/* This is the unique uVisor entry point from the point of view of the host OS.
+ * This symbol corresponds to:
+ *      extern "C" void uvisor_init(void); */
 uvisor_init:
-    /* uvisor - precompiled blob */
+    /* uVisor pre-compiled binary blob */
     .incbin UVISOR_BIN
 
 /* The size of the uVisor export table is a uint32_t located at the end of the
@@ -37,64 +40,60 @@ uvisor_init:
 .set uvisor_export_table_size, uvisor_config - 4
 
 uvisor_config:
-    /* uvisor expects its configuration section right
-       after itself in flash. If the configuration magic is not found,
-       uvisor will intentionally freeze to avoid accidentally
-       unprotect systems */
+    /* uVisor expects its configuration section right after itself in flash. If
+     * the configuration magic is not found, uVisor will intentionally freeze to
+     * avoid accidentally unprotect systems. */
     .long UVISOR_MAGIC
 
-    /* MBED_VERSION */
+    /* Host OS version */
     .long 0
 
-    /* uvisor mode
-       0: disabled
-       1: permissive
-       2: enabled */
+    /* uVisor mode of operation */
     .long __uvisor_mode
 
-    /* start and end address of protected bss */
+    /* Protected BSS section */
     .long __uvisor_bss_start
     .long __uvisor_bss_end
 
-    /* start and end address of uvisor main bss */
+    /* uVisor own BSS section */
     .long __uvisor_bss_main_start
     .long __uvisor_bss_main_end
 
-    /* start and end address of uvisor secure boxes bss */
+    /* Seecure boxes BSS section */
     .long __uvisor_bss_boxes_start
     .long __uvisor_bss_boxes_end
 
-    /* start and end address of uvisor code and data */
+    /* uVisor own code and data */
     .long __uvisor_main_start
     .long __uvisor_main_end
 
-    /* start and end address of protected flash region
-    /* note: remaining flash size is available for configuration storage */
+    /* Protected flash memory region */
     .long __uvisor_secure_start
     .long __uvisor_secure_end
 
-     /* start and end address of boxes configuration tables */
+    /* Secure boxes configuration tables */
     .long __uvisor_cfgtbl_start
     .long __uvisor_cfgtbl_end
 
-    /* start and end address of list of pointers to boxes configuration tables */
+    /* Pointers to the secure boxes configuration tables */
     .long __uvisor_cfgtbl_ptr_start
     .long __uvisor_cfgtbl_ptr_end
 
-    /* pointer to __uvisor_box_context */
+    /* Address of __uvisor_box_context */
     .long __uvisor_box_context
 
-    /* Pointers to beginning and end of main heap for box zero */
+    /* Main heap for box 0 */
     .long __uvisor_heap_start
     .long __uvisor_heap_end
 
-    /* Pointers to beginning and end of page heap */
+    /* Page allocator region */
     .long __uvisor_page_start
     .long __uvisor_page_end
-    /* Pointer to the requested page size for page heap */
+
+    /* Page size for the page allocator */
     .long __uvisor_page_size
 
-    /* Physical memories' boundaries */
+    /* Physical memory boundaries */
     .long __uvisor_flash_start;
     .long __uvisor_flash_end;
     .long __uvisor_sram_start;
@@ -103,12 +102,16 @@ uvisor_config:
     /* Privileged system IRQ hooks */
     .long __uvisor_priv_sys_irq_hooks
 
+/* uVisor mode of operation
+ * Modes available: UVISOR_ENABLED, UVISOR_DISABLED, UVISOR_PERMISSIVE. */
 __uvisor_mode:
-    /* uvisor default mode - user can override weak reference */
+    /* uVisor default mode: Disabled.
+     * The user can override this weak reference. */
     .long 0
 
 __uvisor_page_size:
-    /* uvisor default page size is 16kB - user can override weak reference */
+    /* uVisor default page size: 16kB.
+     * The user can override this weak reference. */
     .long 16384
 
 /* __uvisor_ps is written inside uvisor_init. It must not be
@@ -118,5 +121,7 @@ __uvisor_box_context:
 __uvisor_ps:
     .long 0
 
+/* Reserve space for the uVisor BSS section. This section is zeroed by uVisor at
+ * boot time. */
 .section .keep.uvisor.bss.main, "awM", @nobits
     .space UVISOR_SRAM_LENGTH
