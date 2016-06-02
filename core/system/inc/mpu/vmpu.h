@@ -17,8 +17,8 @@
 #ifndef __VMPU_H__
 #define __VMPU_H__
 
+#include "vmpu_unpriv_access.h"
 #include "api/inc/vmpu_exports.h"
-#include "api/inc/vmpu_unpriv_access_exports.h"
 #include <stdint.h>
 
 /* Check if the address is in public flash/physical flash/physical SRAM. */
