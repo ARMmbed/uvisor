@@ -56,6 +56,5 @@ UVISOR_EXTERN int uvisor_lib_init(void);
 #include "api/inc/unvic_exports.h"
 #include "api/inc/uvisor_exports.h"
 #include "api/inc/vmpu_exports.h"
-#include "api/inc/vmpu_unpriv_access_exports.h"
 
 #endif /* __UVISOR_API_UVISOR_LIB_H__ */
