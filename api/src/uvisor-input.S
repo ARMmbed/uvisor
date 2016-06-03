@@ -84,6 +84,12 @@ uvisor_config:
     /* pointer to __uvisor_box_context */
     .long __uvisor_box_context
 
+    /* Pointers to beginning and end of page heap */
+    .long __uvisor_page_start
+    .long __uvisor_page_end
+    /* Pointer to the requested page size for page heap */
+    .long __uvisor_page_size
+
     /* Physical memories' boundaries */
     .long __uvisor_flash_start;
     .long __uvisor_flash_end;
@@ -96,6 +102,10 @@ uvisor_config:
 __uvisor_mode:
     /* uvisor default mode - user can override weak reference */
     .long 0
+
+__uvisor_page_size:
+    /* uvisor default page size is 16kB - user can override weak reference */
+    .long 16384
 
 .section .bss
 __uvisor_box_context:

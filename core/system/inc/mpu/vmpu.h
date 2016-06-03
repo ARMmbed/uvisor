@@ -162,6 +162,30 @@ extern int vmpu_box_id_self(void);
 extern int vmpu_box_id_caller(void);
 extern int vmpu_box_namespace_from_id(int box_id, char *box_name, size_t length);
 
+/** Determine if the passed size can be mapped to an exact region size
+ * depending on underlying MPU implementation. Note that the size must be an
+ * exact match to a MPU region size.
+ * With the ARMv7-M MPU that would be 32 <= 2^N <= 512M.
+ * With the K64F MPU that would be 32 <= 32*N <= 512M.
+ *
+ * @note `size` is limited to 512M, even though larger sizes are allowed by the
+ *       MPU, but don't make sense from a security perspective.
+ * @retval 1 The region size is valid
+ * @retval 0 The region size is not valid
+ */
+extern int vmpu_is_region_size_valid(uint32_t size);
+
+/**
+ * @param addr Input address to be rounded up
+ * @param size Region size chosen for alignment
+ *
+ * @retval >0 The passed address rounded up to the next possible alignment
+ *            of the passed region size
+ * @retval 0 The region size was invalid, or address rounding overflowed
+ *
+ */
+extern uint32_t vmpu_round_up_region(uint32_t addr, uint32_t size);
+
 static UVISOR_FORCEINLINE bool vmpu_is_box_id_valid(int box_id)
 {
     /* Return true if the box_id is valid.
