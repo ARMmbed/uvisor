@@ -17,7 +17,7 @@
 .globl uvisor_init
 .globl uvisor_export_table_size
 .globl uvisor_config
-.globl uvisor_ctx
+.globl __uvisor_ps
 .type  uvisor_init, %function
 .weak  __uvisor_mode
 .globl __uvisor_priv_sys_irq_hooks
@@ -107,9 +107,11 @@ __uvisor_page_size:
     /* uvisor default page size is 16kB - user can override weak reference */
     .long 16384
 
-.section .bss
+/* __uvisor_ps is written inside uvisor_init. It must not be
+ * overwritten by libc init and therefore is placed in .uninitialized. */
+.section .uninitialized
 __uvisor_box_context:
-uvisor_ctx:
+__uvisor_ps:
     .long 0
 
 .section .keep.uvisor.bss.main, "awM", @nobits
