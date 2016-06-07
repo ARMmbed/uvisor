@@ -147,13 +147,26 @@ typedef struct {
 typedef struct {
     uint32_t magic;
     uint32_t version;
-    uint32_t stack_size;
-    uint32_t context_size;
-    const char * box_namespace;
 
+    /* Box stack size includes stack guards and rounding buffer. */
+    uint32_t stack_size;
+
+    /* Contains the size of the index (must be at least sizeof(UvisorBoxIndex)). */
+    uint32_t index_size;
+    /* Contains user provided size of box context without guards of buffers. */
+    uint32_t context_size;
+
+    const char * box_namespace;
     const UvisorBoxAclItem * const acl_list;
     uint32_t acl_count;
 } UVISOR_PACKED UvisorBoxConfig;
+
+typedef struct {
+    /* Pointer to the user context */
+    void * ctx;
+    /* Pointer to the box config */
+    const UvisorBoxConfig * config;
+} UVISOR_PACKED UvisorBoxIndex;
 
 /*
  * only use this macro for rounding const values during compile time:

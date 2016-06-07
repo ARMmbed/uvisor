@@ -202,36 +202,32 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
     /* add stack protection band */
     g_box_mem_pos += UVISOR_STACK_BAND_SIZE;
 
-    /* add context ACL if needed */
-    if(!bss_size)
-        g_context_current_states[box_id].bss = (uint32_t) NULL;
-    else
-    {
-        bss_size = UVISOR_REGION_ROUND_UP(bss_size);
-        g_context_current_states[box_id].bss = g_box_mem_pos;
+    /* add context ACL */
+    assert(bss_size != 0);
+    bss_size = UVISOR_REGION_ROUND_UP(bss_size);
+    g_context_current_states[box_id].bss = g_box_mem_pos;
 
-        DPRINTF("erasing box context at 0x%08X (%u bytes)\n",
-            g_box_mem_pos,
-            bss_size
-        );
+    DPRINTF("erasing box context at 0x%08X (%u bytes)\n",
+        g_box_mem_pos,
+        bss_size
+    );
 
-        /* reset uninitialized secured box context */
-        memset(
-            (void *) g_box_mem_pos,
-            0,
-            bss_size
-        );
+    /* reset uninitialized secured box context */
+    memset(
+        (void *) g_box_mem_pos,
+        0,
+        bss_size
+    );
 
-        /* add context ACL */
-        vmpu_acl_add(
-            box_id,
-            (void*)g_box_mem_pos,
-            bss_size,
-            UVISOR_TACLDEF_DATA
-        );
+    /* add context ACL */
+    vmpu_acl_add(
+        box_id,
+        (void*)g_box_mem_pos,
+        bss_size,
+        UVISOR_TACLDEF_DATA
+    );
 
-        g_box_mem_pos += bss_size + UVISOR_STACK_BAND_SIZE;
-    }
+    g_box_mem_pos += bss_size + UVISOR_STACK_BAND_SIZE;
 }
 
 void vmpu_switch(uint8_t src_box, uint8_t dst_box)

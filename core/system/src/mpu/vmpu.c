@@ -165,6 +165,27 @@ static void vmpu_sanity_check_box_namespace(int box_id, const char *const box_na
     } while (box_namespace[length]);
 }
 
+static void vmpu_box_index_init(uint8_t box_id, const UvisorBoxConfig * const config)
+{
+    void * box_bss;
+    UvisorBoxIndex * index;
+
+    box_bss = (void *) g_context_current_states[box_id].bss;
+
+    /* The box index is at the beginning of the bss section. */
+    index = box_bss;
+    /* Zero the _entire_ index, so that user data inside the box index is in a
+     * known state! This allows checking variables for `NULL`, or `0`, which
+     * indicates an initialization requirement. */
+    memset(box_bss, 0, config->index_size);
+    box_bss += config->index_size;
+    /* Initialize user context. */
+    index->ctx = config->context_size ? box_bss : NULL;
+
+    /* Point to the box config. */
+    index->config = config;
+}
+
 static void vmpu_load_boxes(void)
 {
     int i, count;
@@ -211,18 +232,31 @@ static void vmpu_load_boxes(void)
                 UVISOR_BOX_VERSION
             );
 
+        /* Confirm the minimal size of the box index size. */
+        if ((*box_cfgtbl)->index_size < sizeof(UvisorBoxIndex)) {
+            HALT_ERROR(SANITY_CHECK_FAILED,
+                "Box index size (%uB) must be large enough to hold UvisorBoxIndex (%uB).\n",
+                (*box_cfgtbl)->index_size,
+                sizeof(UvisorBoxIndex));
+        }
+
         /* Check that the box namespace is not too long. */
         vmpu_sanity_check_box_namespace(box_id, (*box_cfgtbl)->box_namespace);
 
         /* load box ACLs in table */
         DPRINTF("box[%i] ACL list:\n", box_id);
 
-        /* add ACL's for all box stacks, the actual start addesses and
-         * sizes are resolved later in vmpu_initialize_stacks */
+        /* Add ACL's for all box stacks. */
         vmpu_acl_stack(
             box_id,
-            (*box_cfgtbl)->context_size,
+            (*box_cfgtbl)->index_size + (*box_cfgtbl)->context_size,
             (*box_cfgtbl)->stack_size
+        );
+
+        /* Initialize box index. */
+        vmpu_box_index_init(
+            box_id,
+            *box_cfgtbl
         );
 
         /* enumerate box ACLs */
@@ -261,6 +295,7 @@ static void vmpu_load_boxes(void)
 
     /* load box 0 */
     vmpu_load_box(0);
+    *(__uvisor_config.uvisor_box_context) = (uint32_t *) g_context_current_states[0].bss;
 
     DPRINTF("vmpu_load_boxes [DONE]\n");
 }
