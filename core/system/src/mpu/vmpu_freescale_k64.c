@@ -171,7 +171,7 @@ void vmpu_acl_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
 {
     /* handle main box */
-    if(!box_id)
+    if (box_id == 0)
     {
         DPRINTF("ctx=%i stack=%i\n\r", bss_size, stack_size);
         /* non-important sanity checks */
@@ -181,7 +181,8 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
         /* assign main box stack pointer to existing
          * unprivileged stack pointer */
         g_context_current_states[0].sp = __get_PSP();
-        g_context_current_states[0].bss = (uint32_t) NULL;
+        /* Box 0 still uses the main heap to be backwards compatible. */
+        g_context_current_states[0].bss = (uint32_t) __uvisor_config.heap_start;
         return;
     }
 
