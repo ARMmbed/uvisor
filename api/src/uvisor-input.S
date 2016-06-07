@@ -84,6 +84,10 @@ uvisor_config:
     /* pointer to __uvisor_box_context */
     .long __uvisor_box_context
 
+    /* Pointers to beginning and end of main heap for box zero */
+    .long __uvisor_heap_start
+    .long __uvisor_heap_end
+
     /* Pointers to beginning and end of page heap */
     .long __uvisor_page_start
     .long __uvisor_page_end

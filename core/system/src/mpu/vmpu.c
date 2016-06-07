@@ -193,6 +193,24 @@ static void vmpu_load_boxes(void)
     const UvisorBoxConfig **box_cfgtbl;
     uint8_t box_id;
 
+    /* Check heap start and end addresses */
+    if (!__uvisor_config.heap_start || !vmpu_sram_addr((uint32_t) __uvisor_config.heap_start)) {
+        HALT_ERROR(SANITY_CHECK_FAILED,
+            "Heap start pointer (0x%08x) is not in SRAM memory.\n",
+            (uint32_t) __uvisor_config.heap_start);
+    }
+    if (!__uvisor_config.heap_end || !vmpu_sram_addr((uint32_t) __uvisor_config.heap_end)) {
+        HALT_ERROR(SANITY_CHECK_FAILED,
+            "Heap end pointer (0x%08x) is not in SRAM memory.\n",
+            (uint32_t) __uvisor_config.heap_end);
+    }
+    if (__uvisor_config.heap_end < __uvisor_config.heap_start) {
+        HALT_ERROR(SANITY_CHECK_FAILED,
+            "Heap end pointer (0x%08x) is smaller than heap start pointer (0x%08x).\n",
+            (uint32_t) __uvisor_config.heap_end,
+            (uint32_t) __uvisor_config.heap_start);
+    }
+
     /* enumerate boxes */
     g_vmpu_box_count = (uint32_t) (__uvisor_config.cfgtbl_ptr_end - __uvisor_config.cfgtbl_ptr_start);
     if (g_vmpu_box_count >= UVISOR_MAX_BOXES) {
