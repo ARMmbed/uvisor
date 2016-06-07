@@ -155,6 +155,8 @@ typedef struct {
     uint32_t index_size;
     /* Contains user provided size of box context without guards of buffers. */
     uint32_t context_size;
+    /* Contains user provided size of box heap without guards of buffers. */
+    uint32_t heap_size;
 
     const char * box_namespace;
     const UvisorBoxAclItem * const acl_list;
@@ -164,6 +166,14 @@ typedef struct {
 typedef struct {
     /* Pointer to the user context */
     void * ctx;
+    /* Pointer to the box heap */
+    void * box_heap;
+    /* Size of the box heap */
+    uint32_t box_heap_size;
+    /* Pointer to the currently active heap.
+     * This is set to `NULL` by uVisor, signalling to the user lib that the
+     * box heap needs to be initialized before use! */
+    void * active_heap;
     /* Pointer to the box config */
     const UvisorBoxConfig * config;
 } UVISOR_PACKED UvisorBoxIndex;

@@ -169,6 +169,14 @@ static void vmpu_box_index_init(uint8_t box_id, const UvisorBoxConfig * const co
 {
     void * box_bss;
     UvisorBoxIndex * index;
+    uint32_t heap_size = config->heap_size;
+
+    if (box_id == 0) {
+        /* Box 0 still uses the main heap to be backwards compatible. */
+        heap_size = ((void *) __uvisor_config.heap_end -
+                     (void *) __uvisor_config.heap_start) -
+                    config->index_size;
+    }
 
     box_bss = (void *) g_context_current_states[box_id].bss;
 
@@ -181,6 +189,13 @@ static void vmpu_box_index_init(uint8_t box_id, const UvisorBoxConfig * const co
     box_bss += config->index_size;
     /* Initialize user context. */
     index->ctx = config->context_size ? box_bss : NULL;
+    box_bss += config->context_size;
+    /* Initialize box heap. */
+    index->box_heap = heap_size ? box_bss : NULL;
+    index->box_heap_size = heap_size;
+    /* Active heap pointer is NULL, indicating that the process heap needs to
+     * be initialized on first malloc call! */
+    index->active_heap = NULL;
 
     /* Point to the box config. */
     index->config = config;
@@ -267,7 +282,7 @@ static void vmpu_load_boxes(void)
         /* Add ACL's for all box stacks. */
         vmpu_acl_stack(
             box_id,
-            (*box_cfgtbl)->index_size + (*box_cfgtbl)->context_size,
+            (*box_cfgtbl)->index_size + (*box_cfgtbl)->context_size + (*box_cfgtbl)->heap_size,
             (*box_cfgtbl)->stack_size
         );
 
