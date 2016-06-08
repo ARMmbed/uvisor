@@ -29,12 +29,28 @@
  * understand the TUvisorExportTable. */
 #define UVISOR_EXPORT_VERSION 0
 
+/* XXX Move to CMSIS RTOS */
+typedef uint32_t ARM_DRIVER_VERSION;
+typedef struct {
+    ARM_DRIVER_VERSION version;
+    void *(*thread_create)(int thread_id, void *context);
+    void (*thread_destroy)(void *context);
+    void (*thread_switch)(void *context);
+} ThreadObserver;
+extern const ThreadObserver *threadObsDrv;
+
+void osRegisterThreadObserver(const ThreadObserver *obs);
+/* XXX */
+
+
 typedef struct {
     /* magic and version must be present as the first two elements in this
      * table so that across various versions of the table layout, the table can
      * be interpreted correctly. */
     uint32_t magic;
     uint32_t version;
+
+    ThreadObserver thread_observer;
 
     /* This must be the last element of the table so that uvisor-input.S can
      * export the size statically. */

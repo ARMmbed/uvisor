@@ -30,6 +30,9 @@ UVISOR_EXTERN void uvisor_init(void)
 
 int uvisor_lib_init(void)
 {
+    extern const TUvisorExportTable __uvisor_export_table;
+    extern void osRegisterThreadObserver(const ThreadObserver *);
+    osRegisterThreadObserver(&__uvisor_export_table.thread_observer);
     return 0;
 }
 
