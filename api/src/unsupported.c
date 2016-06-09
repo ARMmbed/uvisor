@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #include "uvisor-lib/uvisor-lib.h"
+#include "rt_OsEventObserver.h"
 
 #if !(defined(UVISOR_PRESENT) && (UVISOR_PRESENT == 1))
 
@@ -28,8 +29,30 @@ UVISOR_EXTERN void uvisor_init(void)
     return;
 }
 
+extern RtxBoxIndex * __uvisor_ps;
+
+static void thread_switch(void *context)
+{
+    if (context == NULL) return;
+
+    /* If the active_heap is NULL, then the process heap needs to be
+     * initialized. The initializer sets the active heap itself. */
+    if (__uvisor_ps->index.active_heap) {
+        __uvisor_ps->index.active_heap = context;
+    }
+}
+
+static OsEventObserver os_event_observer = {
+    .version = 0,
+    .pre_start = 0,
+    .thread_create = 0,
+    .thread_destroy = 0,
+    .thread_switch = thread_switch,
+};
+
 int uvisor_lib_init(void)
 {
+    osRegisterForOsEvents(&os_event_observer);
     return 0;
 }
 
