@@ -175,7 +175,6 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
     {
         DPRINTF("ctx=%i stack=%i\n\r", bss_size, stack_size);
         /* non-important sanity checks */
-        assert(bss_size == 0);
         assert(stack_size == 0);
 
         /* assign main box stack pointer to existing
