@@ -16,9 +16,11 @@
  */
 #include <uvisor.h>
 #include "debug.h"
+#include "context.h"
 #include "halt.h"
-#include "svc.h"
 #include "memory_map.h"
+#include "svc.h"
+#include "vmpu.h"
 
 #ifndef DEBUG_MAX_BUFFER
 #define DEBUG_MAX_BUFFER 128
@@ -58,89 +60,12 @@ void debug_init(void)
     SCnSCB->ACTLR |= 0x2;
 }
 
-static void debug_cx_state(int _indent)
-{
-    int i;
-
-    /* generate indentation depending on nesting depth */
-    char _sp[UVISOR_MAX_BOXES + 4];
-
-    for (i = 0; i < _indent; i++)
-    {
-        _sp[i]     = ' ';
-    }
-    _sp[i] = '\0';
-
-    /* print state stack */
-    if (!g_svc_cx_state_ptr)
-    {
-        dprintf("%sNo saved state\n\r", _sp);
-    }
-    else
-    {
-        for (i = 0; i < g_svc_cx_state_ptr; i++)
-        {
-            dprintf("%sState %d\n\r",        _sp, i);
-            dprintf("%s  src_id %d\n\r",     _sp, g_svc_cx_state[i].src_id);
-            dprintf("%s  src_sp 0x%08X\n\r", _sp, g_svc_cx_state[i].src_sp);
-        }
-    }
-
-    /* print current stack pointers for all boxes */
-    dprintf("%s     ", _sp);
-    for (i = 0; i < g_vmpu_box_count; i++)
-    {
-        dprintf("------------ ");
-    }
-    dprintf("\n%sSP: |", _sp);
-    for (i = 0; i < g_vmpu_box_count; i++)
-    {
-        dprintf(" 0x%08X |", g_svc_cx_curr_sp[i]);
-    }
-    dprintf("\n%s     ", _sp);
-    for (i = 0; i < g_vmpu_box_count; i++)
-    {
-        dprintf("------------ ");
-    }
-    dprintf("\n");
-}
-
-void debug_cx_switch_in(void)
-{
-    int i;
-
-    /* indent debug messages linearly with the nesting depth */
-    dprintf("\n\r");
-    for(i = 0; i < g_svc_cx_state_ptr; i++)
-    {
-        dprintf("--");
-    }
-    dprintf("> Context switch in\n");
-    debug_cx_state(2 + (g_svc_cx_state_ptr << 1));
-    dprintf("\n\r");
-}
-
-void debug_cx_switch_out(void)
-{
-    int i;
-
-    /* indent debug messages linearly with the nesting depth */
-    dprintf("\n\r<--");
-    for(i = 0; i < g_svc_cx_state_ptr; i++)
-    {
-        dprintf("--");
-    }
-    dprintf(" Context switch out\n");
-    debug_cx_state(4 + (g_svc_cx_state_ptr << 1));
-    dprintf("\n\r");
-}
-
 void debug_exception_frame(uint32_t lr, uint32_t sp)
 {
     int i;
     int mode = lr & 0x4;
 
-    char exc_sf_verbose[SVC_CX_EXC_SF_SIZE + 1][6] = {
+    char exc_sf_verbose[CONTEXT_SWITCH_EXC_SF_SIZE + 1][6] = {
         "r0", "r1", "r2", "r3", "r12",
         "lr", "pc", "xPSR", "align"
     };
@@ -152,12 +77,12 @@ void debug_exception_frame(uint32_t lr, uint32_t sp)
 
     /* print exception stack frame */
     dprintf("  Exception stack frame:\n");
-    i = SVC_CX_EXC_SF_SIZE;
+    i = CONTEXT_SWITCH_EXC_SF_SIZE;
     if(((uint32_t *) sp)[8] & (1 << 9))
     {
         dprintf("    %csp[%02d]: 0x%08X | %s\n", mode ? 'p' : 'm', i, ((uint32_t *) sp)[i], exc_sf_verbose[i]);
     }
-    for(i = SVC_CX_EXC_SF_SIZE - 1; i >= 0; --i)
+    for(i = CONTEXT_SWITCH_EXC_SF_SIZE - 1; i >= 0; --i)
     {
         dprintf("    %csp[%02d]: 0x%08X | %s\n", mode ? 'p' : 'm', i, ((uint32_t *) sp)[i], exc_sf_verbose[i]);
     }
@@ -268,9 +193,9 @@ static void debug_deprivilege_and_return(void *debug_handler, void *return_handl
      * The destination box is always the debug box. */
     /* Note: The source stack pointer is only used to assess the stack
      *       alignment. */
-    src_sp = svc_cx_validate_sf((uint32_t *) __get_PSP());
+    src_sp = (uint32_t *) context_validate_exc_sf(__get_PSP());
     src_id = g_active_box;
-    dst_sp = g_svc_cx_curr_sp[g_debug_box.box_id];
+    dst_sp = (uint32_t *) g_context_current_states[g_debug_box.box_id].sp;
     dst_id = g_debug_box.box_id;
 
     /* Check source and destination box IDs */
@@ -280,7 +205,7 @@ static void debug_deprivilege_and_return(void *debug_handler, void *return_handl
 
     /* Create the exception stack frame. */
     dst_sp_align = ((uint32_t) dst_sp & 0x4) ? 1 : 0;
-    dst_sp -= (SVC_CX_EXC_SF_SIZE + dst_sp_align);
+    dst_sp -= (CONTEXT_SWITCH_EXC_SF_SIZE + dst_sp_align);
 
     /* Populate the exception stack frame:
      *   - The scratch registers are populated with the handler arguments.
@@ -297,7 +222,7 @@ static void debug_deprivilege_and_return(void *debug_handler, void *return_handl
     dst_sp[7] = src_sp[7] | (dst_sp_align << 9);
 
     /* Set the context stack pointer for the destination box. */
-    *(__uvisor_config.uvisor_box_context) = g_svc_cx_context_ptr[dst_id];
+    *(__uvisor_config.uvisor_box_context) = (uint32_t *) g_context_current_states[dst_id].bss;
 
     /* Switch boxes. */
     vmpu_switch(src_id, dst_id);

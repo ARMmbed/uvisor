@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 #include <uvisor.h>
-#include "vmpu.h"
-#include "svc.h"
+#include "debug.h"
+#include "context.h"
 #include "halt.h"
 #include "memory_map.h"
-#include "debug.h"
+#include "svc.h"
+#include "vmpu.h"
 
 #ifndef MPU_MAX_PRIVATE_FUNCTIONS
 #define MPU_MAX_PRIVATE_FUNCTIONS 16
@@ -38,7 +39,6 @@
 
 uint32_t  g_vmpu_box_count;
 bool g_vmpu_boxes_counted;
-uint8_t g_active_box;
 
 static int vmpu_sanity_checks(void)
 {
@@ -112,6 +112,24 @@ static int vmpu_sanity_checks(void)
     assert(vmpu_flash_addr((uint32_t) __uvisor_config.cfgtbl_ptr_start));
     assert(vmpu_flash_addr((uint32_t) __uvisor_config.cfgtbl_ptr_end));
 
+    /* Verify the register gateway pointers section. */
+    assert(__uvisor_config.register_gateway_ptr_start <= __uvisor_config.register_gateway_ptr_end);
+    assert(__uvisor_config.register_gateway_ptr_start >= __uvisor_config.secure_start);
+    assert(__uvisor_config.register_gateway_ptr_end <= __uvisor_config.secure_end);
+    assert(!vmpu_public_flash_addr((uint32_t) __uvisor_config.register_gateway_ptr_start));
+    assert(!vmpu_public_flash_addr((uint32_t) __uvisor_config.register_gateway_ptr_end));
+    assert(vmpu_flash_addr((uint32_t) __uvisor_config.register_gateway_ptr_start));
+    assert(vmpu_flash_addr((uint32_t) __uvisor_config.register_gateway_ptr_end));
+
+    /* Verify that every register gateway in memory is aligned to 4 bytes. */
+    uint32_t * register_gateway = __uvisor_config.register_gateway_ptr_start;
+    for (; register_gateway < __uvisor_config.register_gateway_ptr_end; register_gateway++) {
+        if (*register_gateway & 0x3) {
+            HALT_ERROR(SANITY_CHECK_FAILED, "Register gateway 0x%08X is not aligned to 4 bytes",
+                       (uint32_t) register_gateway);
+        }
+    }
+
     /* return error if uvisor is disabled */
     if(!__uvisor_config.mode || (*__uvisor_config.mode == 0))
         return -1;
@@ -165,12 +183,66 @@ static void vmpu_sanity_check_box_namespace(int box_id, const char *const box_na
     } while (box_namespace[length]);
 }
 
+static void vmpu_box_index_init(uint8_t box_id, const UvisorBoxConfig * const config)
+{
+    void * box_bss;
+    UvisorBoxIndex * index;
+    uint32_t heap_size = config->heap_size;
+
+    if (box_id == 0) {
+        /* Box 0 still uses the main heap to be backwards compatible. */
+        heap_size = ((void *) __uvisor_config.heap_end -
+                     (void *) __uvisor_config.heap_start) -
+                    config->index_size;
+    }
+
+    box_bss = (void *) g_context_current_states[box_id].bss;
+
+    /* The box index is at the beginning of the bss section. */
+    index = box_bss;
+    /* Zero the _entire_ index, so that user data inside the box index is in a
+     * known state! This allows checking variables for `NULL`, or `0`, which
+     * indicates an initialization requirement. */
+    memset(box_bss, 0, config->index_size);
+    box_bss += config->index_size;
+    /* Initialize user context. */
+    index->ctx = config->context_size ? box_bss : NULL;
+    box_bss += config->context_size;
+    /* Initialize box heap. */
+    index->box_heap = heap_size ? box_bss : NULL;
+    index->box_heap_size = heap_size;
+    /* Active heap pointer is NULL, indicating that the process heap needs to
+     * be initialized on first malloc call! */
+    index->active_heap = NULL;
+
+    /* Point to the box config. */
+    index->config = config;
+}
+
 static void vmpu_load_boxes(void)
 {
     int i, count;
     const UvisorBoxAclItem *region;
     const UvisorBoxConfig **box_cfgtbl;
     uint8_t box_id;
+
+    /* Check heap start and end addresses */
+    if (!__uvisor_config.heap_start || !vmpu_sram_addr((uint32_t) __uvisor_config.heap_start)) {
+        HALT_ERROR(SANITY_CHECK_FAILED,
+            "Heap start pointer (0x%08x) is not in SRAM memory.\n",
+            (uint32_t) __uvisor_config.heap_start);
+    }
+    if (!__uvisor_config.heap_end || !vmpu_sram_addr((uint32_t) __uvisor_config.heap_end)) {
+        HALT_ERROR(SANITY_CHECK_FAILED,
+            "Heap end pointer (0x%08x) is not in SRAM memory.\n",
+            (uint32_t) __uvisor_config.heap_end);
+    }
+    if (__uvisor_config.heap_end < __uvisor_config.heap_start) {
+        HALT_ERROR(SANITY_CHECK_FAILED,
+            "Heap end pointer (0x%08x) is smaller than heap start pointer (0x%08x).\n",
+            (uint32_t) __uvisor_config.heap_end,
+            (uint32_t) __uvisor_config.heap_start);
+    }
 
     /* enumerate boxes */
     g_vmpu_box_count = (uint32_t) (__uvisor_config.cfgtbl_ptr_end - __uvisor_config.cfgtbl_ptr_start);
@@ -211,18 +283,31 @@ static void vmpu_load_boxes(void)
                 UVISOR_BOX_VERSION
             );
 
+        /* Confirm the minimal size of the box index size. */
+        if ((*box_cfgtbl)->index_size < sizeof(UvisorBoxIndex)) {
+            HALT_ERROR(SANITY_CHECK_FAILED,
+                "Box index size (%uB) must be large enough to hold UvisorBoxIndex (%uB).\n",
+                (*box_cfgtbl)->index_size,
+                sizeof(UvisorBoxIndex));
+        }
+
         /* Check that the box namespace is not too long. */
         vmpu_sanity_check_box_namespace(box_id, (*box_cfgtbl)->box_namespace);
 
         /* load box ACLs in table */
         DPRINTF("box[%i] ACL list:\n", box_id);
 
-        /* add ACL's for all box stacks, the actual start addesses and
-         * sizes are resolved later in vmpu_initialize_stacks */
+        /* Add ACL's for all box stacks. */
         vmpu_acl_stack(
             box_id,
-            (*box_cfgtbl)->context_size,
+            (*box_cfgtbl)->index_size + (*box_cfgtbl)->context_size + (*box_cfgtbl)->heap_size,
             (*box_cfgtbl)->stack_size
+        );
+
+        /* Initialize box index. */
+        vmpu_box_index_init(
+            box_id,
+            *box_cfgtbl
         );
 
         /* enumerate box ACLs */
@@ -261,13 +346,9 @@ static void vmpu_load_boxes(void)
 
     /* load box 0 */
     vmpu_load_box(0);
+    *(__uvisor_config.uvisor_box_context) = (uint32_t *) g_context_current_states[0].bss;
 
     DPRINTF("vmpu_load_boxes [DONE]\n");
-}
-
-uint32_t vmpu_register_gateway(uint32_t addr, uint32_t val)
-{
-    return 0;
 }
 
 int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint32_t fault_status)
@@ -423,21 +504,20 @@ int vmpu_box_id_self(void)
 
 int vmpu_box_id_caller(void)
 {
-    TBoxCx *box_ctx;
+    TContextPreviousState * previous_state;
 
-    if (g_svc_cx_state_ptr < 1) {
+    previous_state = context_state_previous();
+    if (previous_state == NULL) {
         /* There is no previous context. */
         return -1;
     }
 
-    box_ctx = &g_svc_cx_state[g_svc_cx_state_ptr - 1];
-
-    if (box_ctx->type != TBOXCX_SECURE_GATEWAY) {
+    if (previous_state->type != CONTEXT_SWITCH_FUNCTION_GATEWAY) {
         /* The previous context is not a secure gateway. */
         return -1;
+    } else {
+        return previous_state->src_id;
     }
-
-    return box_ctx->src_id;
 }
 
 static int copy_box_namespace(const char *src, char *dst)
