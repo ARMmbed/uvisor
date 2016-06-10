@@ -44,14 +44,42 @@ typedef struct {
     uint32_t magic;
     uint32_t box_ptr;
     uint32_t address;
-    uint32_t value;
     uint32_t mask;
     uint16_t operation;
     uint16_t bxlr;
 } UVISOR_PACKED __attribute__((aligned(4))) TRegisterGateway;
 
+/** Register gateway operation - Masks
+ * @internal
+ * These are used to extract the operation fields.
+ */
+#define __UVISOR_RGW_OP_TYPE_MASK   ((uint16_t) 0x00FF)
+#define __UVISOR_RGW_OP_TYPE_POS    0
+#define __UVISOR_RGW_OP_WIDTH_MASK  ((uint16_t) 0x3F00)
+#define __UVISOR_RGW_OP_WIDTH_POS   8
+#define __UVISOR_RGW_OP_SHARED_MASK ((uint16_t) 0x8000)
+#define __UVISOR_RGW_OP_SHARED_POS  15
+
 /** Register gateway operations
- * @warning The operation value must be hardcoded. */
+ * The user can specify the following properties:
+ *   - Access type: read/write, and-, or-, xor-, replac-ed.
+ *   - Access width: 8, 16, 32 bits.
+ *   - Access shared: Whether the gateway can be shared with other boxes.
+ * These parameters are stored in a 16-bit value as follows:
+ *
+ *   15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0
+ *   |  |__________________|  |____________________|
+ *   |           |                       |
+ *   shared      width                   type
+ *
+ * @note The operation value must be hardcoded.
+ */
+#define UVISOR_RGW_OP(type, width, shared) \
+    ((uint16_t) ((((uint16_t) (type) << __UVISOR_RGW_OP_TYPE_POS) & __UVISOR_RGW_OP_TYPE_MASK) | \
+                 (((uint16_t) (width) << __UVISOR_RGW_OP_WIDTH_POS) & __UVISOR_RGW_OP_WIDTH_MASK) | \
+                 (((uint16_t) (shared) << __UVISOR_RGW_OP_SHARED_POS) & __UVISOR_RGW_OP_SHARED_MASK)))
+
+/** Register gateway operation - Type */
 #define UVISOR_RGW_OP_READ          0 /**< value = *address */
 #define UVISOR_RGW_OP_READ_AND      1 /**< value = *address & mask */
 #define UVISOR_RGW_OP_WRITE         2 /**< *address = value */
