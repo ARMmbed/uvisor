@@ -55,25 +55,21 @@
  * registers. Such accesses are assembled into a read-only flash structure that
  * is read and validated by uVisor before performing the operation.
  *
- * @warning These APIs currently only support link-time known values. This means
- * that an access of this type is not supported:
- * ```
- * static uint32_t const const_mask = 0x0000F000;
- * a = uvisor_read(&SYSCFG->CTRL, UVISOR_RGW_OP_READ, const_mask); // Yes
- * uint32_t var_mask = rand();
- * a = uvisor_read(&SYSCFG->CTRL, UVISOR_RGW_OP_READ, var_mask); // No
- * ```
+ * @warning This API currently only supports link-time known value for the
+ * address, operation and mask.
  *
  * @param box_name[in]  The name of the source box as decalred in
  *                      `UVISOR_BOX_CONFIG`.
  * @param addr[in]      The address for the data access.
  * @param operation[in] The operation to perform at the address for the read. It
  *                      is chosen among the `UVISOR_RGW_OP_*` macros.
+ * @param shared[in]    True if the gateway can be performed by any box. In this
+ *                      case, the box_name field does not guarantee exclusivity.
  * @param mask[in]      The mask to apply for the read operation.
  * @returns The value read from address using the operation and mask provided
  * (or their respective defaults if they have not been provided).
  */
-#define uvisor_read(box_name, addr, op, msk) \
+#define uvisor_read(box_name, addr, op, shared, msk) \
     ({ \
         /* Instanstiate the gateway. This gets resolved at link-time. */ \
         __attribute__((aligned(4))) static TRegisterGateway const register_gateway = { \
@@ -83,9 +79,8 @@
             .magic      = UVISOR_REGISTER_GATEWAY_MAGIC, \
             .box_ptr    = (uint32_t) & box_name ## _cfg_ptr, \
             .address    = (uint32_t) addr, \
-            .value      = 0, \
             .mask       = msk, \
-            .operation  = op, \
+            .operation  = UVISOR_RGW_OP(op, sizeof(*addr), shared), \
             .bxlr       = BXLR  \
         }; \
         \
@@ -97,7 +92,7 @@
         \
         /* Call the actual gateway. */ \
         uint32_t result = ((uint32_t (*)(void)) ((uint32_t) &register_gateway | 1))(); \
-        result; \
+        (typeof(*addr)) result; \
     })
 
 /** Register Gateway - Write operation
@@ -106,14 +101,8 @@
  * registers. Such accesses are assembled into a read-only flash structure that
  * is read and validated by uVisor before performing the operation.
  *
- * @warning These APIs currently only support link-time known values. This means
- * that an access of this type is not supported:
- * ```C
- * static uint32_t const const_value = 1;
- * uvisor_write(&SYSCFG->CTRL, const_value, UVISOR_RGW_OP_WRITE, 0xF); // Yes
- * uint32_t var_value = rand();
- * uvisor_write(&SYSCFG->CTRL, var_value, UVISOR_RGW_OP_WRITE, 0xF); // No
- * ```
+ * @warning This API currently only supports link-time known value for the
+ * address, operation and mask.
  *
  * @param box_name[in]  The name of the source box as decalred in
  *                      `UVISOR_BOX_CONFIG`.
@@ -121,9 +110,11 @@
  * @param val[in]       The value to write at address.
  * @param operation[in] The operation to perform at the address for the read. It
  *                      is chosen among the `UVISOR_RGW_OP_*` macros.
+ * @param shared[in]    True if the gateway can be performed by any box. In this
+ *                      case, the box_name field does not guarantee exclusivity.
  * @param mask[in]      The mask to apply for the write operation.
  */
-#define uvisor_write(box_name, addr, val, op, msk) \
+#define uvisor_write(box_name, addr, val, op, shared, msk) \
     { \
         /* Instanstiate the gateway. This gets resolved at link-time. */ \
         __attribute__((aligned(4))) static TRegisterGateway const register_gateway = { \
@@ -133,9 +124,8 @@
             .magic      = UVISOR_REGISTER_GATEWAY_MAGIC, \
             .box_ptr    = (uint32_t) & box_name ## _cfg_ptr, \
             .address    = (uint32_t) addr, \
-            .value      = val, \
             .mask       = msk, \
-            .operation  = op, \
+            .operation  = UVISOR_RGW_OP(op, sizeof(*addr), shared), \
             .bxlr       = BXLR  \
         }; \
         \
@@ -145,8 +135,9 @@
         static uint32_t const register_gateway_ptr = (uint32_t) &register_gateway; \
         (void) register_gateway_ptr; \
         \
-        /* Call the actual gateway. */ \
-        ((void (*)(void)) ((uint32_t) ((uint32_t) &register_gateway | 1)))(); \
+        /* Call the actual gateway.
+         * The value is passed as the first argument. */ \
+        ((void (*)(uint32_t)) ((uint32_t) ((uint32_t) &register_gateway | 1)))((uint32_t) (val)); \
     }
 
 /** Get the selected bits at the target address.
@@ -159,7 +150,7 @@
 #define UVISOR_BITS_GET(box_name, address, mask) \
     /* Register gateway implementation:
      * *address & mask */ \
-    uvisor_read(box_name, address, UVISOR_RGW_OP_READ_AND, mask)
+    uvisor_read(box_name, address, UVISOR_RGW_OP_READ_AND, false, mask)
 
 /** Check the selected bits at the target address.
  * @param box_name[in] Box name as defined by the uVisor box configuration
@@ -182,7 +173,7 @@
 #define UVISOR_BITS_SET(box_name, address, mask) \
     /* Register gateway implementation:
      * *address |= (mask & mask) */ \
-    uvisor_write(box_name, address, mask, UVISOR_RGW_OP_WRITE_OR, mask)
+    uvisor_write(box_name, address, mask, UVISOR_RGW_OP_WRITE_OR, false, mask)
 
 /** Clear the selected bits at the target address.
  *
@@ -195,7 +186,7 @@
 #define UVISOR_BITS_CLEAR(box_name, address, mask) \
     /* Register gateway implementation:
      * *address &= (0x00000000 | ~mask) */ \
-    uvisor_write(box_name, address, 0x00000000, UVISOR_RGW_OP_WRITE_AND, mask)
+    uvisor_write(box_name, address, 0x00000000, UVISOR_RGW_OP_WRITE_AND, false, mask)
 
 /** Set the selected bits at the target address to the given value.
  *
@@ -210,7 +201,7 @@
 #define UVISOR_BITS_SET_VALUE(box_name, address, mask, value) \
     /* Register gateway implementation:
      * *address = (*address & ~mask) | (value & mask) */ \
-    uvisor_write(box_name, address, value, UVISOR_RGW_OP_WRITE_REPLACE, mask)
+    uvisor_write(box_name, address, value, UVISOR_RGW_OP_WRITE_REPLACE, false, mask)
 
 /** Toggle the selected bits at the target address.
  *
@@ -223,6 +214,6 @@
 #define UVISOR_BITS_TOGGLE(box_name, address, mask) \
     /* Register gateway implementation:
      * *address ^= (0xFFFFFFFF & mask) */ \
-    uvisor_write(box_name, address, 0xFFFFFFFF, UVISOR_RGW_OP_WRITE_XOR, mask)
+    uvisor_write(box_name, address, 0xFFFFFFFF, UVISOR_RGW_OP_WRITE_XOR, false, mask)
 
 #endif /* __UVISOR_API_REGISTER_GATEWAY_H__ */
