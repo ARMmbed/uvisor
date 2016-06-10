@@ -56,7 +56,7 @@ static int register_gateway_check(TRegisterGateway const * const register_gatewa
     }
 
     /* Verify that the box configuration pointer is in the dedicated flash
-     * region and that it corresponds to the currently active box. */
+     * region. */
     /* Note: We only check that the box pointer is larger than the start of the
      * pointer region. The subsequent substraction that we do to calculate the
      * box ID is then guaranteed to be sane. */
@@ -65,8 +65,12 @@ static int register_gateway_check(TRegisterGateway const * const register_gatewa
                 register_gateway->box_ptr, (uint32_t) register_gateway);
         return REGISTER_GATEWAY_STATUS_ERROR_BOX_PTR;
     }
+
+    /* Verify that the gateway is being performed by the currently active box.
+     * The check does not apply if the gateway has been explicitly marked as
+     * shared. */
     uint8_t box_id = (uint8_t) ((uint32_t *) register_gateway->box_ptr - __uvisor_config.cfgtbl_ptr_start);
-    if (box_id != g_active_box) {
+    if (!(register_gateway->operation & __UVISOR_RGW_OP_SHARED_MASK) && (box_id != g_active_box)) {
         DPRINTF("Register gateway is owned by box %d, while the active box is %d.\r\n", box_id, g_active_box);
         return REGISTER_GATEWAY_STATUS_ERROR_BOX_ID;
     }
@@ -100,38 +104,74 @@ void register_gateway_perform_operation(uint32_t svc_sp, uint32_t svc_pc)
     /* From now on we can assume the register_gateway structure and the address
      * are valid. */
 
-    /* Perform the actual operation. */
-    uint32_t * address = (uint32_t *) register_gateway->address;
+    /* Fetch the value from the user stack.
+     * This is only needed for write operations. */
+    uint32_t value = vmpu_unpriv_uint32_read(svc_sp);
+
+    /* De-reference the address.
+     * The value at *address is always needed for every operation. */
+    uint32_t address = register_gateway->address;
+    uint32_t width = (register_gateway->operation & __UVISOR_RGW_OP_WIDTH_MASK) >> __UVISOR_RGW_OP_WIDTH_POS;
     uint32_t result = 0;
-    switch (register_gateway->operation) {
-    case UVISOR_RGW_OP_READ:
-        result = *address;
+    switch(width) {
+    case 4:
+        result = (uint32_t) *((uint32_t *) address);
         break;
-    case UVISOR_RGW_OP_READ_AND:
-        result = *address & register_gateway->mask;
+    case 2:
+        result = (uint32_t) *((uint16_t *) address);
         break;
-    case UVISOR_RGW_OP_WRITE:
-        *address = register_gateway->value;
-        break;
-    case UVISOR_RGW_OP_WRITE_AND:
-        *address &= (register_gateway->value | ~(register_gateway->mask));
-        break;
-    case UVISOR_RGW_OP_WRITE_OR:
-        *address |= (register_gateway->value & register_gateway->mask);
-        break;
-    case UVISOR_RGW_OP_WRITE_XOR:
-        *address ^= (register_gateway->value & register_gateway->mask);
-        break;
-    case UVISOR_RGW_OP_WRITE_REPLACE:
-        *address = (*address & ~(register_gateway->mask)) | (register_gateway->value & register_gateway->mask);
+    case 1:
+        result = (uint32_t) *((uint8_t *) address);
         break;
     default:
-        HALT_ERROR(NOT_ALLOWED, "Register level gateway: Operation 0x%08X not recognised.",
-                   register_gateway->operation);
+        HALT_ERROR(NOT_ALLOWED, "Register level gateway: Width %d not allowed.", width);
         break;
     }
 
-    /* Store the return value in the caller stack.
-     * The return value is 0 if the gateway contained a write operation. */
-    vmpu_unpriv_uint32_write(svc_sp, result);
+    /* Perform the actual operation.
+     * Read operations store the return value onto the user stack. */
+    uint32_t operation = (register_gateway->operation & __UVISOR_RGW_OP_TYPE_MASK) >> __UVISOR_RGW_OP_TYPE_POS;
+    switch (operation) {
+    case UVISOR_RGW_OP_READ:
+        return vmpu_unpriv_uint32_write(svc_sp, result);
+    case UVISOR_RGW_OP_READ_AND:
+        result &= register_gateway->mask;
+        return vmpu_unpriv_uint32_write(svc_sp, result);
+    case UVISOR_RGW_OP_WRITE:
+        result = value;
+        break;
+    case UVISOR_RGW_OP_WRITE_AND:
+        result &= (value | ~(register_gateway->mask));
+        break;
+    case UVISOR_RGW_OP_WRITE_OR:
+        result |= (value & register_gateway->mask);
+        break;
+    case UVISOR_RGW_OP_WRITE_XOR:
+        result ^= (value & register_gateway->mask);
+        break;
+    case UVISOR_RGW_OP_WRITE_REPLACE:
+        result = (result & ~(register_gateway->mask)) | (value & register_gateway->mask);
+        break;
+    default:
+        HALT_ERROR(NOT_ALLOWED, "Register level gateway: Operation 0x%08X not recognised.", operation);
+        break;
+    }
+
+    /* Store the result at the target address.
+     * The code runs here only if the register gateway performs a write
+     * operation. */
+    switch(width) {
+    case 4:
+        *((uint32_t *) address) = (uint32_t) result;
+        break;
+    case 2:
+        *((uint16_t *) address) = (uint16_t) result;
+        break;
+    case 1:
+        *((uint8_t *) address) = (uint8_t) result;
+        break;
+    default:
+        HALT_ERROR(NOT_ALLOWED, "Register level gateway: Width %d not allowed.", width);
+        break;
+    }
 }
