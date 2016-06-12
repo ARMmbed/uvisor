@@ -20,6 +20,24 @@ docker run -i -t -v $PWD/mbed:/home/mbed/shared:Z meriac/mbed
 ```
 
 ## Example Usage
+
+### Remote access via SSH
+```bash
+# run new docker instance of mbed build tools
+docker run --name mbed-ssh -d -p 22022:22 meriac/mbed-ssh
+# get SSH password
+docker logs mbed-ssh
+    4f34dd2daef71e091f09c9a0421d57481d3697f84b11da15e9582ed2e6e5d27b
+    docker logs mbed-ssh
+    ssh password for user mbed:'QLT2uEop4Wol9RsPCD3I'
+    Changing password for user mbed.
+    passwd: all authentication tokens updated successfully.
+
+# log into the machine locally using the password printed by 'logs'
+ssh -p 22022:22 mbed@localhost
+# consider making this port available from the outside
+```
+### Interactive
 ```txt
 # start docker image
 docker run -i -t meriac/mbed
