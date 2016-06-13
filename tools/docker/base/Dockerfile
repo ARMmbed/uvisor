@@ -20,6 +20,8 @@ RUN dnf -y install \
 	arm-none-eabi-newlib \
 	arm-none-eabi-binutils-cs \
 	tar \
+	make \
+	findutils \
 	\
 	&& dnf clean all
 
