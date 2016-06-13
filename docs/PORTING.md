@@ -2,9 +2,9 @@
 
 The uVisor is a low-level security module that creates sandboxed environments on ARM Cortex-M3 and ARM Cortex-M4 devices. Each sandbox can get hold of a set of private resources for which uVisor grants exclusive access. Calls into sandboxed APIs are only possible through uVisor-managed entry points.
 
-The uVisor is released in the form of a static library. This library contains the implementation of all the uVisor APIs and the uVisor core, which is a pre-linked binary component.
+The uVisor is not compiled and linked directly into your application. Instead, a glue-layer module compiles the uVisor in the form of a static library, which is periodically released.. This library contains the implementation of all the uVisor APIs and the uVisor core, which is a pre-linked binary component.
 
-This guide will help you to port uVisor to your platform and integrate its library in mbed OS.
+This guide will help you to port uVisor to your platform and to integrate it in the mbed OS uVisor glue-layer library.
 
 ## Overview
 
@@ -14,7 +14,7 @@ This document will cover the following:
 * A [step-by-step](#porting-steps) porting guide to bring uVisor to your platform.
 * How to [integrate](#integrate-uvisor-in-mbed-os) your new port of uVisor into mbed OS.
 
-For the remainder of this guide we will assume that you are porting a whole device family to uVisor, called `${family}`. We strongly suggest to abstract and generalize your port as much as possible. Since a static library is generated for each of your family configurations, a more generalized uVisor port result in the generation — and maintenance — of fewer release libraries. You will also enjoy the nice benefit of going through the porting process only once for a large set of devices.
+For the remainder of this guide we will assume that you are porting a whole device family to uVisor, called `${family}`. We strongly suggest to abstract and generalize your port as much as possible. Since a static library is generated for each of your family configurations, a more generalized uVisor port results in the generation — and maintenance — of fewer release libraries. You will also enjoy the nice benefit of going through the porting process only once for a large set of devices.
 
 You will need the following:
 
@@ -29,13 +29,13 @@ The uVisor is developed in the [ARMmbed/uvisor](https://github.com/ARMmbed/uviso
 
 Although uVisor is highly self-contained, it still requires some support from the target operating system. There are two files in particular that need to be changed in your code-base:
 
-1. **Library glue layer**. [ARMmbed/uvisor](https://github.com/ARMmbed/uvisor) provides release and debug libraries for all family configurations. The logic to pick the right build for the right target is OS-specific and must be provided by a glue layer.
+1. **Library glue layer**. The [ARMmbed/uvisor](https://github.com/ARMmbed/uvisor) `Makefile` allows you to build both release and debug libraries for all family configurations. The logic to generate this libraries, publish them, and then pick the right library for the right target at build time is OS-specific. This logic must be provided by a glue layer.
 1. **Linker script**. It contains specific memory regions and symbols that uVisor relies on.
 1. **Start-up script**. uVisor boots right after the system basic initialization, and before the C/C++ library initialization. The start-up script needs to call `uvisor_init()` in between those two.
 
-If you are porting uVisor to mbed OS, the library glue layer is implemented in [ARMmbed/uvisor-lib](https://github.com/ARMmbed/uvisor-lib), the linker script is located in the platform yotta target, while the start-up script lives in the target-specific mbed HAL yotta module. We will guide you through the modifications needed in those modules later in this guide.
+If you are porting uVisor to mbed OS, you will find that the library glue layer is already embedded in the [mbed OS code-base](https://github.com/ARMmbed/uvisor-lib). The linker script and start-up code also live in the same repository. We will guide you through the modifications needed in those files later in this guide.
 
-Finally, we provide an example application in [ARMmbed/uvisor-helloworld](https://github.com/ARMmbed/uvisor-helloworld) that shows the main uVisor features on our supported targets. It can be used during the porting process as a quick way of testing that the uVisor is working as expected on your new platform.
+Finally, we provide an example application in [ARMmbed/example-mbed-mallocator](https://github.com/ARMmbed/example-mbed-mallocator) that shows the minimum set of uVisor features on our supported targets. It can be used during the porting process as a quick way of testing that the uVisor is working as expected on your new platform.
 
 ## Porting steps
 [Go to top](#overview)
@@ -61,7 +61,7 @@ A single family of micro-controllers might trigger different releases of uVisor.
 | `FLASH_LENGTH_MIN` | min( [`FLASH_LENGTH(i)` for `i` in family's devices] )                     |
 | `SRAM_LENGTH_MIN`  | min( [`SRAM_LENGTH(i)` for `i` in family's devices] )                      |
 | `NVIC_VECTORS`     | max( [`NVIC_VECTORS(i)` for `i` in family's devices] )                     |
-| `CORE_*` *         | Core version (e.g `CORE_CORTEX_M3`)                                        |
+| `CORE_*`           | Core version (e.g `CORE_CORTEX_M3`)                                        |
 
 **Table 1**. Hardware-specific features that differentiate uVisor builds
 
@@ -250,18 +250,29 @@ $ cd ~/code/uvisor
 $ make
 ```
 
-The build process generates as many static libraries (`*.a` files) as your family configurations, multiplied by 2 (debug and release builds). You can find them in `~/code/uvisor/api/lib/${family}`.
-
+The build process generates as many static libraries (`*.a` files) as your family configurations, multiplied by 2 (debug and release builds). You can find them in `~/code/uvisor/api/lib/${family}`. Please note that these libraries are not published in the uVisor repository. Instead, it is the glue-layer library that deploys them and makes them available to the target OS.
 
 ## Integrate uVisor in mbed OS
 [Go to top](#overview)
 
-You now need to integrate uVisor in your code-base. As anticipated above, this involves changing two files, the linker script and the start-up script. We already implemented the uVisor library glue layer for mbed OS; you can find it at [ARMmbed/uvisor-lib](https://github.com/ARMmbed/uvisor-lib). You only need to add one file to that module to make sure your family is correctly recognised.
+You now need to integrate uVisor in the mbed OS code-base for your target. This requires the following steps, which we will cover in detail:
+
+* Add a hook to `uvisor_init()` in your start-up script.
+* Add the uVisor-specific sections to your platforms' linker scripts.
+* Deploy the uVisor libraries for your target platforms.
+
+In the sections below, we refer to the mbed OS code-base as shown in the [mbedmicro/mbed](https://github.com/mbedmicro/mbed) repository.
 
 ### Start-up script
 [Go to top](#overview)
 
-This usually lives in an `mbed-hal-$family` module, if you already ported your platform to mbed. The start-up code must call the function `uvisor_init()` right after system initialization (usually called `SystemInit()`) and right before the C/C++ library initialization.
+Assuming that you already ported your platform to mbed, the start-up script usually lives in:
+
+```bash
+hal/targets/cmsis/TARGET_${vendor}/TARGET_${family}/TARGET_${device}/TOOLCHAIN_${toolchain}
+```
+
+The start-up code must call the function `uvisor_init()` right after system initialization (usually called `SystemInit()`) and right before the C/C++ library initialization.
 
 ```C
 ResetHandler:
@@ -278,44 +289,85 @@ ResetHandler:
 ### Linker script
 [Go to top](#overview)
 
+> Note: Since currently uVisor only supports the [GCC ARM Embedded](https://launchpad.net/gcc-arm-embedded) toolchain, only instructions for the GCC `ld` linker script are provided.
+
 To enforce the security model, we need to place uVisor at a specific location in memory, and give uVisor specific information about the rest of the memory map. These symbols live in the `ld` linker script.
 
 The snippet below can be used as a template for your `ld` linker script.
 
+Please note that every occurrence of `...` identifies parts of the existing linker script that have been omitted here for clarity. You will find details and requirements for each section in a table below. In addition, we assume that the linker script applies to a device that has one flash memory and one SRAM module, and that interrupt vectors are relocated in SRAM by the host OS (although this does not strictly influence uVisor).
+
+
+
 ```
+...
+
+/* Specify the memory areas. */
 MEMORY
 {
-    VECTORS_FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 0x00000400
-    FLASH (rx)         : ORIGIN = 0x00000400, LENGTH = 0x00100000 - 0x00000400
-    VECTORS_RAM (rx)   : ORIGIN = 0x1FFF0000, LENGTH = 0x00000400
-    RAM (rwx)          : ORIGIN = 0x1FFF0400, LENGTH = 0x00040000 - 0x00000400
+    m_interrupts          (RX)  : ORIGIN = 0x00000000, LENGTH = 0x00000400
+    m_text                (RX)  : ORIGIN = 0x00000400, LENGTH = 0x00010000
+    m_data                (RW)  : ORIGIN = 0x1FFF0000, LENGTH = 0x00040000
 }
 
-ENTRY(ResetHandler)
-
+/* Define the output sections. */
 SECTIONS
 {
-    .isr_vector :
+    /* The startup code goes first into internal flash. */
+    .interrupts :
     {
-        __vector_table = .;
-        KEEP(*(.vector_table))
-         . = ALIGN(4);
-    } > VECTORS
+        ...
+    } > m_interrupts
 
-    /* Ensure that the uVisor bss is at the beginning of the flash memory. */
-    .uvisor.bss (NOLOAD):
+    /* The program code and other data goes into internal flash. */
+
+    /* Note: The uVisor expects this section at a fixed location, as specified
+             by the porting process configuration parameter: FLASH_OFFSET. */
+    __UVISOR_TEXT_OFFSET = < your FLASH_OFFSET here >;
+    __UVISOR_TEXT_START = ORIGIN(m_interrupts) + __UVISOR_TEXT_OFFSET;
+    .text __UVISOR_TEXT_START :
+    {
+        /* uVisor code and data */
+        . = ALIGN(4);
+        __uvisor_main_start = .;
+        *(.uvisor.main)
+        __uvisor_main_end = .;
+
+        ...
+    } > m_text
+
+    /* Constuctors, destructors, etc. go here. */
+    ...
+
+    /* The following SRAM sections are placed before .data, to ensure that their
+       load address is the same as the one specified here. */
+
+    .interrupts_ram :
+    {
+        ...
+    } > m_data
+
+    /* Ensure that the uVisor BSS section is put first after the relocated
+     * interrupt table in SRAM. */
+    /* Note: The uVisor expects this section at a fixed location, as specified
+             by the porting process configuration parameter: SRAM_OFFSET. */
+    __UVISOR_SRAM_OFFSET = 0x400;
+    __UVISOR_BSS_START = ORIGIN(m_data) + __UVISOR_SRAM_OFFSET;
+    ASSERT(__interrupts_ram_end__ <= __UVISOR_BSS_START,
+           "The ISR relocation region overlaps with the uVisor BSS section.")
+    .uvisor.bss __UVISOR_BSS_START (NOLOAD):
     {
         . = ALIGN(32);
         __uvisor_bss_start = .;
 
-        /* Protected uVisor main bss */
+        /* protected uvisor main bss */
         . = ALIGN(32);
         __uvisor_bss_main_start = .;
         KEEP(*(.keep.uvisor.bss.main))
         . = ALIGN(32);
         __uvisor_bss_main_end = .;
 
-        /* Protected uVisor secure boxes bss */
+        /* protected uvisor secure boxes bss */
         . = ALIGN(32);
         __uvisor_bss_boxes_start = .;
         KEEP(*(.keep.uvisor.bss.boxes))
@@ -324,24 +376,17 @@ SECTIONS
 
         . = ALIGN(32);
         __uvisor_bss_end = .;
-    } > RAM
+    } > m_data
 
-    .text :
+    /* Now we can place the .data section, which will be loaded to SRAM. */
+    .data :
     {
-        /* uVisor code and data */
-        . = ALIGN(4);
-        __uvisor_main_start = .;
-        *(.uvisor.main)
-        __uvisor_main_end = .;
-
-        *(.text*)
         ...
-    } > FLASH
+    } > m_data AT > m_text
 
-    ...
-
-    /* uVisor configuration data */
-    .uvisor.secure :
+    /* uVisor configuration section
+     * This section must be located after all other flash regions. */
+    .uvisor.secure (NOLOAD):
     {
         . = ALIGN(32);
         __uvisor_secure_start = .;
@@ -354,20 +399,28 @@ SECTIONS
         __uvisor_cfgtbl_end = .;
 
         /* Pointers to the uVisor secure boxes configuration tables */
-        /* Note: Do not add any further alignment here, as we need to have the
-         *       exact list of pointers. */
+        /* Note: Do not add any further alignment here, as uVisor will need to
+                 have access to the exact list of pointers. */
         __uvisor_cfgtbl_ptr_start = .;
         KEEP(*(.keep.uvisor.cfgtbl_ptr_first))
         KEEP(*(.keep.uvisor.cfgtbl_ptr))
         __uvisor_cfgtbl_ptr_end = .;
 
+        /* Pointers to all boxes register gateways. These are grouped here to
+           allow discoverability and firmware verification. */
+        __uvisor_register_gateway_ptr_start = .;
+        KEEP(*(.keep.uvisor.register_gateway_ptr))
+        __uvisor_register_gateway_ptr_end = .;
+
         . = ALIGN(32);
         __uvisor_secure_end = .;
-    } >FLASH
+    } > m_text
 
-    /* Section for uninitialized data
-     * It is not needed by uVisor but still highly recommended for testing
-     * reasons. */
+    /* From now on you can insert any other SRAM region. */
+
+    /* Uninitialized data section
+     * This region is not initialized by the C/C++ library and can be used to
+     * store state across soft reboots. */
     .uninitialized (NOLOAD):
     {
         . = ALIGN(32);
@@ -376,8 +429,9 @@ SECTIONS
         KEEP(*(.keep.uninitialized))
         . = ALIGN(32);
         __uninitialized_end = .;
-    } > RAM
+    } > m_data_2
 
+    /* Heap and stack go here. */
     ...
 
     /* Provide physical memory boundaries for uVisor. */
@@ -388,7 +442,7 @@ SECTIONS
 }
 ```
 
-As shown in the snippet above, the uVisor needs the following three regions:
+As shown in the snippet above, the uVisor needs the following regions:
 
 <table>
   <tbody>
@@ -409,7 +463,7 @@ As shown in the snippet above, the uVisor needs the following three regions:
         <code>.uvisor.bss</code>
       </td>
       <td>
-        Contains both uVisor's own memories (coming from <code>uvisor-lib</code>, in <code>.keep.uvisor.bss.main</code>) and the secure boxes' protected memories (in <code>.keep.uvisor.bss.boxes</code>). You must make sure that this region (and hence its first sub-region, <code>.keep.uvisor.bss.boxes</code>) is positioned in SRAM at the same offset that you specified in <code>SRAM_OFFSET</code>. To avoid having data loaded from flash ending up before uVisor, we strongly suggest to put this section at the top of the linker script.
+        Contains both uVisor's own memories (coming from the uVisor library, in <code>.keep.uvisor.bss.main</code>) and the secure boxes' protected memories (in <code>.keep.uvisor.bss.boxes</code>). You must make sure that this region (and hence its first sub-region, <code>.keep.uvisor.bss.boxes</code>) is positioned in SRAM at the same offset that you specified in <code>SRAM_OFFSET</code>. To avoid having data loaded from flash ending up before uVisor, we strongly suggest to put this section as soon as possible in the linker script, before any loaded section.
       </td>
     </tr>
     <tr>
@@ -420,51 +474,68 @@ As shown in the snippet above, the uVisor needs the following three regions:
         Contains constant data in flash that describes the configuration of the secure boxes. It comprises the configuration tables (<code>.keep.uvisor.cfgtbl</code>) and the pointers to them (<code>.keep.uvisor.cfgtbl_ptr[_first]</code>), which are used by uVisor for box enumeration.
       </td>
     </tr>
+    <tr>
+      <td>
+        <code>.uninitialized</code>
+      </td>
+      <td>
+        It is not strictly speaking a uVisor region, but this should go in the linker script to make sure that data can be passed to the execution environment across soft reboots. This section is never touched by the C/C++ library initialization.
+      </td>
+    </tr>
   </tbody>
 </table>
 
 All these sections and their sub-regions must be preceded and followed by symbols that describe their boundaries, as shown in the template. Note that all symbols prefixed with `.keep` must end up in the final memory map even if they are not explicitly used. Please make sure to use the correct `ld` commands (`KEEP(...)`).
 
-Once uVisor is active it maintains its own vector table, which the rest of the code can only interact with through uVisor APIs. We still suggest to leave the standard vector table in flash, so that if uVisor is disabled the classic `NVIC_{S,G}etVector` functions can still work and relocate it to SRAM. This is the same reason why we need an `SRAM_OFFSET` as well, as it reserves the space for relocation of the original OS vector table.
+Once uVisor is active it maintains its own vector table, which the rest of the code can only interact with through uVisor APIs. As shown in the script above, we still suggest to leave the standard vector table in flash, so that if uVisor is disabled any legacy mechanism for interrupt management still works. This is the same reason why we need an `SRAM_OFFSET` as well, as it reserves the space for relocation of the original OS vector table.
 
 Finally, note that at the end of the linker script the physical boundaries for the memories (flash/SRAM) populated by uVisor are also provided.
 
-### Library glue layer
+### Library deployment
 [Go to top](#overview)
 
-The `uvisor-lib` yotta module ensures that the correct uVisor library release is selected depending on the yotta target, as determined from the built-in `TARGET_LIKE_*` pre-processor symbols.
+The uVisor code-base is embedded in [mbedmicro/mbed](https://github.com/mbedmicro/mbed), and can be found at `features/FEATURE_UVISOR`. This module is a glue layer library that translates the [ARMmbed/uvisor](https://github.com/ARMmbed/uvisor) core and APIs into a file structure which is mbed-OS-friendly:
 
-You only need to add one file to this module. First, clone its repository:
-
-```bash
-$ cd ~/code
-$ git clone git@github.com/ARMmbed/uvisor-lib.git
+```
+mbed
+└── features
+    └── FEATURE_UVISOR
+        ├── importer
+        │   ├── [*] Makefile
+        │   └── TARGET_IGNORE
+        │       └── uvisor -> ARMmbed/uvisor
+        ├── includes
+        |
+        ├── source
+        |
+        └── targets
+            ├── TARGET_UVISOR_SUPPORTED
+            |   ├── < your target here >
+            │   ├── TARGET_EFM32
+            │   ├── TARGET_MCU_K64F
+            │   └── TARGET_STM32F4
+            └── TARGET_UVISOR_UNSUPPORTED
 ```
 
-This repository is configured to have [ARMmbed/uvisor](https://github.com/ARMmbed/uvisor) as a submodule, so that the uVisor libraries and API headers can be included directly without duplicating code. In this case we suggest you do *not* initialize the submodule. Instead, link you local version of [ARMmbed/uvisor](https://github.com/ARMmbed/uvisor) to the current folder:
+In particular, the uVisor repository is included as a sub-module in the `features/FEATURE_UVISOR/importer/TARGET_IGNORE` folder. As the folder name suggests, the uVisor code is never compiled directly. Instead, an importer script (`Makefile`) is used to periodically build the uVisor and to publish the resulting libraries in the `source` and `includes` directories.
 
-```bash
-$ cd ~/code/uvisor-lib
-$ ln -s ~/code/uvisor .
+If you want to add your newly ported platforms to this deployment process, you need to change the `Makefile` so that it knows how to translate the `${family}` name that you used during the porting process into a compatible mbed OS target name. Given the generality of your uVisor port, you might need to translate the same family/configuration to multiple mbed OS targets.
+
+The translation requires you to add an element to the following line in the `Makefile`:
+
+```make
+TARGET_TRANSLATION:=MCU_K64F.kinetis EFM32.efm32 STM32F4.stm32
 ```
 
-The only file that you need to add is named `support_${vendor}.cmake`, and must be located in the `source` folder inside `~/code/uvisor-lib`. This file selects the correct configuration based on your target.
+Following the previous examples in this porting guide, we assumed that your device `${family}` contains four devices, `${device0}`, `${device1}`, `${device2}`, and `${device3}`. The first two belong to the `CONFIGURATION_${family}_1` configuration, the other two to the `CONFIGURATION_${family}_2` one.
 
-**Example**
+If we assume that in mbed OS you have two targets named `TARGET_${device0_or_1}`, `TARGET_${device2_or_3}` then the `Makefile` translation will look like the following:
 
-```bash
-if(TARGET_LIKE_${family})
-    set(UVISOR_FAMILY "${family}")
-
-    if(TARGET_LIKE_${family}${device0} OR TARGET_LIKE_${family}${device1})
-        set(UVISOR_CONFIGURATION "CONFIGURATION_${family}_1")
-    endif()
-
-    if(TARGET_LIKE_${family}${device2} OR TARGET_LIKE_${family}${device3})
-        set(UVISOR_CONFIGURATION "CONFIGURATION_${family}_2")
-    endif()
-endif()
+```make
+TARGET_TRANSLATION:=MCU_K64F.kinetis EFM32.efm32 STM32F4.stm32 ${device0_or_1}.${family} ${device2_or_3}.family
 ```
+
+Once the importer script has been updated, you can run `make` from the importer folder. Your new libraries will show up in the `targets` folder.
 
 ### Next steps
 [Go to top](#overview)
@@ -473,20 +544,11 @@ If you have followed all the steps in this guide, this is what you should have:
 * Your whole family ported to the [ARMmbed/uvisor](https://github.com/ARMmbed/uvisor) code-base.
 * All the uVisor library releases built for your family, saved in `~/code/uvisor/api/lib/${family}`.
 * The uVisor libraries integrated in mbed OS:
-    * The linker script in `target-${your_target}`.
-    * The start-up script in `mbed-hal-${your_target}`.
-    * The CMake logic to include the uVisor libraries in `uvisor-lib`.
+    * The linker script updated.
+    * The start-up script updated.
+    * The importer `Makefile` updated to deploy your libraries.
 
-You can now activate and test uVisor. This can be done by setting the `uvisor.present` yotta configuration to `1`, in your target's `target.json` file:
+# FIXME
 
-```bash
-"config": {
-  ...
-  "uvisor": {
-    "present": 1
-  },
-  ...
-}
-```
-
-You are now ready to test the new port of uVisor with our [ARMmbed/uvisor-helloworld](https://github.com/ARMmbed/uvisor-helloworld) application. Please follow the [Developing with uVisor locally](DEVELOP_LOCALLY.md) document for a step-by-step guide.
+* Add final steps to test out application.
+* Add final steps to build and develop locally (needs new links).
