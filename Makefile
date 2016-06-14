@@ -95,6 +95,7 @@ endif
 
 SOURCES:=\
          $(CORE_SYSTEM_DIR)/src/benchmark.c \
+         $(CORE_SYSTEM_DIR)/src/box_main.c \
          $(CORE_SYSTEM_DIR)/src/context.c \
          $(CORE_SYSTEM_DIR)/src/halt.c \
          $(CORE_SYSTEM_DIR)/src/main.c \
