@@ -1,10 +1,10 @@
-# uVisor Porting Guide
+# ARM uVisor Porting Guide for mbed OS
 
 The uVisor is a low-level security module that creates sandboxed environments on ARM Cortex-M3 and ARM Cortex-M4 devices. Each sandbox can get hold of a set of private resources for which uVisor grants exclusive access. Calls into sandboxed APIs are only possible through uVisor-managed entry points.
 
-The uVisor is not compiled and linked directly into your application. Instead, a glue-layer module compiles the uVisor in the form of a static library, which is periodically released.. This library contains the implementation of all the uVisor APIs and the uVisor core, which is a pre-linked binary component.
+The uVisor is not compiled and linked directly into your application. Instead, a glue-layer module compiles the uVisor in the form of a static library, which is periodically released. This library contains the implementation of all the uVisor APIs and the uVisor core, which is a pre-linked binary component. You can also generate these libraries yourself by cloning the open source code-base at [ARMmbed/uvisor](https://github.com/ARMmbed/uvisor) and compiling them using the provided `Makefile`.
 
-This guide will help you to port uVisor to your platform and to integrate it in the mbed OS uVisor glue-layer library.
+This guide will help you to port uVisor to your platform and to integrate it in mbed OS and CMSIS RTOS. For porting uVisor to other operating systems, please [contact us](mailto:partnership@mbed.com).
 
 ## Overview
 
@@ -260,6 +260,7 @@ You now need to integrate uVisor in the mbed OS code-base for your target. This 
 * Add a hook to `uvisor_init()` in your start-up script.
 * Add the uVisor-specific sections to your platforms' linker scripts.
 * Deploy the uVisor libraries for your target platforms.
+* Enable uVisor in your targets.
 
 In the sections below, we refer to the mbed OS code-base as shown in the [mbedmicro/mbed](https://github.com/mbedmicro/mbed) repository.
 
@@ -279,12 +280,18 @@ ResetHandler:
     ...
     ldr r0, =SystemInit
     blx r0
+#if       defined(FEATURE_UVISOR) && defined(UVISOR_SUPPORTED)
     ldr r0, =uvisor_init    /* [*] Insert this. */
     blx r0                  /* [*] Insert this. */
+#endif /* defined(FEATURE_UVISOR) && defined(UVISOR_SUPPORTED) */
     ldr r0, =__start
     bx  r0
     ...
 ```
+
+Make sure that no static initialization (zeroing the BSS section, loading data from flash to SRAM) happens before the uVisor initialization. Even setting a single global variable before `uvisor_init()` and then referring to it later on might result in data corruption.
+
+The conditional guards that we used in the example above rely on the `FEATURE_UVISOR` and `UVISOR_SUPPORTED` symbols, which will be covered shortly.
 
 ### Linker script
 [Go to top](#overview)
@@ -296,8 +303,6 @@ To enforce the security model, we need to place uVisor at a specific location in
 The snippet below can be used as a template for your `ld` linker script.
 
 Please note that every occurrence of `...` identifies parts of the existing linker script that have been omitted here for clarity. You will find details and requirements for each section in a table below. In addition, we assume that the linker script applies to a device that has one flash memory and one SRAM module, and that interrupt vectors are relocated in SRAM by the host OS (although this does not strictly influence uVisor).
-
-
 
 ```
 ...
@@ -313,13 +318,13 @@ MEMORY
 /* Define the output sections. */
 SECTIONS
 {
-    /* The startup code goes first into internal flash. */
+    /* The start-up code goes first into the internal flash. */
     .interrupts :
     {
         ...
     } > m_interrupts
 
-    /* The program code and other data goes into internal flash. */
+    /* The program code and other data go into the internal flash. */
 
     /* Note: The uVisor expects this section at a fixed location, as specified
              by the porting process configuration parameter: FLASH_OFFSET. */
@@ -360,14 +365,14 @@ SECTIONS
         . = ALIGN(32);
         __uvisor_bss_start = .;
 
-        /* protected uvisor main bss */
+        /* uVisor main BSS section */
         . = ALIGN(32);
         __uvisor_bss_main_start = .;
         KEEP(*(.keep.uvisor.bss.main))
         . = ALIGN(32);
         __uvisor_bss_main_end = .;
 
-        /* protected uvisor secure boxes bss */
+        /* Secure boxes BSS section */
         . = ALIGN(32);
         __uvisor_bss_boxes_start = .;
         KEEP(*(.keep.uvisor.bss.boxes))
@@ -429,10 +434,39 @@ SECTIONS
         KEEP(*(.keep.uninitialized))
         . = ALIGN(32);
         __uninitialized_end = .;
-    } > m_data_2
+    } > m_data
 
     /* Heap and stack go here. */
-    ...
+
+    /* Note: The uVisor requires the original heap start and end addresses to be
+             provided. */
+
+    .heap :
+    {
+        . = ALIGN(8);
+        __uvisor_heap_start = .;
+        __end__ = .;
+        PROVIDE(end = .);
+        __HeapBase = .;
+        . += HEAP_SIZE;
+        __HeapLimit = .;
+        __uvisor_heap_end = .;
+    } > m_data
+
+    .stack :
+    {
+        . = ALIGN(8);
+        . += STACK_SIZE;
+        __StackTop = .;
+    } > m_data
+
+    /* Heap space for the page allocator */
+    .page_heap (NOLOAD) :
+    {
+        __uvisor_page_start = .;
+        . = ORIGIN(m_data_2) + LENGTH(m_data_2) - 4;
+        __uvisor_page_end = .;
+    } > m_data
 
     /* Provide physical memory boundaries for uVisor. */
     __uvisor_flash_start = ORIGIN(VECTORS_FLASH);
@@ -455,7 +489,7 @@ As shown in the snippet above, the uVisor needs the following regions:
         <code>.uvisor.main</code>
       </td>
       <td>
-        Holds the monolithic uVisor core binary. Its location determines the entry point of uVisor, since <code>uvisor_init</code> points to the first opcode in this binary blob. You should make sure that the linker script has this symbol at the same offset that you specified as <code>FLASH_OFFSET</code> in your configuration.
+        It holds the monolithic uVisor core binary. Its location determines the entry point of uVisor, since <code>uvisor_init</code> points to the first opcode in this binary blob. You should make sure that the linker script has this symbol at the same offset that you specified as <code>FLASH_OFFSET</code> in your configuration.
       </td>
     </tr>
     <tr>
@@ -463,7 +497,7 @@ As shown in the snippet above, the uVisor needs the following regions:
         <code>.uvisor.bss</code>
       </td>
       <td>
-        Contains both uVisor's own memories (coming from the uVisor library, in <code>.keep.uvisor.bss.main</code>) and the secure boxes' protected memories (in <code>.keep.uvisor.bss.boxes</code>). You must make sure that this region (and hence its first sub-region, <code>.keep.uvisor.bss.boxes</code>) is positioned in SRAM at the same offset that you specified in <code>SRAM_OFFSET</code>. To avoid having data loaded from flash ending up before uVisor, we strongly suggest to put this section as soon as possible in the linker script, before any loaded section.
+        It contains both uVisor's own memories (coming from the uVisor library, in <code>.keep.uvisor.bss.main</code>) and the secure boxes' protected memories (in <code>.keep.uvisor.bss.boxes</code>). You must make sure that this region (and hence its first sub-region, <code>.keep.uvisor.bss.boxes</code>) is positioned in SRAM at the same offset that you specified in <code>SRAM_OFFSET</code>. To avoid having data loaded from flash ending up before uVisor, we strongly suggest to put this section as soon as possible in the linker script, before any loaded section.
       </td>
     </tr>
     <tr>
@@ -471,7 +505,7 @@ As shown in the snippet above, the uVisor needs the following regions:
         <code>.uvisor.secure</code>
       </td>
       <td>
-        Contains constant data in flash that describes the configuration of the secure boxes. It comprises the configuration tables (<code>.keep.uvisor.cfgtbl</code>) and the pointers to them (<code>.keep.uvisor.cfgtbl_ptr[_first]</code>), which are used by uVisor for box enumeration.
+        It contains constant data in flash that describes the configuration of the secure boxes. It comprises the configuration tables (<code>.keep.uvisor.cfgtbl</code>) and the pointers to them (<code>.keep.uvisor.cfgtbl_ptr[_first]</code>), which are used by uVisor for box enumeration.
       </td>
     </tr>
     <tr>
@@ -482,6 +516,14 @@ As shown in the snippet above, the uVisor needs the following regions:
         It is not strictly speaking a uVisor region, but this should go in the linker script to make sure that data can be passed to the execution environment across soft reboots. This section is never touched by the C/C++ library initialization.
       </td>
     </tr>
+    <tr>
+      <td>
+        <code>.page_heap</code>
+      </td>
+      <td>
+        It is needed to host pages allocated by the uVisor secure allocator.
+      </td>
+    </tr>
   </tbody>
 </table>
 
@@ -489,12 +531,14 @@ All these sections and their sub-regions must be preceded and followed by symbol
 
 Once uVisor is active it maintains its own vector table, which the rest of the code can only interact with through uVisor APIs. As shown in the script above, we still suggest to leave the standard vector table in flash, so that if uVisor is disabled any legacy mechanism for interrupt management still works. This is the same reason why we need an `SRAM_OFFSET` as well, as it reserves the space for relocation of the original OS vector table.
 
+The heap boundaries need to be provided (`__uvisor_heap_start` and `__uvisor_heap_end`), as they are used by the uVisor allocator APIs. The uVisor allocator APIs are available even when uVisor is not strictly supported on a platform, although in that case no security feature is provided. See below for more information.
+
 Finally, note that at the end of the linker script the physical boundaries for the memories (flash/SRAM) populated by uVisor are also provided.
 
 ### Library deployment
 [Go to top](#overview)
 
-The uVisor code-base is embedded in [mbedmicro/mbed](https://github.com/mbedmicro/mbed), and can be found at `features/FEATURE_UVISOR`. This module is a glue layer library that translates the [ARMmbed/uvisor](https://github.com/ARMmbed/uvisor) core and APIs into a file structure which is mbed-OS-friendly:
+The uVisor code-base is embedded in [mbedmicro/mbed](https://github.com/mbedmicro/mbed), and can be found at `features/FEATURE_UVISOR`. This module is a glue layer library that translates the [ARMmbed/uvisor](https://github.com/ARMmbed/uvisor) core and APIs into a file structure that is compatible with mbed OS:
 
 ```
 mbed
@@ -517,7 +561,11 @@ mbed
             └── TARGET_UVISOR_UNSUPPORTED
 ```
 
-In particular, the uVisor repository is included as a sub-module in the `features/FEATURE_UVISOR/importer/TARGET_IGNORE` folder. As the folder name suggests, the uVisor code is never compiled directly. Instead, an importer script (`Makefile`) is used to periodically build the uVisor and to publish the resulting libraries in the `source` and `includes` directories.
+The uVisor repository is included as a sub-module in the
+```
+features/FEATURE_UVISOR/importer/TARGET_IGNORE
+```
+folder. As the folder name suggests, the uVisor code is never compiled directly. Instead, an importer script, `Makefile`, is used to periodically build the uVisor and to publish the resulting libraries in the `source` and `includes` directories.
 
 If you want to add your newly ported platforms to this deployment process, you need to change the `Makefile` so that it knows how to translate the `${family}` name that you used during the porting process into a compatible mbed OS target name. Given the generality of your uVisor port, you might need to translate the same family/configuration to multiple mbed OS targets.
 
@@ -537,6 +585,80 @@ TARGET_TRANSLATION:=MCU_K64F.kinetis EFM32.efm32 STM32F4.stm32 ${device0_or_1}.$
 
 Once the importer script has been updated, you can run `make` from the importer folder. Your new libraries will show up in the `targets` folder.
 
+### Target configuration
+[Go to top](#overview)
+
+Although the uVisor code-base is always fetched when downloading the mbed OS repository, its libraries are never linked automatically. In order to do so, the target description must explicitly specify that uVisor is a supported feature for that target.
+
+In addition, even when the uVisor feature is set, a low-impact version of the uVisor libraries is linked by default, which does not enable the uVisor security features. We call this version of the libraries the *unsupported* libraries.
+
+The unsupported libraries are useful when an application or the operating system want to use uVisor APIs that are available even when the uVisor is not supported on a platform. At the moment, only the uVisor allocator APIs are available in the unsupported libraries.
+
+To enable the uVisor feature in a target and trigger the linkage of the supported libraries, see the table below.
+
+<table>
+  <thead>
+    <tr>
+      <th>Symbol</th>
+      <th>How to define it</th>
+      <th width=60%>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>
+        <code>FEATURE_UVISOR</code>
+      </td>
+      <td>
+        Add <code>UVISOR</code> to the <code>features</code> field in the target description file.
+      </td>
+      <td>
+        If a target sets it, the uVisor code-base is compiled and linked when building applications for that target. Depending on whether <code>UVISOR_SUPPORTED</code> is set or not, the linked libraries are in <i>unsupported</i> or <i>supported</i> mode. In unsupported mode no security feature is provided, and only the allocator APIs are available.
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <code>UVISOR_SUPPORTED</code>
+      </td>
+      <td>
+        Add <code>UVISOR_SUPPORTED</code> to the <code>extra_labels</code> field in the target description file.
+      </td>
+      <td>
+        If a target sets it together with <code>FEATURE_UVISOR</code>, the libraries that are linked into the application provide the full set of the uVisor security features.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+Given the description above, the following combinations are possible:
+
+| `FEATURE_UVISOR` | `UVISOR_SUPPORTED` | What happens                                                                                           |
+|------------------|--------------------|--------------------------------------------------------------------------------------------------------|
+| Not defined      | Not defined        | uVisor is not linked in your app. The uVisor allocator APIs are not available.                         |
+| Not defined      | Defined            | uVisor is not linked in your app. The uVisor allocator APIs are not available.                         |
+| Defined          | Not defined        | uVisor is linked in your app in *unsupported* mode. Only the uVisor allocator APIs are available.      |
+| Defined          | Defined            | uVisor is linked in your app in *supported* mode. All uVisor APIs and security features are available. |
+
+Please note that defining both the `FEATURE_UVISOR` and the `UVISOR_SUPPORTED` symbols does not automatically enable uVisor on the application. By default uVisor runs in *disabled* mode, where the uVisor initialization function is executed but returns immediately.
+
+> Note: At the moment you must also set the `CMSIS_NVIC_VIRTUAL` and `CMSIS_VECTAB_VIRTUAL` symbols in the `macros` field of the target description. In a later version these symbols will be set for you automatically when `UVISOR_SUPPORTED` is set.
+
+In disabled mode no security feature is enabled, although the uVisor binaries are still flashed to the device. To learn more about the uVisor modes of operation please check out the [API documentation](). If you want to know how to enable uVisor and configure an application to use the uVisor security features, please checkout the [quick-start guide]().
+
+If you do not want to enable the uVisor features straight away on your mbed targets, you can create a *wrapper* target that inherits from the original target. You can then set `FEATURE_UVISOR` and `UVISOR_SUPPORTED` using the same labels from the table above, but with `_add` appended to their name:
+
+```json
+{
+    "custom_targets": {
+        "${original_target}_SECURE": {
+            "inherits": ["${original_target}"],
+            "extra_labels_add":["UVISOR_SUPPORTED"],
+            "features_add": ["UVISOR"],
+            "macros_add": ["CMSIS_NVIC_VIRTUAL", "CMSIS_VECTAB_VIRTUAL"]
+        },
+}
+```
+
 ### Next steps
 [Go to top](#overview)
 
@@ -546,9 +668,11 @@ If you have followed all the steps in this guide, this is what you should have:
 * The uVisor libraries integrated in mbed OS:
     * The linker script updated.
     * The start-up script updated.
-    * The importer `Makefile` updated to deploy your libraries.
+    * The importer `Makefile` updated and you libraries deployed.
+    * Your target description updated to link the uVisor libraries.
 
 # FIXME
 
 * Add final steps to test out application.
 * Add final steps to build and develop locally (needs new links).
+* Add quick-start guide.
