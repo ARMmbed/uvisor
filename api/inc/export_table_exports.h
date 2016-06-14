@@ -39,6 +39,12 @@ typedef struct {
 
     OsEventObserver os_event_observer;
 
+    /* Set the current thread creation context. This will cause all new threads
+     * to be created within the specified box. This is only used for the
+     * creation of box main threads. Set box_id to -1 to cause new threads to
+     * be created in the context of g_active_box. */
+    void (* set_thread_creation_context)(int32_t box_id);
+
     /* This must be the last element of the table so that uvisor-input.S can
      * export the size statically. */
     uint32_t size;

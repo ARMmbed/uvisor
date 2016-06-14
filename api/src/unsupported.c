@@ -56,4 +56,9 @@ int uvisor_lib_init(void)
     return 0;
 }
 
+int uvisor_lib_init_post(void)
+{
+    return 0;
+}
+
 #endif

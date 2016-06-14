@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 #include "api/inc/export_table_exports.h"
+#include "api/inc/box_mains.h"
+
+static TUvisorExportTable * __uvisor_export_table;
 
 int uvisor_lib_init(void)
 {
@@ -25,17 +28,31 @@ int uvisor_lib_init(void)
 
     uintptr_t uvisor_config_addr = (uintptr_t) &uvisor_config;
 
-    TUvisorExportTable * uvisor_export_table = (TUvisorExportTable *) (uvisor_config_addr - uvisor_export_table_size);
+    __uvisor_export_table = (TUvisorExportTable *) (uvisor_config_addr - uvisor_export_table_size);
 
-    if (uvisor_export_table->magic != UVISOR_EXPORT_MAGIC) {
+    if (__uvisor_export_table->magic != UVISOR_EXPORT_MAGIC) {
         /* We couldn't find the magic. */
         return -1;
     }
 
-    if (uvisor_export_table->version != UVISOR_EXPORT_VERSION) {
+    if (__uvisor_export_table->version != UVISOR_EXPORT_VERSION) {
         /* The version we understand is not the version we found. */
         return -1;
     }
+
+    extern void osRegisterForOsEvents(const OsEventObserver *observer); /* XXX Use rt_OsEventObserver instead. */
+    osRegisterForOsEvents(&__uvisor_export_table->os_event_observer);
+
+    return 0;
+}
+
+/* This is called before the OS is started, but after the OS is initialized. */
+int uvisor_lib_init_post(void)
+{
+    /* XXX TODO Assert that export table is non-0 */
+
+    /* Start all the box main threads. */
+    box_mains_start(__uvisor_export_table->set_thread_creation_context);
 
     return 0;
 }
