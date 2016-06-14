@@ -1,7 +1,6 @@
 PROJECT:=uvisor-rtos-docs
 WORD_TEMPLATE:=template/pandoc-template.docx
 DOCUMENTS:=\
-	Roadmap.md \
 	README.md \
 	UseCases.md \
 	Technical.md
@@ -37,7 +36,7 @@ publish: $(TARGETS) $(EXAMPLES)
 	cp $^  $(PUBLISH_DIR)
 	git -C $(PUBLISH_DIR) add $^
 	git -C $(PUBLISH_DIR) commit -a -m "released DOC & PDF documents"
-	git -C $(PUBLISH_DIR) push
+	git -C $(PUBLISH_DIR) push origin bin
 
 %.pdf : %.docx
 	$(TOOL_OOWRITER) --headless --convert-to pdf:writer_pdf_Export $^
