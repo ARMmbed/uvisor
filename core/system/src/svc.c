@@ -16,6 +16,7 @@
  */
 #include <uvisor.h>
 #include "benchmark.h"
+#include "box_main.h"
 #include "debug.h"
 #include "halt.h"
 #include "svc.h"
@@ -137,7 +138,7 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
         ".word  __svc_not_implemented\n"
         ".word  register_gateway_perform_operation\n"
         ".word  __svc_not_implemented\n"
-        ".word  __svc_not_implemented\n"
+        ".word  box_main_next\n"
         ".word  __svc_not_implemented\n"
         ".word  __svc_not_implemented\n"
         ".word  __svc_not_implemented\n"

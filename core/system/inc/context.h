@@ -45,6 +45,7 @@ typedef enum {
     CONTEXT_SWITCH_FUNCTION_ISR,     /**< Bound to an ISR. Does not allow arguments, nor a return value. */
     CONTEXT_SWITCH_FUNCTION_DEBUG,   /**< Bound to debug handler. Uses the format specified by the debug box driver. */
     CONTEXT_SWITCH_UNBOUND_THREAD,   /**< Not bound to a handler. Used for thread switching. No switch-out. */
+    CONTEXT_SWITCH_INVALID,          /**< Invalid type. Used for states that do not match an actual context switch. */
 } TContextSwitchType;
 
 /** Snapshot of a previous context state
@@ -97,6 +98,16 @@ TContextCurrentState g_context_current_states[UVISOR_MAX_BOXES];
  *
  * @returns the pointer to the previous box context state. */
 TContextPreviousState * context_state_previous(void);
+
+/** Return a pointer to the very first state of a secure box.
+ * The first state of a box is not stored anywhere, so this function can be used
+ * to look it up in the state stack. The state is not changed by this function
+ * and must not be changed by the caller, otherwise the system can be
+ * compromised.
+ * @param box_id[in]    ID of the box for which the first state is required.
+ * @returns A pointer to the first state of the box.
+ */
+TContextPreviousState * context_state_first(uint8_t box_id);
 
 /** Forge a new exception stack frame and copy arguments from an old one.
  *
