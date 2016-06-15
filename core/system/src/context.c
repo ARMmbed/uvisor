@@ -37,6 +37,12 @@ TContextPreviousState g_context_previous_states[UVISOR_CONTEXT_MAX_DEPTH];
  * @internal */
 uint32_t g_context_p;
 
+/** Support structure used to hold information about the first state of a box.
+ * @internal
+ * This is only used by \ref context_state_first.
+ */
+static TContextPreviousState g_first_state;
+
 /** Push the previous state to the state stack and updates the current state.
  *
  * @internal
@@ -92,6 +98,30 @@ TContextPreviousState * context_state_previous(void)
         return NULL;
     } else {
         return &g_context_previous_states[g_context_p - 1];
+    }
+}
+
+/* Return a pointer to the very first state of a secure box. */
+TContextPreviousState * context_state_first(uint8_t box_id)
+{
+    /* Look up the state in the state stack. */
+    int i = g_context_p;
+    uint32_t found_context_p = UINT32_MAX;
+    for (; i >= 0; i--) {
+        if (g_context_previous_states[i].src_id == box_id) {
+            found_context_p = i;
+        }
+    }
+
+    /* If no previous context for the requested box has been found, then just
+     * use the current state. */
+    if (found_context_p == UINT32_MAX) {
+        g_first_state.src_id = box_id;
+        g_first_state.type = CONTEXT_SWITCH_INVALID;
+        g_first_state.src_sp = g_context_current_states[box_id].sp;
+        return &g_first_state;
+    } else {
+        return &g_context_previous_states[found_context_p];
     }
 }
 
