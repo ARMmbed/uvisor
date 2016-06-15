@@ -18,7 +18,7 @@
 #include "mbed_interface.h"
 #include "cmsis_os.h"
 #include <stdint.h>
-
+#include <stdlib.h>
 
 /* This function is called by uVisor in unprivileged mode to create box main
  * threads. */
@@ -33,7 +33,7 @@ void __uvisor_lib_box_main_handler(
     thread_def.pthread = function;
     thread_def.tpriority = priority;
     thread_def.stacksize = stack_size;
-    thread_def.stack_pointer = (uint32_t *)stack_pointer;
+    thread_def.stack_pointer = malloc(stack_size); /* XXX */
 
     thread_id = osThreadCreate(&thread_def, NULL);
 

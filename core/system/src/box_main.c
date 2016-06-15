@@ -161,6 +161,10 @@ void box_main_context_switch_next(uint32_t src_svc_sp)
     ((uint32_t *) dst_sp)[2] = first_state->src_sp;                       /* Box initial stack pointer */
     ((uint32_t *) dst_sp)[3] = box_cfg[dst_id]->stack_size;               /* Box private stack size */
 
+    DPRINTF("box_main_handler\r\n");
+    DPRINTF("\tstack pointer: 0x%08x\r\n", first_state->src_sp);
+    DPRINTF("\tstack size: 0x%08x\r\n", box_cfg[dst_id]->stack_size);
+
     /* Perform the context switch to the destination box.
      * This context switch will update the internal context state, so that the
      * destination handler can be pre-empted if needed. */
