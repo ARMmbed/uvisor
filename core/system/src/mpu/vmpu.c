@@ -95,6 +95,13 @@ static int vmpu_sanity_checks(void)
     assert(VMPU_REGION_SIZE(__uvisor_config.bss_main_start, __uvisor_config.bss_main_end) == UVISOR_SRAM_LENGTH_USED);
     assert((uint32_t) __uvisor_config.bss_main_end == (SRAM_ORIGIN + SRAM_OFFSET + UVISOR_SRAM_LENGTH_USED));
     assert((uint32_t) __uvisor_config.bss_main_end == (SRAM_ORIGIN + UVISOR_SRAM_LENGTH_PROTECTED));
+
+    /* Verify SRAM sections are within uVisor's own SRAM. */
+    assert(&__bss_start__ >= __uvisor_config.bss_main_start);
+    assert(&__bss_end__ <= __uvisor_config.bss_main_end);
+    assert(&__data_start__ >= __uvisor_config.bss_main_start);
+    assert(&__data_end__ <= __uvisor_config.bss_main_end);
+    assert(&__stack_start__ >= __uvisor_config.bss_main_start);
     assert(&__stack_end__ <= __uvisor_config.bss_main_end);
 
     /* Verify that the secure flash area is accessible and after public code. */
