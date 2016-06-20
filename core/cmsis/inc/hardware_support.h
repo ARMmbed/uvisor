@@ -27,8 +27,8 @@
 /* Note: Currently the revision requirement (>= r2p0) is needed because we use
  *       the SCnSCB->ACTLR register to disable write buffering in debug mode. */
 #define CORE_PARTNO        0xC23 /* PartNO   == Cortex-M3 */
-#define CORE_REVISTION_MIN 0x2   /* Revision >= r2 */
-#define CORE_VARIANT_MIN   0x0   /* Variant  >= p0 */
+#define CORE_VARIANT_MIN   0x2   /* Variant  >= r2 */
+#define CORE_REVISTION_MIN 0x0   /* Revision >= p0 */
 
 /* This setting enables some conditional definitions in the core_cm3.h file. */
 /* Note: Currently (CMSIS v4.10) the __CM3_REV symbol affects the conditional
@@ -43,8 +43,8 @@
 #elif defined(CORE_CORTEX_M4)
 
 #define CORE_PARTNO        0xC24 /* PartNO   == Cortex-M4 */
-#define CORE_REVISTION_MIN 0x0   /* Revision >= r0 */
-#define CORE_VARIANT_MIN   0x0   /* Variant  >= p0 */
+#define CORE_VARIANT_MIN   0x0   /* Variant  >= r0 */
+#define CORE_REVISTION_MIN 0x0   /* Revision >= p0 */
 
 /* This setting enables some conditional definitions in the core_cm4.h file. */
 /* Note: Currently (CMSIS v4.10) the __CM4_REV symbol does not affect any
