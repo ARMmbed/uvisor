@@ -81,6 +81,16 @@ static int vmpu_sanity_checks(void)
         SRAM_ORIGIN + SRAM_OFFSET,
         UVISOR_SRAM_LENGTH_USED);
 
+    /* Verify that the sections inside the BSS region are disjoint. */
+    DPRINTF("bss_boxes  : @0x%08X (%u bytes) [config]\n",
+        __uvisor_config.bss_boxes_start,
+        VMPU_REGION_SIZE(__uvisor_config.bss_boxes_start, __uvisor_config.bss_boxes_end));
+    assert(__uvisor_config.bss_end > __uvisor_config.bss_start);
+    assert(__uvisor_config.bss_main_end > __uvisor_config.bss_main_start);
+    assert(__uvisor_config.bss_boxes_end > __uvisor_config.bss_boxes_start);
+    assert((__uvisor_config.bss_main_start >= __uvisor_config.bss_boxes_end) ||
+           (__uvisor_config.bss_main_end <= __uvisor_config.bss_boxes_start));
+
     /* Verify the uVisor expectations regarding its own memories. */
     assert(VMPU_REGION_SIZE(__uvisor_config.bss_main_start, __uvisor_config.bss_main_end) == UVISOR_SRAM_LENGTH_USED);
     assert((uint32_t) __uvisor_config.bss_main_end == (SRAM_ORIGIN + SRAM_OFFSET + UVISOR_SRAM_LENGTH_USED));
