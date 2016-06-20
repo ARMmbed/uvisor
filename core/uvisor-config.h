@@ -48,6 +48,11 @@
 #error "Invalid SRAM configuration. SRAM_OFFSET must be smaller than UVISOR_SRAM_LENGTH_PROTECTED"
 #endif
 
+/* Check that the SRAM offset is aligned to 32 bytes. */
+#if (SRAM_ORIGIN + SRAM_OFFSET) & 0x1FUL
+#error "Invalid SRAM configuration. SRAM_ORIGIN + SRAM_OFFSET must be aligned to 32 bytes."
+#endif /* (SRAM_ORIGIN + SRAM_OFFSET) & 0x1FUL */
+
 /* SRAM_OFFSET >= UVISOR_SRAM_LENGTH_PROTECTED */
 /** Check that the SRAM_ORIGIN address is a multiple of the \ref
  * UVISOR_SRAM_LENGTH_PROTECTED space that will be protected by uVisor at
