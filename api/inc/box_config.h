@@ -45,6 +45,7 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
         sizeof(RtxBoxIndex), \
         0, \
         0, \
+        0, \
         NULL, \
         acl_list, \
         acl_list_count \
@@ -76,6 +77,7 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
         sizeof(RtxBoxIndex), \
         context_size, \
         __uvisor_box_heapsize, \
+        0, \
         __uvisor_box_namespace, \
         acl_list, \
         acl_list_count \
