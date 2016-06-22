@@ -61,7 +61,7 @@ CONFIGURATION_PREFIX:=$(PLATFORM_DIR)/$(PLATFORM)/$(BUILD_MODE)/$(CONFIGURATION_
 # Release library definitions
 API_ASM_HEADER:=$(API_DIR)/src/uvisor-header.S
 API_ASM_INPUT:=$(API_DIR)/src/uvisor-input.S
-API_ASM_OUTPUT:=$(API_ASM_INPUT).$(CONFIGURATION_LOWER).$(BUILD_MODE).s
+API_ASM_OUTPUT:=$(CONFIGURATION_PREFIX)/$(API_DIR)/uvisor-output.s
 API_RELEASE:=$(API_DIR)/lib/$(PLATFORM)/$(BUILD_MODE)/$(CONFIGURATION_LOWER).a
 API_VERSION:=$(API_DIR)/lib/$(PLATFORM)/$(BUILD_MODE)/$(CONFIGURATION_LOWER).txt
 
@@ -70,7 +70,10 @@ API_VERSION:=$(API_DIR)/lib/$(PLATFORM)/$(BUILD_MODE)/$(CONFIGURATION_LOWER).txt
 #       will be compiled by the host OS in case uVisor is not supported.
 API_SOURCES:=$(wildcard $(API_DIR)/src/*.c)
 API_SOURCES:=$(filter-out $(API_DIR)/src/unsupported.c, $(API_SOURCES))
-API_OBJS:=$(foreach API_SOURCE, $(API_SOURCES), $(API_SOURCE).$(CONFIGURATION_LOWER).$(BUILD_MODE).o) $(API_ASM_OUTPUT:.s=.o)
+
+# Release library object files
+API_OBJS:=$(foreach API_SOURCE, $(API_SOURCES), $(CONFIGURATION_PREFIX)/$(API_DIR)/$(notdir $(API_SOURCE:.c=.o))) \
+          $(API_ASM_OUTPUT:.s=.o)
 
 # Make the ARMv7-M MPU driver the default.
 ifeq ("$(ARCH_MPU)","")
@@ -93,6 +96,7 @@ MPU_SRC:=\
          $(CORE_SYSTEM_DIR)/src/mpu/vmpu_freescale_k64_mem.c
 endif
 
+# Core source files
 SOURCES:=\
          $(CORE_SYSTEM_DIR)/src/benchmark.c \
          $(CORE_SYSTEM_DIR)/src/box_init.c \
@@ -113,6 +117,27 @@ SOURCES:=\
          $(CORE_LIB_DIR)/printf/tfp_printf.c \
          $(MPU_SRC) \
          $(PLATFORM_SRC)
+
+# Core object files
+OBJS:=$(foreach SOURCE, $(SOURCES), $(CONFIGURATION_PREFIX)/$(CORE_DIR)/$(notdir $(SOURCE:.c=.o)))
+
+# Source files search path
+# The vpath command allows us to look for source files by only using their
+# basename. It is required because we want object files to be placed in a
+# different path from their corresponding sources.
+# The search path needs to be set depending on whether the current target is to
+# build the core or the release library (so the two can have the same names
+# without collisions).
+ifneq ($(MAKECMDGOALS),build_core)
+vpath %.c $(API_DIR)/src
+vpath %.s $(API_DIR)/src
+else
+vpath %.c $(CORE_SYSTEM_DIR)/src:\
+          $(CORE_SYSTEM_DIR)/src/mpu:\
+          $(CORE_DEBUG_DIR)/src:\
+          $(CORE_LIB_DIR)/printf:\
+          $(PLATFORM_DIR)/src
+endif
 
 SYSLIBS:=-lgcc -lc -lnosys
 DEBUG:=-g3
@@ -165,8 +190,6 @@ CFLAGS_PRE:=\
 CFLAGS:=$(FLAGS_CM4) $(CFLAGS_PRE)
 CPPFLAGS:=-fno-exceptions
 
-OBJS:=$(foreach SOURCE, $(SOURCES), $(SOURCE).$(CONFIGURATION_LOWER).$(BUILD_MODE).o)
-
 LINKER_CONFIG:=\
     -D$(CONFIGURATION) \
     -I$(PLATFORM_DIR)/$(PLATFORM)/inc \
@@ -178,7 +201,7 @@ API_CONFIG:=\
     -I$(PLATFORM_DIR)/$(PLATFORM)/inc \
     -include $(CORE_DIR)/uvisor-config.h
 
-.PHONY: all fresh configurations release clean ctags
+.PHONY: all fresh configurations build_core build_api clean ctags
 
 # Build both the release and debug versions for all platforms for all
 # configurations.
@@ -191,10 +214,10 @@ fresh: clean all
 # The "all" target uses this target to iterate over all platforms.
 platform-%:
 	@echo
-	# 2nd-level make
+	@# 2nd-level make
 	make BUILD_MODE=debug PLATFORM=$* configurations
 	@echo
-	# 2nd-level make
+	@# 2nd-level make
 	make BUILD_MODE=release PLATFORM=$* configurations
 
 # This middleware target is needed because the 1st-level make does not know the
@@ -214,54 +237,67 @@ endif
 ifndef BUILD_MODE
 	$(error "Missing build mode. Use PLATFORM=<platform> BUILD_MODE=<build_mode> make CONFIGURATION_<configuration>")
 endif
-	# 3rd-level make
-	make BUILD_MODE=$(BUILD_MODE) PLATFORM=$(PLATFORM) CONFIGURATION=$@ api_release
+	@# 3rd-level make
+	make BUILD_MODE=$(BUILD_MODE) PLATFORM=$(PLATFORM) CONFIGURATION=$@ build_core
+	@# 3rd-level make
+	make BUILD_MODE=$(BUILD_MODE) PLATFORM=$(PLATFORM) CONFIGURATION=$@ build_api
+
+# This middleware target is needed because the parent make does not know the
+# name to give to the core binary yet.
+# $(CONFIGURATION_PREFIX).bin is defined using platform-, configuration-, and
+# build-mode-specific definitions, so this target can only be called by the
+# 3rd-level make.
+build_core: $(CONFIGURATION_PREFIX).bin
 
 # This middleware target is needed because the parent make does not know the
 # name to give to the release library yet.
 # $(API_RELEASE) is defined using platform-, configuration-, and
 # build-mode-specific definitions, so this target can only be called by the
 # 3rd-level make.
-api_release: $(API_RELEASE)
+build_api: $(API_RELEASE)
+
+# Generate the needed folders if they do not exist.
+$(CONFIGURATION_PREFIX)/$(CORE_DIR):
+	mkdir -p $(CONFIGURATION_PREFIX)/$(CORE_DIR)
+$(CONFIGURATION_PREFIX)/$(API_DIR):
+	mkdir -p $(CONFIGURATION_PREFIX)/$(API_DIR)
+$(dir $(API_RELEASE)):
+	mkdir -p $(dir $(API_RELEASE))
 
 # Generate the pre-linked uVisor binary for the given platform, configuration
 # and build mode.
 # The binary is then packaged with the uVisor library implementations into a
 # unique .a file.
-$(API_RELEASE): $(API_ASM_OUTPUT) $(API_DIR)/lib/$(PLATFORM)/$(BUILD_MODE) $(API_OBJS)
+$(API_RELEASE): $(dir $(API_RELEASE)) $(CONFIGURATION_PREFIX)/$(API_DIR) $(API_OBJS)
 	$(AR) Dcr $(API_RELEASE) $(API_OBJS)
 	echo "$(PROGRAM_VERSION)" > $(API_VERSION)
-
-# Generate the output asm file from the asm input file and the INCBIN'ed binary.
-$(API_ASM_OUTPUT): $(CONFIGURATION_PREFIX).bin
-	cp -f $(API_ASM_HEADER) $(API_ASM_OUTPUT)
-	$(CPP) -w -P $(API_CONFIG) $(API_ASM_INPUT) > $(API_ASM_OUTPUT)
-
-# Generate the library folders if they do not exist.
-$(API_DIR)/lib/$(PLATFORM)/$(BUILD_MODE):
-	mkdir -p $(API_DIR)/lib/$(PLATFORM)/$(BUILD_MODE)
 
 # Copy the core ELF file into a binary.
 $(CONFIGURATION_PREFIX).bin: $(CONFIGURATION_PREFIX).elf
 	$(OBJCOPY) $< -O binary $@
 
-# Link all object files into the core ELF.
-$(CONFIGURATION_PREFIX).elf: $(OBJS) $(CONFIGURATION_PREFIX).linker
+# Link all the core object files into the core ELF.
+$(CONFIGURATION_PREFIX).elf: $(CONFIGURATION_PREFIX)/$(CORE_DIR) $(OBJS) $(CONFIGURATION_PREFIX).linker
 	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(SYSLIBS)
 	$(OBJDUMP) -d $@ > $(CONFIGURATION_PREFIX).asm
 
 # Pre-process the core linker script.
 $(CONFIGURATION_PREFIX).linker: $(CORE_LINKER_DIR)/default.h
-	mkdir -p $(dir $(CONFIGURATION_PREFIX))
 	$(CPP) -w -P $(LINKER_CONFIG) $< -o $@
 
-# Pre-process and compile a C file into an object file.
-%.c.$(CONFIGURATION_LOWER).$(BUILD_MODE).o: %.c
+# Pre-process and compile a core C file into an object file.
+$(CONFIGURATION_PREFIX)/$(CORE_DIR)/%.o: %.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-# Pre-process and compile an S file into an object file.
-%.S.$(CONFIGURATION_LOWER).$(BUILD_MODE).o: %.S.$(CONFIGURATION_LOWER).$(BUILD_MODE).s
+# Pre-process and compile a release library C file into an object file.
+$(CONFIGURATION_PREFIX)/$(API_DIR)/%.o: %.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+# Generate the output asm file from the asm input file and the INCBIN'ed binary.
+$(API_ASM_OUTPUT:.s=.o): $(CONFIGURATION_PREFIX).bin $(API_ASM_INPUT)
+	cp $(API_ASM_HEADER) $(API_ASM_OUTPUT)
+	$(CPP) -w -P $(API_CONFIG) $(API_ASM_INPUT) >> $(API_ASM_OUTPUT)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $(API_ASM_OUTPUT) -o $@
 
 ctags: source.c.tags
 
