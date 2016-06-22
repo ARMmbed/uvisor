@@ -19,7 +19,29 @@
 #include "vmpu.h"
 #include "vmpu_freescale_k64_mem.h"
 
-#define MPU_MAX_REGIONS 11
+/* The K64F has 12 MPU regions, however, we use region 0 as the background
+ * region with `UVISOR_TACL_BACKGROUND` as permissions.
+ * Region 1 and 2 are used to unlock Application SRAM and Flash.
+ * Therefore 9 MPU regions are available for user ACLs.
+ * Region 3 and 4 are used to protect the current box stack and context.
+ *
+ *     12      <-- End of MPU regions, K64F_MPU_REGIONS_MAX
+ * +---------+
+ * |   11    |
+ * |   ...   |
+ * |    5    | <-- K64F_MPU_REGIONS_USER
+ * +---------+
+ * |    4    | <-- Box Context
+ * |    3    | <-- Box Stack, K64F_MPU_REGIONS_STATIC
+ * +---------+
+ * |    2    | <-- Application Flash unlock
+ * |    1    | <-- Application SRAM unlock
+ * |    0    | <-- Background region
+ * +---------+
+ */
+#define K64F_MPU_REGIONS_STATIC 3
+#define K64F_MPU_REGIONS_USER 5
+#define K64F_MPU_REGIONS_MAX 12
 
 typedef struct
 {
@@ -33,7 +55,7 @@ typedef struct
     uint32_t count;
 } TBoxACL;
 
-uint32_t g_mem_acl_count, g_mem_acl_user;
+uint32_t g_mem_acl_count;
 static TMemACL g_mem_acl[UVISOR_MAX_ACLS];
 static TBoxACL g_mem_box[UVISOR_MAX_BOXES];
 
@@ -45,7 +67,7 @@ uint32_t vmpu_fault_find_acl_mem(uint8_t box_id, uint32_t fault_addr, uint32_t s
 
 void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
 {
-    uint32_t t, u, src_count, dst_count;
+    uint32_t t, u, dst_count;
     volatile uint32_t* word;
     TBoxACL *box;
     TMemACL *rgd;
@@ -60,17 +82,13 @@ void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
 
     box = &g_mem_box[dst_box];
 
-    /* for box zero, just disable private ACL's */
-    src_count = g_mem_box[src_box].count;
-    if(src_box && !dst_box)
-    {
-        /* disable private regions */
-        if(src_count)
-        {
-            t = g_mem_acl_user + 1;
-            while(src_count--)
-                MPU->WORD[t++][3] = 0;
-        }
+    /* Disable all user MPU regions. */
+    for (t = K64F_MPU_REGIONS_USER; t < K64F_MPU_REGIONS_MAX; t++) {
+        MPU->WORD[t][3] = 0;
+    }
+
+    /* for box zero, just return. */
+    if(src_box && !dst_box) {
         return;
     }
 
@@ -81,24 +99,23 @@ void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
     rgd = box->acl;
     assert(rgd);
 
-    /* update MPU regions */
-    t = g_mem_acl_user + 1;
-    u = dst_count;
-    while(u--)
-    {
-        word = MPU->WORD[t++];
+    /* Update MPU regions:
+     * We assume that the first two ACLs belonging to the box are the stack
+     * and context ACLs. Therefore we start at index K64F_MPU_REGIONS_STATIC.
+     * We opportunistically copy all remaining ACLs into the MPU regions, until
+     * the regions run out. The remaining ACLs are switched in on demand. */
+    u = K64F_MPU_REGIONS_STATIC + dst_count;
+    if (u >= K64F_MPU_REGIONS_MAX) {
+        /* Clamp u to K64F_MPU_REGIONS_MAX. */
+        u = K64F_MPU_REGIONS_MAX;
+    }
+    /* Copy the ACLs into the MPU regions. */
+    for (t = K64F_MPU_REGIONS_STATIC; t < u; t++, rgd++) {
+        word = MPU->WORD[t];
         word[0] = rgd->word[0];
         word[1] = rgd->word[1];
         word[2] = rgd->word[2];
         word[3] = 1;
-        rgd++;
-    }
-
-    /* delete regions beyon updated regions */
-    while(src_count>dst_count)
-    {
-        MPU->WORD[t++][3] = 0;
-        dst_count++;
     }
 }
 
@@ -252,13 +269,9 @@ int vmpu_mem_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 void vmpu_mem_init(void)
 {
     int res;
-
-    /* uvisor SRAM only accessible to uvisor */
-    res = vmpu_mem_add_int(0, (void*)SRAM_ORIGIN, ((uint32_t)__uvisor_config.bss_main_end)-SRAM_ORIGIN,
-        UVISOR_TACL_SREAD|
-        UVISOR_TACL_SWRITE);
-    if( res<0 )
-        HALT_ERROR(SANITY_CHECK_FAILED, "failed setting up SRAM_ORIGIN (%i)\n", res);
+    uint32_t t;
+    TMemACL * rgd;
+    volatile uint32_t* word;
 
     /* rest of SRAM, accessible to mbed - non-executable for uvisor */
     res = vmpu_mem_add_int(0, __uvisor_config.bss_end,
@@ -284,10 +297,15 @@ void vmpu_mem_init(void)
         HALT_ERROR(SANITY_CHECK_FAILED, "failed setting up box FLASH (%i)\n", res);
 
     /* initial primary box ACL's */
-    vmpu_mem_switch(0, 0);
-
-    /* mark all primary box ACL's as static */
-    g_mem_acl_user = g_mem_acl_count;
+    rgd = g_mem_box[0].acl;
+    /* Copy ACLs [0, 1] into MPU regions [_1_, _2_]. Region 0 is the background region! */
+    for(t = 1; t < K64F_MPU_REGIONS_STATIC; t++, rgd++) {
+        word = MPU->WORD[t];
+        word[0] = rgd->word[0];
+        word[1] = rgd->word[1];
+        word[2] = rgd->word[2];
+        word[3] = 1;
+    }
 
     /* MPU background region permission mask
      *   this mask must be set as last one, since the background region gives no
