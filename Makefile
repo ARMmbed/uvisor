@@ -43,7 +43,7 @@ CORE_SYSTEM_DIR:=$(CORE_DIR)/system
 
 # List of supported platforms
 # Note: One could do it in a simpler way but this prevents spurious files in
-# $(PLATFORM_DIR) from getting picked.
+#       $(PLATFORM_DIR) from getting picked.
 PLATFORMS = $(notdir $(realpath $(dir $(wildcard $(PLATFORM_DIR)/*/))))
 
 # List of uVisor configurations for the given platform
@@ -72,7 +72,7 @@ API_SOURCES:=$(wildcard $(API_DIR)/src/*.c)
 API_SOURCES:=$(filter-out $(API_DIR)/src/unsupported.c, $(API_SOURCES))
 API_OBJS:=$(foreach API_SOURCE, $(API_SOURCES), $(API_SOURCE).$(CONFIGURATION_LOWER).$(BUILD_MODE).o) $(API_ASM_OUTPUT:.s=.o)
 
-# make ARMv7-M MPU driver the default
+# Make the ARMv7-M MPU driver the default.
 ifeq ("$(ARCH_MPU)","")
 ARCH_MPU:=ARMv7M
 endif
@@ -97,6 +97,7 @@ SOURCES:=\
          $(CORE_SYSTEM_DIR)/src/benchmark.c \
          $(CORE_SYSTEM_DIR)/src/box_init.c \
          $(CORE_SYSTEM_DIR)/src/context.c \
+         $(CORE_SYSTEM_DIR)/src/export_table.c \
          $(CORE_SYSTEM_DIR)/src/halt.c \
          $(CORE_SYSTEM_DIR)/src/main.c \
          $(CORE_SYSTEM_DIR)/src/page_allocator.c \
@@ -104,9 +105,8 @@ SOURCES:=\
          $(CORE_SYSTEM_DIR)/src/register_gateway.c \
          $(CORE_SYSTEM_DIR)/src/stdlib.c \
          $(CORE_SYSTEM_DIR)/src/svc.c \
-         $(CORE_SYSTEM_DIR)/src/unvic.c \
-         $(CORE_SYSTEM_DIR)/src/export_table.c \
          $(CORE_SYSTEM_DIR)/src/system.c \
+         $(CORE_SYSTEM_DIR)/src/unvic.c \
          $(CORE_SYSTEM_DIR)/src/mpu/vmpu.c \
          $(CORE_DEBUG_DIR)/src/debug.c \
          $(CORE_DEBUG_DIR)/src/memory_map.c \
@@ -125,7 +125,7 @@ else
 OPT:=-Os -DNDEBUG
 endif
 
-# determine repository version
+# Determine the repository version.
 PROGRAM_VERSION:=$(shell git describe --tags --abbrev=4 --dirty 2>/dev/null | sed s/^v//)
 ifeq ("$(PROGRAM_VERSION)","")
 PROGRAM_VERSION:='unknown'
@@ -184,23 +184,29 @@ API_CONFIG:=\
 # configurations.
 all: $(foreach PLATFORM, $(PLATFORMS), platform-$(PLATFORM))
 
-# Same as all, but clean first.
+# Same as "all", but clean first.
 fresh: clean all
 
-# This target is used to iterate over all platforms. It builds both the release
-# and debug versions of all the platform-specific configurations.
+# This target builds the release and debug version of a platform.
+# The "all" target uses this target to iterate over all platforms.
 platform-%:
 	@echo
+	# 2nd-level make
 	make BUILD_MODE=debug PLATFORM=$* configurations
 	@echo
+	# 2nd-level make
 	make BUILD_MODE=release PLATFORM=$* configurations
 
-# This middleware target is needed because the parent make does not know the
-# configurations yet (they are platform-specific).
+# This middleware target is needed because the 1st-level make does not know the
+# configurations yet.
+# $(CONFIGURATIONS) is defined by the platform-specific Makefile extension, so
+# this target can only be called by the 2nd-level make.
 configurations: $(CONFIGURATIONS)
 
-# This target is used to iterate over all configurations for the current
-# platform.
+# This target builds a single configuration, provided that the platform and the
+# build mode are already configured.
+# The "configurations" target uses this target to iterate over all
+# configurations for a platform, given a build mode.
 CONFIGURATION_%:
 ifndef PLATFORM
 	$(error "Missing platform. Use PLATFORM=<platform> BUILD_MODE=<build_mode> make CONFIGURATION_<configuration>")
@@ -208,13 +214,18 @@ endif
 ifndef BUILD_MODE
 	$(error "Missing build mode. Use PLATFORM=<platform> BUILD_MODE=<build_mode> make CONFIGURATION_<configuration>")
 endif
-	make BUILD_MODE=$(BUILD_MODE) PLATFORM=$(PLATFORM) CONFIGURATION=$@ release
+	# 3rd-level make
+	make BUILD_MODE=$(BUILD_MODE) PLATFORM=$(PLATFORM) CONFIGURATION=$@ api_release
 
 # This middleware target is needed because the parent make does not know the
-# name to give to the binary release yet (it is configuration-specific).
-release: $(API_RELEASE)
+# name to give to the release library yet.
+# $(API_RELEASE) is defined using platform-, configuration-, and
+# build-mode-specific definitions, so this target can only be called by the
+# 3rd-level make.
+api_release: $(API_RELEASE)
 
-# Generate the pre-linked uVisor binary for the given platform and configuration.
+# Generate the pre-linked uVisor binary for the given platform, configuration
+# and build mode.
 # The binary is then packaged with the uVisor library implementations into a
 # unique .a file.
 $(API_RELEASE): $(API_ASM_OUTPUT) $(API_DIR)/lib/$(PLATFORM)/$(BUILD_MODE) $(API_OBJS)
@@ -230,20 +241,25 @@ $(API_ASM_OUTPUT): $(CONFIGURATION_PREFIX).bin
 $(API_DIR)/lib/$(PLATFORM)/$(BUILD_MODE):
 	mkdir -p $(API_DIR)/lib/$(PLATFORM)/$(BUILD_MODE)
 
+# Copy the core ELF file into a binary.
 $(CONFIGURATION_PREFIX).bin: $(CONFIGURATION_PREFIX).elf
 	$(OBJCOPY) $< -O binary $@
 
+# Link all object files into the core ELF.
 $(CONFIGURATION_PREFIX).elf: $(OBJS) $(CONFIGURATION_PREFIX).linker
 	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(SYSLIBS)
 	$(OBJDUMP) -d $@ > $(CONFIGURATION_PREFIX).asm
 
+# Pre-process the core linker script.
 $(CONFIGURATION_PREFIX).linker: $(CORE_LINKER_DIR)/default.h
 	mkdir -p $(dir $(CONFIGURATION_PREFIX))
 	$(CPP) -w -P $(LINKER_CONFIG) $< -o $@
 
+# Pre-process and compile a C file into an object file.
 %.c.$(CONFIGURATION_LOWER).$(BUILD_MODE).o: %.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
+# Pre-process and compile an S file into an object file.
 %.S.$(CONFIGURATION_LOWER).$(BUILD_MODE).o: %.S.$(CONFIGURATION_LOWER).$(BUILD_MODE).s
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
@@ -252,6 +268,8 @@ ctags: source.c.tags
 source.c.tags: $(SOURCES)
 	CFLAGS="$(CFLAGS_PRE)" geany -g $@ $^
 
+# Clean everything.
+# Note: You will lose any previously compiled library.
 clean:
 	rm -f source.c.tags
 	find $(ROOT_DIR) -iname '*.o' -delete
