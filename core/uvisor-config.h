@@ -16,8 +16,47 @@
  */
 #ifndef  __UVISOR_CONFIG_H__
 
-#define UVISOR_MAGIC        0x2FE539A6
-#define UVISOR_FLASH_LENGTH 0x8000
-#define UVISOR_SRAM_LENGTH  0x2000
+/* Configuration-specific symbols */
+#include "config.h"
 
-#endif /*__UVISOR_CONFIG_H__*/
+#define UVISOR_MAGIC 0x2FE539A6
+
+/** Maximum flash space that will be used by uVisor
+ * The actual flash space will be resolved at uVisor-core link time. This
+ * symbol is only used for link-time verifications, and is only increased upon a
+ * link failure, so it can be used to track down a rough estimation of the
+ * uVisor flash usage upper bound.
+ */
+#define UVISOR_FLASH_LENGTH_MAX 0x8800
+
+/** Size of the SRAM space protected by uVisor for its own SRAM sections
+ * The actual SRAM space used by uVisor depends on the SRAM_OFFSET symbol, which
+ * is configuration-specific. See \ref UVISOR_SRAM_LENGTH_USED for more
+ * information.
+ */
+#define UVISOR_SRAM_LENGTH_PROTECTED 0x2000
+
+/** Actual SRAM space that will be used by uVisor
+ * This is the space that is reserved by the uVisor in the host linker script.
+ * The uVisor will use this space for its internal BSS and data sections, stack
+ * and heap, but it will protect the full \ref UVISOR_SRAM_LENGTH_PROTECTED.
+ */
+#define UVISOR_SRAM_LENGTH_USED (UVISOR_SRAM_LENGTH_PROTECTED - SRAM_OFFSET)
+
+/* Check that UVISOR_SRAM_LENGTH_USED is sane. */
+#if SRAM_OFFSET >= UVISOR_SRAM_LENGTH_PROTECTED
+#error "Invalid SRAM configuration. SRAM_OFFSET must be smaller than UVISOR_SRAM_LENGTH_PROTECTED"
+#endif
+
+/* SRAM_OFFSET >= UVISOR_SRAM_LENGTH_PROTECTED */
+/** Check that the SRAM_ORIGIN address is a multiple of the \ref
+ * UVISOR_SRAM_LENGTH_PROTECTED space that will be protected by uVisor at
+ * runtime. */
+/* Note: This only applies to the ARMv7-M MPU driver. */
+#if defined(ARCH_MPU_ARMv7M)
+#if (SRAM_ORIGIN % UVISOR_SRAM_LENGTH_PROTECTED) != 0
+#error "The SRAM origin must be aligned to a multiple of UVISOR_SRAM_LENGTH_PROTECTED"
+#endif /* (SRAM_ORIGIN % UVISOR_SRAM_LENGTH_PROTECTED) != 0 */
+#endif /* defined(ARCH_MPU_ARMv7M) */
+
+#endif /* __UVISOR_CONFIG_H__ */

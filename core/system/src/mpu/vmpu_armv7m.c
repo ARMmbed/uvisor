@@ -71,7 +71,7 @@
 /* MPU helper macros */
 #define MPU_RBAR(region,addr)   (((uint32_t)(region))|MPU_RBAR_VALID_Msk|addr)
 #define MPU_RBAR_RNR(addr)     (addr)
-#define MPU_STACK_GUARD_BAND_SIZE (UVISOR_SRAM_LENGTH/8)
+#define MPU_STACK_GUARD_BAND_SIZE (UVISOR_SRAM_LENGTH_PROTECTED/8)
 
 /* various MPU flags */
 #define MPU_RASR_AP_PNO_UNO (0x00UL<<MPU_RASR_AP_Pos)
