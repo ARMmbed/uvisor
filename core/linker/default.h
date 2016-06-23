@@ -21,16 +21,16 @@ ENTRY(main_entry)
  * family. If for example a family of devices has Flash memories ranging from
  * 512KB to 4MB we must ensure that uVisor fits into 512KB (possibly minus the
  * offset at which uVisor is positioned). */
-#define UVISOR_FLASH_LENGTH_MAX (FLASH_LENGTH_MIN - FLASH_OFFSET)
-#define UVISOR_SRAM_LENGTH_MAX  (SRAM_LENGTH_MIN - SRAM_OFFSET)
+#define UVISOR_FLASH_LENGTH_AVAIL (FLASH_LENGTH_MIN - FLASH_OFFSET)
+#define UVISOR_SRAM_LENGTH_AVAIL  (SRAM_LENGTH_MIN - SRAM_OFFSET)
 
 /* Check that the uVisor memory requirements can be satisfied. */
-#if UVISOR_FLASH_LENGTH > UVISOR_FLASH_LENGTH_MAX
-#error "uVisor does not fit into the target memory. UVISOR_FLASH_LENGTH must be smaller than UVISOR_FLASH_LENGTH_MAX."
-#endif /* UVISOR_FLASH_LENGTH > UVISOR_FLASH_LENGTH_MAX */
-#if UVISOR_SRAM_LENGTH > UVISOR_SRAM_LENGTH_MAX
-#error "uVisor does not fit into the target memory. UVISOR_SRAM_LENGTH must be smaller than UVISOR_SRAM_LENGTH_MAX."
-#endif /* UVISOR_SRAM_LENGTH > UVISOR_SRAM_LENGTH_MAX */
+#if UVISOR_FLASH_LENGTH > UVISOR_FLASH_LENGTH_AVAIL
+#error "uVisor does not fit into the target memory. UVISOR_FLASH_LENGTH must be smaller than UVISOR_FLASH_LENGTH_AVAIL."
+#endif /* UVISOR_FLASH_LENGTH > UVISOR_FLASH_LENGTH_AVAIL */
+#if UVISOR_SRAM_LENGTH > UVISOR_SRAM_LENGTH_AVAIL
+#error "uVisor does not fit into the target memory. UVISOR_SRAM_LENGTH must be smaller than UVISOR_SRAM_LENGTH_AVAIL."
+#endif /* UVISOR_SRAM_LENGTH > UVISOR_SRAM_LENGTH_AVAIL */
 
 #ifndef STACK_GUARD_BAND
 #define STACK_GUARD_BAND 32
