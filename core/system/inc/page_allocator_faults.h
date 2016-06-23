@@ -28,4 +28,16 @@ void page_allocator_register_fault(uint8_t page);
 /** @returns the number of faults on this page. */
 uint32_t page_allocator_get_faults(uint8_t page);
 
+/** Map an address to the start and end addresses of a page.
+ * If the address is not part of any page, or the page does not belong to the
+ * active box or box 0 an error is returned and `start` and `end` are invalid.
+ *
+ * @param address           the address to map
+ * @param[out] start_addr   pointer to the start address value
+ * @param[out] end_addr     pointer to the end address value
+ * @param[out] page         pointer to the page index value
+ * @returns Non-zero on failure with failure class `UVISOR_ERROR_CLASS_PAGE`. See `UVISOR_ERROR_PAGE_*`.
+ */
+int page_allocator_get_active_region_for_address(uint32_t address, uint32_t * start_addr, uint32_t * end_addr, uint8_t * page);
+
 #endif /* __PAGE_ALLOCATOR_FAULTS_H__ */
