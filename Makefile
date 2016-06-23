@@ -129,17 +129,6 @@ ifeq ("$(PROGRAM_VERSION)","")
 PROGRAM_VERSION:='unknown'
 endif
 
-# Read UVISOR_MAGIC and UVISOR_{FLASH, SRAM}_LENGTH from uvisor-config.h.
-ifeq ("$(wildcard  $(CORE_DIR)/uvisor-config.h)","")
-	UVISOR_MAGIC:=0
-	UVISOR_FLASH_LENGTH:=0
-	UVISOR_SRAM_LENGTH:=0
-else
-	UVISOR_MAGIC:=$(shell grep UVISOR_MAGIC $(CORE_DIR)/uvisor-config.h | sed -E 's/^.* (0x[0-9A-Fa-f]+).*$\/\1/')
-	UVISOR_FLASH_LENGTH:=$(shell grep UVISOR_FLASH_LENGTH $(CORE_DIR)/uvisor-config.h | sed -E 's/^.* (0x[0-9A-Fa-f]+).*$\/\1/')
-	UVISOR_SRAM_LENGTH:=$(shell grep UVISOR_SRAM_LENGTH $(CORE_DIR)/uvisor-config.h | sed -E 's/^.* (0x[0-9A-Fa-f]+).*$\/\1/')
-endif
-
 FLAGS_CM4:=-mcpu=cortex-m4 -march=armv7e-m -mthumb
 
 LDFLAGS:=\
@@ -178,15 +167,14 @@ OBJS:=$(foreach SOURCE, $(SOURCES), $(SOURCE).$(CONFIGURATION_LOWER).$(BUILD_MOD
 
 LINKER_CONFIG:=\
     -D$(CONFIGURATION) \
-    -DUVISOR_FLASH_LENGTH=$(UVISOR_FLASH_LENGTH) \
-    -DUVISOR_SRAM_LENGTH=$(UVISOR_SRAM_LENGTH) \
-    -include $(PLATFORM_DIR)/$(PLATFORM)/inc/config.h
+    -I$(PLATFORM_DIR)/$(PLATFORM)/inc \
+    -include $(CORE_DIR)/uvisor-config.h
 
 API_CONFIG:=\
-    -DUVISOR_FLASH_LENGTH=$(UVISOR_FLASH_LENGTH) \
-    -DUVISOR_SRAM_LENGTH=$(UVISOR_SRAM_LENGTH) \
-    -DUVISOR_MAGIC=$(UVISOR_MAGIC) \
-    -DUVISOR_BIN=\"$(CONFIGURATION_PREFIX).bin\"
+    -DUVISOR_BIN=\"$(CONFIGURATION_PREFIX).bin\" \
+    -D$(CONFIGURATION) \
+    -I$(PLATFORM_DIR)/$(PLATFORM)/inc \
+    -include $(CORE_DIR)/uvisor-config.h
 
 .PHONY: all fresh configurations release clean ctags
 

@@ -128,4 +128,4 @@ __uvisor_ps:
 /* Reserve space for the uVisor BSS section. This section is zeroed by uVisor at
  * boot time. */
 .section .keep.uvisor.bss.main, "awM", @nobits
-    .space UVISOR_SRAM_LENGTH
+    .space UVISOR_SRAM_LENGTH_USED

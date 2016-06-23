@@ -24,13 +24,17 @@ ENTRY(main_entry)
 #define UVISOR_FLASH_LENGTH_AVAIL (FLASH_LENGTH_MIN - FLASH_OFFSET)
 #define UVISOR_SRAM_LENGTH_AVAIL  (SRAM_LENGTH_MIN - SRAM_OFFSET)
 
-/* Check that the uVisor memory requirements can be satisfied. */
-#if UVISOR_FLASH_LENGTH > UVISOR_FLASH_LENGTH_AVAIL
-#error "uVisor does not fit into the target memory. UVISOR_FLASH_LENGTH must be smaller than UVISOR_FLASH_LENGTH_AVAIL."
+/* Check that the uVisor memory requirements can be satisfied.
+ * Flash: We do not know how much memory uVisor will actually use, so we compare
+ *        the available memory against the maximum uVisor could require.
+ * SRAM: We already have a symbol of the actual memory space requirement for
+ *       uVisor, so we use it for comparison. */
+#if UVISOR_FLASH_LENGTH_MAX > UVISOR_FLASH_LENGTH_AVAIL
+#error "uVisor does not fit into the target memory. UVISOR_FLASH_LENGTH_MAX must be smaller than UVISOR_FLASH_LENGTH_AVAIL."
 #endif /* UVISOR_FLASH_LENGTH > UVISOR_FLASH_LENGTH_AVAIL */
-#if UVISOR_SRAM_LENGTH > UVISOR_SRAM_LENGTH_AVAIL
-#error "uVisor does not fit into the target memory. UVISOR_SRAM_LENGTH must be smaller than UVISOR_SRAM_LENGTH_AVAIL."
-#endif /* UVISOR_SRAM_LENGTH > UVISOR_SRAM_LENGTH_AVAIL */
+#if UVISOR_SRAM_LENGTH_USED > UVISOR_SRAM_LENGTH_AVAIL
+#error "uVisor does not fit into the target memory. UVISOR_SRAM_LENGTH_USED must be smaller than UVISOR_SRAM_LENGTH_AVAIL."
+#endif /* UVISOR_SRAM_LENGTH_USED > UVISOR_SRAM_LENGTH_AVAIL */
 
 #ifndef STACK_GUARD_BAND
 #define STACK_GUARD_BAND 32
@@ -43,10 +47,10 @@ ENTRY(main_entry)
 MEMORY
 {
   FLASH (rx) : ORIGIN = (FLASH_ORIGIN + FLASH_OFFSET),
-               LENGTH = UVISOR_FLASH_LENGTH - FLASH_OFFSET
+               LENGTH = UVISOR_FLASH_LENGTH_MAX
   RAM   (rwx): ORIGIN = (SRAM_ORIGIN + SRAM_OFFSET),
-               LENGTH = UVISOR_SRAM_LENGTH - SRAM_OFFSET - STACK_SIZE
-  STACK (rw) : ORIGIN = (SRAM_ORIGIN + UVISOR_SRAM_LENGTH - STACK_SIZE),
+               LENGTH = UVISOR_SRAM_LENGTH_USED - STACK_SIZE
+  STACK (rw) : ORIGIN = (SRAM_ORIGIN + SRAM_OFFSET + UVISOR_SRAM_LENGTH_USED - STACK_SIZE),
                LENGTH = STACK_SIZE
 }
 
