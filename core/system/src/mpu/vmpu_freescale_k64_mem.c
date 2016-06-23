@@ -24,12 +24,13 @@
  * Region 1 and 2 are used to unlock Application SRAM and Flash.
  * Therefore 9 MPU regions are available for user ACLs.
  * Region 3 and 4 are used to protect the current box stack and context.
+ * This leaves 6 MPU regions for round robin scheduling:
  *
  *     12      <-- End of MPU regions, K64F_MPU_REGIONS_MAX
  * +---------+
  * |   11    |
  * |   ...   |
- * |    5    | <-- K64F_MPU_REGIONS_USER
+ * |    5    | <-- Box Pages, K64F_MPU_REGIONS_USER
  * +---------+
  * |    4    | <-- Box Context
  * |    3    | <-- Box Stack, K64F_MPU_REGIONS_STATIC
@@ -57,9 +58,36 @@ typedef struct
     uint32_t count;
 } TBoxACL;
 
-uint32_t g_mem_acl_count;
+uint32_t g_mem_acl_count, g_mpu_slot;
 static TMemACL g_mem_acl[UVISOR_MAX_ACLS];
 static TBoxACL g_mem_box[UVISOR_MAX_BOXES];
+
+int vmpu_mem_push_page_acl(uint32_t start_addr, uint32_t end_addr)
+{
+    MPU_Region * region;
+
+    /* Check that start and end address are aligned to 32-byte. */
+    if (start_addr & 0x1F || end_addr & 0x1F) {
+        return -1;
+    }
+
+    /* Insert into MPU regions in RR fashion. */
+    region = (MPU_Region *) MPU->WORD[g_mpu_slot];
+    region->STARTADDR = start_addr;
+    region->ENDADDR = end_addr;
+    /* Permissions are fixed to only allow unprivileged write/read/execute. Duh. */
+    region->PERMISSIONS = 0x1E;
+    region->CONTROL = 1;
+
+    /* DPRINTF("Inserting page region [0x%08x, 0x%08x] at MPU slot %u\n", start_addr, end_addr, g_mpu_slot); */
+    g_mpu_slot++;
+
+    /* Handle slot index overflow. */
+    if (g_mpu_slot >= K64F_MPU_REGIONS_MAX) {
+        g_mpu_slot = K64F_MPU_REGIONS_USER;
+    }
+    return 0;
+}
 
 /* FIXME - test for actual ACLs */
 uint32_t vmpu_fault_find_acl_mem(uint8_t box_id, uint32_t fault_addr, uint32_t size)
@@ -107,9 +135,15 @@ void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
      * We opportunistically copy all remaining ACLs into the MPU regions, until
      * the regions run out. The remaining ACLs are switched in on demand. */
     u = K64F_MPU_REGIONS_STATIC + dst_count;
+    /* The round robin _starts_ at the first free MPU region _after_ the box
+     * ACLs have been copied. */
+    g_mpu_slot = u;
     if (u >= K64F_MPU_REGIONS_MAX) {
         /* Clamp u to K64F_MPU_REGIONS_MAX. */
         u = K64F_MPU_REGIONS_MAX;
+        /* If no MPU regions are free anymore, set the RR marker at the
+         * of the USER MPU regions (leaving stack and context intact!). */
+        g_mpu_slot = K64F_MPU_REGIONS_USER;
     }
     /* Copy the ACLs into the MPU regions. */
     for (t = K64F_MPU_REGIONS_STATIC; t < u; t++, rgd++) {
