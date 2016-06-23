@@ -45,3 +45,25 @@ uint32_t page_allocator_get_faults(uint8_t page)
     }
     return 0;
 }
+
+int page_allocator_get_active_region_for_address(uint32_t address, uint32_t * start_addr, uint32_t * end_addr, uint8_t * page)
+{
+    const page_owner_t box_id = g_active_box;
+
+    /* Compute the page id. */
+    uint8_t p = page_allocator_get_page_from_address(address);
+    if (p == UVISOR_PAGE_UNUSED) {
+        /* This address does not correspond to any page. */
+        return UVISOR_ERROR_PAGE_INVALID_PAGE_ORIGIN;
+    }
+    /* Check that the page actually belongs to this box or box 0. */
+    if ((g_page_owner_table[p] != 0) && (g_page_owner_table[p] != box_id)) {
+        return UVISOR_ERROR_PAGE_INVALID_PAGE_OWNER;
+    }
+    /* Compute the page start and end address */
+    *start_addr = (uint32_t) g_page_heap_start + g_page_size * p;
+    *end_addr = *start_addr + g_page_size;
+    *page = p;
+
+    return UVISOR_ERROR_PAGE_OK;
+}
