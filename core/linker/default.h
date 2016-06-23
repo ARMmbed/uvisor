@@ -24,21 +24,21 @@ ENTRY(main_entry)
 #define UVISOR_FLASH_LENGTH_MAX (FLASH_LENGTH_MIN - FLASH_OFFSET)
 #define UVISOR_SRAM_LENGTH_MAX  (SRAM_LENGTH_MIN - SRAM_OFFSET)
 
-/* Check that the uVisor memory requirements can be satisfied */
+/* Check that the uVisor memory requirements can be satisfied. */
 #if UVISOR_FLASH_LENGTH > UVISOR_FLASH_LENGTH_MAX
-#error "uVisor does not fit into the target memory. UVISOR_FLASH_LENGTH must be smaller than UVISOR_FLASH_LENGTH_MAX"
+#error "uVisor does not fit into the target memory. UVISOR_FLASH_LENGTH must be smaller than UVISOR_FLASH_LENGTH_MAX."
 #endif /* UVISOR_FLASH_LENGTH > UVISOR_FLASH_LENGTH_MAX */
 #if UVISOR_SRAM_LENGTH > UVISOR_SRAM_LENGTH_MAX
-#error "uVisor does not fit into the target memory. UVISOR_SRAM_LENGTH must be smaller than UVISOR_SRAM_LENGTH_MAX"
+#error "uVisor does not fit into the target memory. UVISOR_SRAM_LENGTH must be smaller than UVISOR_SRAM_LENGTH_MAX."
 #endif /* UVISOR_SRAM_LENGTH > UVISOR_SRAM_LENGTH_MAX */
 
 #ifndef STACK_GUARD_BAND
 #define STACK_GUARD_BAND 32
-#endif/*STACK_GUARD_BAND*/
+#endif /* STACK_GUARD_BAND */
 
 #ifndef STACK_SIZE
 #define STACK_SIZE 1024
-#endif/*STACK_SIZE*/
+#endif /* STACK_SIZE */
 
 MEMORY
 {
