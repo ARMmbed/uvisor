@@ -85,15 +85,15 @@ static int vmpu_sanity_checks(void)
         VMPU_REGION_SIZE(__uvisor_config.bss_main_start,
                          __uvisor_config.bss_main_end));
     DPRINTF("             (0x%08X (%u bytes) [linker]\n",
-            SRAM_OFFSET_START, UVISOR_SRAM_LENGTH);
+            SRAM_OFFSET_START, UVISOR_SRAM_LENGTH_USED);
     assert( __uvisor_config.bss_main_end > __uvisor_config.bss_main_start );
     assert( VMPU_REGION_SIZE(__uvisor_config.bss_main_start,
-                             __uvisor_config.bss_main_end) == UVISOR_SRAM_LENGTH );
+                             __uvisor_config.bss_main_end) == UVISOR_SRAM_LENGTH_USED );
     assert(&__stack_end__ <= __uvisor_config.bss_main_end);
 
     assert( (uint32_t) __uvisor_config.bss_main_start == SRAM_OFFSET_START);
     assert( (uint32_t) __uvisor_config.bss_main_end == (SRAM_OFFSET_START +
-                                                        UVISOR_SRAM_LENGTH) );
+                                                        UVISOR_SRAM_LENGTH_USED) );
 
     /* verify that secure flash area is accessible and after public code */
     assert(!vmpu_public_flash_addr((uint32_t) __uvisor_config.secure_start));
