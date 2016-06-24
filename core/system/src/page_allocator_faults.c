@@ -67,3 +67,30 @@ int page_allocator_get_active_region_for_address(uint32_t address, uint32_t * st
 
     return UVISOR_ERROR_PAGE_OK;
 }
+
+uint8_t page_allocator_iterate_active_pages(int (*callback)(uint32_t start_addr, uint32_t end_addr, uint8_t page))
+{
+    uint8_t ii, count = 0;
+    uint32_t start_addr, end_addr;
+
+    /* Iterate over all pages. */
+    /* FIXME: Use bit masks for this to make this page enabling more efficient.
+     * By storing the pages as a bit mask in an array indexed by box id, the lookup
+     * is O(1) and it can be OR-ed with box 0 and then all pages can be enabled at once. */
+    for (ii = 0; ii < g_page_count_total; ii++) {
+        if (g_page_owner_table[ii] == g_active_box || g_page_owner_table[ii] == 0) {
+            count++;
+            if (callback) {
+                /* Compute start and end addresses. */
+                start_addr = (uint32_t) g_page_heap_start + g_page_size * ii;
+                end_addr = start_addr + g_page_size;
+                /* Call the callback. */
+                if (!callback(start_addr, end_addr, ii)) {
+                    return count;
+                }
+            }
+        }
+    }
+
+    return count;
+}
