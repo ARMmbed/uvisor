@@ -40,4 +40,19 @@ uint32_t page_allocator_get_faults(uint8_t page);
  */
 int page_allocator_get_active_region_for_address(uint32_t address, uint32_t * start_addr, uint32_t * end_addr, uint8_t * page);
 
+/** Callback for iterating over pages.
+ * @param start_addr    the page start address
+ * @param end_addr      the page end address
+ * @param page          the page index
+ * @retval 0            stop iteration after this callback.
+ * @retval !0           continue iteration after this callback.
+ */
+typedef int (*PageAllocatorIteratorCallback)(uint32_t start_addr, uint32_t end_addr, uint8_t page);
+
+/* Iterate over all pages belonging to the active box or box 0 and execute the callback.
+ * @param callback  the function to execute on every page. May be NULL.
+ * @return          number of active pages.
+ */
+uint8_t page_allocator_iterate_active_pages(PageAllocatorIteratorCallback callback);
+
 #endif /* __PAGE_ALLOCATOR_FAULTS_H__ */
