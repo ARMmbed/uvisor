@@ -18,6 +18,7 @@
 #include "halt.h"
 #include "vmpu.h"
 #include "vmpu_freescale_k64_mem.h"
+#include "page_allocator_faults.h"
 
 /* The K64F has 12 MPU regions, however, we use region 0 as the background
  * region with `UVISOR_TACL_BACKGROUND` as permissions.
@@ -95,6 +96,16 @@ uint32_t vmpu_fault_find_acl_mem(uint8_t box_id, uint32_t fault_addr, uint32_t s
     return 0;
 }
 
+/* This is the iterator callback for inserting all page heap ACLs into to the
+ * MPU during `vmpu_mem_switch()`. */
+static int vmpu_mem_push_page_acl_iterator(uint32_t start_addr, uint32_t end_addr, uint8_t page)
+{
+    /* Insert the MPU region at the `g_mpu_slot`. */
+    vmpu_mem_push_page_acl(start_addr, end_addr);
+    /* We only continue if we have not wrapped around the end of the MPU regions yet. */
+    return (g_mpu_slot > K64F_MPU_REGIONS_USER);
+}
+
 void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
 {
     uint32_t t, u, dst_count;
@@ -112,13 +123,17 @@ void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
 
     box = &g_mem_box[dst_box];
 
-    /* Disable all user MPU regions. */
-    for (t = K64F_MPU_REGIONS_USER; t < K64F_MPU_REGIONS_MAX; t++) {
-        MPU->WORD[t][3] = 0;
-    }
-
-    /* for box zero, just return. */
+    /* For box zero, only copy the page heap ACLs, disable the remaining pages
+     * and then return. */
     if(src_box && !dst_box) {
+        g_mpu_slot = K64F_MPU_REGIONS_STATIC;
+        t = K64F_MPU_REGIONS_MAX - K64F_MPU_REGIONS_STATIC;
+        if (page_allocator_iterate_active_pages(vmpu_mem_push_page_acl_iterator) < t) {
+            /* Disable all remaining regions. */
+            for (t = g_mpu_slot; t < K64F_MPU_REGIONS_MAX; t++) {
+                ((MPU_Region *) MPU->WORD[t])->CONTROL = 0;
+            }
+        }
         return;
     }
 
@@ -144,6 +159,17 @@ void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
         /* If no MPU regions are free anymore, set the RR marker at the
          * of the USER MPU regions (leaving stack and context intact!). */
         g_mpu_slot = K64F_MPU_REGIONS_USER;
+    } else {
+        /* Copy the active page heap ACLs into the MPU regions:
+         * This will start at index `g_mpu_slot` and continue to `K64F_MPU_REGIONS_MAX`. */
+        /* FIXME: Use page fault count to prioritize which pages are enabled! */
+        t = K64F_MPU_REGIONS_MAX - g_mpu_slot;
+        if (page_allocator_iterate_active_pages(vmpu_mem_push_page_acl_iterator) < t) {
+            /* Disable all remaining regions. */
+            for (t = g_mpu_slot; t < K64F_MPU_REGIONS_MAX; t++) {
+                ((MPU_Region *) MPU->WORD[t])->CONTROL = 0;
+            }
+        }
     }
     /* Copy the ACLs into the MPU regions. */
     for (t = K64F_MPU_REGIONS_STATIC; t < u; t++, rgd++) {
