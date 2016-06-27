@@ -18,12 +18,38 @@
 #include "halt.h"
 #include "vmpu.h"
 #include "vmpu_freescale_k64_mem.h"
+#include "page_allocator_faults.h"
 
-#define MPU_MAX_REGIONS 11
+/* The K64F has 12 MPU regions, however, we use region 0 as the background
+ * region with `UVISOR_TACL_BACKGROUND` as permissions.
+ * Region 1 and 2 are used to unlock Application SRAM and Flash.
+ * Therefore 9 MPU regions are available for user ACLs.
+ * Region 3 and 4 are used to protect the current box stack and context.
+ * This leaves 6 MPU regions for round robin scheduling:
+ *
+ *     12      <-- End of MPU regions, K64F_MPU_REGIONS_MAX
+ * +---------+
+ * |   11    |
+ * |   ...   |
+ * |    5    | <-- Box Pages, K64F_MPU_REGIONS_USER
+ * +---------+
+ * |    4    | <-- Box Context
+ * |    3    | <-- Box Stack, K64F_MPU_REGIONS_STATIC
+ * +---------+
+ * |    2    | <-- Application Flash unlock
+ * |    1    | <-- Application SRAM unlock
+ * |    0    | <-- Background region
+ * +---------+
+ */
+#define K64F_MPU_REGIONS_STATIC 3
+#define K64F_MPU_REGIONS_USER 5
+#define K64F_MPU_REGIONS_MAX 12
 
 typedef struct
 {
-    uint32_t word[3];
+    uint32_t start_addr;
+    uint32_t end_addr;
+    uint32_t permissions;
     uint32_t acl;
 } TMemACL;
 
@@ -33,9 +59,36 @@ typedef struct
     uint32_t count;
 } TBoxACL;
 
-uint32_t g_mem_acl_count, g_mem_acl_user;
+uint32_t g_mem_acl_count, g_mpu_slot;
 static TMemACL g_mem_acl[UVISOR_MAX_ACLS];
 static TBoxACL g_mem_box[UVISOR_MAX_BOXES];
+
+int vmpu_mem_push_page_acl(uint32_t start_addr, uint32_t end_addr)
+{
+    MPU_Region * region;
+
+    /* Check that start and end address are aligned to 32-byte. */
+    if (start_addr & 0x1F || end_addr & 0x1F) {
+        return -1;
+    }
+
+    /* Insert into MPU regions in RR fashion. */
+    region = (MPU_Region *) MPU->WORD[g_mpu_slot];
+    region->STARTADDR = start_addr;
+    region->ENDADDR = end_addr;
+    /* Permissions are fixed to only allow unprivileged write/read/execute. Duh. */
+    region->PERMISSIONS = 0x1E;
+    region->CONTROL = 1;
+
+    /* DPRINTF("Inserting page region [0x%08x, 0x%08x] at MPU slot %u\n", start_addr, end_addr, g_mpu_slot); */
+    g_mpu_slot++;
+
+    /* Handle slot index overflow. */
+    if (g_mpu_slot >= K64F_MPU_REGIONS_MAX) {
+        g_mpu_slot = K64F_MPU_REGIONS_USER;
+    }
+    return 0;
+}
 
 /* FIXME - test for actual ACLs */
 uint32_t vmpu_fault_find_acl_mem(uint8_t box_id, uint32_t fault_addr, uint32_t size)
@@ -43,10 +96,20 @@ uint32_t vmpu_fault_find_acl_mem(uint8_t box_id, uint32_t fault_addr, uint32_t s
     return 0;
 }
 
+/* This is the iterator callback for inserting all page heap ACLs into to the
+ * MPU during `vmpu_mem_switch()`. */
+static int vmpu_mem_push_page_acl_iterator(uint32_t start_addr, uint32_t end_addr, uint8_t page)
+{
+    /* Insert the MPU region at the `g_mpu_slot`. */
+    vmpu_mem_push_page_acl(start_addr, end_addr);
+    /* We only continue if we have not wrapped around the end of the MPU regions yet. */
+    return (g_mpu_slot > K64F_MPU_REGIONS_USER);
+}
+
 void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
 {
-    uint32_t t, u, src_count, dst_count;
-    volatile uint32_t* word;
+    uint32_t t, u, dst_count;
+    MPU_Region * region;
     TBoxACL *box;
     TMemACL *rgd;
 
@@ -60,16 +123,10 @@ void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
 
     box = &g_mem_box[dst_box];
 
-    /* for box zero, just disable private ACL's */
-    src_count = g_mem_box[src_box].count;
-    if(src_box && !dst_box)
-    {
-        /* disable private regions */
-        if(src_count)
-        {
-            t = g_mem_acl_user + 1;
-            while(src_count--)
-                MPU->WORD[t++][3] = 0;
+    /* For box zero, disable all user MPU regions and return. */
+    if(src_box && !dst_box) {
+        for (t = K64F_MPU_REGIONS_USER; t < K64F_MPU_REGIONS_MAX; t++) {
+            ((MPU_Region *) MPU->WORD[t])->CONTROL = 0;
         }
         return;
     }
@@ -81,24 +138,40 @@ void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
     rgd = box->acl;
     assert(rgd);
 
-    /* update MPU regions */
-    t = g_mem_acl_user + 1;
-    u = dst_count;
-    while(u--)
-    {
-        word = MPU->WORD[t++];
-        word[0] = rgd->word[0];
-        word[1] = rgd->word[1];
-        word[2] = rgd->word[2];
-        word[3] = 1;
-        rgd++;
+    /* Update MPU regions:
+     * We assume that the first two ACLs belonging to the box are the stack
+     * and context ACLs. Therefore we start at index K64F_MPU_REGIONS_STATIC.
+     * We opportunistically copy all remaining ACLs into the MPU regions, until
+     * the regions run out. The remaining ACLs are switched in on demand. */
+    u = K64F_MPU_REGIONS_STATIC + dst_count;
+    /* The round robin _starts_ at the first free MPU region _after_ the box
+     * ACLs have been copied. */
+    g_mpu_slot = u;
+    if (u >= K64F_MPU_REGIONS_MAX) {
+        /* Clamp u to K64F_MPU_REGIONS_MAX. */
+        u = K64F_MPU_REGIONS_MAX;
+        /* If no MPU regions are free anymore, set the RR marker at the
+         * of the USER MPU regions (leaving stack and context intact!). */
+        g_mpu_slot = K64F_MPU_REGIONS_USER;
+    } else {
+        /* Copy the active page heap ACLs into the MPU regions:
+         * This will start at index `g_mpu_slot` and continue to `K64F_MPU_REGIONS_MAX`. */
+        /* FIXME: Use page fault count to prioritize which pages are enabled! */
+        t = K64F_MPU_REGIONS_MAX - g_mpu_slot;
+        if (page_allocator_iterate_active_pages(vmpu_mem_push_page_acl_iterator) < t) {
+            /* Disable all remaining regions. */
+            for (t = g_mpu_slot; t < K64F_MPU_REGIONS_MAX; t++) {
+                ((MPU_Region *) MPU->WORD[t])->CONTROL = 0;
+            }
+        }
     }
-
-    /* delete regions beyon updated regions */
-    while(src_count>dst_count)
-    {
-        MPU->WORD[t++][3] = 0;
-        dst_count++;
+    /* Copy the ACLs into the MPU regions. */
+    for (t = K64F_MPU_REGIONS_STATIC; t < u; t++, rgd++) {
+        region = (MPU_Region *) MPU->WORD[t];
+        region->STARTADDR = rgd->start_addr;
+        region->ENDADDR = rgd->end_addr;
+        region->PERMISSIONS = rgd->permissions;
+        region->CONTROL = 1;
     }
 }
 
@@ -171,10 +244,10 @@ static int vmpu_mem_add_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
     end = ((uint32_t) start) + size;
     rgd = g_mem_acl;
     for(t=0; t<g_mem_acl_count; t++, rgd++)
-        if(vmpu_mem_overlap((uint32_t) start, end, rgd->word[0], rgd->word[1]))
+        if(vmpu_mem_overlap((uint32_t) start, end, rgd->start_addr, rgd->end_addr))
         {
             DPRINTF("detected overlap with ACL %i (0x%08X-0x%08X)\n",
-                t, rgd->word[0], rgd->word[1]);
+                t, rgd->start_addr, rgd->end_addr);
 
             /* handle permitted overlaps */
             if(!((rgd->acl & UVISOR_TACL_SHARED) &&
@@ -191,9 +264,9 @@ static int vmpu_mem_add_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
     /* remember original ACL */
     rgd->acl = acl;
     /* start address, aligned tro 32 bytes */
-    rgd->word[0] = (uint32_t) start;
+    rgd->start_addr = (uint32_t) start;
     /* end address, aligned tro 32 bytes */
-    rgd->word[1] = end;
+    rgd->end_addr = end;
 
     /* handle user permissions */
     perm = (acl & UVISOR_TACL_USER) ?  acl & UVISOR_TACL_UACL : 0;
@@ -221,7 +294,7 @@ static int vmpu_mem_add_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
                 DPRINTF("chosen supervisor ACL's are not supported by hardware (0x%08X)\n", acl);
                 return -7;
         }
-    rgd->word[2] = perm;
+    rgd->permissions = perm;
 
     /* increment ACL count */
     box->count++;
@@ -252,17 +325,13 @@ int vmpu_mem_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 void vmpu_mem_init(void)
 {
     int res;
-
-    /* uvisor SRAM only accessible to uvisor */
-    res = vmpu_mem_add_int(0, (void*)SRAM_ORIGIN, ((uint32_t)__uvisor_config.bss_main_end)-SRAM_ORIGIN,
-        UVISOR_TACL_SREAD|
-        UVISOR_TACL_SWRITE);
-    if( res<0 )
-        HALT_ERROR(SANITY_CHECK_FAILED, "failed setting up SRAM_ORIGIN (%i)\n", res);
+    uint32_t t;
+    TMemACL * rgd;
+    MPU_Region * region;
 
     /* rest of SRAM, accessible to mbed - non-executable for uvisor */
     res = vmpu_mem_add_int(0, __uvisor_config.bss_end,
-        ((uint32_t) __uvisor_config.sram_end) - ((uint32_t) __uvisor_config.bss_end),
+        UVISOR_REGION_ROUND_UP((uint32_t) __uvisor_config.page_start) - ((uint32_t) __uvisor_config.bss_end),
         UVISOR_TACL_SREAD|
         UVISOR_TACL_SWRITE|
         UVISOR_TACL_UREAD|
@@ -284,10 +353,15 @@ void vmpu_mem_init(void)
         HALT_ERROR(SANITY_CHECK_FAILED, "failed setting up box FLASH (%i)\n", res);
 
     /* initial primary box ACL's */
-    vmpu_mem_switch(0, 0);
-
-    /* mark all primary box ACL's as static */
-    g_mem_acl_user = g_mem_acl_count;
+    rgd = g_mem_box[0].acl;
+    /* Copy ACLs [0, 1] into MPU regions [_1_, _2_]. Region 0 is the background region! */
+    for(t = 1; t < K64F_MPU_REGIONS_STATIC; t++, rgd++) {
+        region = (MPU_Region *) MPU->WORD[t];
+        region->STARTADDR = rgd->start_addr;
+        region->ENDADDR = rgd->end_addr;
+        region->PERMISSIONS = rgd->permissions;
+        region->CONTROL = 1;
+    }
 
     /* MPU background region permission mask
      *   this mask must be set as last one, since the background region gives no

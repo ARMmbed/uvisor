@@ -24,14 +24,28 @@
 #include "vmpu.h"
 #include "vmpu_freescale_k64_aips.h"
 #include "vmpu_freescale_k64_mem.h"
+#include "page_allocator_faults.h"
 
 uint32_t g_box_mem_pos;
 
-/* TODO/FIXME: implement recovery from Freescale MPU fault */
-static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp)
+static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint32_t fault_status)
 {
-    /* FIXME: currently we deny every access */
-    /* TODO: implement actual recovery */
+    (void) fault_status;
+    uint32_t start_addr, end_addr;
+    uint8_t page;
+
+    /* Check if fault address is a page */
+    if (page_allocator_get_active_region_for_address(fault_addr, &start_addr, &end_addr, &page) == UVISOR_ERROR_PAGE_OK)
+    {
+        /* Remember this fault. */
+        page_allocator_register_fault(page);
+        DPRINTF("Page Fault for address 0x%08x at page %u [0x%08x, 0x%08x]\n", fault_addr, page, start_addr, end_addr);
+        /* Create a page ACL for this page and enable it. */
+        if (vmpu_mem_push_page_acl(start_addr, end_addr)) {
+            return -1;
+        }
+        return 0;
+    }
     return -1;
 }
 
@@ -78,7 +92,7 @@ void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
                 fault_status = VMPU_SCB_BFSR;
 
                 /* check if the fault is an MPU fault */
-                if (MPU->CESR >> 27 && !vmpu_fault_recovery_mpu(pc, psp)) {
+                if (MPU->CESR >> 27 && !vmpu_fault_recovery_mpu(pc, psp, fault_addr, fault_status)) {
                     VMPU_SCB_BFSR = fault_status;
                     return;
                 }

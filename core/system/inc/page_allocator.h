@@ -18,6 +18,7 @@
 #define __PAGE_ALLOCATOR_H__
 
 #include "api/inc/page_allocator_exports.h"
+#include "page_allocator_config.h"
 
 /* Initialize the page allocator.
  *
@@ -47,5 +48,19 @@ int page_allocator_malloc(UvisorPageTable * const table);
  * @returns Non-zero on failure with failure class `UVISOR_ERROR_CLASS_PAGE`. See `UVISOR_ERROR_PAGE_*`.
  */
 int page_allocator_free(const UvisorPageTable * const table);
+
+/* Map an address to a page index.
+ * @return page index or `UVISOR_PAGE_UNUSED` if address does not belong to page heap.
+ */
+uint8_t page_allocator_get_page_from_address(uint32_t address);
+
+/* Contains the configured page size. */
+extern uint32_t g_page_size;
+/* Points to the beginning of the page heap. */
+extern const void * g_page_heap_start;
+/* Contains the total number of available pages. */
+extern uint8_t g_page_count_total;
+/* Maps the page to the owning box handle. */
+extern page_owner_t g_page_owner_table[];
 
 #endif /* __PAGE_ALLOCATOR_H__ */
