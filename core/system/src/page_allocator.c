@@ -22,6 +22,7 @@
 
 #include <uvisor.h>
 #include "page_allocator.h"
+#include "page_allocator_faults.h"
 #include "mpu/vmpu_unpriv_access.h"
 #include "mpu/vmpu.h"
 #include "halt.h"
@@ -135,6 +136,7 @@ void page_allocator_init(void * const heap_start, void * const heap_end, const u
     uint32_t page = 0;
     for (; page < UVISOR_PAGE_TABLE_MAX_COUNT; page++) {
         g_page_owner_table[page] = UVISOR_PAGE_UNUSED;
+        page_allocator_reset_faults(page);
     }
 }
 
@@ -178,6 +180,8 @@ int page_allocator_malloc(UvisorPageTable * const table)
         if (g_page_owner_table[page] == UVISOR_PAGE_UNUSED) {
             /* Marry this page to the box id. */
             g_page_owner_table[page] = box_id;
+            /* Reset the fault count for this page. */
+            page_allocator_reset_faults(page);
             /* Get the pointer to the page. */
             void * ptr = (void *) g_page_heap_start + page * g_page_size;
             /* Zero the entire page before handing it out. */
