@@ -45,7 +45,9 @@
 
 typedef struct
 {
-    uint32_t word[3];
+    uint32_t start_addr;
+    uint32_t end_addr;
+    uint32_t permissions;
     uint32_t acl;
 } TMemACL;
 
@@ -68,7 +70,7 @@ uint32_t vmpu_fault_find_acl_mem(uint8_t box_id, uint32_t fault_addr, uint32_t s
 void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
 {
     uint32_t t, u, dst_count;
-    volatile uint32_t* word;
+    MPU_Region * region;
     TBoxACL *box;
     TMemACL *rgd;
 
@@ -111,11 +113,11 @@ void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
     }
     /* Copy the ACLs into the MPU regions. */
     for (t = K64F_MPU_REGIONS_STATIC; t < u; t++, rgd++) {
-        word = MPU->WORD[t];
-        word[0] = rgd->word[0];
-        word[1] = rgd->word[1];
-        word[2] = rgd->word[2];
-        word[3] = 1;
+        region = (MPU_Region *) MPU->WORD[t];
+        region->STARTADDR = rgd->start_addr;
+        region->ENDADDR = rgd->end_addr;
+        region->PERMISSIONS = rgd->permissions;
+        region->CONTROL = 1;
     }
 }
 
@@ -188,10 +190,10 @@ static int vmpu_mem_add_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
     end = ((uint32_t) start) + size;
     rgd = g_mem_acl;
     for(t=0; t<g_mem_acl_count; t++, rgd++)
-        if(vmpu_mem_overlap((uint32_t) start, end, rgd->word[0], rgd->word[1]))
+        if(vmpu_mem_overlap((uint32_t) start, end, rgd->start_addr, rgd->end_addr))
         {
             DPRINTF("detected overlap with ACL %i (0x%08X-0x%08X)\n",
-                t, rgd->word[0], rgd->word[1]);
+                t, rgd->start_addr, rgd->end_addr);
 
             /* handle permitted overlaps */
             if(!((rgd->acl & UVISOR_TACL_SHARED) &&
@@ -208,9 +210,9 @@ static int vmpu_mem_add_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
     /* remember original ACL */
     rgd->acl = acl;
     /* start address, aligned tro 32 bytes */
-    rgd->word[0] = (uint32_t) start;
+    rgd->start_addr = (uint32_t) start;
     /* end address, aligned tro 32 bytes */
-    rgd->word[1] = end;
+    rgd->end_addr = end;
 
     /* handle user permissions */
     perm = (acl & UVISOR_TACL_USER) ?  acl & UVISOR_TACL_UACL : 0;
@@ -238,7 +240,7 @@ static int vmpu_mem_add_int(uint8_t box_id, void* start, uint32_t size, UvisorBo
                 DPRINTF("chosen supervisor ACL's are not supported by hardware (0x%08X)\n", acl);
                 return -7;
         }
-    rgd->word[2] = perm;
+    rgd->permissions = perm;
 
     /* increment ACL count */
     box->count++;
@@ -271,7 +273,7 @@ void vmpu_mem_init(void)
     int res;
     uint32_t t;
     TMemACL * rgd;
-    volatile uint32_t* word;
+    MPU_Region * region;
 
     /* rest of SRAM, accessible to mbed - non-executable for uvisor */
     res = vmpu_mem_add_int(0, __uvisor_config.bss_end,
@@ -300,11 +302,11 @@ void vmpu_mem_init(void)
     rgd = g_mem_box[0].acl;
     /* Copy ACLs [0, 1] into MPU regions [_1_, _2_]. Region 0 is the background region! */
     for(t = 1; t < K64F_MPU_REGIONS_STATIC; t++, rgd++) {
-        word = MPU->WORD[t];
-        word[0] = rgd->word[0];
-        word[1] = rgd->word[1];
-        word[2] = rgd->word[2];
-        word[3] = 1;
+        region = (MPU_Region *) MPU->WORD[t];
+        region->STARTADDR = rgd->start_addr;
+        region->ENDADDR = rgd->end_addr;
+        region->PERMISSIONS = rgd->permissions;
+        region->CONTROL = 1;
     }
 
     /* MPU background region permission mask

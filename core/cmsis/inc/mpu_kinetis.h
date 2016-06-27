@@ -1126,6 +1126,14 @@ typedef struct {
   __IO uint32_t RGDAAC[12];                        /**< Region Descriptor Alternate Access Control n, array offset: 0x800, array step: 0x4 */
 } MPU_Type, *MPU_MemMapPtr;
 
+/** MPU - Region Layout Typedef */
+typedef struct {
+    __IO uint32_t STARTADDR;
+    __IO uint32_t ENDADDR;
+    __IO uint32_t PERMISSIONS;
+    __IO uint32_t CONTROL;
+} MPU_Region;
+
 /* ----------------------------------------------------------------------------
    -- MPU - Register accessor macros
    ---------------------------------------------------------------------------- */
