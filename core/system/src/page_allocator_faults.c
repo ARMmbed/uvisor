@@ -22,7 +22,7 @@
 #include "context.h"
 
 /* Maps the number of faults to a page. */
-uint32_t g_page_fault_table[UVISOR_PAGE_TABLE_MAX_COUNT];
+uint32_t g_page_fault_table[UVISOR_PAGE_MAX_COUNT];
 
 void page_allocator_reset_faults(uint8_t page)
 {
@@ -56,8 +56,8 @@ int page_allocator_get_active_region_for_address(uint32_t address, uint32_t * st
         /* This address does not correspond to any page. */
         return UVISOR_ERROR_PAGE_INVALID_PAGE_ORIGIN;
     }
-    /* Check that the page actually belongs to this box or box 0. */
-    if ((g_page_owner_table[p] != 0) && (g_page_owner_table[p] != box_id)) {
+    /* Then check if the page is set. */
+    if (!page_allocator_map_get(g_page_owner_map[box_id], p)) {
         return UVISOR_ERROR_PAGE_INVALID_PAGE_OWNER;
     }
     /* Compute the page start and end address */
@@ -72,13 +72,11 @@ uint8_t page_allocator_iterate_active_pages(int (*callback)(uint32_t start_addr,
 {
     uint8_t ii, count = 0;
     uint32_t start_addr, end_addr;
+    const page_owner_t box_id = g_active_box;
 
     /* Iterate over all pages. */
-    /* FIXME: Use bit masks for this to make this page enabling more efficient.
-     * By storing the pages as a bit mask in an array indexed by box id, the lookup
-     * is O(1) and it can be OR-ed with box 0 and then all pages can be enabled at once. */
     for (ii = 0; ii < g_page_count_total; ii++) {
-        if (g_page_owner_table[ii] == g_active_box || g_page_owner_table[ii] == 0) {
+        if (page_allocator_map_get(g_page_owner_map[box_id], ii)) {
             count++;
             if (callback) {
                 /* Compute start and end addresses. */
