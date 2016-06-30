@@ -22,15 +22,15 @@
 #include "svc.h"
 #include "unvic.h"
 #include "vmpu.h"
+#include "vmpu_freescale_k64.h"
 #include "vmpu_freescale_k64_aips.h"
 #include "vmpu_freescale_k64_mem.h"
 #include "page_allocator_faults.h"
 
 uint32_t g_box_mem_pos;
 
-static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint32_t fault_status)
+static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr)
 {
-    (void) fault_status;
     uint32_t start_addr, end_addr;
     uint8_t page;
 
@@ -92,9 +92,25 @@ void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
                 fault_status = VMPU_SCB_BFSR;
 
                 /* check if the fault is an MPU fault */
-                if (MPU->CESR >> 27 && !vmpu_fault_recovery_mpu(pc, psp, fault_addr, fault_status)) {
-                    VMPU_SCB_BFSR = fault_status;
-                    return;
+                int slave_port = vmpu_fault_get_slave_port();
+                if (slave_port >= 0) {
+                    /* If the fault comes from the MPU module, we don't use the
+                     * bus fault syndrome register, but the MPU one. */
+                    fault_addr = MPU->SP[slave_port].EAR;
+
+                    /* Check if we can recover from the MPU fault. */
+                    if (!vmpu_fault_recovery_mpu(pc, psp, fault_addr)) {
+                        /* We clear the bus fault status anyway. */
+                        VMPU_SCB_BFSR = fault_status;
+
+                        /* We also clear the MPU fault status bit. */
+                        vmpu_fault_clear_slave_port(slave_port);
+
+                        /* Recover from the exception. */
+                        return;
+                    }
+                } else if (slave_port == VMPU_FAULT_MULTIPLE) {
+                    DPRINTF("Multiple MPU violations found.\r\n");
                 }
 
                 /* check if the fault is the special register corner case */
