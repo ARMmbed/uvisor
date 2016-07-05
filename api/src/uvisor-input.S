@@ -20,6 +20,7 @@
 .globl __uvisor_ps
 .type  uvisor_init, %function
 .weak  __uvisor_mode
+.weak  __uvisor_page_size
 .globl __uvisor_priv_sys_irq_hooks
 
 .section .uvisor.main, "x"

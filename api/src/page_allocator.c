@@ -27,3 +27,9 @@ int uvisor_page_free(const UvisorPageTable * const table)
 {
     return UVISOR_SVC(UVISOR_SVC_ID_PAGE_FREE, "", table);
 }
+
+uint32_t uvisor_get_page_size(void)
+{
+    extern const uint32_t __uvisor_page_size;
+    return __uvisor_page_size;
+}
