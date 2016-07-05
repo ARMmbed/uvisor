@@ -1,6 +1,10 @@
-# Developing with uVisor locally in mbed OS
+# Developing with uVisor Locally on mbed OS
 
-The uVisor is distributed as a pre-linked binary blob. Blobs for different mbed platforms are released in a yotta module called `uvisor-lib`, which you can obtain from the yotta registry. This guide will show you a different way of obtaining those binaries, that is, by building them locally.
+When an application uses the uVisor, mbed OS ensures that the uVisor static libraries are linked with the rest of the program. These libraries include the user-facing uVisor APIs and a pre-linked binary blob, which we call the uVisor *core*.
+
+It is the responsibility of the uVisor library owner to compile uVisor from its main repository, [ARMmbed/uvisor](https://github.com/ARMmbed/uvisor), and to distribute the resulting libraries to the target operating system. In mbed OS, we periodically compile the uVisor core and release it as a static library for each of the supported targets. These libraries are located in the uVisor folder in the [mbedmicro/mbed](https://github.com/mbedmicro/mbed) repository.
+
+This guide will show you a different way of obtaining the uVisor libraries, that is, by building them locally.
 
 There are several reasons why you might want to build uVisor locally:
 
@@ -11,75 +15,76 @@ There are several reasons why you might want to build uVisor locally:
 
 You will need the following:
 
-* The Launchpad GCC ARM embedded toolchain.
+* A [target supported](../README.md#supported-platforms) by uVisor on mbed OS. If your target is not supported yet, you can follow the [uVisor porting guide](PORTING.md).
+* The Launchpad [GCC ARM Embedded](https://launchpad.net/gcc-arm-embedded) toolchain.
 * GNU make.
-* yotta.
 * git.
+
+## Prepare your application
+
+If you are just starting to look at uVisor and don't have your own application for mbed OS, we suggest you use our example app:
+
+```bash
+$ cd ~/code
+$ mbed import https://github.com/ARMmbed/mbed-os-example-uvisor
+```
+
+The command above will import all the example dependencies as well, including the mbed OS codebase and the uVisor libraries.
+
+If you already have an application that you want to use for this guide, make sure that it is ready to work with uVisor enabled. You can follow the [quick-start guide](QUICKSTART.md) for more details.
+
+In either case, move to the app folder:
+
+```bash
+$ cd ~/code/${your_app}           # or ~/code/mbed-os-example-uvisor
+```
 
 ## Build the uVisor locally
 
-We will assume that your development directory is `~/code`. First, you need to clone the `uvisor-lib` repository:
+By default, the version of mbed OS that you download when you import a program or clone the [mbedmicro/mbed](https://github.com/mbedmicro/mbed) repository contains a pre-linked version of the uVisor core and public APIs. The uVisor module comes with an importer script, though, that can be run to download the latest uVisor version and compile it.
+
+You can run the importer script by calling running `make` from the app folder:
 
 ```bash
-$ cd ~/code
-$ git clone --recursive git@github.com:ARMmbed/uvisor-lib.git
+$ make -C ~/code/${your_app}/mbed-os/core/features/FEATURE_UVISOR/importer
 ```
 
-The `--recursive` option ensures that the [ARMmbed/uvisor](https://github.com/ARMmbed/uvisor) submodule is fetched as well. This repository contains the uVisor core code-base and the uVisor APIs.
+The script will perform the following operations:
 
-Build uVisor. All configurations, for all family, both for debug and release will be built with a single `make` rule:
+* It fetches the `HEAD` of the release branch of uVisor.
+* It compiles the downloaded version of uVisor for all targets, all configurations, in both debug and release mode.
+* It copies the libraries and relevant header files from the uVisor repository to the mbed OS folders.
+
+Your local version of the uVisor libraries is now built locally using the latest uVisor version.
+
+## Build the application
+
+Go back to the application folder:
 
 ```bash
-$ cd ~/code/uvisor-lib/uvisor
-$ make
+$ cd ~/code/${your_app}
 ```
 
-A rule `make fresh` is also provided, that cleans everything before building. This might be useful while you develop.
-
-New release libraries have been created, which are located in the `api/lib` folder inside `~/code/uvisor-lib/uvisor`. We only need to tell yotta to link locally to this module.
+You can now build the application using the latest uVisor version:
 
 ```bash
-$ cd ~/code/uvisor-lib
-$ yotta link
+$ mbed compile -m ${your_target} -t GCC_ARM
 ```
 
-In this way yotta applications can refer to this local version of `uvisor-lib` instead of the one published in the registry. This version uses the locally built uVisor libraries.
-
-## Link your application
-
-If you are just starting to look at uVisor and don't have your own mbed app, we suggest you use our Hello World example:
+Whenever you want to make a change to uVisor, just run `make` again in the importer folder. The change will be automatically propagated to the application:
 
 ```bash
-$ cd ~/code
-$ git clone git@github.com:ARMmbed/uvisor-helloworld.git
+$ make -C ~/code/${your_app}/mbed-os/core/features/FEATURE_UVISOR/importer
 ```
 
-In either case, move to the app folder and select the target:
-
-```bash
-$ cd ~/code/${your_app}           # or ~/code/uvisor-helloworld
-$ yotta target ${your_target}
-```
-
-If you are porting uVisor to your platform, `${your_target}` will be your own target, whereas otherwise you can only use the [officially supported targets](../README.md#supported-platforms) for uVisor.
-
-You can now tell yotta to use your local version of uVisor, and finally build the application:
-
-```bash
-$ yotta link uvisor-lib
-$ yotta build
-```
-
-Whenever you want to make a change to uVisor, just run `make` again in the `~/code/uvisor-lib/uvisor` folder. The change will be automatically propagated to this application through the locally linked version of `uvisor-lib`.
-
-Your application binary will be located in `build/${your_target}/source/${your_app}.bin`. You can drag & drop it to the board if it supports it, or use an external debugger to flash the device.
+Your application binary will be located in `.build/${your_target}/GCC_ARM/${your_app}.bin`. You can drag & drop it to the board if it supports it, or use an external debugger to flash the device.
 
 ## Debugging uVisor
 
-The above procedure allows you to run a locally built version of uVisor on your device. If you want to enable debug you must build with the `-d` option:
+You can also compile the application using the uVisor debug build:
 
 ```bash
-$ yotta build -d
+$ mbed compile -m ${your_target} -t GCC_ARM -o "debug-info"
 ```
 
-Debugging uVisor requires a debugger to be connected to the board. Please read the [Debugging uVisor](DEBUGGING.md) guide for further details.
+The uVisor debug build gives you access to runtime messages and fault blue screens, which are very useful to understand the uVisor protection mechanisms, but it requires a debugger to be connected to the board. Please read the [Debugging uVisor](DEBUGGING.md) guide for further details.
