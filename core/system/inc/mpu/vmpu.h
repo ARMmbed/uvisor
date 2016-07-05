@@ -17,8 +17,8 @@
 #ifndef __VMPU_H__
 #define __VMPU_H__
 
-#include "api/inc/vmpu_exports.h"
 #include "vmpu_unpriv_access.h"
+#include "api/inc/vmpu_exports.h"
 #include <stdint.h>
 
 /* Check if the address is in public flash/physical flash/physical SRAM. */
@@ -101,8 +101,15 @@ static UVISOR_FORCEINLINE int vmpu_sram_addr(uint32_t addr)
 #define VMPU_SRAM_BITBAND_START   0x22000000
 #define VMPU_SRAM_BITBAND_END     0x23FFFFFF
 #define VMPU_PERIPH_START         0x40000000
+#define VMPU_PERIPH_MASK          0xFFF00000
 #define VMPU_PERIPH_BITBAND_START 0x42000000
 #define VMPU_PERIPH_BITBAND_END   0x43FFFFFF
+#define VMPU_PERIPH_BITBAND_MASK  0xFE000000
+#define VMPU_PERIPH_FULL_MASK     0xFC000000
+
+/* ROM Table region boundaries */
+#define VMPU_ROMTABLE_START 0xE00FF000UL
+#define VMPU_ROMTABLE_MASK  0xFFFFF000UL
 
 /* bit-banding aliases macros
  * physical address ---> bit-banded alias
@@ -140,7 +147,7 @@ extern int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp, uint32_t fault_addr
 
 uint32_t vmpu_fault_find_acl(uint32_t fault_addr, uint32_t size);
 
-extern void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size);
+extern void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size);
 extern uint32_t vmpu_acl_static_region(uint8_t region, void* base, uint32_t size, UvisorBoxAcl acl);
 
 extern void vmpu_arch_init(void);
@@ -156,11 +163,33 @@ extern void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp);
 extern uint32_t  g_vmpu_box_count;
 bool g_vmpu_boxes_counted;
 
-extern uint32_t vmpu_register_gateway(uint32_t addr, uint32_t val);
-
 extern int vmpu_box_id_self(void);
 extern int vmpu_box_id_caller(void);
 extern int vmpu_box_namespace_from_id(int box_id, char *box_name, size_t length);
+
+/** Determine if the passed size can be mapped to an exact region size
+ * depending on underlying MPU implementation. Note that the size must be an
+ * exact match to a MPU region size.
+ * With the ARMv7-M MPU that would be 32 <= 2^N <= 512M.
+ * With the K64F MPU that would be 32 <= 32*N <= 512M.
+ *
+ * @note `size` is limited to 512M, even though larger sizes are allowed by the
+ *       MPU, but don't make sense from a security perspective.
+ * @retval 1 The region size is valid
+ * @retval 0 The region size is not valid
+ */
+extern int vmpu_is_region_size_valid(uint32_t size);
+
+/**
+ * @param addr Input address to be rounded up
+ * @param size Region size chosen for alignment
+ *
+ * @retval >0 The passed address rounded up to the next possible alignment
+ *            of the passed region size
+ * @retval 0 The region size was invalid, or address rounding overflowed
+ *
+ */
+extern uint32_t vmpu_round_up_region(uint32_t addr, uint32_t size);
 
 static UVISOR_FORCEINLINE bool vmpu_is_box_id_valid(int box_id)
 {

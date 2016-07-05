@@ -15,43 +15,34 @@
  * limitations under the License.
  */
 #include <uvisor.h>
-#include "vmpu.h"
-#include "svc.h"
+#include "debug.h"
+#include "context.h"
 #include "halt.h"
 #include "memory_map.h"
-#include "debug.h"
+#include "svc.h"
+#include "vmpu.h"
 
 #ifndef MPU_MAX_PRIVATE_FUNCTIONS
 #define MPU_MAX_PRIVATE_FUNCTIONS 16
-#endif/*MPU_MAX_PRIVATE_FUNCTIONS*/
+#endif /* MPU_MAX_PRIVATE_FUNCTIONS */
 
-/* predict SRAM offset */
-#ifdef SRAM_OFFSET
-#  define SRAM_OFFSET_START UVISOR_REGION_ROUND_UP(SRAM_ORIGIN + SRAM_OFFSET)
-#else
-#  define SRAM_OFFSET_START SRAM_ORIGIN
-#endif
-
-#if (MPU_MAX_PRIVATE_FUNCTIONS>0x100UL)
+#if (MPU_MAX_PRIVATE_FUNCTIONS > 0x100UL)
 #error "MPU_MAX_PRIVATE_FUNCTIONS needs to be lower/equal to 0x100"
 #endif
 
 uint32_t  g_vmpu_box_count;
 bool g_vmpu_boxes_counted;
-uint8_t g_active_box;
 
 static int vmpu_sanity_checks(void)
 {
-    /* verify uvisor config structure */
-    if(__uvisor_config.magic != UVISOR_MAGIC)
+    /* Verify the uVisor configuration structure. */
+    if (__uvisor_config.magic != UVISOR_MAGIC) {
         HALT_ERROR(SANITY_CHECK_FAILED,
-            "config magic mismatch: &0x%08X = 0x%08X \
-                                  - exptected 0x%08X\n",
-            &__uvisor_config,
-            __uvisor_config.magic,
-            UVISOR_MAGIC);
+            "config magic mismatch: &0x%08X = 0x%08X - exptected 0x%08X\n",
+            &__uvisor_config, __uvisor_config.magic, UVISOR_MAGIC);
+    }
 
-    /* verify basic assumptions about vmpu_bits/__builtin_clz */
+    /* Verify basic assumptions about vmpu_bits/__builtin_clz. */
     assert(__builtin_clz(0) == 32);
     assert(__builtin_clz(1UL << 31) == 0);
     assert(vmpu_bits(0) == 0);
@@ -74,28 +65,46 @@ static int vmpu_sanity_checks(void)
     /* Verify that the uVisor binary blob is positioned at the flash offset. */
     assert(((uint32_t) __uvisor_config.flash_start + FLASH_OFFSET) == (uint32_t) __uvisor_config.main_start);
 
-    /* verify if configuration mode is inside public flash memory */
+    /* Verify that the uVisor mode configuration is inside the public flash. */
     assert(vmpu_public_flash_addr((uint32_t) __uvisor_config.mode));
     assert(*(__uvisor_config.mode) <= 2);
     DPRINTF("uVisor mode: %u\n", *(__uvisor_config.mode));
 
-    /* verify SRAM relocation */
+    /* Verify the SRAM relocation. */
+    /* Note: SRAM_ORIGIN + SRAM_OFFSET is assumed to be aligned to 32 bytes. */
+    assert((uint32_t) __uvisor_config.bss_start == (SRAM_ORIGIN + SRAM_OFFSET));
+
     DPRINTF("uvisor_ram : @0x%08X (%u bytes) [config]\n",
         __uvisor_config.bss_main_start,
-        VMPU_REGION_SIZE(__uvisor_config.bss_main_start,
-                         __uvisor_config.bss_main_end));
-    DPRINTF("             (0x%08X (%u bytes) [linker]\n",
-            SRAM_OFFSET_START, UVISOR_SRAM_LENGTH);
-    assert( __uvisor_config.bss_main_end > __uvisor_config.bss_main_start );
-    assert( VMPU_REGION_SIZE(__uvisor_config.bss_main_start,
-                             __uvisor_config.bss_main_end) == UVISOR_SRAM_LENGTH );
+        VMPU_REGION_SIZE(__uvisor_config.bss_main_start, __uvisor_config.bss_main_end));
+    DPRINTF("             @0x%08X (%u bytes) [linker]\n",
+        SRAM_ORIGIN + SRAM_OFFSET,
+        UVISOR_SRAM_LENGTH_USED);
+
+    /* Verify that the sections inside the BSS region are disjoint. */
+    DPRINTF("bss_boxes  : @0x%08X (%u bytes) [config]\n",
+        __uvisor_config.bss_boxes_start,
+        VMPU_REGION_SIZE(__uvisor_config.bss_boxes_start, __uvisor_config.bss_boxes_end));
+    assert(__uvisor_config.bss_end > __uvisor_config.bss_start);
+    assert(__uvisor_config.bss_main_end > __uvisor_config.bss_main_start);
+    assert(__uvisor_config.bss_boxes_end > __uvisor_config.bss_boxes_start);
+    assert((__uvisor_config.bss_main_start >= __uvisor_config.bss_boxes_end) ||
+           (__uvisor_config.bss_main_end <= __uvisor_config.bss_boxes_start));
+
+    /* Verify the uVisor expectations regarding its own memories. */
+    assert(VMPU_REGION_SIZE(__uvisor_config.bss_main_start, __uvisor_config.bss_main_end) == UVISOR_SRAM_LENGTH_USED);
+    assert((uint32_t) __uvisor_config.bss_main_end == (SRAM_ORIGIN + SRAM_OFFSET + UVISOR_SRAM_LENGTH_USED));
+    assert((uint32_t) __uvisor_config.bss_main_end == (SRAM_ORIGIN + UVISOR_SRAM_LENGTH_PROTECTED));
+
+    /* Verify SRAM sections are within uVisor's own SRAM. */
+    assert(&__bss_start__ >= __uvisor_config.bss_main_start);
+    assert(&__bss_end__ <= __uvisor_config.bss_main_end);
+    assert(&__data_start__ >= __uvisor_config.bss_main_start);
+    assert(&__data_end__ <= __uvisor_config.bss_main_end);
+    assert(&__stack_start__ >= __uvisor_config.bss_main_start);
     assert(&__stack_end__ <= __uvisor_config.bss_main_end);
 
-    assert( (uint32_t) __uvisor_config.bss_main_start == SRAM_OFFSET_START);
-    assert( (uint32_t) __uvisor_config.bss_main_end == (SRAM_OFFSET_START +
-                                                        UVISOR_SRAM_LENGTH) );
-
-    /* verify that secure flash area is accessible and after public code */
+    /* Verify that the secure flash area is accessible and after public code. */
     assert(!vmpu_public_flash_addr((uint32_t) __uvisor_config.secure_start));
     assert(!vmpu_public_flash_addr((uint32_t) __uvisor_config.secure_end));
     assert(vmpu_flash_addr((uint32_t) __uvisor_config.secure_start));
@@ -103,7 +112,7 @@ static int vmpu_sanity_checks(void)
     assert(__uvisor_config.secure_start <= __uvisor_config.secure_end);
     assert(__uvisor_config.secure_start >= __uvisor_config.main_end);
 
-    /* verify configuration table */
+    /* Verify the configuration table. */
     assert(__uvisor_config.cfgtbl_ptr_start <= __uvisor_config.cfgtbl_ptr_end);
     assert(__uvisor_config.cfgtbl_ptr_start >= __uvisor_config.secure_start);
     assert(__uvisor_config.cfgtbl_ptr_end <= __uvisor_config.secure_end);
@@ -112,11 +121,30 @@ static int vmpu_sanity_checks(void)
     assert(vmpu_flash_addr((uint32_t) __uvisor_config.cfgtbl_ptr_start));
     assert(vmpu_flash_addr((uint32_t) __uvisor_config.cfgtbl_ptr_end));
 
-    /* return error if uvisor is disabled */
-    if(!__uvisor_config.mode || (*__uvisor_config.mode == 0))
+    /* Verify the register gateway pointers section. */
+    assert(__uvisor_config.register_gateway_ptr_start <= __uvisor_config.register_gateway_ptr_end);
+    assert(__uvisor_config.register_gateway_ptr_start >= __uvisor_config.secure_start);
+    assert(__uvisor_config.register_gateway_ptr_end <= __uvisor_config.secure_end);
+    assert(!vmpu_public_flash_addr((uint32_t) __uvisor_config.register_gateway_ptr_start));
+    assert(!vmpu_public_flash_addr((uint32_t) __uvisor_config.register_gateway_ptr_end));
+    assert(vmpu_flash_addr((uint32_t) __uvisor_config.register_gateway_ptr_start));
+    assert(vmpu_flash_addr((uint32_t) __uvisor_config.register_gateway_ptr_end));
+
+    /* Verify that every register gateway in memory is aligned to 4 bytes. */
+    uint32_t * register_gateway = __uvisor_config.register_gateway_ptr_start;
+    for (; register_gateway < __uvisor_config.register_gateway_ptr_end; register_gateway++) {
+        if (*register_gateway & 0x3) {
+            HALT_ERROR(SANITY_CHECK_FAILED, "Register gateway 0x%08X is not aligned to 4 bytes",
+                (uint32_t) register_gateway);
+        }
+    }
+
+    /* Return an error if uVisor is disabled. */
+    if (!__uvisor_config.mode || (*__uvisor_config.mode == 0)) {
         return -1;
-    else
+    } else {
         return 0;
+    }
 }
 
 static void vmpu_sanity_check_box_namespace(int box_id, const char *const box_namespace)
@@ -138,12 +166,8 @@ static void vmpu_sanity_check_box_namespace(int box_id, const char *const box_na
          * flash, then the whole array is inside the public flash. */
         if (!vmpu_public_flash_addr((uint32_t) &box_namespace[0]) ||
             !vmpu_public_flash_addr((uint32_t) &box_namespace[length])) {
-            HALT_ERROR(SANITY_CHECK_FAILED,
-                "box[%i] @0x%08X - namespace not entirely in public flash\n",
-                box_id,
-                box_namespace,
-                UVISOR_MAX_BOX_NAMESPACE_LENGTH
-            );
+            HALT_ERROR(SANITY_CHECK_FAILED, "box[%i] @0x%08X - namespace not entirely in public flash\n",
+                box_id, box_namespace, UVISOR_MAX_BOX_NAMESPACE_LENGTH);
         }
 
         if (box_namespace[length] == '\0') {
@@ -157,12 +181,43 @@ static void vmpu_sanity_check_box_namespace(int box_id, const char *const box_na
         if (length >= UVISOR_MAX_BOX_NAMESPACE_LENGTH) {
             HALT_ERROR(SANITY_CHECK_FAILED,
                 "box[%i] @0x%08X - namespace too long (length >= %u)\n",
-                box_id,
-                box_namespace,
-                UVISOR_MAX_BOX_NAMESPACE_LENGTH
-            );
+                box_id, box_namespace, UVISOR_MAX_BOX_NAMESPACE_LENGTH);
         }
     } while (box_namespace[length]);
+}
+
+static void vmpu_box_index_init(uint8_t box_id, const UvisorBoxConfig * const config)
+{
+    void * box_bss;
+    UvisorBoxIndex * index;
+    uint32_t heap_size = config->heap_size;
+
+    if (box_id == 0) {
+        /* Box 0 still uses the main heap to be backwards compatible. */
+        heap_size = ((void *) __uvisor_config.heap_end - (void *) __uvisor_config.heap_start) - config->index_size;
+    }
+
+    box_bss = (void *) g_context_current_states[box_id].bss;
+
+    /* The box index is at the beginning of the bss section. */
+    index = box_bss;
+    /* Zero the _entire_ index, so that user data inside the box index is in a
+     * known state! This allows checking variables for `NULL`, or `0`, which
+     * indicates an initialization requirement. */
+    memset(box_bss, 0, config->index_size);
+    box_bss += config->index_size;
+    /* Initialize user context. */
+    index->ctx = config->context_size ? box_bss : NULL;
+    box_bss += config->context_size;
+    /* Initialize box heap. */
+    index->box_heap = heap_size ? box_bss : NULL;
+    index->box_heap_size = heap_size;
+    /* Active heap pointer is NULL, indicating that the process heap needs to
+     * be initialized on first malloc call! */
+    index->active_heap = NULL;
+
+    /* Point to the box config. */
+    index->config = config;
 }
 
 static void vmpu_load_boxes(void)
@@ -172,102 +227,113 @@ static void vmpu_load_boxes(void)
     const UvisorBoxConfig **box_cfgtbl;
     uint8_t box_id;
 
-    /* enumerate boxes */
+    /* Check heap start and end addresses. */
+    if (!__uvisor_config.heap_start || !vmpu_sram_addr((uint32_t) __uvisor_config.heap_start)) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "Heap start pointer (0x%08x) is not in SRAM memory.\n",
+            (uint32_t) __uvisor_config.heap_start);
+    }
+    if (!__uvisor_config.heap_end || !vmpu_sram_addr((uint32_t) __uvisor_config.heap_end)) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "Heap end pointer (0x%08x) is not in SRAM memory.\n",
+            (uint32_t) __uvisor_config.heap_end);
+    }
+    if (__uvisor_config.heap_end < __uvisor_config.heap_start) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "Heap end pointer (0x%08x) is smaller than heap start pointer (0x%08x).\n",
+            (uint32_t) __uvisor_config.heap_end, (uint32_t) __uvisor_config.heap_start);
+    }
+
+    /* Enumerate boxes. */
     g_vmpu_box_count = (uint32_t) (__uvisor_config.cfgtbl_ptr_end - __uvisor_config.cfgtbl_ptr_start);
     if (g_vmpu_box_count >= UVISOR_MAX_BOXES) {
         HALT_ERROR(SANITY_CHECK_FAILED, "box number overflow\n");
     }
     g_vmpu_boxes_counted = TRUE;
 
-    /* initialize boxes */
+    /* Initialize boxes. */
     box_id = 0;
-    for(box_cfgtbl = (const UvisorBoxConfig**) __uvisor_config.cfgtbl_ptr_start;
-        box_cfgtbl < (const UvisorBoxConfig**) __uvisor_config.cfgtbl_ptr_end;
-        box_cfgtbl++
-        )
-    {
-        /* ensure that configuration resides in flash */
-        if(!(vmpu_flash_addr((uint32_t) *box_cfgtbl) &&
-            vmpu_flash_addr((uint32_t) ((uint8_t*)(*box_cfgtbl)) + (sizeof(**box_cfgtbl)-1))))
-            HALT_ERROR(SANITY_CHECK_FAILED,
-                "invalid address - \
-                *box_cfgtbl must point to flash (0x%08X)\n", *box_cfgtbl);
+    for (box_cfgtbl = (const UvisorBoxConfig * *) __uvisor_config.cfgtbl_ptr_start;
+         box_cfgtbl < (const UvisorBoxConfig * *) __uvisor_config.cfgtbl_ptr_end;
+         box_cfgtbl++) {
+        /* Ensure that the configuration table resides in flash. */
+        if (!(vmpu_flash_addr((uint32_t) *box_cfgtbl) &&
+            vmpu_flash_addr((uint32_t) ((uint8_t *) (*box_cfgtbl)) + (sizeof(**box_cfgtbl) - 1)))) {
+            HALT_ERROR(SANITY_CHECK_FAILED, "invalid address - *box_cfgtbl must point to flash (0x%08X)\n",
+                *box_cfgtbl);
+        }
 
-        /* check for magic value in box configuration */
-        if(((*box_cfgtbl)->magic)!=UVISOR_BOX_MAGIC)
-            HALT_ERROR(SANITY_CHECK_FAILED,
-                "box[%i] @0x%08X - invalid magic\n",
-                box_id,
-                (uint32_t)(*box_cfgtbl)
-            );
+        /* Check the magic value in the box configuration table. */
+        if (((*box_cfgtbl)->magic) != UVISOR_BOX_MAGIC) {
+            HALT_ERROR(SANITY_CHECK_FAILED, "box[%i] @0x%08X - invalid magic\n",
+                box_id, (uint32_t)(*box_cfgtbl));
+        }
 
-        /* check for magic value in box configuration */
-        if(((*box_cfgtbl)->version)!=UVISOR_BOX_VERSION)
-            HALT_ERROR(SANITY_CHECK_FAILED,
-                "box[%i] @0x%08X - invalid version (0x%04X!-0x%04X)\n",
-                box_id,
-                *box_cfgtbl,
-                (*box_cfgtbl)->version,
-                UVISOR_BOX_VERSION
-            );
+        /* Check the box configuration table version. */
+        if (((*box_cfgtbl)->version) != UVISOR_BOX_VERSION) {
+            HALT_ERROR(SANITY_CHECK_FAILED, "box[%i] @0x%08X - invalid version (0x%04X!-0x%04X)\n",
+                box_id, *box_cfgtbl, (*box_cfgtbl)->version, UVISOR_BOX_VERSION);
+        }
+
+        /* Confirm the minimal size of the box index size. */
+        if ((*box_cfgtbl)->index_size < sizeof(UvisorBoxIndex)) {
+            HALT_ERROR(SANITY_CHECK_FAILED, "Box index size (%uB) must be large enough to hold UvisorBoxIndex (%uB).\n",
+                (*box_cfgtbl)->index_size, sizeof(UvisorBoxIndex));
+        }
 
         /* Check that the box namespace is not too long. */
         vmpu_sanity_check_box_namespace(box_id, (*box_cfgtbl)->box_namespace);
 
-        /* load box ACLs in table */
+        /* Load the box ACLs. */
         DPRINTF("box[%i] ACL list:\n", box_id);
 
-        /* add ACL's for all box stacks, the actual start addesses and
-         * sizes are resolved later in vmpu_initialize_stacks */
+        /* Add ACL's for all box stacks. */
         vmpu_acl_stack(
             box_id,
-            (*box_cfgtbl)->context_size,
+            (*box_cfgtbl)->index_size + (*box_cfgtbl)->context_size + (*box_cfgtbl)->heap_size,
             (*box_cfgtbl)->stack_size
         );
 
-        /* enumerate box ACLs */
-        if( (region = (*box_cfgtbl)->acl_list)!=NULL )
-        {
-            count = (*box_cfgtbl)->acl_count;
-            for(i=0; i<count; i++)
-            {
-                /* ensure that ACL resides in flash */
-                if(!vmpu_public_flash_addr((uint32_t) region))
-                    HALT_ERROR(SANITY_CHECK_FAILED,
-                        "box[%i]:acl[%i] must be in code section (@0x%08X)\n",
-                        box_id,
-                        i,
-                        *box_cfgtbl
-                    );
+        /* Initialize box index. */
+        vmpu_box_index_init(
+            box_id,
+            *box_cfgtbl
+        );
 
-                /* add ACL, and force entry as user-provided */
-                if(region->acl & UVISOR_TACL_IRQ)
+        /* Enumerate the box ACLs. */
+        region = (*box_cfgtbl)->acl_list;
+        if (region != NULL) {
+            count = (*box_cfgtbl)->acl_count;
+            for (i = 0; i < count; i++) {
+                /* Ensure that the ACL resides in public flash. */
+                if (!vmpu_public_flash_addr((uint32_t) region)) {
+                    HALT_ERROR(SANITY_CHECK_FAILED, "box[%i]:acl[%i] must be in code section (@0x%08X)\n",
+                        box_id, i, *box_cfgtbl);
+                }
+
+                /* Add the ACL and force the entry as user-provided. */
+                if (region->acl & UVISOR_TACL_IRQ) {
                     vmpu_acl_irq(box_id, region->param1, region->param2);
-                else
+                } else {
                     vmpu_acl_add(
                         box_id,
                         region->param1,
                         region->param2,
                         region->acl | UVISOR_TACL_USER
                     );
+                }
 
-                /* proceed to next ACL */
+                /* Proceed to the next ACL. */
                 region++;
             }
         }
 
+        /* Proceed to the next box. */
         box_id++;
     }
 
-    /* load box 0 */
+    /* Load box 0. */
     vmpu_load_box(0);
+    *(__uvisor_config.uvisor_box_context) = (uint32_t *) g_context_current_states[0].bss;
 
     DPRINTF("vmpu_load_boxes [DONE]\n");
-}
-
-uint32_t vmpu_register_gateway(uint32_t addr, uint32_t val)
-{
-    return 0;
 }
 
 int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint32_t fault_status)
@@ -277,16 +343,17 @@ int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint3
     uint32_t cnt_max, cnt;
     int found;
 
-    /* check for attacks */
-    if(!vmpu_public_flash_addr(pc))
+    /* Check for attacks. */
+    if (!vmpu_public_flash_addr(pc)) {
        HALT_ERROR(NOT_ALLOWED, "This is not the PC (0x%08X) your were searching for", pc);
+    }
 
-    /* check fault register; the following two configurations are allowed:
-     *   0x04 - imprecise data bus fault, no stacking/unstacking errors
-     *   0x82 - precise data bus fault, no stacking/unstacking errors */
-    /* note: currently the faulting address argument is not used, since it
-     * is saved in r0 for managed bus faults */
-    switch(fault_status) {
+    /* Check fault register; the following two configurations are allowed:
+     *   0x04 - imprecise data bus fault, no stacking/unstacking errors.
+     *   0x82 - precise data bus fault, no stacking/unstacking errors. */
+    /* Note: Currently the faulting address argument is not used, since it
+     * is saved in r0 for managed bus faults. */
+    switch (fault_status) {
         case 0x82:
             cnt_max = 0;
             break;
@@ -297,31 +364,28 @@ int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint3
             return -1;
     }
 
-    /* parse opcode */
+    /* Parse the instruction opcode. */
     cnt = 0;
-    do
-    {
-        /* fetch opcode from memory */
+    do {
+        /* Fetch the opcode from memory. */
         opcode = vmpu_unpriv_uint16_read(pc - (cnt << 1));
 
-        /* test lower 8bits for (partially)imm5 == 0, Rn = 0, Rt = 1 */
+        /* Test the lower 8 bits for imm5 = 0, Rn = 0, Rt = 1. */
         found = TRUE;
-        switch(opcode & 0xFF)
-        {
-            /* if using r0 and r1, we expect a strX instruction */
+        switch(opcode & 0xFF) {
+            /* If using r0 and r1, we expect a strX instruction. */
             case VMPU_OPCODE16_LOWER_R0_R1_MASK:
-                /* fetch r0 and r1 */
+                /* Fetch r0 and r1. */
                 r0 = vmpu_unpriv_uint32_read(sp);
                 r1 = vmpu_unpriv_uint32_read(sp+4);
 
-                /* check ACls */
-                if((vmpu_fault_find_acl(r0,sizeof(uint32_t)) & UVISOR_TACL_UWRITE) == 0) {
+                /* Check if there is an ACL mapping this access. */
+                if ((vmpu_fault_find_acl(r0, sizeof(uint32_t)) & UVISOR_TACL_UWRITE) == 0) {
                     return -1;
                 };
 
-                /* test upper 8bits for opcode and (partially)imm5 == 0 */
-                switch(opcode >> 8)
-                {
+                /* Test the upper 8 bits for the desired opcode and imm5 = 0. */
+                switch (opcode >> 8) {
                     case VMPU_OPCODE16_UPPER_STR_MASK:
                         *((uint32_t *) r0) = (uint32_t) r1;
                         break;
@@ -340,19 +404,18 @@ int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint3
                 }
                 break;
 
-            /* if using r0 only, we expect a ldrX instruction */
+            /* If using r0 only, we expect a ldrX instruction. */
             case VMPU_OPCODE16_LOWER_R0_R0_MASK:
-                /* fetch r0 */
+                /* Fetch r0. */
                 r0 = vmpu_unpriv_uint32_read(sp);
 
-                /* check ACls */
-                if((vmpu_fault_find_acl(r0,sizeof(uint32_t)) & UVISOR_TACL_UREAD) == 0) {
+                /* Check if there is an ACL mapping this access. */
+                if ((vmpu_fault_find_acl(r0, sizeof(uint32_t)) & UVISOR_TACL_UREAD) == 0) {
                     return -1;
                 };
 
-                /* test upper 8bits for opcode and (partially)imm5 == 0 */
-                switch(opcode >> 8)
-                {
+                /* Test the upper 8 bits for the desired opcode and imm5 = 0. */
+                switch (opcode >> 8) {
                     case VMPU_OPCODE16_UPPER_LDR_MASK:
                         r1 = (uint32_t) *((uint32_t *) r0);
                         break;
@@ -366,11 +429,9 @@ int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint3
                         found = FALSE;
                         break;
                 }
-                if(found)
-                {
-                    /* the result is stored back to the stack (r0) */
+                if (found) {
+                    /* The result is stored back to the stack (r0). */
                     vmpu_unpriv_uint32_write(sp, r1);
-
                     /* DPRINTF("Executed privileged access: read 0x%08X from 0x%08X\n\r", r1, r0); */
                 }
                 break;
@@ -380,20 +441,20 @@ int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint3
                 break;
         }
 
-        /* parse next opcode */
+        /* Parse the next opcode. */
         cnt++;
-    }
-    while(!found && cnt < cnt_max);
+    } while (!found && cnt < cnt_max);
 
-    /* return error if opcode was not found */
-    if(!found)
+    /* Return an error if the opcode was not found. */
+    if (!found) {
         return -1;
+    }
 
-    /* otherwise execution continues from the instruction following the fault */
-    /* note: we assume the instruction is 16 bits wide and skip possible NOPs */
+    /* Otherwise execution continues from the instruction following the fault. */
+    /* Note: We assume the instruction is 16 bits wide and skip possible NOPs. */
     vmpu_unpriv_uint32_write(sp + (6 << 2), pc + ((UVISOR_NOP_CNT + 2 - cnt) << 1));
 
-    /* success */
+    /* Success. */
     return 0;
 }
 
@@ -423,21 +484,20 @@ int vmpu_box_id_self(void)
 
 int vmpu_box_id_caller(void)
 {
-    TBoxCx *box_ctx;
+    TContextPreviousState * previous_state;
 
-    if (g_svc_cx_state_ptr < 1) {
+    previous_state = context_state_previous();
+    if (previous_state == NULL) {
         /* There is no previous context. */
         return -1;
     }
 
-    box_ctx = &g_svc_cx_state[g_svc_cx_state_ptr - 1];
-
-    if (box_ctx->type != TBOXCX_SECURE_GATEWAY) {
+    if (previous_state->type != CONTEXT_SWITCH_FUNCTION_GATEWAY) {
         /* The previous context is not a secure gateway. */
         return -1;
+    } else {
+        return previous_state->src_id;
     }
-
-    return box_ctx->src_id;
 }
 
 static int copy_box_namespace(const char *src, char *dst)

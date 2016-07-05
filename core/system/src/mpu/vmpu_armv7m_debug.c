@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 #include <uvisor.h>
-#include <vmpu.h>
-#include <debug.h>
-#include <halt.h>
-#include <memory_map.h>
+#include "debug.h"
+#include "memory_map.h"
+#include "halt.h"
+#include "vmpu.h"
 
 void debug_fault_mpu(void)
 {

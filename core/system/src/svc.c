@@ -15,12 +15,14 @@
  * limitations under the License.
  */
 #include <uvisor.h>
-#include "svc.h"
-#include "halt.h"
-#include "vmpu.h"
-#include "unvic.h"
 #include "benchmark.h"
+#include "box_init.h"
 #include "debug.h"
+#include "halt.h"
+#include "svc.h"
+#include "unvic.h"
+#include "vmpu.h"
+#include "page_allocator.h"
 
 /* these symbols are linked in this scope from the ASM code in __svc_irq and
  * are needed for sanity checks */
@@ -59,6 +61,10 @@ const void *g_svc_vtor_tbl[] = {
     /* FIXME: This function will be made automatic when the debug box ACL is
      *        introduced. The initialization will happen at uVisor boot time. */
     debug_register_driver,      // 19
+    unvic_irq_disable_all,      // 20
+    unvic_irq_enable_all,       // 21
+    page_allocator_malloc,      // 22
+    page_allocator_free,        // 23
 };
 
 /*******************************************************************************
@@ -102,6 +108,11 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
         "ldrt   r1, [r0, #24]\n"            // stacked pc
         "add    r1, r1, #-2\n"              // pc at SVC call
         "ldrbt  r2, [r1]\n"                 // SVC immediate
+        // Call the priviliged SVC 0 handler, keeping LR as EXC_RETURN.
+        "cbnz   r2, uvisor_unpriv_svc_handler\n" // If SVC is not 0: run uVisor handler
+        "ldr    r0, %[priv_svc_0]\n"
+        "bx     r0\n"                       // Run the priv_svc_0 hook.
+    "uvisor_unpriv_svc_handler:\n"
         /***********************************************************************
          *  ATTENTION
          ***********************************************************************
@@ -122,12 +133,12 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
         "ldr    pc, [r12, r3, lsl #2]\n"            // branch to handler
         ".align 4\n"                                // the jump table must be aligned
     "jump_table_unpriv:\n"
-        ".word  unvic_svc_cx_out\n"
-        ".word  svc_cx_switch_in\n"
-        ".word  svc_cx_switch_out\n"
-        ".word  vmpu_register_gateway\n"
-        ".word  __svc_not_implemented\n"
-        ".word  __svc_not_implemented\n"
+        ".word  unvic_gateway_out\n"
+        ".word  __svc_not_implemented\n" // Deprecated: secure_gateway_in
+        ".word  __svc_not_implemented\n" // Deprecated: secure_gateway_out
+        ".word  register_gateway_perform_operation\n"
+        ".word  box_init_first\n"
+        ".word  box_init_next\n"
         ".word  __svc_not_implemented\n"
         ".word  __svc_not_implemented\n"
         ".word  __svc_not_implemented\n"
@@ -170,6 +181,11 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
         "ldr    r1, [r0, #24]\n"                    // stacked pc
         "add    r1, r1, #-2\n"                      // pc at SVC call
         "ldrb   r2, [r1]\n"                         // SVC immediate
+        // Call the priviliged SVC 0 handler, keeping LR as EXC_RETURN.
+        "cbnz   r2, uvisor_priv_svc_handler\n"      // If SVC is not 0: run uVisor handler
+        "ldr    r0, %[priv_svc_0]\n"
+        "bx     r0\n"                               // Run the priv_svc_0 hook.
+    "uvisor_priv_svc_handler:\n"
         /***********************************************************************
          *  ATTENTION
          ***********************************************************************
@@ -190,7 +206,7 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
         "ldr    pc, [r12, r3, lsl #2]\n"            // branch to handler
         ".align 4\n"                                // the jump table must be aligned
     "jump_table_priv:\n"
-        ".word  unvic_svc_cx_in\n"
+        ".word  unvic_gateway_in\n"
         ".word  __svc_not_implemented\n"
         ".word  __svc_not_implemented\n"
         ".word  __svc_not_implemented\n"
@@ -231,7 +247,8 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
 
         :: [svc_mode_mask]       "I" ((UVISOR_SVC_MODE_MASK) & 0xFF),
            [svc_fast_index_mask] "I" ((UVISOR_SVC_FAST_INDEX_MASK) & 0xFF),
-           [svc_vtor_tbl_count]  "i" (UVISOR_ARRAY_COUNT(g_svc_vtor_tbl) - 1)
+           [svc_vtor_tbl_count]  "i" (UVISOR_ARRAY_COUNT(g_svc_vtor_tbl) - 1),
+           [priv_svc_0]          "m" (g_priv_sys_irq_hooks.priv_svc_0)
     );
 }
 

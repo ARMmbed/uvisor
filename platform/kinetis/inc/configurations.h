@@ -36,10 +36,7 @@
 /* Memory boundaries */
 #define FLASH_ORIGIN 0x00000000
 #define FLASH_OFFSET 0x410
-/* FIXME The SRAM offset should be 0x400 (according to the NXP SDK linker
- *       scripts) but the mbed linker script uses 0x200. Fix the mbed linker
- *       script and amend the value here. */
-#define SRAM_OFFSET  0x200
+#define SRAM_OFFSET  0x400
 
 /*******************************************************************************
  * Hardware-specific configurations

@@ -42,6 +42,9 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
         UVISOR_BOX_MAGIC, \
         UVISOR_BOX_VERSION, \
         0, \
+        sizeof(RtxBoxIndex), \
+        0, \
+        0, \
         0, \
         NULL, \
         acl_list, \
@@ -50,19 +53,39 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
     \
     extern const __attribute__((section(".keep.uvisor.cfgtbl_ptr_first"), aligned(4))) void * const main_cfg_ptr = &main_cfg;
 
+/* Creates a global page heap with at least `minimum_number_of_pages` each of size `page_size` in bytes.
+ * The total page heap size is at least `minimum_number_of_pages * page_size`. */
+#define UVISOR_SET_PAGE_HEAP(page_size, minimum_number_of_pages) \
+    UVISOR_EXTERN const uint32_t __uvisor_page_size = (page_size); \
+    uint8_t __attribute__((section(".keep.uvisor.page_heap"))) \
+        main_page_heap_reserved[ (page_size) * (minimum_number_of_pages) ]
+
+
 /* this macro selects an overloaded macro (variable number of arguments) */
 #define __UVISOR_BOX_MACRO(_1, _2, _3, _4, NAME, ...) NAME
 
 #define __UVISOR_BOX_CONFIG(box_name, acl_list, acl_list_count, stack_size, context_size) \
     \
     uint8_t __attribute__((section(".keep.uvisor.bss.boxes"), aligned(32))) \
-        box_name ## _reserved[UVISOR_STACK_SIZE_ROUND(((UVISOR_MIN_STACK(stack_size) + (context_size))*8)/6)]; \
+        box_name ## _reserved[ \
+            UVISOR_STACK_SIZE_ROUND( \
+                ( \
+                    (UVISOR_MIN_STACK(stack_size) + \
+                    (context_size) + \
+                    (__uvisor_box_heapsize) + \
+                    sizeof(RtxBoxIndex) \
+                ) \
+            * 8) \
+        / 6)]; \
     \
     static const __attribute__((section(".keep.uvisor.cfgtbl"), aligned(4))) UvisorBoxConfig box_name ## _cfg = { \
         UVISOR_BOX_MAGIC, \
         UVISOR_BOX_VERSION, \
         UVISOR_MIN_STACK(stack_size), \
+        sizeof(RtxBoxIndex), \
         context_size, \
+        __uvisor_box_heapsize, \
+        __uvisor_box_lib_config, \
         __uvisor_box_namespace, \
         acl_list, \
         acl_list_count \
@@ -75,11 +98,11 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 
 #define __UVISOR_BOX_CONFIG_CONTEXT(box_name, acl_list, stack_size, context_type) \
     __UVISOR_BOX_CONFIG(box_name, acl_list, UVISOR_ARRAY_COUNT(acl_list), stack_size, sizeof(context_type)) \
-    UVISOR_EXTERN context_type * const uvisor_ctx;
+    UVISOR_EXTERN context_type *const *const __uvisor_ps;
 
 #define __UVISOR_BOX_CONFIG_NOACL(box_name, stack_size, context_type) \
     __UVISOR_BOX_CONFIG(box_name, NULL, 0, stack_size, sizeof(context_type)) \
-    UVISOR_EXTERN context_type * const uvisor_ctx;
+    UVISOR_EXTERN context_type *const *const __uvisor_ps;
 
 #define __UVISOR_BOX_CONFIG_NOACL_NOCONTEXT(box_name, stack_size) \
     __UVISOR_BOX_CONFIG(box_name, NULL, 0, stack_size, 0)
@@ -103,6 +126,17 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 #define UVISOR_BOX_NAMESPACE(box_namespace) \
     static const char *const __uvisor_box_namespace = box_namespace
 
+/* Use this macro before UVISOR_BOX_CONFIG to define the function the main
+ * thread of your box will use for its body. If you don't want a main thread,
+ * too bad: you have to have one. */
+#define UVISOR_BOX_MAIN(function, priority, stack_size) \
+    static osThreadDef(function, priority, stack_size); \
+    static const void * const __uvisor_box_lib_config = osThread(function);
+
+#define UVISOR_BOX_HEAPSIZE(heap_size) \
+    static const uint32_t __uvisor_box_heapsize = heap_size;
+
+#define uvisor_ctx (*__uvisor_ps)
 
 /* Return the numeric box ID of the current box. */
 UVISOR_EXTERN int uvisor_box_id_self(void);
