@@ -33,7 +33,7 @@ The mbed-cli tools will automatically fetch the mbed codebase for you. By defaul
 
 Once the import process is finished, create a `source` folder:
 ```bash
-mkdir ~/code/uvisor-example/source
+$ mkdir ~/code/uvisor-example/source
 ```
 and place a new file `main.cpp` in it:
 
