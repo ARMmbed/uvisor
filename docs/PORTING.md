@@ -311,7 +311,7 @@ Please note that every occurrence of `...` identifies parts of the existing link
 MEMORY
 {
     m_interrupts          (RX)  : ORIGIN = 0x00000000, LENGTH = 0x00000400
-    m_text                (RX)  : ORIGIN = 0x00000400, LENGTH = 0x00010000
+    m_text                (RX)  : ORIGIN = 0x00000400, LENGTH = 0x00100000
     m_data                (RW)  : ORIGIN = 0x1FFF0000, LENGTH = 0x00040000
 }
 
@@ -356,7 +356,7 @@ SECTIONS
      * interrupt table in SRAM. */
     /* Note: The uVisor expects this section at a fixed location, as specified
              by the porting process configuration parameter: SRAM_OFFSET. */
-    __UVISOR_SRAM_OFFSET = 0x400;
+    __UVISOR_SRAM_OFFSET = < your SRAM_OFFSET here >;
     __UVISOR_BSS_START = ORIGIN(m_data) + __UVISOR_SRAM_OFFSET;
     ASSERT(__interrupts_ram_end__ <= __UVISOR_BSS_START,
            "The ISR relocation region overlaps with the uVisor BSS section.")
@@ -464,15 +464,15 @@ SECTIONS
     .page_heap (NOLOAD) :
     {
         __uvisor_page_start = .;
-        . = ORIGIN(m_data_2) + LENGTH(m_data_2) - 4;
+        . = ORIGIN(m_data) + LENGTH(m_data) - 4;
         __uvisor_page_end = .;
     } > m_data
 
     /* Provide physical memory boundaries for uVisor. */
-    __uvisor_flash_start = ORIGIN(VECTORS_FLASH);
-    __uvisor_flash_end = ORIGIN(FLASH) + LENGTH(FLASH);
-    __uvisor_sram_start = ORIGIN(VECTORS_RAM);
-    __uvisor_sram_end = ORIGIN(RAM) + LENGTH(RAM);
+    __uvisor_flash_start = ORIGIN(m_interrupts);
+    __uvisor_flash_end = ORIGIN(m_text) + LENGTH(m_text);
+    __uvisor_sram_start = ORIGIN(m_data);
+    __uvisor_sram_end = ORIGIN(m_data) + LENGTH(m_data);
 }
 ```
 
@@ -641,9 +641,7 @@ Given the description above, the following combinations are possible:
 
 Please note that defining both the `FEATURE_UVISOR` and the `UVISOR_SUPPORTED` symbols does not automatically enable uVisor on the application. By default uVisor runs in *disabled* mode, where the uVisor initialization function is executed but returns immediately.
 
-> Note: At the moment you must also set the `CMSIS_NVIC_VIRTUAL` and `CMSIS_VECTAB_VIRTUAL` symbols in the `macros` field of the target description. In a later version these symbols will be set for you automatically when `UVISOR_SUPPORTED` is set.
-
-In disabled mode no security feature is enabled, although the uVisor binaries are still flashed to the device. To learn more about the uVisor modes of operation please check out the [API documentation](). If you want to know how to enable uVisor and configure an application to use the uVisor security features, please checkout the [quick-start guide]().
+In disabled mode no security feature is enabled, although the uVisor binaries are still flashed to the device. To learn more about the uVisor modes of operation please check out the [API documentation](API.md). If you want to know how to enable uVisor and configure an application to use the uVisor security features, please checkout the [quick-start guide](QUICKSTART.md).
 
 If you do not want to enable the uVisor features straight away on your mbed targets, you can create a *wrapper* target that inherits from the original target. You can then set `FEATURE_UVISOR` and `UVISOR_SUPPORTED` using the same labels from the table above, but with `_add` appended to their name:
 
@@ -652,9 +650,8 @@ If you do not want to enable the uVisor features straight away on your mbed targ
     "custom_targets": {
         "${original_target}_SECURE": {
             "inherits": ["${original_target}"],
-            "extra_labels_add":["UVISOR_SUPPORTED"],
+            "extra_labels_add":["${original_target}", "UVISOR_SUPPORTED"],
             "features_add": ["UVISOR"],
-            "macros_add": ["CMSIS_NVIC_VIRTUAL", "CMSIS_VECTAB_VIRTUAL"]
         },
 }
 ```
@@ -663,6 +660,7 @@ If you do not want to enable the uVisor features straight away on your mbed targ
 [Go to top](#overview)
 
 If you have followed all the steps in this guide, this is what you should have:
+
 * Your whole family ported to the [ARMmbed/uvisor](https://github.com/ARMmbed/uvisor) code-base.
 * All the uVisor library releases built for your family, saved in `~/code/uvisor/api/lib/${family}`.
 * The uVisor libraries integrated in mbed OS:
@@ -671,8 +669,9 @@ If you have followed all the steps in this guide, this is what you should have:
     * The importer `Makefile` updated and you libraries deployed.
     * Your target description updated to link the uVisor libraries.
 
-# FIXME
+It is now time to test your application. We suggest that you use our example app, [`mbed-os-example-uvisor`](https://github.com/ARMmbed/mbed-os-example-uvisor), but if you prefer you can try and build a very simple uVisor-enabled blinky program following the [quick-start guide](QUICKSTART.md).
 
-* Add final steps to test out application.
-* Add final steps to build and develop locally (needs new links).
-* Add quick-start guide.
+In both cases, please make sure to do the following:
+
+* Make sure to run uVisor at least once in debug mode to ensure that all runtime sanity checks pass. This round of checks can also be used as a confirmation step, proving that your linker script and uVisor ports are structurally correct. For more information on the uVisor debug mode, please read the [dedicated guide](DEBUGGING.md).
+* Ensure that your app has the relevant ACLs to work with uVisor enabled. At the moment this requires to run uVisor in debug mode multiple times and find all the faulting peripherals. The procedure is described in greater detail in [the final section](QUICKSTART.md#the-main-box-acls) of the quick-start guide.
