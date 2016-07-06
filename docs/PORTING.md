@@ -35,7 +35,7 @@ Although uVisor is highly self-contained, it still requires some support from th
 
 If you are porting uVisor to mbed OS, you will find that the library glue layer is already embedded in the [mbed OS code-base](https://github.com/ARMmbed/uvisor-lib). The linker script and start-up code also live in the same repository. We will guide you through the modifications needed in those files later in this guide.
 
-Finally, we provide an example application in [ARMmbed/example-mbed-mallocator](https://github.com/ARMmbed/example-mbed-mallocator) that shows the minimum set of uVisor features on our supported targets. It can be used during the porting process as a quick way of testing that the uVisor is working as expected on your new platform.
+Finally, we provide an example application in [ARMmbed/mbed-os-example-uvisor](https://github.com/ARMmbed/mbed-os-example-uvisor) that shows the minimum set of uVisor features on our supported targets. It can be used during the porting process as a quick way of testing that the uVisor is working as expected on your new platform.
 
 ## Porting steps
 [Go to top](#overview)
