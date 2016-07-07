@@ -704,45 +704,69 @@ void vmpu_arch_init_hw(void)
         UVISOR_TACLDEF_SECURE_CONST | UVISOR_TACL_EXECUTE
     );
 
-    /* Enable the public SRAM. */
-    /* Note: This region can be larger than the physical SRAM. */
-    /* Note: This uses the host-related symbols as uVisor might be placed in a
-     *       different SRAM. If the uVisor shares the SRAM with the host, these
-     *       symbols will be identical to the uVisor-related ones. */
+    /* Enable the public SRAM:
+     *
+     * We use one region for this, which start at SRAM origin (which is always
+     * aligned) and has a power-of-two size that is equal or _larger_ than SRAM.
+     * This means the region may end _behind_ the end of SRAM!
+     *
+     * At the beginning of SRAM uVisor places its private BSS section and behind
+     * that the page heap. In order to use only one region, we require the end of
+     * the page heap to align with 1/8th of the region size, so that we can use
+     * the subregion mask.
+     * The page heap reduces the memory wastage to less than one page size, by
+     * "growing" the page heap downwards from the subregion alignment towards
+     * the uVisor bss.
+     *
+     * Note: The correct alignment needs to be done in the host linkerscript.
+     *       Use `ALIGN( (1 << LOG2CEIL(LENGTH(SRAM)) / 8 )` for GNU linker.
+     *
+     *     2^n     <-- region end
+     *     ...
+     * .---------. <-- uvisor_config.sram_end
+     * |  box 0  |
+     * | public  |
+     * | memory  |
+     * +---------+ <-- uvisor_config.page_end: n/8th of _region_ size (not SRAM size)
+     * |  page   |
+     * |  heap   |
+     * +---------+ <-- aligned to page size
+     * | wastage | <-- wasted SRAM is less than 1 page size
+     * +---------+ <-- uvisor_config.page_start
+     * |  uVisor |
+     * |   bss   |
+     * '---------' <-- uvisor_config.sram_start, region start
+     *
+     * Example: The region size of a 96kB SRAM will be 128kB, and the page heap
+     *          end will have to be aligned to 16kB, _not_ 12kB (= 96kB / 8).
+     *
+     * Note: In case the uVisor bss section is moved to another memory region
+     *       (tightly-coupled memory for example), the page heap remains and
+     *       the same considerations apply. Therefore the uVisor bss section
+     *       location has no impact on this.
+     */
+    /* Calculate the region size by rounding up the SRAM size to the next power-of-two. */
+    const uint32_t total_size = (1 << vmpu_region_bits((uint32_t) __uvisor_config.sram_end - (uint32_t) __uvisor_config.sram_start));
+    /* The alignment is 1/8th of the region size = rounded up SRAM size. */
+    const uint32_t subregions_size = total_size / 8;
+    const uint32_t protected_size = (uint32_t) __uvisor_config.page_end - (uint32_t) __uvisor_config.sram_start;
+    /* The protected size must be aligned to the subregion size. */
+    if (protected_size % subregions_size != 0) {
+        HALT_ERROR(SANITY_CHECK_FAILED,
+                   "The __uvisor_page_end symbol (0x%08X) is not aligned to an MPU subregion boundary.",
+                   (uint32_t) __uvisor_config.page_end);
+    }
+    /* Note: It's called the subregion _disable_ mask, so setting one bit in it _disables_ the
+     *       permissions in this subregion. Totally not confusing, amiright!? */
+    const uint8_t subregions_disable_mask = (uint8_t) ((1UL << (protected_size / subregions_size)) - 1UL);
+
+    /* Unlock the upper SRAM subregion only. */
     vmpu_acl_static_region(
         1,
-        (void *) HOST_SRAM_ORIGIN_MIN,
-        UVISOR_REGION_ROUND_UP(HOST_SRAM_LENGTH_MAX),
-        UVISOR_TACLDEF_DATA | UVISOR_TACL_EXECUTE
+        __uvisor_config.sram_start,
+        total_size,
+        UVISOR_TACLDEF_DATA | UVISOR_TACL_UEXECUTE | UVISOR_TACL_SUBREGIONS(subregions_disable_mask)
     );
-
-#if !defined(UVISOR_IN_STANDALONE_SRAM)
-    /* Calculate the subregion mask based on the __uvisor_bss_end symbol.
-     * The BSS section occupied by uVisor in the host linker script must be
-     * aligned to an MPU subregion boundary, so that the maximum memory wasted
-     * for padding purposes is 1/8 of the total uVisor BSS section. */
-    uint32_t original_size = (uint32_t) __uvisor_config.bss_end - SRAM_ORIGIN;
-    uint32_t rounded_size = UVISOR_REGION_ROUND_UP(original_size);
-    uint32_t subregions_size = rounded_size / 8;
-    if (original_size % subregions_size != 0) {
-        HALT_ERROR(SANITY_CHECK_FAILED,
-                   "The __uvisor_bss_end symbol (0x%08X)is not aligned to an MPU subregion boundary.",
-                   (uint32_t) __uvisor_config.bss_end);
-    }
-    uint8_t subregions_mask = (uint8_t) ~(0xFFUL >> (8 - (original_size / subregions_size)));
-
-    /* Protect the uVisor SRAM.
-     * This region needs protection only if uVisor shares the SRAM with the
-     * host. The configuration requires that uVisor is right at the beginning of
-     * the SRAM. If not, uVisor would end up owning a memory regions that
-     * contains non-uVisor data. */
-    vmpu_acl_static_region(
-        2,
-        (void *) SRAM_ORIGIN,
-        rounded_size,
-        UVISOR_TACL_SREAD | UVISOR_TACL_SWRITE | UVISOR_TACL_SUBREGIONS(subregions_mask)
-    );
-#endif /* !defined(UVISOR_IN_STANDALONE_SRAM) */
 }
 
 int vmpu_is_region_size_valid(uint32_t size)
