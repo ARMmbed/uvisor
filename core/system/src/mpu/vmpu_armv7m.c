@@ -359,8 +359,12 @@ void vmpu_switch(uint8_t src_box, uint8_t dst_box)
     /* clear remaining slots */
     while(mpu_slot<ARMv7M_MPU_REGIONS)
     {
-        MPU->RBAR = mpu_slot | MPU_RBAR_VALID_Msk;
+        /* We need to make sure that we disable an enabled MPU region before any
+         * other modification, hence we cannot select the MPU region using the
+         * region number field in the RBAR register. */
+        MPU->RNR = mpu_slot;
         MPU->RASR = 0;
+        MPU->RBAR = 0;
         mpu_slot++;
     }
 }
