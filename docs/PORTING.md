@@ -379,8 +379,17 @@ SECTIONS
         . = ALIGN(32);
         __uvisor_bss_boxes_end = .;
 
+        /************************** ARMv7-M MPU only **************************/
+        __uvisor_bss_end_padding_max = (2 << (LOG2CEIL(__uvisor_bss_end - ORIGIN(m_data)) - 1)) / 8;
+        . = MIN(
+            __uvisor_bss_end_padding_max * (((__uvisor_bss_end - ORIGIN(m_data)) / __uvisor_bss_end_padding_max) +
+            MIN((__uvisor_bss_end - ORIGIN(m_data)) % __uvisor_bss_end_padding_max, 1)) - __UVISOR_SRAM_OFFSET,
+            ORIGIN(m_data) + LENGTH(m_data)
+        );
+        /********************** Other MPU architectures ***********************/
         . = ALIGN(32);
-        __uvisor_bss_end = .;
+        /**********************************************************************/
+        __uvisor_bss_end= .;
     } > m_data
 
     /* Now we can place the .data section, which will be loaded to SRAM. */

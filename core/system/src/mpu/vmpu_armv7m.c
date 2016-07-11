@@ -711,6 +711,20 @@ void vmpu_arch_init_hw(void)
     );
 
 #if !defined(UVISOR_IN_STANDALONE_SRAM)
+    /* Calculate the subregion mask based on the __uvisor_bss_end symbol.
+     * The BSS section occupied by uVisor in the host linker script must be
+     * aligned to an MPU subregion boundary, so that the maximum memory wasted
+     * for padding purposes is 1/8 of the total uVisor BSS section. */
+    uint32_t original_size = (uint32_t) __uvisor_config.bss_end - SRAM_ORIGIN;
+    uint32_t rounded_size = UVISOR_REGION_ROUND_UP(original_size);
+    uint32_t subregions_size = rounded_size / 8;
+    if (original_size % subregions_size != 0) {
+        HALT_ERROR(SANITY_CHECK_FAILED,
+                   "The __uvisor_bss_end symbol (0x%08X)is not aligned to an MPU subregion boundary.",
+                   (uint32_t) __uvisor_config.bss_end);
+    }
+    uint8_t subregions_mask = (uint8_t) ~(0xFFUL >> (8 - (original_size / subregions_size)));
+
     /* Protect the uVisor SRAM.
      * This region needs protection only if uVisor shares the SRAM with the
      * host. The configuration requires that uVisor is right at the beginning of
@@ -719,8 +733,8 @@ void vmpu_arch_init_hw(void)
     vmpu_acl_static_region(
         2,
         (void *) SRAM_ORIGIN,
-        ((uint32_t) __uvisor_config.bss_end) - SRAM_ORIGIN,
-        UVISOR_TACL_SREAD | UVISOR_TACL_SWRITE
+        rounded_size,
+        UVISOR_TACL_SREAD | UVISOR_TACL_SWRITE | UVISOR_TACL_SUBREGIONS(subregions_mask)
     );
 #endif /* !defined(UVISOR_IN_STANDALONE_SRAM) */
 }
