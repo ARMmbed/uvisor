@@ -52,6 +52,15 @@
 /* array count macro */
 #define UVISOR_ARRAY_COUNT(x) (sizeof(x)/sizeof(x[0]))
 
+/** Static Assertion Macro
+ *
+ * This macro works from both inside and outside function scope.
+ *
+ * FIXME This is currently not implemented. This issue is tracked at
+ * https://github.com/ARMmbed/uvisor/issues/288
+ */
+#define UVISOR_STATIC_ASSERT(cond, msg)
+
 /* convert macro argument to string */
 /* note: this needs one level of indirection, accomplished with the helper macro
  *       __UVISOR_TO_STRING */
