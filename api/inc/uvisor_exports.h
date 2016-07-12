@@ -36,12 +36,14 @@
 
 /* Shared compiler attributes */
 #if defined(__ICCARM__)
+#define UVISOR_ALIGN(x)    __align(x)
 #define UVISOR_FORCEINLINE inline
 #define UVISOR_PACKED      __packed
 #define UVISOR_WEAK        __weak
 #define UVISOR_NORETURN    __noreturn
 #define UVISOR_RAMFUNC     __ramfunc
 #else
+#define UVISOR_ALIGN(x)    __attribute__((aligned(x)))
 #define UVISOR_FORCEINLINE inline __attribute__((always_inline))
 #define UVISOR_PACKED      __attribute__((packed))
 #define UVISOR_WEAK        __attribute__((weak))
