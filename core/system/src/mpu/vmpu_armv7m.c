@@ -132,16 +132,17 @@ static const TMpuRegion* vmpu_fault_find_region(uint32_t fault_addr)
     const TMpuRegion *region;
 
     /* check current box if not base */
-    if ((g_active_box) && ((region = vmpu_fault_find_box_region(fault_addr, &g_mpu_box[g_active_box])) == NULL)) {
-        return NULL;
+    if ((g_active_box) && ((region = vmpu_fault_find_box_region(fault_addr, &g_mpu_box[g_active_box])) != NULL)) {
+        return region;
     }
 
     /* check base-box */
-    if ((region = vmpu_fault_find_box_region(fault_addr, &g_mpu_box[0])) == NULL) {
-        return NULL;
+    if ((region = vmpu_fault_find_box_region(fault_addr, &g_mpu_box[0])) != NULL) {
+        return region;
     }
 
-    return region;
+    /* If no region was found. */
+    return NULL;
 }
 
 uint32_t vmpu_fault_find_acl(uint32_t fault_addr, uint32_t size)
