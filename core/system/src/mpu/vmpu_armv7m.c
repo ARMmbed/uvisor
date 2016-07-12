@@ -105,7 +105,6 @@ typedef struct {
     uint32_t count;
 } TMpuBox;
 
-static uint32_t g_mpu_slot;
 static uint32_t g_mpu_region_count, g_box_mem_pos;
 static TMpuRegion g_mpu_list[MPU_REGION_COUNT];
 static TMpuBox g_mpu_box[UVISOR_MAX_BOXES];
@@ -177,6 +176,9 @@ static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr
 {
     const TMpuRegion *region;
 
+    /* Initialize the round-robin slot pointer. */
+    static uint32_t mpu_slot = ARMv7M_MPU_RESERVED_REGIONS;
+
     /* no recovery possible if the MPU syndrome register is not valid */
     if (fault_status != 0x82) {
         return 0;
@@ -188,16 +190,16 @@ static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr
 
     /* In a secure box the first available region is for the stack, so it must
      * be excluded from the round-robin. */
-    if (g_active_box != 0 && g_mpu_slot == ARMv7M_MPU_RESERVED_REGIONS) {
-        g_mpu_slot++;
+    if (g_active_box != 0 && mpu_slot == ARMv7M_MPU_RESERVED_REGIONS) {
+        mpu_slot++;
     }
 
     /* FIXME: use random numbers for box number */
-    MPU->RBAR = region->base | g_mpu_slot++ | MPU_RBAR_VALID_Msk;
+    MPU->RBAR = region->base | mpu_slot++ | MPU_RBAR_VALID_Msk;
     MPU->RASR = region->rasr;
 
-    if (g_mpu_slot >= ARMv7M_MPU_REGIONS)
-        g_mpu_slot = ARMv7M_MPU_RESERVED_REGIONS;
+    if (mpu_slot >= ARMv7M_MPU_REGIONS)
+        mpu_slot = ARMv7M_MPU_RESERVED_REGIONS;
 
     return 1;
 }
@@ -658,9 +660,6 @@ void vmpu_arch_init(void)
     MPU->RBAR = MPU_RBAR_ADDR_Msk;
     aligment_mask = ~MPU->RBAR;
     MPU->RBAR = 0;
-
-    /* Initialize round-robin slot pointer. */
-    g_mpu_slot = ARMv7M_MPU_RESERVED_REGIONS;
 
     /* show basic mpu settings */
     DPRINTF("MPU.REGIONS=%i\r\n", (uint8_t)(MPU->TYPE >> MPU_TYPE_DREGION_Pos));
