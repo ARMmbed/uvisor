@@ -186,6 +186,12 @@ static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr
     if ((region = vmpu_fault_find_region(fault_addr)) == NULL)
         return 0;
 
+    /* In a secure box the first available region is for the stack, so it must
+     * be excluded from the round-robin. */
+    if (g_active_box != 0 && g_mpu_slot == ARMv7M_MPU_RESERVED_REGIONS) {
+        g_mpu_slot++;
+    }
+
     /* FIXME: use random numbers for box number */
     MPU->RBAR = region->base | g_mpu_slot++ | MPU_RBAR_VALID_Msk;
     MPU->RASR = region->rasr;
