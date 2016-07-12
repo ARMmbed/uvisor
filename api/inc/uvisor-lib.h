@@ -32,6 +32,7 @@
 #include "api/inc/error.h"
 #include "api/inc/interrupts.h"
 #include "api/inc/register_gateway.h"
+#include "api/inc/rpc.h"
 #include "api/inc/secure_access.h"
 
 #else /* defined(UVISOR_PRESENT) && UVISOR_PRESENT == 1 */
