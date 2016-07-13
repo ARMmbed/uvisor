@@ -29,6 +29,21 @@
 #define UVISOR_EXTERN extern
 #endif/*__CPP__*/
 
+/** Extern C block macros
+ *
+ * Use these macros to disable name mangling in C++. Use these macros instead
+ * of UVISOR_EXTERN when you also need to initialize the object. C++ compilers
+ * warn when initializing an object declared as `extern`. Use of these macros
+ * enables the defining of global non-name-mangled symbols in C++ without
+ * affecting C code (which doesn't ever name mangle).  */
+#ifdef  __cplusplus
+#define UVISOR_EXTERN_C_BEGIN extern "C" {
+#define UVISOR_EXTERN_C_END }
+#else
+#define UVISOR_EXTERN_C_BEGIN
+#define UVISOR_EXTERN_C_END
+#endif
+
 /* asm keyword */
 #ifndef asm
 #define asm __asm__
