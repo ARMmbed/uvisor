@@ -122,11 +122,15 @@ void page_allocator_init(void * const heap_start, void * const heap_end, const u
     }
     /* Clamp page count to table size. */
     if (g_page_count_total > UVISOR_PAGE_MAX_COUNT) {
+        DPRINTF("uvisor_page_init: Clamping available page count from %u to %u!\n", g_page_count_total, UVISOR_PAGE_MAX_COUNT);
+        /* Move the heap start address forward so that the last clamped page is located nearest to the heap end. */
+        g_page_heap_start += (g_page_count_total - UVISOR_PAGE_MAX_COUNT) * g_page_size;
+        /* Clamp the page count. */
         g_page_count_total = UVISOR_PAGE_MAX_COUNT;
     }
     g_page_count_free = g_page_count_total;
     /* Remember the end of the heap. */
-    g_page_heap_end = g_page_heap_start + g_page_count_free * g_page_size;
+    g_page_heap_end = g_page_heap_start + g_page_count_total * g_page_size;
 
     DPRINTF("uvisor_page_init:\n.page_heap start 0x%08x\n.page_heap end   0x%08x\n.page_heap available %ukB split into %u pages of %ukB\n\n",
             (unsigned int) g_page_heap_start,
