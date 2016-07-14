@@ -68,6 +68,28 @@ int page_allocator_get_active_region_for_address(uint32_t address, uint32_t * st
     return UVISOR_ERROR_PAGE_OK;
 }
 
+int page_allocator_get_active_mask_for_address(uint32_t address, uint8_t * mask, uint8_t * index, uint8_t * page)
+{
+    const page_owner_t box_id = g_active_box;
+    /* Compute the page id. */
+    uint8_t p = page_allocator_get_page_from_address(address);
+    if (p == UVISOR_PAGE_UNUSED) {
+        /* This address does not correspond to any page. */
+        return UVISOR_ERROR_PAGE_INVALID_PAGE_ORIGIN;
+    }
+    /* Then check if the page is set. */
+    if (!page_allocator_map_get(g_page_owner_map[box_id], p)) {
+        return UVISOR_ERROR_PAGE_INVALID_PAGE_OWNER;
+    }
+    *page = p;
+    /* Compute the page mask and index. */
+    p += UVISOR_PAGE_MAP_COUNT * 32 - g_page_count_total;
+    *mask = (uint8_t) (g_page_owner_map[box_id][p / 32] >> ((p % 32) & ~7));
+    *index = p / 8;
+
+    return UVISOR_ERROR_PAGE_OK;
+}
+
 uint8_t page_allocator_iterate_active_pages(int (*callback)(uint32_t start_addr, uint32_t end_addr, uint8_t page))
 {
     uint8_t ii, count = 0;
