@@ -59,7 +59,8 @@ typedef struct
     uint32_t count;
 } TBoxACL;
 
-uint32_t g_mem_acl_count, g_mpu_slot;
+uint32_t g_mem_acl_count;
+uint8_t g_mpu_slot, g_mpu_slot_wrap_around;
 static TMemACL g_mem_acl[UVISOR_MAX_ACLS];
 static TBoxACL g_mem_box[UVISOR_MAX_BOXES];
 
@@ -85,7 +86,7 @@ int vmpu_mem_push_page_acl(uint32_t start_addr, uint32_t end_addr)
 
     /* Handle slot index overflow. */
     if (g_mpu_slot >= K64F_MPU_REGIONS_MAX) {
-        g_mpu_slot = K64F_MPU_REGIONS_USER;
+        g_mpu_slot = g_mpu_slot_wrap_around;
     }
     return 0;
 }
@@ -100,6 +101,7 @@ uint32_t vmpu_fault_find_acl_mem(uint8_t box_id, uint32_t fault_addr, uint32_t s
  * MPU during `vmpu_mem_switch()`. */
 static int vmpu_mem_push_page_acl_iterator(uint32_t start_addr, uint32_t end_addr, uint8_t page)
 {
+    (void) page;
     /* Insert the MPU region at the `g_mpu_slot`. */
     vmpu_mem_push_page_acl(start_addr, end_addr);
     /* We only continue if we have not wrapped around the end of the MPU regions yet. */
@@ -108,7 +110,7 @@ static int vmpu_mem_push_page_acl_iterator(uint32_t start_addr, uint32_t end_add
 
 void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
 {
-    uint32_t t, u, dst_count;
+    uint32_t t, u;
     MPU_Region * region;
     TBoxACL *box;
     TMemACL *rgd;
@@ -126,9 +128,10 @@ void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
     /* For box zero, only copy the page heap ACLs, disable the remaining pages
      * and then return. */
     if(src_box && !dst_box) {
+        g_mpu_slot_wrap_around = K64F_MPU_REGIONS_STATIC;
         g_mpu_slot = K64F_MPU_REGIONS_STATIC;
         t = K64F_MPU_REGIONS_MAX - K64F_MPU_REGIONS_STATIC;
-        if (page_allocator_iterate_active_pages(vmpu_mem_push_page_acl_iterator) < t) {
+        if (page_allocator_iterate_active_pages(vmpu_mem_push_page_acl_iterator, PAGE_ALLOCATOR_ITERATOR_DIRECTION_FORWARD) < t) {
             /* Disable all remaining regions. */
             for (t = g_mpu_slot; t < K64F_MPU_REGIONS_MAX; t++) {
                 ((MPU_Region *) MPU->WORD[t])->CONTROL = 0;
@@ -137,19 +140,18 @@ void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
         return;
     }
 
-    dst_count = g_mem_box[dst_box].count;
-    assert(dst_count);
-
     /* already populated - ensure to fill boxes unfragmented */
     rgd = box->acl;
     assert(rgd);
 
+    g_mpu_slot_wrap_around = K64F_MPU_REGIONS_USER;
     /* Update MPU regions:
      * We assume that the first two ACLs belonging to the box are the stack
      * and context ACLs. Therefore we start at index K64F_MPU_REGIONS_STATIC.
      * We opportunistically copy all remaining ACLs into the MPU regions, until
      * the regions run out. The remaining ACLs are switched in on demand. */
-    u = K64F_MPU_REGIONS_STATIC + dst_count;
+    assert(box->count);
+    u = K64F_MPU_REGIONS_STATIC + box->count;
     /* The round robin _starts_ at the first free MPU region _after_ the box
      * ACLs have been copied. */
     g_mpu_slot = u;
@@ -164,7 +166,7 @@ void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
          * This will start at index `g_mpu_slot` and continue to `K64F_MPU_REGIONS_MAX`. */
         /* FIXME: Use page fault count to prioritize which pages are enabled! */
         t = K64F_MPU_REGIONS_MAX - g_mpu_slot;
-        if (page_allocator_iterate_active_pages(vmpu_mem_push_page_acl_iterator) < t) {
+        if (page_allocator_iterate_active_pages(vmpu_mem_push_page_acl_iterator, PAGE_ALLOCATOR_ITERATOR_DIRECTION_FORWARD) < t) {
             /* Disable all remaining regions. */
             for (t = g_mpu_slot; t < K64F_MPU_REGIONS_MAX; t++) {
                 ((MPU_Region *) MPU->WORD[t])->CONTROL = 0;
