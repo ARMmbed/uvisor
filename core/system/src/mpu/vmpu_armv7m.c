@@ -22,6 +22,8 @@
 #include "svc.h"
 #include "unvic.h"
 #include "vmpu.h"
+#include "page_allocator_faults.h"
+#include "page_allocator.h"
 
 /* This file contains the configuration-specific symbols. */
 #include "configurations.h"
@@ -106,6 +108,7 @@ typedef struct {
 } TMpuBox;
 
 static uint32_t g_mpu_region_count, g_box_mem_pos;
+static uint8_t g_mpu_slot, g_mpu_slot_wrap_around;
 static TMpuRegion g_mpu_list[MPU_REGION_COUNT];
 static TMpuBox g_mpu_box[UVISOR_MAX_BOXES];
 
@@ -172,34 +175,38 @@ uint32_t vmpu_fault_find_acl(uint32_t fault_addr, uint32_t size)
     }
 }
 
+static int vmpu_mem_push_page_acl_iterator(uint8_t mask, uint8_t index);
+
 static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint32_t fault_status)
 {
     const TMpuRegion *region;
-
-    /* Initialize the round-robin slot pointer. */
-    static uint32_t mpu_slot = ARMv7M_MPU_RESERVED_REGIONS;
+    uint8_t mask, index, page;
 
     /* no recovery possible if the MPU syndrome register is not valid */
     if (fault_status != 0x82) {
         return 0;
     }
 
-    /* find region for faulting address */
-    if ((region = vmpu_fault_find_region(fault_addr)) == NULL)
-        return 0;
+    if (page_allocator_get_active_mask_for_address(fault_addr, &mask, &index, &page) == UVISOR_ERROR_PAGE_OK)
+    {
+        /* Remember this fault. */
+        page_allocator_register_fault(page);
 
-    /* In a secure box the first available region is for the stack, so it must
-     * be excluded from the round-robin. */
-    if (g_active_box != 0 && mpu_slot == ARMv7M_MPU_RESERVED_REGIONS) {
-        mpu_slot++;
+        vmpu_mem_push_page_acl_iterator(mask, UVISOR_PAGE_MAP_COUNT * 4 - 1 - index);
+    }
+    else {
+        /* find region for faulting address */
+        if ((region = vmpu_fault_find_region(fault_addr)) == NULL)
+            return 0;
+
+        /* FIXME: use random numbers for box number */
+        MPU->RBAR = region->base | g_mpu_slot++ | MPU_RBAR_VALID_Msk;
+        MPU->RASR = region->rasr;
     }
 
-    /* FIXME: use random numbers for box number */
-    MPU->RBAR = region->base | mpu_slot++ | MPU_RBAR_VALID_Msk;
-    MPU->RASR = region->rasr;
-
-    if (mpu_slot >= ARMv7M_MPU_REGIONS)
-        mpu_slot = ARMv7M_MPU_RESERVED_REGIONS;
+    if (g_mpu_slot >= ARMv7M_MPU_REGIONS) {
+        g_mpu_slot = g_mpu_slot_wrap_around;
+    }
 
     return 1;
 }
@@ -312,10 +319,23 @@ void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
     }
 }
 
+static int vmpu_mem_push_page_acl_iterator(uint8_t mask, uint8_t index)
+{
+    vmpu_acl_static_region(
+        g_mpu_slot,
+        (void *) ((uint32_t) __uvisor_config.page_end - g_page_size * 8 * (index + 1)),
+        g_page_size * 8,
+        UVISOR_TACLDEF_DATA | UVISOR_TACL_EXECUTE | UVISOR_TACL_SUBREGIONS(~mask)
+    );
+    g_mpu_slot++;
+    /* We do not add more than one region for the page heap. */
+    return 0;
+}
+
 /* FIXME: added very simple MPU region switching - optimize! */
 void vmpu_switch(uint8_t src_box, uint8_t dst_box)
 {
-    int i, mpu_slot;
+    uint32_t dst_count;
     const TMpuBox *box;
     const TMpuRegion *region;
 
@@ -329,52 +349,68 @@ void vmpu_switch(uint8_t src_box, uint8_t dst_box)
         HALT_ERROR(SANITY_CHECK_FAILED, "ACL add: The destination box ID is out of range (%u).\r\n", dst_box);
     }
 
-    /* update target box first to make target stack available */
-    mpu_slot = ARMv7M_MPU_RESERVED_REGIONS;
+    box = &g_mpu_box[dst_box];
+
+    /* Update target box first to make target stack available. */
+    g_mpu_slot = ARMv7M_MPU_REGIONS_STATIC;
+    g_mpu_slot_wrap_around = ARMv7M_MPU_REGIONS_STATIC;
+    region = box->region;
+    dst_count = box->count;
+
+    /* Only write stack and context ACL for secure boxes. */
     if (dst_box)
     {
-        /* handle target box next */
-        box = &g_mpu_box[dst_box];
-        region = box->region;
+        assert(dst_count);
+        /* Push the stack and context protection ACL into ARMv7M_MPU_REGIONS_STATIC. */
+        MPU->RBAR = region->base | g_mpu_slot | MPU_RBAR_VALID_Msk;
+        MPU->RASR = region->rasr;
+        g_mpu_slot++;
+        g_mpu_slot_wrap_around++;
+        region++;
+        dst_count--;
+    }
 
-        for (i = 0; i < box->count; i++)
-        {
-            if (mpu_slot >= ARMv7M_MPU_REGIONS)
-                 return;
-            MPU->RBAR = region->base | mpu_slot | MPU_RBAR_VALID_Msk;
-            MPU->RASR = region->rasr;
+    /* Push one ACL for the page heap into place. */
+    g_mpu_slot_wrap_around += page_allocator_iterate_active_page_masks(vmpu_mem_push_page_acl_iterator, PAGE_ALLOCATOR_ITERATOR_DIRECTION_BACKWARD);
+    /* g_mpu_slot may now have been incremented by one, if page heap is used by this box. */
 
-            /* process next slot */
-            region++;
-            mpu_slot++;
-        }
+    while (g_mpu_slot < ARMv7M_MPU_REGIONS_MAX && dst_count)
+    {
+        MPU->RBAR = region->base | g_mpu_slot | MPU_RBAR_VALID_Msk;
+        MPU->RASR = region->rasr;
+        g_mpu_slot++;
+        region++;
+        dst_count--;
     }
 
     /* handle main box last */
     box = g_mpu_box;
     region = box->region;
+    dst_count = box->count;
 
-    for (i=0; i<box->count; i++) {
-        if (mpu_slot>=ARMv7M_MPU_REGIONS)
-             return;
-        MPU->RBAR = region->base | mpu_slot | MPU_RBAR_VALID_Msk;
+    while (g_mpu_slot < ARMv7M_MPU_REGIONS_MAX && dst_count)
+    {
+        MPU->RBAR = region->base | g_mpu_slot | MPU_RBAR_VALID_Msk;
         MPU->RASR = region->rasr;
-
-        /* process next slot */
+        g_mpu_slot++;
         region++;
-        mpu_slot++;
+        dst_count--;
     }
 
     /* clear remaining slots */
-    while(mpu_slot<ARMv7M_MPU_REGIONS)
+    while (g_mpu_slot < ARMv7M_MPU_REGIONS_MAX)
     {
         /* We need to make sure that we disable an enabled MPU region before any
          * other modification, hence we cannot select the MPU region using the
          * region number field in the RBAR register. */
-        MPU->RNR = mpu_slot;
+        MPU->RNR = g_mpu_slot;
         MPU->RASR = 0;
         MPU->RBAR = 0;
-        mpu_slot++;
+        g_mpu_slot++;
+    }
+
+    if (g_mpu_slot >= ARMv7M_MPU_REGIONS_MAX) {
+        g_mpu_slot = g_mpu_slot_wrap_around;
     }
 }
 
