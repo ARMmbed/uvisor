@@ -90,22 +90,54 @@ int page_allocator_get_active_mask_for_address(uint32_t address, uint8_t * mask,
     return UVISOR_ERROR_PAGE_OK;
 }
 
-uint8_t page_allocator_iterate_active_pages(int (*callback)(uint32_t start_addr, uint32_t end_addr, uint8_t page))
+uint8_t page_allocator_iterate_active_pages(PageAllocatorIteratorCallback callback, PageAllocatorIteratorDirection direction)
 {
-    uint8_t ii, count = 0;
+    uint8_t ii, index, count = 0;
     uint32_t start_addr, end_addr;
     const page_owner_t box_id = g_active_box;
 
     /* Iterate over all pages. */
     for (ii = 0; ii < g_page_count_total; ii++) {
-        if (page_allocator_map_get(g_page_owner_map[box_id], ii)) {
+        if (direction < 0) {
+            index = (g_page_count_total - 1) - ii;
+        } else {
+            index = ii;
+        }
+        if (page_allocator_map_get(g_page_owner_map[box_id], index)) {
             count++;
             if (callback) {
                 /* Compute start and end addresses. */
-                start_addr = (uint32_t) g_page_heap_start + g_page_size * ii;
+                start_addr = (uint32_t) g_page_heap_start + g_page_size * index;
                 end_addr = start_addr + g_page_size;
                 /* Call the callback. */
                 if (!callback(start_addr, end_addr, ii)) {
+                    return count;
+                }
+            }
+        }
+    }
+
+    return count;
+}
+
+uint8_t page_allocator_iterate_active_page_masks(PageAllocatorIteratorMaskCallback callback, PageAllocatorIteratorDirection direction)
+{
+    uint8_t ii, index, mask, count = 0;
+    const page_owner_t box_id = g_active_box;
+    const uint8_t page_count_octets = ((g_page_count_total + 7) / 8);
+
+    for (ii = 0; ii < page_count_octets; ii++) {
+        if (direction < 0) {
+            index = UVISOR_PAGE_MAP_COUNT * 4 - 1 - ii;
+        } else {
+            index = (UVISOR_PAGE_MAP_COUNT * 4 - page_count_octets) + ii;
+        }
+        mask = (uint8_t) (g_page_owner_map[box_id][index / 4] >> ((index % 4) * 8));
+        if (mask) {
+            count++;
+            if (callback) {
+                /* Call the callback. */
+                if (!callback(mask, ii)) {
                     return count;
                 }
             }
