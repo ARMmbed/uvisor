@@ -439,3 +439,298 @@ The Privileged system IRQ hooks can be used to specify the following handlers:
     - RTX would register for handling SysTick (if a better periodic timer suitable for the RTX scheduler isn't available)
   - SVC 0
     - RTX would register for handling SVC 0, with which RTX handles its own syscalls
+
+
+### Remote Procedure Calls
+
+uVisor provides a Remote Procedure Call (RPC) API to call functions that execute in the context of another box.
+
+#### A General Overview of the RPC API
+
+The RPC API provides a structured way for a caller box to perform actions in a callee box. By default, boxes can't call functions in other box's contexts. A callee box declares RPC gateways to designate functions as callable by other boxes.
+
+uVisor strictly controls the information passed between boxes, verifying that the callee box is OK with being called. This verification is done via an RPC gateway. An RPC gateway is a verifiable, in-flash data structure that the callee box uses to nominate a function as a suitable RPC target.
+
+If an RPC gateway exists in a callee box, then any other box can call that target function in callee box context. No other target functions can be called in a callee box other than those designated as callable via an RPC gateway.
+
+##### RPC Macros
+
+Two macros are provided to implement RPC gateways: `UVISOR_BOX_RPC_GATEWAY_SYNC` and `UVISOR_BOX_RPC_GATEWAY_ASYNC`.
+ - `UVISOR_BOX_RPC_GATEWAY_SYNC` creates a callable *synchronous* RPC gateway
+ - `UVISOR_BOX_RPC_GATEWAY_ASYNC` creates a callable *asynchronous* RPC gateway
+
+RPC gateways can be created for any function that accepts up to four, 4-byte parameters and returns up to one 4-byte value.
+
+Calling a synchronous RPC gateway is simple. A synchronous RPC gateway is called in the same manner that the original target function would have been called. `UVISOR_BOX_RPC_GATEWAY_SYNC` creates a gateway with an identical function signature.
+
+Calling an asynchronous RPC gateway is a bit more involved, as `UVISOR_BOX_RPC_GATEWAY_ASYNC` creates a gateway with a different function signature. Compared to the original target function, the return type is changed. The return type of the gateway is a token that can be used to wait for the asynchronous call. Sometimes this token may be invalid, in cases where the asynchronous call couldn't be initiated.
+
+#### Porting a library to uVisor
+
+To enable uVisor for a pre-existing library:
+ 1. Make a box configuration file, `secure_libraryname.cpp`
+ 1. Configure the box
+ 1. Create secure RPC gateways to designate library functions as securely callable within the newly created box
+ 1. Write incoming RPC handlers for all RPC target functions
+
+#### Creating a secure gateway for a library function
+
+We'll now work through a short example, creating both a synchronous RPC gateway and an asynchronous RPC gateway for a single library function.
+
+Here is the imaginary function we want to make callable through RPC.
+
+```C++
+/* unicorn.h */
+typedef enum {
+    UNICORN_BARFABLE_NOTHING = 0,
+    UNICORN_BARFABLE_GRASS,
+    UNICORN_BARFABLE_WEEDS,
+    UNICORN_BARFABLE_FLOWERS,
+    UNICORN_BARFABLE_RAINBOW,
+} unicorn_barfable_t;
+
+void unicorn_barf(unicorn_barfable_t thing);
+```
+
+The function causes a unicorn to barf up some barfable thing (imaginarily, of course).
+
+##### Creating a synchronous RPC gateway
+
+To make a synchronous RPC gateway, we use the `UVISOR_BOX_RPC_GATEWAY_SYNC` macro.
+
+```C++
+#define UVISOR_BOX_RPC_GATEWAY_SYNC(box_name, gw_name, fn_name, fn_ret, ...)
+```
+
+These are the parameters.
+ * `box_name` - The name of the target box as declared in `UVISOR_BOX_CONFIG`
+ * `gw_name` - The new, callable function pointer for performing RPC
+ * `fn_name` - The function being designated as an RPC target
+ * `fn_ret`  - The return type of the function being designated as an RPC target
+ * `__VA_ARGS__` - The type of each parameter passed to the target function. There can be up to 4 parameters in a target function. Each parameter must be no more than uint32_t in size. If the target function accepts no arguments, pass `void` here.
+
+Here's how to designate the function as a synchronously callable RPC target.
+
+```C++
+/* secure_unicorn.cpp */
+#include "unicorn.h"
+
+UVISOR_BOX_RPC_GATEWAY_SYNC(unicorn_box, unicorn_barf_sync, unicorn_barf, void, unicorn_barfable_t);
+```
+
+We also need to declare the gateway's function prototype, so that clients can call the freshly-created RPC gateway. Notice that the gateway creating macro made a function pointer and not a function, so we declare the gateway's function prototype as a function pointer. We also need to extern the function pointer, to let the compiler know that the gateway creating macro already created the function pointer for us.
+```C++
+/* secure_unicorn.h */
+UVISOR_EXTERN void (*unicorn_barf_sync)(unicorn_barfable_t thing);
+```
+
+##### Creating an asynchronous RPC gateway
+
+Creating the asynchronous RPC gateway is just about as easy as creating an synchronous gateway.
+
+To make an asynchronous RPC gateway, we use the `UVISOR_BOX_RPC_GATEWAY_ASYNC` macro.
+
+```C++
+#define UVISOR_BOX_RPC_GATEWAY_ASYNC(box_name, gw_name, fn_name, fn_ret, ...)
+```
+
+The parameters are the same as the `UVISOR_BOX_RPC_GATEWAY_SYNC` macro.
+ * `box_name` - The name of the target box as declared in `UVISOR_BOX_CONFIG`
+ * `gw_name` - The new, callable function pointer for performing RPC
+ * `fn_name` - The function being designated as an RPC target
+ * `fn_ret`  - The return type of the function being designated as an RPC target
+ * `__VA_ARGS__` - The type of each parameter passed to the target function. There can be up to 4 parameters in a target function. Each parameter must be no more than uint32_t in size. If the target function accepts no arguments, pass `void` here.
+
+Here's how to make the function an asynchronously callable RPC target.
+
+```C++
+/* secure_unicorn.cpp */
+#include "unicorn.h"
+
+/* Both of these declarations are independent; one is not necessary for the
+ * other. Both declarations are listed here for illustrative purposes only. */
+UVISOR_BOX_RPC_GATEWAY_SYNC(unicorn_box, unicorn_barf_sync, unicorn_barf, void, unicorn_barfable_t);
+UVISOR_BOX_RPC_GATEWAY_ASYNC(unicorn_box, unicorn_barf_async, unicorn_barf, void, unicorn_barfable_t);
+```
+
+Just like in the synchronous case, we again declare the the gateway's function prototype. This time, however, notice that the return value is of type `uvisor_rpc_result_t`. The return value is a token that facilitates the asynchronous calling of our gateway.
+```C++
+/* secure_unicorn.h */
+UVISOR_EXTERN void (*unicorn_barf_sync)(unicorn_barfable_t thing);
+UVISOR_EXTERN uvisor_result_t (*unicorn_barf_async)(unicorn_barfable_t thing);
+```
+
+That's all there is to it. That's all it takes to create an RPC gateway to a target function.
+
+#### Handling incoming RPC
+
+Each box has a single queue for handling incoming RPC calls. uVisor will verify the secure RPC gateways and then place calls into the target box's queue; an RPC call won't be added to the queue if the gateway isn't valid.
+
+Making a box capable of handling incoming RPC requires two steps.
+ 1. Specify the maximum number of incoming RPC calls for the box
+ 1. Call `rpc_fncall_waitfor` from at least one thread
+
+##### Limiting the maximum number of incoming RPC calls
+
+To specify the maximum number of incoming RPC calls for a box, the following macro is used.
+
+```C++
+UVISOR_BOX_RPC_MAX_INCOMING(max_num_incoming_rpc)
+```
+
+Before the box configuration, use the `UVISOR_BOX_RPC_MAX_INCOMING` macro to specify how many RPC calls can be queued up at once.
+```C++
+/* secure_unicorn.cpp */
+
+UVISOR_BOX_RPC_MAX_INCOMING(10);
+```
+With the above configuration, up to 10 RPC calls can be queued up for all RPC executors. If the executors can't execute incoming RPC calls fast enough, uVisor will prevent new RPC calls from getting queued up until space allows.
+
+So, what happens on the caller side when a callee can't handle their call? Asynchronous callers will receive a timeout if the call can't be completed quickly enough. Synchronous callers will block forever until space is available.
+
+##### Executing RPC calls
+
+An RPC needs some context in which to execute. The context in which an RPC runs is designated by a call to `rpc_fncall_waitfor`. This function handles RPC calls, and then performs the RPC within its context. `rpc_fncall_waitfor` will either execute one RPC before returning or return with a status code indicating that something else happened.
+
+Let's have a look at this function.
+
+```C++
+int rpc_fncall_waitfor(const TFN_Ptr fn_ptr_array[], size_t fn_count, uint32_t timeout_ms);
+```
+
+There are not so many parameters.
+ * `fn_ptr_array` - an array of RPC function targets that this call to `rpc_fncall_waitfor` should handle RPC to
+ * `fn_count` - the number of function targets in this array
+ * `timeout_ms` - specifies how long to wait (in ms) for an incoming RPC calls before returning
+
+And finally, the return value specifies the status of the wait (whether it timed out, or if the pool is too small, or if an RPC was handled).
+
+Let's see what this would look like in practice for the unicorn library. Let's implement the body of a new thread to run in `unicorn_box` that will be used to handle RPC to the `unicorn_barf` target function. We'll have it wait forever for an incoming RPC call, handle it, and then wait for the next item.
+
+```C++
+static void unicorn_barf_rpc_thread(const void *)
+{
+    /* The list of functions we are interested in handling RPC requests for */
+    const TFN_Ptr my_fn_array[] = {
+        (TFN_Ptr) unicorn_barf, // Note use of `unicorn_barf`, not `unicorn_barf_async`
+    };
+
+    while (1) {
+        int status;
+        static const uint32_t timeout_ms = UVISOR_WAIT_FOREVER;
+
+        status = rpc_fncall_waitfor(my_fn_array, ARRAY_COUNT(my_fn_array), timeout_ms);
+        if (!status) {
+            /* ... Handle unsuccessful status ... */
+        }
+    }
+}
+```
+
+If we wanted to handle incoming RPC calls for additional RPC targets in this same thread, we could add them to `my_fn_array`. Also, if we so desired, we could create multiple threads to wait for the same RPC targets, as might be useful in a multi-core system to handle incoming RPC calls in parallel.
+
+So, that about sums it up for library authors. Get out there and uVisor-enable your libraries.
+
+Next up is a description of how to call these gateways.
+
+#### Calling a secure gateway
+
+Continuing with our previous example, we'll now work through how to call both a synchronous RPC gateway and an asynchronous RPC gateway.
+
+##### Calling a synchronous RPC gateway
+
+As a convenient reminder, this is the function prototype of the synchronous RPC gateway we created in the previous section.
+```C++
+/* secure_unicorn.h */
+UVISOR_EXTERN void (*unicorn_barf_sync)(unicorn_barfable_t thing);
+```
+
+Calling this synchronous RPC gateway is really easy. The call looks exactly like a non-RPC to the target function. Ready?
+
+```C++
+/* example.cpp */
+/* ... */
+void example_sync(void)
+{
+    unicorn_barf_sync(UNICORN_BARFABLE_RAINBOW);
+}
+```
+
+Yup, that's it. That's all there is. The call will block until the target function executes and returns. If you want to only wait for a certain amount of time for the target function to return, then you'll want to use the asynchronous RPC gateway (which we'll conveniently cover right now.)
+
+##### Calling an asynchronous RPC gateway
+
+As another convenient reminder, this is the function prototype of the asynchronous RPC gateway we created in the previous section.
+```C++
+/* secure_unicorn.h */
+UVISOR_EXTERN uvisor_result_t (*unicorn_barf_async)(unicorn_barfable_t thing);
+```
+
+Now, to make the call. This isn't so different from the synchronous case, but we don't yet get the return value of the target function by calling an asynchronous RPC gateway. We instead get a `uvisor_rpc_result_t` token.
+
+```C++
+/* example.cpp */
+/* ... */
+void example(void)
+{
+    uvisor_rpc_result_t result;
+
+    result = unicorn_barf_async(UNICORN_BARFABLE_RAINBOW);
+    if (result == UVISOR_INVALID_RESULT) {
+        /* The asynchronous call failed. */
+    }
+
+    /* ... Do anything asynchronously here ... */
+
+    /* ... */
+```
+
+Now the asynchronous call is initiated and we are free to do stuff asynchronously. Eventually, we'll want to wait for the call to complete. Before we get to actually waiting for the call to complete, let's introduce the function that will do the waiting for us.
+
+```C++
+int rpc_fncall_wait(uvisor_result_t result, uint32_t timeout_ms, uint32_t * ret);
+```
+
+To use `rpc_fncall_wait`, pass in:
+ * `result` - the result token previously received from an asynchronous call
+ * `timeout_ms` - a timeout in milliseconds of how long to wait for a result to come back from the RPC target function
+ * `ret` - a pointer to a `uint32_t`-sized return value
+
+In our case, `unicorn_barf` has a void return value, so we can pass in `NULL` for `ret`.
+
+Now that we understand how to use `rpc_fncall_wait`, let's spin in a loop, waiting for the result to come back for up to 500 ms. If we don't get a result by then, we can consider the unicorn to have ran out of barf. Any unicorn worth their salt should be able to barf within 500 ms.
+
+```C++
+/* example.cpp */
+/* ... */
+void example(void)
+{
+    uvisor_rpc_result_t result;
+
+    result = unicorn_barf_async(UNICORN_BARFABLE_RAINBOW);
+    if (result == UVISOR_INVALID_RESULT) {
+        /* The asynchronous call failed. */
+    }
+
+    /* ... Do anything asynchronously here ... */
+
+    /* Wait for a non-error result synchronously.
+     * Note that this wait could potentially be from a different thread. */
+    while (1) {
+        int status;
+        static const uint32_t timeout_ms = 500;
+
+        status = rpc_fncall_wait(&result, timeout_ms, NULL);
+        if (!status) {
+            break;
+        }
+    }
+}
+```
+
+Calling the asynchronous RPC gateway is as tough as it gets, and it isn't really that bad, is it?
+
+That about wraps it up for the RPC API. We've covered both how to uVisor-enable a library and how to use a uVisor-enabled library.
+
+#### More Information on the RPC API
+For more information on the RPC API, please refer to [the well-commented RPC API C header file which is available at https://github.com/ARMmbed/uvisor/blob/master/api/inc/rpc.h](https://github.com/ARMmbed/uvisor/blob/master/api/inc/rpc.h).
