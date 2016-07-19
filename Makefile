@@ -188,6 +188,7 @@ CFLAGS_PRE:=\
         -fdata-sections
 
 CFLAGS:=$(FLAGS_CM4) $(CFLAGS_PRE)
+CPPFLAGS:=
 CXXFLAGS:=-fno-exceptions
 
 LINKER_CONFIG:=\
@@ -287,17 +288,17 @@ $(CONFIGURATION_PREFIX).linker: $(CORE_LINKER_DIR)/default.h
 
 # Pre-process and compile a core C file into an object file.
 $(CONFIGURATION_PREFIX)/$(CORE_DIR)/%.o: %.c
-	$(CC) $(CXXFLAGS) $(CFLAGS) -c $< -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 # Pre-process and compile a release library C file into an object file.
 $(CONFIGURATION_PREFIX)/$(API_DIR)/%.o: %.c
-	$(CC) $(CXXFLAGS) $(CFLAGS) -c $< -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 # Generate the output asm file from the asm input file and the INCBIN'ed binary.
 $(API_ASM_OUTPUT:.s=.o): $(CONFIGURATION_PREFIX).bin $(API_ASM_INPUT)
 	cp $(API_ASM_HEADER) $(API_ASM_OUTPUT)
 	$(CPP) -w -P $(API_CONFIG) $(API_ASM_INPUT) >> $(API_ASM_OUTPUT)
-	$(CC) $(CXXFLAGS) $(CFLAGS) -c $(API_ASM_OUTPUT) -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $(API_ASM_OUTPUT) -o $@
 
 ctags: source.c.tags
 
