@@ -68,11 +68,13 @@ API_VERSION:=$(API_DIR)/lib/$(PLATFORM)/$(BUILD_MODE)/$(CONFIGURATION_LOWER).txt
 # Release library source files
 # Note: We explicitly remove unsupported.c from the list of source files. It
 #       will be compiled by the host OS in case uVisor is not supported.
-API_SOURCES:=$(wildcard $(API_DIR)/src/*.c)
+API_SOURCES:=$(wildcard $(API_DIR)/src/*.c) $(wildcard $(API_DIR)/src/*.cpp)
 API_SOURCES:=$(filter-out $(API_DIR)/src/unsupported.c, $(API_SOURCES))
 
 # Release library object files
-API_OBJS:=$(foreach API_SOURCE, $(API_SOURCES), $(CONFIGURATION_PREFIX)/$(API_DIR)/$(notdir $(API_SOURCE:.c=.o))) \
+API_OBJS:=$(API_SOURCES:.c=.o) # Replace .c with .o
+API_OBJS:=$(API_OBJS:.cpp=.o) # Replace .cpp with .o
+API_OBJS:=$(foreach API_SOURCE, $(API_OBJS), $(CONFIGURATION_PREFIX)/$(API_DIR)/$(notdir $(API_SOURCE))) \
           $(API_ASM_OUTPUT:.s=.o)
 
 # Make the ARMv7-M MPU driver the default.
@@ -129,8 +131,9 @@ OBJS:=$(foreach SOURCE, $(SOURCES), $(CONFIGURATION_PREFIX)/$(CORE_DIR)/$(notdir
 # build the core or the release library (so the two can have the same names
 # without collisions).
 ifneq ($(MAKECMDGOALS),build_core)
-vpath %.c $(API_DIR)/src
-vpath %.s $(API_DIR)/src
+vpath %.c   $(API_DIR)/src
+vpath %.cpp $(API_DIR)/src
+vpath %.s   $(API_DIR)/src
 else
 vpath %.c $(CORE_SYSTEM_DIR)/src:\
           $(CORE_SYSTEM_DIR)/src/mpu:\
@@ -188,7 +191,8 @@ CFLAGS_PRE:=\
         -fdata-sections
 
 CFLAGS:=$(FLAGS_CM4) $(CFLAGS_PRE)
-CPPFLAGS:=-fno-exceptions
+CPPFLAGS:=
+CXXFLAGS:=$(CFLAGS) -fno-exceptions
 
 LINKER_CONFIG:=\
     -D$(CONFIGURATION) \
@@ -292,6 +296,10 @@ $(CONFIGURATION_PREFIX)/$(CORE_DIR)/%.o: %.c
 # Pre-process and compile a release library C file into an object file.
 $(CONFIGURATION_PREFIX)/$(API_DIR)/%.o: %.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+# Pre-process and compile a release library C++ file into an object file.
+$(CONFIGURATION_PREFIX)/$(API_DIR)/%.o: %.cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 # Generate the output asm file from the asm input file and the INCBIN'ed binary.
 $(API_ASM_OUTPUT:.s=.o): $(CONFIGURATION_PREFIX).bin $(API_ASM_INPUT)
