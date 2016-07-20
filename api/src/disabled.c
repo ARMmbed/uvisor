@@ -31,7 +31,7 @@ UVISOR_EXTERN uint32_t __uvisor_bss_boxes_start;
 
 /* The pointer to the uVisor context is declared by each box separately. Each
  * declaration will have its own type. */
-UVISOR_EXTERN void *uvisor_ctx;
+void * uvisor_ctx;
 
 /* Flag to check that contexts have been initialized */
 static bool g_initialized = false;
@@ -42,7 +42,7 @@ static void *g_uvisor_ctx_array[UVISOR_MAX_BOXES] = {0};
 /* Call stack
  * We must keep the full call stack as otherwise it's not possible to restore a
  * box context after a nested call. */
-static uint8_t g_call_stack[UVISOR_SVC_CONTEXT_MAX_DEPTH];
+static uint8_t g_call_stack[UVISOR_CONTEXT_MAX_DEPTH];
 static int g_call_sp;
 
 /* Memory position pointer
@@ -133,7 +133,7 @@ void uvisor_disabled_switch_in(const uint32_t *dst_box_cfgtbl_ptr)
     uvisor_ctx = g_uvisor_ctx_array[dst_box_id];
 
     /* Push state. */
-    if (g_call_sp >= UVISOR_SVC_CONTEXT_MAX_DEPTH - 1) {
+    if (g_call_sp >= UVISOR_CONTEXT_MAX_DEPTH - 1) {
         uvisor_error(USER_NOT_ALLOWED);
     }
     g_call_stack[++g_call_sp] = dst_box_id;

@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 #include <uvisor.h>
-#include <vmpu.h>
-#include <svc.h>
-#include <unvic.h>
-#include <halt.h>
-#include <debug.h>
-#include <memory_map.h>
+#include "debug.h"
+#include "context.h"
+#include "halt.h"
+#include "memory_map.h"
+#include "svc.h"
+#include "unvic.h"
+#include "vmpu.h"
 
 /* This file contains the configuration-specific symbols. */
 #include "configurations.h"
@@ -70,7 +71,7 @@
 /* MPU helper macros */
 #define MPU_RBAR(region,addr)   (((uint32_t)(region))|MPU_RBAR_VALID_Msk|addr)
 #define MPU_RBAR_RNR(addr)     (addr)
-#define MPU_STACK_GUARD_BAND_SIZE (UVISOR_SRAM_LENGTH/8)
+#define MPU_STACK_GUARD_BAND_SIZE (UVISOR_SRAM_LENGTH_PROTECTED/8)
 
 /* various MPU flags */
 #define MPU_RASR_AP_PNO_UNO (0x00UL<<MPU_RASR_AP_Pos)
@@ -104,7 +105,6 @@ typedef struct {
     uint32_t count;
 } TMpuBox;
 
-static uint32_t g_mpu_slot;
 static uint32_t g_mpu_region_count, g_box_mem_pos;
 static TMpuRegion g_mpu_list[MPU_REGION_COUNT];
 static TMpuBox g_mpu_box[UVISOR_MAX_BOXES];
@@ -131,16 +131,17 @@ static const TMpuRegion* vmpu_fault_find_region(uint32_t fault_addr)
     const TMpuRegion *region;
 
     /* check current box if not base */
-    if ((g_active_box) && ((region = vmpu_fault_find_box_region(fault_addr, &g_mpu_box[g_active_box])) == NULL)) {
-        return NULL;
+    if ((g_active_box) && ((region = vmpu_fault_find_box_region(fault_addr, &g_mpu_box[g_active_box])) != NULL)) {
+        return region;
     }
 
     /* check base-box */
-    if ((region = vmpu_fault_find_box_region(fault_addr, &g_mpu_box[0])) == NULL) {
-        return NULL;
+    if ((region = vmpu_fault_find_box_region(fault_addr, &g_mpu_box[0])) != NULL) {
+        return region;
     }
 
-    return region;
+    /* If no region was found. */
+    return NULL;
 }
 
 uint32_t vmpu_fault_find_acl(uint32_t fault_addr, uint32_t size)
@@ -175,6 +176,9 @@ static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr
 {
     const TMpuRegion *region;
 
+    /* Initialize the round-robin slot pointer. */
+    static uint32_t mpu_slot = ARMv7M_MPU_RESERVED_REGIONS;
+
     /* no recovery possible if the MPU syndrome register is not valid */
     if (fault_status != 0x82) {
         return 0;
@@ -184,12 +188,18 @@ static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr
     if ((region = vmpu_fault_find_region(fault_addr)) == NULL)
         return 0;
 
+    /* In a secure box the first available region is for the stack, so it must
+     * be excluded from the round-robin. */
+    if (g_active_box != 0 && mpu_slot == ARMv7M_MPU_RESERVED_REGIONS) {
+        mpu_slot++;
+    }
+
     /* FIXME: use random numbers for box number */
-    MPU->RBAR = region->base | g_mpu_slot++ | MPU_RBAR_VALID_Msk;
+    MPU->RBAR = region->base | mpu_slot++ | MPU_RBAR_VALID_Msk;
     MPU->RASR = region->rasr;
 
-    if (g_mpu_slot >= ARMv7M_MPU_REGIONS)
-        g_mpu_slot = ARMv7M_MPU_RESERVED_REGIONS;
+    if (mpu_slot >= ARMv7M_MPU_REGIONS)
+        mpu_slot = ARMv7M_MPU_RESERVED_REGIONS;
 
     return 1;
 }
@@ -275,14 +285,25 @@ void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
 
         case UsageFault_IRQn:
             DEBUG_FAULT(FAULT_USAGE, lr, lr & 0x4 ? psp : msp);
+            HALT_ERROR(FAULT_USAGE, "Cannot recover from a usage fault.");
             break;
 
         case HardFault_IRQn:
             DEBUG_FAULT(FAULT_HARD, lr, lr & 0x4 ? psp : msp);
+            HALT_ERROR(FAULT_HARD, "Cannot recover from a hard fault.");
             break;
 
         case DebugMonitor_IRQn:
             DEBUG_FAULT(FAULT_DEBUG, lr, lr & 0x4 ? psp : msp);
+            HALT_ERROR(FAULT_DEBUG, "Cannot recover from a debug fault.");
+            break;
+
+        case PendSV_IRQn:
+            HALT_ERROR(NOT_IMPLEMENTED, "No PendSV IRQ hook registered");
+            break;
+
+        case SysTick_IRQn:
+            HALT_ERROR(NOT_IMPLEMENTED, "No SysTick IRQ hook registered");
             break;
 
         default:
@@ -347,8 +368,12 @@ void vmpu_switch(uint8_t src_box, uint8_t dst_box)
     /* clear remaining slots */
     while(mpu_slot<ARMv7M_MPU_REGIONS)
     {
-        MPU->RBAR = mpu_slot | MPU_RBAR_VALID_Msk;
+        /* We need to make sure that we disable an enabled MPU region before any
+         * other modification, hence we cannot select the MPU region using the
+         * region number field in the RBAR register. */
+        MPU->RNR = mpu_slot;
         MPU->RASR = 0;
+        MPU->RBAR = 0;
         mpu_slot++;
     }
 }
@@ -544,23 +569,23 @@ void vmpu_acl_add(uint8_t box_id, void* addr, uint32_t size, UvisorBoxAcl acl)
     g_mpu_region_count++;
 }
 
-void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
+void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
 {
     int bits, slots_ctx, slots_stack;
     uint32_t size, block_size;
 
     /* handle main box */
-    if(!box_id)
+    if (box_id == 0)
     {
-        DPRINTF("ctx=%i stack=%i\n\r", context_size, stack_size);
+        DPRINTF("ctx=%i stack=%i\n\r", bss_size, stack_size);
         /* non-important sanity checks */
-        assert(context_size == 0);
         assert(stack_size == 0);
 
         /* assign main box stack pointer to existing
          * unprivileged stack pointer */
-        g_svc_cx_curr_sp[0] = (uint32_t*)__get_PSP();
-        g_svc_cx_context_ptr[0] = NULL;
+        g_context_current_states[0].sp = __get_PSP();
+        /* Box 0 still uses the main heap to be backwards compatible. */
+        g_context_current_states[0].bss = (uint32_t) __uvisor_config.heap_start;
         return;
     }
 
@@ -569,7 +594,7 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
 
     /* ensure that 2/8th are available for protecting stack from
      * context - include rounding error margin */
-    bits = vmpu_region_bits(((stack_size + context_size)*8)/6);
+    bits = vmpu_region_bits(((stack_size + bss_size)*8)/6);
 
     /* ensure MPU region size of at least 256 bytes for
      * subregion support */
@@ -578,8 +603,8 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
     size = 1UL << bits;
     block_size = size/8;
 
-    DPRINTF("\tbox[%i] stack=%i context=%i rounded=%i\n\r" , box_id,
-        stack_size, context_size, size);
+    DPRINTF("\tbox[%i] stack=%i bss=%i rounded=%i\n\r" , box_id,
+        stack_size, bss_size, size);
 
     /* check for correct context address alignment:
      * alignment needs to be a muiltiple of the size */
@@ -593,25 +618,25 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
             "allocation\n\r");
 
     /* round context sizes, leave one free slot */
-    slots_ctx = (context_size + block_size - 1)/block_size;
+    slots_ctx = (bss_size + block_size - 1)/block_size;
     slots_stack = slots_ctx ? (8-slots_ctx-1) : 8;
 
     /* final sanity checks */
-    if( (slots_ctx * block_size) < context_size )
+    if( (slots_ctx * block_size) < bss_size )
         HALT_ERROR(SANITY_CHECK_FAILED, "slots_ctx underrun\n\r");
     if( (slots_stack * block_size) < stack_size )
         HALT_ERROR(SANITY_CHECK_FAILED, "slots_stack underrun\n\r");
 
     /* allocate context pointer */
-    g_svc_cx_context_ptr[box_id] =
-        slots_ctx ? (uint32_t*)g_box_mem_pos : NULL;
+    g_context_current_states[box_id].bss =
+        slots_ctx ? g_box_mem_pos : (uint32_t) NULL;
     /* ensure stack band on top for stack underflow dectection */
-    g_svc_cx_curr_sp[box_id] =
-        (uint32_t*)(g_box_mem_pos + size - UVISOR_STACK_BAND_SIZE);
+    g_context_current_states[box_id].sp =
+        (g_box_mem_pos + size - UVISOR_STACK_BAND_SIZE);
 
     /* Reset uninitialized secured box context. */
     if (slots_ctx) {
-        memset((void *) g_box_mem_pos, 0, context_size);
+        memset((void *) g_box_mem_pos, 0, bss_size);
     }
 
     /* create stack protection region */
@@ -635,9 +660,6 @@ void vmpu_arch_init(void)
     MPU->RBAR = MPU_RBAR_ADDR_Msk;
     aligment_mask = ~MPU->RBAR;
     MPU->RBAR = 0;
-
-    /* Initialize round-robin slot pointer. */
-    g_mpu_slot = ARMv7M_MPU_RESERVED_REGIONS;
 
     /* show basic mpu settings */
     DPRINTF("MPU.REGIONS=%i\r\n", (uint8_t)(MPU->TYPE >> MPU_TYPE_DREGION_Pos));
@@ -695,6 +717,20 @@ void vmpu_arch_init_hw(void)
     );
 
 #if !defined(UVISOR_IN_STANDALONE_SRAM)
+    /* Calculate the subregion mask based on the __uvisor_bss_end symbol.
+     * The BSS section occupied by uVisor in the host linker script must be
+     * aligned to an MPU subregion boundary, so that the maximum memory wasted
+     * for padding purposes is 1/8 of the total uVisor BSS section. */
+    uint32_t original_size = (uint32_t) __uvisor_config.bss_end - SRAM_ORIGIN;
+    uint32_t rounded_size = UVISOR_REGION_ROUND_UP(original_size);
+    uint32_t subregions_size = rounded_size / 8;
+    if (original_size % subregions_size != 0) {
+        HALT_ERROR(SANITY_CHECK_FAILED,
+                   "The __uvisor_bss_end symbol (0x%08X)is not aligned to an MPU subregion boundary.",
+                   (uint32_t) __uvisor_config.bss_end);
+    }
+    uint8_t subregions_mask = (uint8_t) ~(0xFFUL >> (8 - (original_size / subregions_size)));
+
     /* Protect the uVisor SRAM.
      * This region needs protection only if uVisor shares the SRAM with the
      * host. The configuration requires that uVisor is right at the beginning of
@@ -703,8 +739,47 @@ void vmpu_arch_init_hw(void)
     vmpu_acl_static_region(
         2,
         (void *) SRAM_ORIGIN,
-        ((uint32_t) __uvisor_config.bss_end) - SRAM_ORIGIN,
-        UVISOR_TACL_SREAD | UVISOR_TACL_SWRITE
+        rounded_size,
+        UVISOR_TACL_SREAD | UVISOR_TACL_SWRITE | UVISOR_TACL_SUBREGIONS(subregions_mask)
     );
 #endif /* !defined(UVISOR_IN_STANDALONE_SRAM) */
+}
+
+int vmpu_is_region_size_valid(uint32_t size)
+{
+    /* Get the MSB of the size. */
+    const int bits = vmpu_bits(size) - 1;
+    if (bits < ARMv7M_MPU_ALIGNMENT_BITS || 29 < bits) {
+        /* 2^5 == 32, which is the minimum region size. */
+        /* 2^29 == 512M, which is the maximum region size. */
+        return 0;
+    }
+    /* Compute the size from MSB. */
+    const int bit_size = (1UL << bits);
+    /* There is no round up. */
+
+    /* We only care about an exact match! */
+    return (bit_size == size);
+}
+
+uint32_t vmpu_round_up_region(uint32_t addr, uint32_t size)
+{
+    if (!vmpu_is_region_size_valid(size)) {
+        /* Region size must be valid! */
+        return 0;
+    }
+    /* Size is 2*N, can be used directly for alignment. */
+    /* Create the LSB mask: Example 0x80 -> 0x7F. */
+    const uint32_t mask = size - 1;
+    /* Mask is 31 <= mask <= (1 << 29) - 1. */
+
+    /* Adding the mask can overflow. */
+    const uint32_t rounded_addr = addr + mask;
+    /* Check for overflow. */
+    if (rounded_addr < addr) {
+        /* This means the address was too large to align. */
+        return 0;
+    }
+    /* Mask the rounded address to get the aligned address. */
+    return (rounded_addr & ~mask);
 }

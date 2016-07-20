@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited, All Rights Reserved
+ * Copyright (c) 2013-2016, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -15,22 +15,37 @@
  * limitations under the License.
  */
 #include <uvisor.h>
-#include <vmpu.h>
-#include <svc.h>
-#include <unvic.h>
-#include <halt.h>
-#include <debug.h>
-#include <memory_map.h>
+#include "debug.h"
+#include "context.h"
+#include "halt.h"
+#include "memory_map.h"
+#include "svc.h"
+#include "unvic.h"
+#include "vmpu.h"
+#include "vmpu_freescale_k64.h"
 #include "vmpu_freescale_k64_aips.h"
 #include "vmpu_freescale_k64_mem.h"
+#include "page_allocator_faults.h"
 
 uint32_t g_box_mem_pos;
 
-/* TODO/FIXME: implement recovery from Freescale MPU fault */
-static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp)
+static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr)
 {
-    /* FIXME: currently we deny every access */
-    /* TODO: implement actual recovery */
+    uint32_t start_addr, end_addr;
+    uint8_t page;
+
+    /* Check if fault address is a page */
+    if (page_allocator_get_active_region_for_address(fault_addr, &start_addr, &end_addr, &page) == UVISOR_ERROR_PAGE_OK)
+    {
+        /* Remember this fault. */
+        page_allocator_register_fault(page);
+        DPRINTF("Page Fault for address 0x%08x at page %u [0x%08x, 0x%08x]\n", fault_addr, page, start_addr, end_addr);
+        /* Create a page ACL for this page and enable it. */
+        if (vmpu_mem_push_page_acl(start_addr, end_addr)) {
+            return -1;
+        }
+        return 0;
+    }
     return -1;
 }
 
@@ -77,9 +92,25 @@ void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
                 fault_status = VMPU_SCB_BFSR;
 
                 /* check if the fault is an MPU fault */
-                if (MPU->CESR >> 27 && !vmpu_fault_recovery_mpu(pc, psp)) {
-                    VMPU_SCB_BFSR = fault_status;
-                    return;
+                int slave_port = vmpu_fault_get_slave_port();
+                if (slave_port >= 0) {
+                    /* If the fault comes from the MPU module, we don't use the
+                     * bus fault syndrome register, but the MPU one. */
+                    fault_addr = MPU->SP[slave_port].EAR;
+
+                    /* Check if we can recover from the MPU fault. */
+                    if (!vmpu_fault_recovery_mpu(pc, psp, fault_addr)) {
+                        /* We clear the bus fault status anyway. */
+                        VMPU_SCB_BFSR = fault_status;
+
+                        /* We also clear the MPU fault status bit. */
+                        vmpu_fault_clear_slave_port(slave_port);
+
+                        /* Recover from the exception. */
+                        return;
+                    }
+                } else if (slave_port == VMPU_FAULT_MULTIPLE) {
+                    DPRINTF("Multiple MPU violations found.\r\n");
                 }
 
                 /* check if the fault is the special register corner case */
@@ -110,6 +141,14 @@ void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
 
         case DebugMonitor_IRQn:
             DEBUG_FAULT(FAULT_DEBUG, lr, lr & 0x4 ? psp : msp);
+            break;
+
+        case PendSV_IRQn:
+            HALT_ERROR(NOT_IMPLEMENTED, "No PendSV IRQ hook registered");
+            break;
+
+        case SysTick_IRQn:
+            HALT_ERROR(NOT_IMPLEMENTED, "No SysTick IRQ hook registered");
             break;
 
         default:
@@ -159,20 +198,20 @@ void vmpu_acl_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
             HALT_ERROR(SANITY_CHECK_FAILED, "ACL sanity check failed [%i]\n", res);
 }
 
-void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
+void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
 {
     /* handle main box */
-    if(!box_id)
+    if (box_id == 0)
     {
-        DPRINTF("ctx=%i stack=%i\n\r", context_size, stack_size);
+        DPRINTF("ctx=%i stack=%i\n\r", bss_size, stack_size);
         /* non-important sanity checks */
-        assert(context_size == 0);
         assert(stack_size == 0);
 
         /* assign main box stack pointer to existing
          * unprivileged stack pointer */
-        g_svc_cx_curr_sp[0] = (uint32_t*)__get_PSP();
-        g_svc_cx_context_ptr[0] = NULL;
+        g_context_current_states[0].sp = __get_PSP();
+        /* Box 0 still uses the main heap to be backwards compatible. */
+        g_context_current_states[0].bss = (uint32_t) __uvisor_config.heap_start;
         return;
     }
 
@@ -189,40 +228,36 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t context_size, uint32_t stack_size)
 
     /* set stack pointer to box stack size minus guard band */
     g_box_mem_pos += stack_size;
-    g_svc_cx_curr_sp[box_id] = (uint32_t*)g_box_mem_pos;
+    g_context_current_states[box_id].sp = g_box_mem_pos;
     /* add stack protection band */
     g_box_mem_pos += UVISOR_STACK_BAND_SIZE;
 
-    /* add context ACL if needed */
-    if(!context_size)
-        g_svc_cx_context_ptr[box_id] = NULL;
-    else
-    {
-        context_size = UVISOR_REGION_ROUND_UP(context_size);
-        g_svc_cx_context_ptr[box_id] = (uint32_t*)g_box_mem_pos;
+    /* add context ACL */
+    assert(bss_size != 0);
+    bss_size = UVISOR_REGION_ROUND_UP(bss_size);
+    g_context_current_states[box_id].bss = g_box_mem_pos;
 
-        DPRINTF("erasing box context at 0x%08X (%u bytes)\n",
-            g_box_mem_pos,
-            context_size
-        );
+    DPRINTF("erasing box context at 0x%08X (%u bytes)\n",
+        g_box_mem_pos,
+        bss_size
+    );
 
-        /* reset uninitialized secured box context */
-        memset(
-            (void *) g_box_mem_pos,
-            0,
-            context_size
-        );
+    /* reset uninitialized secured box context */
+    memset(
+        (void *) g_box_mem_pos,
+        0,
+        bss_size
+    );
 
-        /* add context ACL */
-        vmpu_acl_add(
-            box_id,
-            (void*)g_box_mem_pos,
-            context_size,
-            UVISOR_TACLDEF_DATA
-        );
+    /* add context ACL */
+    vmpu_acl_add(
+        box_id,
+        (void*)g_box_mem_pos,
+        bss_size,
+        UVISOR_TACLDEF_DATA
+    );
 
-        g_box_mem_pos += context_size + UVISOR_STACK_BAND_SIZE;
-    }
+    g_box_mem_pos += bss_size + UVISOR_STACK_BAND_SIZE;
 }
 
 void vmpu_switch(uint8_t src_box, uint8_t dst_box)
@@ -263,7 +298,6 @@ uint32_t vmpu_fault_find_acl(uint32_t fault_addr, uint32_t size)
     }
 }
 
-
 void vmpu_load_box(uint8_t box_id)
 {
     if(box_id != 0)
@@ -286,4 +320,37 @@ void vmpu_arch_init(void)
 
     /* init memory protection */
     vmpu_mem_init();
+}
+
+int vmpu_is_region_size_valid(uint32_t size)
+{
+    /* Align size to 32B. */
+    const uint32_t masked_size = size & ~31;
+    if (masked_size < 32 || (1 << 29) < masked_size) {
+        /* 2^5 == 32, which is the minimum region size. */
+        /* 2^29 == 512M, which is the maximum region size. */
+        return 0;
+    }
+    /* There is no rounding, we only care about an exact match! */
+    return (masked_size == size);
+}
+
+uint32_t vmpu_round_up_region(uint32_t addr, uint32_t size)
+{
+    if (!vmpu_is_region_size_valid(size)) {
+        /* Region size must be valid! */
+        return 0;
+    }
+    /* Alignment is always 32B. */
+    const uint32_t mask = 31;
+
+    /* Adding the mask can overflow. */
+    const uint32_t rounded_addr = addr + mask;
+    /* Check for overflow. */
+    if (rounded_addr < addr) {
+        /* This means the address was too large to align. */
+        return 0;
+    }
+    /* Mask the rounded address to get the aligned address. */
+    return (rounded_addr & ~mask);
 }
