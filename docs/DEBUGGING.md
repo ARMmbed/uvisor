@@ -1,13 +1,16 @@
-# Debugging uVisor
+# Debugging uVisor on mbed OS
 
-The uVisor is distributed as a pre-linked binary blob. Blobs for different mbed platforms are released in a yotta module called `uvisor-lib`, and are linked to your application when you build it. Two classes of binary blobs are released for each version — one for release and one for debug.
+The uVisor is distributed as a pre-linked binary blob. Blobs for different mbed platforms are released in the mbed OS repository, [mbedmicro/mbed](https://github.com/mbedmicro/mbed), and are linked to your application when you build it. Two classes of binary blobs are released for each version — one for release and one for debug.
 
 If you only want to use the uVisor debug features on an already supported platform, you do not need to clone it and build it locally. If you instead want to make modifications to uVisor (or port it to your platform) and test the modifications locally with your app, please follow the [Developing with uVisor locally](DEVELOPING_LOCALLY.md) guide first.
 
 In this quick guide we will show you how to enable the default debug features on uVisor, and how to instrument it to get even more debug information. You will need the following:
 
 * A GDB-enabled board (and the related tools).
-* yotta.
+* A [target supported](https://github.com/ARMmbed/uvisor/blob/master/README.md#supported-platforms) by uVisor on mbed OS. If your target is not supported yet, you can follow the [uVisor porting guide](https://github.com/ARMmbed/uvisor/blob/master/docs/PORTING.md).
+* The Launchpad [GCC ARM Embedded](https://launchpad.net/gcc-arm-embedded) toolchain.
+* GNU make.
+* git.
 
 ## Debug capabilities
 
@@ -25,19 +28,18 @@ If you want to observe the uVisor runtime messages you need to have a debugger c
 
 ```bash
 $ cd ~/code
-$ yotta target frdm-k64f-gcc
-$ yotta install uvisor-helloworld
-$ cd uvisor-helloworld
+$ mbed import https://github.com/ARMmbed/mbed-os-example-uvisor
+$ cd mbed-os-example-uvisor
 ```
 
 Of course any other application can be used, provided that it is correctly set up to use uVisor. See [Developing with uVisor locally](DEVELOPING_LOCALLY.md) for more details.
-Runtime messages are silenced by default. In order to enable them, you need to build your application linking to the debug version of uVisor. Starting with v2.0.0, `uvisor-lib` comes with both the release and debug builds of uVisor, so you only need to run the following command:
+Runtime messages are silenced by default. In order to enable them, you need to build your application linking to the debug version of uVisor. The uVisor libraries that we publish in mbed OS provide both the release and debug builds of uVisor, so you only need to run the following command:
 
 ```bash
-$ yotta build -d
+$ mbed compile -m ${your_target} -t GCC_ARM -o "debug-info"
 ```
 
-The `-d` option ensures that yotta enables debug symbols and disables optimizations. In addition, it ensures that the `uvisor-lib` modules selects the debug build of uVisor, which enables the uVisor runtime messages.
+The `-o "debug-info"` option ensures that the build system enables debug symbols and disables optimizations. In addition, it ensures that the debug build of uVisor is selected, which enables the uVisor runtime messages.
 
 Now start the GDB server. This step changes depending on which debugger you are using. In case you are using a J-Link debugger, run:
 
@@ -104,6 +106,8 @@ Currently the following messages are printed:
 
 ## The debug box
 
+> Warning: We are currently working on porting the debug box to the new version of mbed OS. Coming soon.
+
 > Warning: The debug box feature is an early prototype. The APIs and procedures described here might change several times in non-backwards-compatible ways.
 
 The uVisor code is instrumented to output debug information when it is relevant. In order to keep the uVisor as simple and hardware-independent as possible, some of this information is not handled and interpreted directly by uVisor.
@@ -124,7 +128,7 @@ typedef struct TUvisorDebugDriver {
 The following is an example of how to implement and configure a debug box.
 
 ```C
-#include "mbed-drivers/mbed.h"
+#include "mbed.h"
 #include "uvisor-lib/uvisor-lib.h"
 
 /* Configure the debug box. */
