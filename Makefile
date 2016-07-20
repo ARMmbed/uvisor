@@ -188,7 +188,8 @@ CFLAGS_PRE:=\
         -fdata-sections
 
 CFLAGS:=$(FLAGS_CM4) $(CFLAGS_PRE)
-CPPFLAGS:=-fno-exceptions
+CPPFLAGS:=
+CXXFLAGS:=-fno-exceptions
 
 LINKER_CONFIG:=\
     -D$(CONFIGURATION) \
