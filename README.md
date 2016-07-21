@@ -40,11 +40,9 @@ The following platforms are currently supported by the uVisor core:
 * [STMicorelectronics STM32F429I-DISCO](http://www.st.com/web/catalog/tools/FM116/SC959/SS1532/PF259090)
 * [Silicon Labs EFM32 Gecko](http://www.silabs.com/products/mcu/32-bit/efm32-gecko/pages/efm32-gecko.aspx) (Cortex M3 and M4 devices).
 
-To use uVisor on a platform, though, the porting process needs to be completed on the target OS as well. Currently uVisor is only supported on the following platforms:
+To use uVisor on a specific OS, though, the porting process needs to be completed for that OS as well. This requires an additional porting step, which is documented in the [uVisor Porting Guide for mbed OS](docs/core/PORTING.md). The following operating systems are currently supported:
 
-* mbed OS: [NXP FRDM-K64F](http://developer.mbed.org/platforms/FRDM-K64F/)
-
-For more information on the porting process, for both the uVisor core and library, please read the [uVisor Porting Guide for mbed OS](docs/core/PORTING.md)
+* mbed OS: [NXP FRDM-K64F](http://developer.mbed.org/platforms/FRDM-K64F/).
 
 The uVisor pre-linked binary images are built with the Launchpad [GCC ARM Embedded](https://launchpad.net/gcc-arm-embedded) toolchain. Currently only applications built with the same toolchain are supported.
 
