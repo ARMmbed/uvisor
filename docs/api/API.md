@@ -3,7 +3,6 @@
 Here you can find detailed documentation for:
 
 1. [Configuration macros](#configuration-macros), to configure a secure box and protect data and peripherals.
-1. [Secure function calls](#secure-function-call), to execute code in the context of a secure box.
 1. [Box Identity](#box-identity), to retrieve a box-specific ID or the namespace of the current or calling box.
 1. [Low level APIs](#low-level-apis), to access uVisor functions that are not available to unprivileged code (interrupts, restricted system registers).
 1. [Type definitions](#type-definitions).
