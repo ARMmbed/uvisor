@@ -1,4 +1,4 @@
-# The uVisor API documentation
+# uVisor API documentation
 
 Here you can find detailed documentation for:
 

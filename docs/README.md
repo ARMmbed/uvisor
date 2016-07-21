@@ -18,6 +18,6 @@ These documents describe the uVisor internals more in details. They are useful i
 
 | I want to...                    | Document                                                                |
 |---------------------------------|-------------------------------------------------------------------------|
-| Port uVisor to my platform/OS   | [ARM uVisor Porting Guide for mbed OS](core/PORTING.md)                 |
+| Port uVisor to my platform/OS   | [uVisor Porting Guide for mbed OS](core/PORTING.md)                     |
 | Test and experiment with uVisor | [Developing with uVisor Locally on mbed OS](core/DEVELOPING_LOCALLY.md) |
 | Contribute to uVisor            | [Contributing to uVisor](../CONTRIBUTING.md)                            |

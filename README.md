@@ -14,16 +14,9 @@ If you want to learn more about the uVisor security model and get an overview of
     * Secure boot.
     * Context switching.
 
-Other documents you might be interested in:
+You will find the full uVisor documentation in the [docs](docs) folder.
 
-| I want to...                               | Document                                                     |
-|--------------------------------------------|--------------------------------------------------------------|
-| Start using uVisor on a supported platform | [uVisor quick-start guide](docs/QUICKSTART.md)               |
-| Know everything I can do with uVisor       | [API documentation](docs/API.md)                             |
-| Enable debug messages                      | [Debugging uVisor](docs/DEBUGGING.md)                        |
-| Port uVisor to my platform                 | [Porting guide](docs/PORTING.md)                             |
-| Test and experiment with uVisor            | [Developing with uVisor locally](docs/DEVELOPING_LOCALLY.md) |
-| Contribute to uVisor                       | [Contributing to uVisor](CONTRIBUTING.md)                    |
+Contributions to this repository in the form of issue reporting or pull requests are welcome! Please make sure to read our [contribution guidelines](CONTRIBUTING.md) first.
 
 ### Word of caution
 
@@ -51,7 +44,7 @@ To use uVisor on a platform, though, the porting process needs to be completed o
 
 * mbed OS: [NXP FRDM-K64F](http://developer.mbed.org/platforms/FRDM-K64F/)
 
-For more information on the porting process, for both the uVisor core and library, please read the [porting guide](docs/PORTING.md)
+For more information on the porting process, for both the uVisor core and library, please read the [uVisor Porting Guide for mbed OS](docs/core/PORTING.md)
 
 The uVisor pre-linked binary images are built with the Launchpad [GCC ARM Embedded](https://launchpad.net/gcc-arm-embedded) toolchain. Currently only applications built with the same toolchain are supported.
 
@@ -95,7 +88,7 @@ All the code that is not explicitly part of the uVisor is generally referred to 
 
 The unprivileged code can be made of mutually untrusted isolated modules (or boxes). This way, even if all are running with unprivileged permissions, different modules can protect their own secrets and execute critical code securely.
 
-For more details on how to setup a secure box and protect memories and peripherals, please read the [quick-start guide](docs/QUICKSTART.md).
+For more details on how to setup a secure box and protect memories and peripherals, please read the [Quick-Start Guide for uVisor on mbed OS](docs/api/QUICKSTART.md).
 
 ### Memory layout
 
@@ -138,7 +131,7 @@ The main memory sections that the uVisor protects are detailed in the following 
   </tbody>
 </table>
 
-If you want to know how to use the uVisor APIs to setup a secure box please refer to the [quick-start guide](docs/QUICKSTART.md) and to the full [API documentation](docs/API.md).
+If you want to know how to use the uVisor APIs to setup a secure box please refer to the [Quick-Start Guide for uVisor on mbed OS](docs/api/QUICKSTART.md) and to the full [uVisor API documentation](docs/api/API.md).
 
 ### The boot process
 

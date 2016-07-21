@@ -1,4 +1,4 @@
-# ARM uVisor Porting Guide for mbed OS
+# uVisor Porting Guide for mbed OS
 
 The uVisor is a low-level security module that creates sandboxed environments on ARM Cortex-M3 and ARM Cortex-M4 devices. Each sandbox can get hold of a set of private resources for which uVisor grants exclusive access. Calls into sandboxed APIs are only possible through uVisor-managed entry points.
 
@@ -650,7 +650,7 @@ Given the description above, the following combinations are possible:
 
 Please note that defining both the `FEATURE_UVISOR` and the `UVISOR_SUPPORTED` symbols does not automatically enable uVisor on the application. By default uVisor runs in *disabled* mode, where the uVisor initialization function is executed but returns immediately.
 
-In disabled mode no security feature is enabled, although the uVisor binaries are still flashed to the device. To learn more about the uVisor modes of operation please check out the [API documentation](API.md). If you want to know how to enable uVisor and configure an application to use the uVisor security features, please checkout the [quick-start guide](QUICKSTART.md).
+In disabled mode no security feature is enabled, although the uVisor binaries are still flashed to the device. To learn more about the uVisor modes of operation please check out the [API documentation](../api/API.md). If you want to know how to enable uVisor and configure an application to use the uVisor security features, please checkout the [Quick-Start Guide for uVisor on mbed OS](../api/QUICKSTART.md).
 
 If you do not want to enable the uVisor features straight away on your mbed targets, you can create a *wrapper* target that inherits from the original target. You can then set `FEATURE_UVISOR` and `UVISOR_SUPPORTED` using the same labels from the table above, but with `_add` appended to their name:
 
@@ -678,9 +678,9 @@ If you have followed all the steps in this guide, this is what you should have:
     * The importer `Makefile` updated and you libraries deployed.
     * Your target description updated to link the uVisor libraries.
 
-It is now time to test your application. We suggest that you use our example app, [`mbed-os-example-uvisor`](https://github.com/ARMmbed/mbed-os-example-uvisor), but if you prefer you can try and build a very simple uVisor-enabled blinky program following the [quick-start guide](QUICKSTART.md).
+It is now time to test your application. We suggest that you use our example app, [`mbed-os-example-uvisor`](https://github.com/ARMmbed/mbed-os-example-uvisor), but if you prefer you can try and build a very simple uVisor-enabled blinky program following the [Quick-Start Guide for uVisor on mbed OS](../api/QUICKSTART.md).
 
 In both cases, please make sure to do the following:
 
-* Make sure to run uVisor at least once in debug mode to ensure that all runtime sanity checks pass. This round of checks can also be used as a confirmation step, proving that your linker script and uVisor ports are structurally correct. For more information on the uVisor debug mode, please read the [dedicated guide](DEBUGGING.md).
-* Ensure that your app has the relevant ACLs to work with uVisor enabled. At the moment this requires to run uVisor in debug mode multiple times and find all the faulting peripherals. The procedure is described in greater detail in [the final section](QUICKSTART.md#the-main-box-acls) of the quick-start guide.
+* Make sure to run uVisor at least once in debug mode to ensure that all runtime sanity checks pass. This round of checks can also be used as a confirmation step, proving that your linker script and uVisor ports are structurally correct. For more information on the uVisor debug mode, please read the [Debugging uVisor on mbed OS](../api/DEBUGGING.md) guide.
+* Ensure that your app has the relevant ACLs to work with uVisor enabled. At the moment this requires to run uVisor in debug mode multiple times and find all the faulting peripherals. The procedure is described in greater detail in [the final section](../api/QUICKSTART.md#the-main-box-acls) of the [Quick-Start Guide for uVisor on mbed OS](../api/QUICKSTART.md).
