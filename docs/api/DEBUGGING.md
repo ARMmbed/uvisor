@@ -2,12 +2,12 @@
 
 The uVisor is distributed as a pre-linked binary blob. Blobs for different mbed platforms are released in the mbed OS repository, [mbedmicro/mbed](https://github.com/mbedmicro/mbed), and are linked to your application when you build it. Two classes of binary blobs are released for each version — one for release and one for debug.
 
-If you only want to use the uVisor debug features on an already supported platform, you do not need to clone it and build it locally. If you instead want to make modifications to uVisor (or port it to your platform) and test the modifications locally with your app, please follow the [Developing with uVisor locally](DEVELOPING_LOCALLY.md) guide first.
+If you only want to use the uVisor debug features on an already supported platform, you do not need to clone it and build it locally. If you instead want to make modifications to uVisor (or port it to your platform) and test the modifications locally with your app, please follow the [Developing with uVisor Locally on mbed OS](../core/DEVELOPING_LOCALLY.md) guide first.
 
 In this quick guide we will show you how to enable the default debug features on uVisor, and how to instrument it to get even more debug information. You will need the following:
 
 * A GDB-enabled board (and the related tools).
-* A [target supported](https://github.com/ARMmbed/uvisor/blob/master/README.md#supported-platforms) by uVisor on mbed OS. If your target is not supported yet, you can follow the [uVisor porting guide](https://github.com/ARMmbed/uvisor/blob/master/docs/PORTING.md).
+* A [target supported](../../README.md#supported-platforms) by uVisor on mbed OS. If your target is not supported yet, you can follow the [uVisor Porting Guide for mbed OS](../core/PORTING.md).
 * The Launchpad [GCC ARM Embedded](https://launchpad.net/gcc-arm-embedded) toolchain.
 * GNU make.
 * git.
@@ -32,7 +32,7 @@ $ mbed import https://github.com/ARMmbed/mbed-os-example-uvisor
 $ cd mbed-os-example-uvisor
 ```
 
-Of course any other application can be used, provided that it is correctly set up to use uVisor. See [Developing with uVisor locally](DEVELOPING_LOCALLY.md) for more details.
+Of course any other application can be used, provided that it is correctly set up to use uVisor. See [Developing with uVisor Locally on mbed OS](../core/DEVELOPING_LOCALLY.md) for more details.
 Runtime messages are silenced by default. In order to enable them, you need to build your application linking to the debug version of uVisor. The uVisor libraries that we publish in mbed OS provide both the release and debug builds of uVisor, so you only need to run the following command:
 
 ```bash

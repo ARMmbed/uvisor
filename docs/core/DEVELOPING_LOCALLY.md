@@ -9,13 +9,13 @@ This guide will show you a different way of obtaining the uVisor libraries, that
 There are several reasons why you might want to build uVisor locally:
 
 * Reproduce a publicly released build.
-* Make modifications and test them before contributing to uVisor on GitHub. See [Contributing to uVisor](../CONTRIBUTING.md) for more details.
+* Make modifications and test them before contributing to uVisor on GitHub. Read our [contribution guidelines](../../CONTRIBUTING.md) for more details.
 * Preview the latest uVisor features before they are packaged and released.
 * Play and experiment with uVisor.
 
 You will need the following:
 
-* A [target supported](../README.md#supported-platforms) by uVisor on mbed OS. If your target is not supported yet, you can follow the [uVisor porting guide](PORTING.md).
+* A [target supported](../../README.md#supported-platforms) by uVisor on mbed OS. If your target is not supported yet, you can follow the [uVisor Porting Guide for mbed OS](PORTING.md).
 * The Launchpad [GCC ARM Embedded](https://launchpad.net/gcc-arm-embedded) toolchain.
 * GNU make.
 * git.
@@ -31,7 +31,7 @@ $ mbed import https://github.com/ARMmbed/mbed-os-example-uvisor
 
 The command above will import all the example dependencies as well, including the mbed OS codebase and the uVisor libraries.
 
-If you already have an application that you want to use for this guide, make sure that it is ready to work with uVisor enabled. You can follow the [quick-start guide](QUICKSTART.md) for more details.
+If you already have an application that you want to use for this guide, make sure that it is ready to work with uVisor enabled. You can follow the [Quick-Start Guide for uVisor on mbed OS](../api/QUICKSTART.md) for more details.
 
 In either case, move to the app folder:
 
@@ -87,4 +87,4 @@ You can also compile the application using the uVisor debug build:
 $ mbed compile -m ${your_target} -t GCC_ARM -o "debug-info"
 ```
 
-The uVisor debug build gives you access to runtime messages and fault blue screens, which are very useful to understand the uVisor protection mechanisms, but it requires a debugger to be connected to the board. Please read the [Debugging uVisor](DEBUGGING.md) guide for further details.
+The uVisor debug build gives you access to runtime messages and fault blue screens, which are very useful to understand the uVisor protection mechanisms, but it requires a debugger to be connected to the board. Please read the [Debugging uVisor on mbed OS](../api/DEBUGGING.md) guide for further details.
