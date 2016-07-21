@@ -84,7 +84,8 @@ endif
 ifeq ("$(ARCH_MPU)","ARMv7M")
 MPU_SRC:=\
          $(CORE_SYSTEM_DIR)/src/mpu/vmpu_armv7m.c \
-         $(CORE_SYSTEM_DIR)/src/mpu/vmpu_armv7m_debug.c
+         $(CORE_SYSTEM_DIR)/src/mpu/vmpu_armv7m_debug.c \
+         $(CORE_SYSTEM_DIR)/src/mpu/vmpu_armv7m_mpu.c
 endif
 
 # Freescale K64 MPU driver

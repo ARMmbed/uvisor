@@ -22,16 +22,13 @@
 #include "svc.h"
 #include "unvic.h"
 #include "vmpu.h"
+#include "vmpu_mpu.h"
 #include "page_allocator_faults.h"
 #include "page_allocator.h"
 
 /* This file contains the configuration-specific symbols. */
 #include "configurations.h"
 
-/* set default MPU region count */
-#ifndef ARMv7M_MPU_REGIONS
-#define ARMv7M_MPU_REGIONS 8
-#endif/*ARMv7M_MPU_REGIONS*/
 
 /* Sanity checks on SRAM boundaries */
 #if SRAM_LENGTH_MIN <= 0
@@ -41,105 +38,18 @@
 #error "HOST_SRAM_LENGTH_MAX must be strictly positive."
 #endif
 
-/* Automatically detect if the uVisor is placed in a standalone SRAM.
- * We need to check that the uVisor SRAM region and the host whole-SRAM region
- * do not overlap.
- * Two ranges A and B do not overlap if either A is fully after B or B is fully
- * after A. */
-#if ((SRAM_ORIGIN > (HOST_SRAM_ORIGIN_MIN + HOST_SRAM_LENGTH_MAX)) || \
-     ((SRAM_ORIGIN + SRAM_LENGTH_MIN) < HOST_SRAM_ORIGIN_MIN))
-#define UVISOR_IN_STANDALONE_SRAM
-#elif defined(UVISOR_IN_STANDALONE_SRAM)
-#error "UVISOR_IN_STANDALONE_SRAM is defined even if the host SRAM and the uVisor SRAM regions overlap."
-#endif
 
-/* Set number of statically configured regions.
- * It depends on whether the uVisor shares the SRAM with the host or not. */
-#if defined(UVISOR_IN_STANDALONE_SRAM)
-#define ARMv7M_MPU_RESERVED_REGIONS 2
-#else
-#define ARMv7M_MPU_RESERVED_REGIONS 3
-#endif /* defined(UVISOR_IN_STANDALONE_SRAM) */
-
-/* set default minimum region address alignment */
-#ifndef ARMv7M_MPU_ALIGNMENT_BITS
-#define ARMv7M_MPU_ALIGNMENT_BITS 5
-#endif/*ARMv7M_MPU_ALIGNMENT_BITS*/
-
-/* derieved region alignment settings */
-#define ARMv7M_MPU_ALIGNMENT (1UL<<ARMv7M_MPU_ALIGNMENT_BITS)
-#define ARMv7M_MPU_ALIGNMENT_MASK (ARMv7M_MPU_ALIGNMENT-1)
-
-/* MPU helper macros */
-#define MPU_RBAR(region,addr)   (((uint32_t)(region))|MPU_RBAR_VALID_Msk|addr)
-#define MPU_RBAR_RNR(addr)     (addr)
-#define MPU_STACK_GUARD_BAND_SIZE (UVISOR_SRAM_LENGTH_PROTECTED/8)
-
-/* various MPU flags */
-#define MPU_RASR_AP_PNO_UNO (0x00UL<<MPU_RASR_AP_Pos)
-#define MPU_RASR_AP_PRW_UNO (0x01UL<<MPU_RASR_AP_Pos)
-#define MPU_RASR_AP_PRW_URO (0x02UL<<MPU_RASR_AP_Pos)
-#define MPU_RASR_AP_PRW_URW (0x03UL<<MPU_RASR_AP_Pos)
-#define MPU_RASR_AP_PRO_UNO (0x05UL<<MPU_RASR_AP_Pos)
-#define MPU_RASR_AP_PRO_URO (0x06UL<<MPU_RASR_AP_Pos)
-#define MPU_RASR_XN         (0x01UL<<MPU_RASR_XN_Pos)
-#define MPU_RASR_CB_NOCACHE (0x00UL<<MPU_RASR_B_Pos)
-#define MPU_RASR_CB_WB_WRA  (0x01UL<<MPU_RASR_B_Pos)
-#define MPU_RASR_CB_WT      (0x02UL<<MPU_RASR_B_Pos)
-#define MPU_RASR_CB_WB      (0x03UL<<MPU_RASR_B_Pos)
-#define MPU_RASR_SRD(x)     (((uint32_t)(x))<<MPU_RASR_SRD_Pos)
-
-/* MPU region count */
-#ifndef MPU_REGION_COUNT
-#define MPU_REGION_COUNT 64
-#endif/*MPU_REGION_COUNT*/
-
-typedef struct {
-    uint32_t base;
-    uint32_t end;
-    uint32_t rasr;
-    uint32_t size;
-    uint32_t acl;
-} TMpuRegion;
-
-typedef struct {
-    TMpuRegion *region;
-    uint32_t count;
-} TMpuBox;
-
-static uint32_t g_mpu_region_count, g_box_mem_pos;
-static uint8_t g_mpu_slot, g_mpu_slot_wrap_around;
-static TMpuRegion g_mpu_list[MPU_REGION_COUNT];
-static TMpuBox g_mpu_box[UVISOR_MAX_BOXES];
-
-static const TMpuRegion* vmpu_fault_find_box_region(uint32_t fault_addr, const TMpuBox *box)
+static const MpuRegion* vmpu_fault_find_region(uint32_t fault_addr)
 {
-    int count;
-    const TMpuRegion *region;
-
-    count = box->count;
-    region = box->region;
-    while (count-- > 0) {
-        if ((fault_addr >= region->base) && (fault_addr < region->end))
-           return region;
-        else
-            region++;
-    }
-
-    return NULL;
-}
-
-static const TMpuRegion* vmpu_fault_find_region(uint32_t fault_addr)
-{
-    const TMpuRegion *region;
+    const MpuRegion *region;
 
     /* check current box if not base */
-    if ((g_active_box) && ((region = vmpu_fault_find_box_region(fault_addr, &g_mpu_box[g_active_box])) != NULL)) {
+    if ((g_active_box) && ((region = vmpu_region_find_for_address(g_active_box, fault_addr)) != NULL)) {
         return region;
     }
 
     /* check base-box */
-    if ((region = vmpu_fault_find_box_region(fault_addr, &g_mpu_box[0])) != NULL) {
+    if ((region = vmpu_region_find_for_address(0, fault_addr)) != NULL) {
         return region;
     }
 
@@ -149,37 +59,40 @@ static const TMpuRegion* vmpu_fault_find_region(uint32_t fault_addr)
 
 uint32_t vmpu_fault_find_acl(uint32_t fault_addr, uint32_t size)
 {
-    const TMpuRegion *region;
+    const MpuRegion *region;
 
     /* return ACL if available */
-    switch (fault_addr) {
-        case (uint32_t) &SCB->SCR:
-            return UVISOR_TACL_UWRITE | UVISOR_TACL_UREAD;
-        default:
-            /* translate fault_addr into its physical address if it is in the bit-banding region */
-            if (fault_addr >= VMPU_PERIPH_BITBAND_START && fault_addr <= VMPU_PERIPH_BITBAND_END) {
-                fault_addr = VMPU_PERIPH_BITBAND_ALIAS_TO_ADDR(fault_addr);
-            }
-            else if (fault_addr >= VMPU_SRAM_BITBAND_START && fault_addr <= VMPU_SRAM_BITBAND_END) {
-                fault_addr = VMPU_SRAM_BITBAND_ALIAS_TO_ADDR(fault_addr);
-            }
-
-            /* search base box and active box ACLs */
-            region = vmpu_fault_find_region(fault_addr);
-
-            /* ensure that data fits in selected region */
-            if((fault_addr+size)>region->end)
-                return 0;
-
-            return region ? region->acl : 0;
+    /* FIXME: Use SECURE_ACCESS for SCR! */
+    if (fault_addr == (uint32_t) &SCB->SCR) {
+        return UVISOR_TACL_UWRITE | UVISOR_TACL_UREAD;
     }
+
+    /* translate fault_addr into its physical address if it is in the bit-banding region */
+    if (fault_addr >= VMPU_PERIPH_BITBAND_START && fault_addr <= VMPU_PERIPH_BITBAND_END) {
+        fault_addr = VMPU_PERIPH_BITBAND_ALIAS_TO_ADDR(fault_addr);
+    }
+    else if (fault_addr >= VMPU_SRAM_BITBAND_START && fault_addr <= VMPU_SRAM_BITBAND_END) {
+        fault_addr = VMPU_SRAM_BITBAND_ALIAS_TO_ADDR(fault_addr);
+    }
+
+    /* search base box and active box ACLs */
+    if (!(region = vmpu_fault_find_region(fault_addr))) {
+        return 0;
+    }
+
+    /* ensure that data fits in selected region */
+    if((fault_addr + size) > region->end) {
+        return 0;
+    }
+
+    return region->acl;
 }
 
 static int vmpu_mem_push_page_acl_iterator(uint8_t mask, uint8_t index);
 
 static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint32_t fault_status)
 {
-    const TMpuRegion *region;
+    const MpuRegion *region;
     uint8_t mask, index, page;
 
     /* no recovery possible if the MPU syndrome register is not valid */
@@ -196,16 +109,11 @@ static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr
     }
     else {
         /* find region for faulting address */
-        if ((region = vmpu_fault_find_region(fault_addr)) == NULL)
+        if ((region = vmpu_fault_find_region(fault_addr)) == NULL) {
             return 0;
+        }
 
-        /* FIXME: use random numbers for box number */
-        MPU->RBAR = region->base | g_mpu_slot++ | MPU_RBAR_VALID_Msk;
-        MPU->RASR = region->rasr;
-    }
-
-    if (g_mpu_slot >= ARMv7M_MPU_REGIONS) {
-        g_mpu_slot = g_mpu_slot_wrap_around;
+        vmpu_mpu_push(region, 3);
     }
 
     return 1;
@@ -321,13 +229,15 @@ void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
 
 static int vmpu_mem_push_page_acl_iterator(uint8_t mask, uint8_t index)
 {
-    vmpu_acl_static_region(
-        g_mpu_slot,
-        (void *) ((uint32_t) __uvisor_config.page_end - g_page_size * 8 * (index + 1)),
-        g_page_size * 8,
+    MpuRegion region;
+    uint32_t size = g_page_size * 8;
+    vmpu_region_translate_acl(
+        &region,
+        ((uint32_t) __uvisor_config.page_end - size * (index + 1)),
+        size,
         UVISOR_TACLDEF_DATA | UVISOR_TACL_EXECUTE | UVISOR_TACL_SUBREGIONS(~mask)
     );
-    g_mpu_slot++;
+    vmpu_mpu_push(&region, 100);
     /* We do not add more than one region for the page heap. */
     return 0;
 }
@@ -336,82 +246,43 @@ static int vmpu_mem_push_page_acl_iterator(uint8_t mask, uint8_t index)
 void vmpu_switch(uint8_t src_box, uint8_t dst_box)
 {
     uint32_t dst_count;
-    const TMpuBox *box;
-    const TMpuRegion *region;
+    const MpuRegion * region;
 
     /* DPRINTF("switching from %i to %i\n\r", src_box, dst_box); */
-
     /* Sanity checks */
-    if (!g_mpu_region_count) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "No available MPU regions left.\r\n");
-    }
     if (!vmpu_is_box_id_valid(dst_box)) {
         HALT_ERROR(SANITY_CHECK_FAILED, "ACL add: The destination box ID is out of range (%u).\r\n", dst_box);
     }
 
-    box = &g_mpu_box[dst_box];
+    vmpu_mpu_invalidate();
 
     /* Update target box first to make target stack available. */
-    g_mpu_slot = ARMv7M_MPU_REGIONS_STATIC;
-    g_mpu_slot_wrap_around = ARMv7M_MPU_REGIONS_STATIC;
-    region = box->region;
-    dst_count = box->count;
+    vmpu_region_get_for_box(dst_box, &region, &dst_count);
 
     /* Only write stack and context ACL for secure boxes. */
     if (dst_box)
     {
         assert(dst_count);
         /* Push the stack and context protection ACL into ARMv7M_MPU_REGIONS_STATIC. */
-        MPU->RBAR = region->base | g_mpu_slot | MPU_RBAR_VALID_Msk;
-        MPU->RASR = region->rasr;
-        g_mpu_slot++;
-        g_mpu_slot_wrap_around++;
+        vmpu_mpu_push(region, 255);
         region++;
         dst_count--;
     }
 
     /* Push one ACL for the page heap into place. */
-    g_mpu_slot_wrap_around += page_allocator_iterate_active_page_masks(vmpu_mem_push_page_acl_iterator, PAGE_ALLOCATOR_ITERATOR_DIRECTION_BACKWARD);
+    page_allocator_iterate_active_page_masks(vmpu_mem_push_page_acl_iterator, PAGE_ALLOCATOR_ITERATOR_DIRECTION_BACKWARD);
     /* g_mpu_slot may now have been incremented by one, if page heap is used by this box. */
 
-    while (g_mpu_slot < ARMv7M_MPU_REGIONS_MAX && dst_count)
+    while (dst_count-- && vmpu_mpu_push(region++, 2)) ;
+
+    if (!dst_box)
     {
-        MPU->RBAR = region->base | g_mpu_slot | MPU_RBAR_VALID_Msk;
-        MPU->RASR = region->rasr;
-        g_mpu_slot++;
-        region++;
-        dst_count--;
+        /* Handle main box ACLs last. */
+        vmpu_region_get_for_box(0, &region, &dst_count);
+
+        while (dst_count-- && vmpu_mpu_push(region++, 1)) ;
     }
 
-    /* handle main box last */
-    box = g_mpu_box;
-    region = box->region;
-    dst_count = box->count;
-
-    while (g_mpu_slot < ARMv7M_MPU_REGIONS_MAX && dst_count)
-    {
-        MPU->RBAR = region->base | g_mpu_slot | MPU_RBAR_VALID_Msk;
-        MPU->RASR = region->rasr;
-        g_mpu_slot++;
-        region++;
-        dst_count--;
-    }
-
-    /* clear remaining slots */
-    while (g_mpu_slot < ARMv7M_MPU_REGIONS_MAX)
-    {
-        /* We need to make sure that we disable an enabled MPU region before any
-         * other modification, hence we cannot select the MPU region using the
-         * region number field in the RBAR register. */
-        MPU->RNR = g_mpu_slot;
-        MPU->RASR = 0;
-        MPU->RBAR = 0;
-        g_mpu_slot++;
-    }
-
-    if (g_mpu_slot >= ARMv7M_MPU_REGIONS_MAX) {
-        g_mpu_slot = g_mpu_slot_wrap_around;
-    }
 }
 
 void vmpu_load_box(uint8_t box_id)
@@ -422,193 +293,17 @@ void vmpu_load_box(uint8_t box_id)
         HALT_ERROR(NOT_IMPLEMENTED, "currently only box 0 can be loaded");
 }
 
-static int vmpu_region_bits(uint32_t size)
-{
-    int bits;
-
-    bits = vmpu_bits(size)-1;
-
-    /* round up if needed */
-    if((1UL << bits) != size)
-        bits++;
-
-    /* minimum region size is 32 bytes */
-    if(bits<ARMv7M_MPU_ALIGNMENT_BITS)
-        bits=ARMv7M_MPU_ALIGNMENT_BITS;
-
-    assert(bits == UVISOR_REGION_BITS(size));
-    return bits;
-}
-
-static uint32_t vmpu_map_acl(UvisorBoxAcl acl)
-{
-    uint32_t flags;
-    UvisorBoxAcl acl_res;
-
-    /* map generic ACL's to internal ACL's */
-    if(acl & UVISOR_TACL_UWRITE)
-    {
-        acl_res =
-            UVISOR_TACL_UREAD | UVISOR_TACL_UWRITE |
-            UVISOR_TACL_SREAD | UVISOR_TACL_SWRITE;
-        flags = MPU_RASR_AP_PRW_URW;
-    }
-    else
-        if(acl & UVISOR_TACL_UREAD)
-        {
-            if(acl & UVISOR_TACL_SWRITE)
-            {
-                acl_res =
-                    UVISOR_TACL_UREAD |
-                    UVISOR_TACL_SREAD | UVISOR_TACL_SWRITE;
-                flags = MPU_RASR_AP_PRW_URO;
-            }
-            else
-            {
-                acl_res =
-                    UVISOR_TACL_UREAD |
-                    UVISOR_TACL_SREAD;
-                flags = MPU_RASR_AP_PRO_URO;
-            }
-        }
-        else
-            if(acl & UVISOR_TACL_SWRITE)
-            {
-                acl_res =
-                    UVISOR_TACL_SREAD | UVISOR_TACL_SWRITE;
-                flags = MPU_RASR_AP_PRW_UNO;
-            }
-            else
-                if(acl & UVISOR_TACL_SREAD)
-                {
-                    acl_res = UVISOR_TACL_SREAD;
-                    flags = MPU_RASR_AP_PRO_UNO;
-                }
-                else
-                {
-                    acl_res = 0;
-                    flags = MPU_RASR_AP_PNO_UNO;
-                }
-
-    /* handle code-execute flag */
-    if( acl & (UVISOR_TACL_UEXECUTE|UVISOR_TACL_SEXECUTE) )
-        /* can't distinguish between user & supervisor execution */
-        acl_res |= UVISOR_TACL_UEXECUTE | UVISOR_TACL_SEXECUTE;
-    else
-        flags |= MPU_RASR_XN;
-
-    /* check if we meet the expected ACL's */
-    if( (acl_res) != (acl & UVISOR_TACL_ACCESS) )
-        HALT_ERROR(SANITY_CHECK_FAILED, "inferred ACL's (0x%04X) don't match exptected ACL's (0x%04X)\n\r", acl_res, (acl & UVISOR_TACL_ACCESS));
-
-    return flags;
-}
-
-static void vmpu_acl_update_box_region(TMpuRegion *region, uint8_t box_id, void* base, uint32_t size, UvisorBoxAcl acl)
-{
-    uint32_t flags, bits, mask, size_rounded, subregions;
-
-    DPRINTF("\tbox[%i] acl[%02i]={0x%08X,size=%05i,acl=0x%08X,",
-        box_id, g_mpu_region_count, base, size, acl);
-
-    /* verify region alignment */
-    bits = vmpu_region_bits(size);
-    size_rounded = 1UL << bits;
-    if(size_rounded != size)
-    {
-        if((acl & (UVISOR_TACL_SIZE_ROUND_UP|UVISOR_TACL_SIZE_ROUND_DOWN))==0)
-            HALT_ERROR(SANITY_CHECK_FAILED,
-                "box size (%i) not rounded, rounding disabled (rounded=%i)\n\r",
-                size, size_rounded
-            );
-
-        if(acl & UVISOR_TACL_SIZE_ROUND_DOWN)
-        {
-            bits--;
-            if(bits<ARMv7M_MPU_ALIGNMENT_BITS)
-                HALT_ERROR(SANITY_CHECK_FAILED,
-                    "region size (%i) can't be rounded down\n\r",
-                    size
-                );
-            size_rounded = 1UL << bits;
-        }
-    }
-
-    /* check for correctly aligned base address */
-    mask = size_rounded-1;
-    if(((uint32_t)base) & mask)
-        HALT_ERROR(SANITY_CHECK_FAILED, "base address 0x%08X and size"
-        " (%i) are inconsistent\n\r", base, size);
-
-    /* map generic ACL's to internal ACL's */
-    flags = vmpu_map_acl(acl);
-
-    /* calculate subregions from ACL */
-    subregions =
-        ((acl>>UVISOR_TACL_SUBREGIONS_POS) << MPU_RASR_SRD_Pos) &
-        MPU_RASR_SRD_Msk;
-
-    /* enable region & add size */
-    region->rasr =
-        flags | MPU_RASR_ENABLE_Msk |
-        ((uint32_t)(bits-1)<<MPU_RASR_SIZE_Pos) |
-        subregions;
-    region->base = (uint32_t) base;
-    region->end = (uint32_t) base + size_rounded;
-    region->size = size_rounded;
-    region->acl = acl;
-
-    DPRINTF("rounded=%05i}\n\r", size_rounded);
-}
-
-uint32_t vmpu_acl_static_region(uint8_t region, void* base, uint32_t size, UvisorBoxAcl acl)
-{
-    TMpuRegion res;
-
-    /* apply ACL's */
-    vmpu_acl_update_box_region(&res, 0, base, size, acl);
-
-    /* apply RASR & RBAR */
-    MPU->RBAR = res.base | (region & MPU_RBAR_REGION_Msk) | MPU_RBAR_VALID_Msk;
-    MPU->RASR = res.rasr;
-
-    return res.size;
-}
-
-void vmpu_acl_add(uint8_t box_id, void* addr, uint32_t size, UvisorBoxAcl acl)
-{
-    TMpuBox *box;
-    TMpuRegion *region;
-
-    if(g_mpu_region_count>=MPU_REGION_COUNT)
-        HALT_ERROR(SANITY_CHECK_FAILED, "vmpu_acl_add ran out of regions\n\r");
-
-    if (!vmpu_is_box_id_valid(box_id)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "ACL add: The box id is out of range (%u).\r\n", box_id);
-    }
-
-    /* assign box region pointer */
-    box = &g_mpu_box[box_id];
-    if(!box->region)
-        box->region = &g_mpu_list[g_mpu_region_count];
-
-    /* allocate new MPU region */
-    region = &box->region[box->count];
-    if(region->rasr)
-        HALT_ERROR(SANITY_CHECK_FAILED, "unordered region allocation\n\r");
-
-    /* caclulate MPU RASR/BASR registers */
-    vmpu_acl_update_box_region(region, box_id, addr, size, acl);
-
-    /* take account for new region */
-    box->count++;
-    g_mpu_region_count++;
-}
+extern int vmpu_region_bits(uint32_t size);
 
 void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
 {
     int bits, slots_ctx, slots_stack;
     uint32_t size, block_size;
+    static uint32_t box_mem_pos = 0;
+
+    if (box_mem_pos == 0) {
+        box_mem_pos = (uint32_t) __uvisor_config.bss_boxes_start;
+    }
 
     /* handle main box */
     if (box_id == 0)
@@ -630,99 +325,76 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
 
     /* ensure that 2/8th are available for protecting stack from
      * context - include rounding error margin */
-    bits = vmpu_region_bits(((stack_size + bss_size)*8)/6);
+    bits = vmpu_region_bits(((stack_size + bss_size) * 8) / 6);
 
     /* ensure MPU region size of at least 256 bytes for
      * subregion support */
-    if(bits<8)
+    if(bits < 8) {
         bits = 8;
+    }
     size = 1UL << bits;
-    block_size = size/8;
+    block_size = size / 8;
 
-    DPRINTF("\tbox[%i] stack=%i bss=%i rounded=%i\n\r" , box_id,
-        stack_size, bss_size, size);
+    DPRINTF("\tbox[%i] stack=%i bss=%i rounded=%i\n\r", box_id, stack_size, bss_size, size);
 
     /* check for correct context address alignment:
      * alignment needs to be a muiltiple of the size */
-    if( (g_box_mem_pos & (size-1))!=0 )
-        g_box_mem_pos = (g_box_mem_pos & ~(size-1)) + size;
+    if( (box_mem_pos & (size - 1)) != 0 ) {
+        box_mem_pos = (box_mem_pos & ~(size - 1)) + size;
+    }
 
     /* check if we have enough memory left */
-    if((g_box_mem_pos + size) > ((uint32_t)__uvisor_config.bss_boxes_end))
-        HALT_ERROR(SANITY_CHECK_FAILED,
-            "memory overflow - increase uvisor memory "
-            "allocation\n\r");
+    if((box_mem_pos + size) > ((uint32_t) __uvisor_config.bss_boxes_end)) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "memory overflow - increase uvisor memory allocation\n\r");
+    }
 
     /* round context sizes, leave one free slot */
-    slots_ctx = (bss_size + block_size - 1)/block_size;
-    slots_stack = slots_ctx ? (8-slots_ctx-1) : 8;
+    slots_ctx = (bss_size + block_size - 1) / block_size;
+    slots_stack = slots_ctx ? (8 - slots_ctx - 1) : 8;
 
     /* final sanity checks */
-    if( (slots_ctx * block_size) < bss_size )
+    if( (slots_ctx * block_size) < bss_size ) {
         HALT_ERROR(SANITY_CHECK_FAILED, "slots_ctx underrun\n\r");
-    if( (slots_stack * block_size) < stack_size )
+    }
+    if( (slots_stack * block_size) < stack_size ) {
         HALT_ERROR(SANITY_CHECK_FAILED, "slots_stack underrun\n\r");
+    }
 
     /* allocate context pointer */
-    g_context_current_states[box_id].bss =
-        slots_ctx ? g_box_mem_pos : (uint32_t) NULL;
+    g_context_current_states[box_id].bss = slots_ctx ? box_mem_pos : (uint32_t) NULL;
     /* ensure stack band on top for stack underflow dectection */
-    g_context_current_states[box_id].sp =
-        (g_box_mem_pos + size - UVISOR_STACK_BAND_SIZE);
+    g_context_current_states[box_id].sp = (box_mem_pos + size - UVISOR_STACK_BAND_SIZE);
 
     /* Reset uninitialized secured box context. */
     if (slots_ctx) {
-        memset((void *) g_box_mem_pos, 0, bss_size);
+        memset((void *) box_mem_pos, 0, bss_size);
     }
 
     /* create stack protection region */
-    vmpu_acl_add(
-        box_id, (void*)g_box_mem_pos, size,
-        UVISOR_TACLDEF_STACK | (slots_ctx ? UVISOR_TACL_SUBREGIONS(1UL<<slots_ctx) : 0)
+    size = vmpu_region_add_static_acl(
+        box_id,
+        box_mem_pos,
+        size,
+        UVISOR_TACLDEF_STACK | (slots_ctx ? UVISOR_TACL_SUBREGIONS(1UL << slots_ctx) : 0)
     );
 
     /* move on to the next memory block */
-    g_box_mem_pos += size;
+    box_mem_pos += size;
 }
 
 void vmpu_arch_init(void)
 {
-    uint32_t aligment_mask;
-
-    /* Disable the MPU. */
-    MPU->CTRL = 0;
-    /* Check MPU region alignment using region number zero. */
-    MPU->RNR = 0;
-    MPU->RBAR = MPU_RBAR_ADDR_Msk;
-    aligment_mask = ~MPU->RBAR;
-    MPU->RBAR = 0;
-
-    /* show basic mpu settings */
-    DPRINTF("MPU.REGIONS=%i\r\n", (uint8_t)(MPU->TYPE >> MPU_TYPE_DREGION_Pos));
-    DPRINTF("MPU.ALIGNMENT=0x%08X\r\n", aligment_mask);
-    DPRINTF("MPU.ALIGNMENT_BITS=%i\r\n", vmpu_bits(aligment_mask));
-
-    /* Perform sanity checks. */
-    if (ARMv7M_MPU_REGIONS != ((MPU->TYPE >> MPU_TYPE_DREGION_Pos) & 0xFF)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "ARMv7M_MPU_REGIONS is inconsistent with actual region count.\n\r");
-    }
-    if (ARMv7M_MPU_ALIGNMENT_BITS != vmpu_bits(aligment_mask)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "ARMv7M_MPU_ALIGNMENT_BITS are inconsistent with actual MPU alignment\n\r");
-    }
     /* Init protected box memory enumeration pointer. */
     DPRINTF("\n\rbox stack segment start=0x%08X end=0x%08X (length=%i)\n\r",
         __uvisor_config.bss_boxes_start, __uvisor_config.bss_boxes_start,
-        ((uint32_t)__uvisor_config.bss_boxes_end)-((uint32_t)__uvisor_config.bss_boxes_start));
-    g_box_mem_pos = (uint32_t)__uvisor_config.bss_boxes_start;
+        ((uint32_t) __uvisor_config.bss_boxes_end) - ((uint32_t) __uvisor_config.bss_boxes_start));
 
-    /* Enable mem, bus and usage faults. */
-    SCB->SHCSR |= 0x70000;
+    vmpu_mpu_init();
 
     /* Initialize static MPU regions. */
     vmpu_arch_init_hw();
 
-    /* Finally enable the MPU. */
-    MPU->CTRL = MPU_CTRL_ENABLE_Msk|MPU_CTRL_PRIVDEFENA_Msk;
+    vmpu_mpu_lock();
 
     /* Dump MPU configuration in debug mode. */
 #ifndef NDEBUG
@@ -733,9 +405,9 @@ void vmpu_arch_init(void)
 void vmpu_arch_init_hw(void)
 {
     /* Enable the public Flash. */
-    vmpu_acl_static_region(
+    vmpu_mpu_set_static_acl(
         0,
-        (void *) FLASH_ORIGIN,
+        FLASH_ORIGIN,
         ((uint32_t) __uvisor_config.secure_end) - FLASH_ORIGIN,
         UVISOR_TACLDEF_SECURE_CONST | UVISOR_TACL_EXECUTE
     );
@@ -797,49 +469,10 @@ void vmpu_arch_init_hw(void)
     const uint8_t subregions_disable_mask = (uint8_t) ((1UL << (protected_size / subregions_size)) - 1UL);
 
     /* Unlock the upper SRAM subregion only. */
-    vmpu_acl_static_region(
+    vmpu_mpu_set_static_acl(
         1,
-        __uvisor_config.sram_start,
+        (uint32_t) __uvisor_config.sram_start,
         total_size,
         UVISOR_TACLDEF_DATA | UVISOR_TACL_UEXECUTE | UVISOR_TACL_SUBREGIONS(subregions_disable_mask)
     );
-}
-
-int vmpu_is_region_size_valid(uint32_t size)
-{
-    /* Get the MSB of the size. */
-    const int bits = vmpu_bits(size) - 1;
-    if (bits < ARMv7M_MPU_ALIGNMENT_BITS || 29 < bits) {
-        /* 2^5 == 32, which is the minimum region size. */
-        /* 2^29 == 512M, which is the maximum region size. */
-        return 0;
-    }
-    /* Compute the size from MSB. */
-    const int bit_size = (1UL << bits);
-    /* There is no round up. */
-
-    /* We only care about an exact match! */
-    return (bit_size == size);
-}
-
-uint32_t vmpu_round_up_region(uint32_t addr, uint32_t size)
-{
-    if (!vmpu_is_region_size_valid(size)) {
-        /* Region size must be valid! */
-        return 0;
-    }
-    /* Size is 2*N, can be used directly for alignment. */
-    /* Create the LSB mask: Example 0x80 -> 0x7F. */
-    const uint32_t mask = size - 1;
-    /* Mask is 31 <= mask <= (1 << 29) - 1. */
-
-    /* Adding the mask can overflow. */
-    const uint32_t rounded_addr = addr + mask;
-    /* Check for overflow. */
-    if (rounded_addr < addr) {
-        /* This means the address was too large to align. */
-        return 0;
-    }
-    /* Mask the rounded address to get the aligned address. */
-    return (rounded_addr & ~mask);
 }
