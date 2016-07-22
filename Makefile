@@ -108,6 +108,7 @@ SOURCES:=\
          $(CORE_SYSTEM_DIR)/src/main.c \
          $(CORE_SYSTEM_DIR)/src/page_allocator.c \
          $(CORE_SYSTEM_DIR)/src/page_allocator_faults.c \
+         $(CORE_SYSTEM_DIR)/src/pool_queue.c \
          $(CORE_SYSTEM_DIR)/src/register_gateway.c \
          $(CORE_SYSTEM_DIR)/src/semaphore.c \
          $(CORE_SYSTEM_DIR)/src/spinlock.c \
