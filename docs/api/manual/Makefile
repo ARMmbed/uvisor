@@ -16,7 +16,7 @@ TOOL_OOWRITER:=oowriter
 #
 # Derived Settings
 #
-PUBLISH_DIR:=../publish
+PUBLISH_DIR:=publish
 
 #
 # Various Tool Settings
@@ -33,10 +33,13 @@ all: $(TARGETS)
 example: $(EXAMPLES)
 
 publish: $(TARGETS) $(EXAMPLES)
+	rm -rf $(PUBLISH_DIR)
+	git clone -b docs git@github.com:ARMmbed/uvisor.git $(PUBLISH_DIR)
+
 	cp $^  $(PUBLISH_DIR)
 	git -C $(PUBLISH_DIR) add $^
 	git -C $(PUBLISH_DIR) commit -a -m "released DOC & PDF documents"
-	git -C $(PUBLISH_DIR) push origin bin
+	git -C $(PUBLISH_DIR) push origin docs
 
 %.pdf : %.docx
 	$(TOOL_OOWRITER) --headless --convert-to pdf:writer_pdf_Export $^
