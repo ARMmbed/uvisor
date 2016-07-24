@@ -652,15 +652,14 @@ Please note that defining both the `FEATURE_UVISOR` and the `UVISOR_SUPPORTED` s
 
 In disabled mode no security feature is enabled, although the uVisor binaries are still flashed to the device. To learn more about the uVisor modes of operation please check out the [API documentation](../api/API.md). If you want to know how to enable uVisor and configure an application to use the uVisor security features, please checkout the [Quick-Start Guide for uVisor on mbed OS](../api/QUICKSTART.md).
 
-If you do not want to enable the uVisor features straight away on your mbed targets, you can create a *wrapper* target that inherits from the original target. You can then set `FEATURE_UVISOR` and `UVISOR_SUPPORTED` using the same labels from the table above, but with `_add` appended to their name:
+If you do not want to enable the uVisor features straight away on your mbed target, users can still selectively override the target features and labels to enable uVisor. The `FEATURE_UVISOR` and `UVISOR_SUPPORTED` symbols can be set using the configuration system, by creating a file called `mbed_app.json` at the application level with the following content:
 
 ```json
 {
-    "custom_targets": {
-        "${original_target}_SECURE": {
-            "inherits": ["${original_target}"],
-            "extra_labels_add":["${original_target}", "UVISOR_SUPPORTED"],
-            "features_add": ["UVISOR"],
+    "target_overrides": {
+        "${original_target}": {
+            "target.features_add": ["UVISOR"],
+            "target.extra_labels_add":["UVISOR_SUPPORTED"],
         },
 }
 ```
