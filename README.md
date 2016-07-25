@@ -14,7 +14,7 @@ If you want to learn more about the uVisor security model and get an overview of
     * Secure boot.
     * Context switching.
 
-You will find the full uVisor documentation in the [docs](docs) folder.
+You will find the full uVisor documentation in the [docs](docs) folder. We also release a rendered version of a subset of our documentation as a [PDF](https://github.com/ARMmbed/uvisor/blob/docs/example.pdf).
 
 Contributions to this repository in the form of issue reporting or pull requests are welcome! Please make sure to read our [contribution guidelines](CONTRIBUTING.md) first.
 

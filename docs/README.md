@@ -21,3 +21,5 @@ These documents describe the uVisor internals more in details. They are useful i
 | Port uVisor to my platform/OS   | [uVisor Porting Guide for mbed OS](core/PORTING.md)                     |
 | Test and experiment with uVisor | [Developing with uVisor Locally on mbed OS](core/DEVELOPING_LOCALLY.md) |
 | Contribute to uVisor            | [Contributing to uVisor](../CONTRIBUTING.md)                            |
+
+We also release a rendered version of a subset of our documentation as a [PDF](https://github.com/ARMmbed/uvisor/blob/docs/example.pdf).
