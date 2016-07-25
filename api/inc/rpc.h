@@ -43,6 +43,6 @@ typedef int (*TFN_RPC_Callback)(int);
  * @param timeout_ms   specifies how long to wait (in ms) for an incoming RPC
  *                     message before returning
  */
-int rpc_fncall_waitfor(const TFN_Ptr fn_ptr_array[], size_t fn_count, uint32_t timeout_ms);
+UVISOR_EXTERN int rpc_fncall_waitfor(const TFN_Ptr fn_ptr_array[], size_t fn_count, uint32_t timeout_ms);
 
 #endif /* __UVISOR_API_RPC_H__ */
