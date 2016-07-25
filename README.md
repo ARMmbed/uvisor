@@ -14,7 +14,7 @@ If you want to learn more about the uVisor security model and get an overview of
     * Secure boot.
     * Context switching.
 
-You will find the full uVisor documentation in the [docs](docs) folder.
+You will find the full uVisor documentation in the [docs](docs) folder – see our [OS-level introduction](https://github.com/ARMmbed/uvisor/raw/docs/uvisor-rtos-docs.pdf) in PDF format.
 
 Contributions to this repository in the form of issue reporting or pull requests are welcome! Please make sure to read our [contribution guidelines](CONTRIBUTING.md) first.
 
@@ -29,7 +29,8 @@ Some of the open uVisor issues in progress are listed here:
 
 ### Further reading:
 
-* [Resilient IoT Security: The end of flat security models](http://www.slideshare.net/FoolsDelight/resilient-iot-security-the-end-of-flat-security-models): ARM TechCon 2015 presentation of the uVisor design philosophy and technical overview.
+* [Resilient IoT Security: The end of flat security models](http://www.slideshare.net/FoolsDelight/resilient-iot-security-the-end-of-flat-security-models): ARM TechCon 2015 PDF presentation of the uVisor design philosophy and technical overview.
+* [mbed uVisor integration in mbed OS](https://github.com/ARMmbed/uvisor/raw/docs/uvisor-rtos-docs.pdf) in PDF format.
 * [Q&A with ARM](http://eecatalog.com/IoT/2015/08/18/qa-with-arm-securing-the-iot-using-arm-cortex-processors-and-a-growing-mbed-platform-suite/): Securing the IoT using ARM Cortex processors, and a growing mbed platform suite.
 
 ### Supported platforms
