@@ -16,8 +16,9 @@ These are the user-facing documents. They are the ideal starting point to know w
 
 These documents describe the uVisor internals more in details. They are useful if you need to contribute to uVisor, compile a specific uVisor version, or if you just want to know more about the uVisor core.
 
-| I want to...                    | Document                                                                |
-|---------------------------------|-------------------------------------------------------------------------|
-| Port uVisor to my platform/OS   | [uVisor Porting Guide for mbed OS](core/PORTING.md)                     |
-| Test and experiment with uVisor | [Developing with uVisor Locally on mbed OS](core/DEVELOPING_LOCALLY.md) |
-| Contribute to uVisor            | [Contributing to uVisor](../CONTRIBUTING.md)                            |
+| I want to...                     | Document                                                                                              |
+|----------------------------------|-------------------------------------------------------------------------------------------------------|
+| Understand uVisor integration    | [mbed uVisor integration in mbed OS](https://github.com/ARMmbed/uvisor/raw/docs/uvisor-rtos-docs.pdf) |
+| Port uVisor to my platform/OS    | [uVisor Porting Guide for mbed OS](core/PORTING.md)                                                   |
+| Test and experiment with uVisor  | [Developing with uVisor Locally on mbed OS](core/DEVELOPING_LOCALLY.md)                               |
+| Contribute to uVisor             | [Contributing to uVisor](../CONTRIBUTING.md)                                                          |
