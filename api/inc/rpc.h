@@ -33,7 +33,6 @@
 typedef uint32_t uvisor_rpc_result_t;
 
 typedef uint32_t (*TFN_Ptr)(uint32_t, uint32_t, uint32_t, uint32_t);
-typedef int (*TFN_RPC_Callback)(int);
 
 /** Wait for incoming RPC.
  *
