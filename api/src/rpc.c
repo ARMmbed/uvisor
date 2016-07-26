@@ -41,6 +41,31 @@ static uint32_t * result_counter(void)
     return &__uvisor_ps->rpc_result_counter;
 }
 
+static uvisor_pool_queue_t * incoming_message_todo_queue(void)
+{
+    return &__uvisor_ps->rpc_incoming_message_queue->todo_queue;
+}
+
+static uvisor_pool_queue_t * incoming_message_done_queue(void)
+{
+    return &__uvisor_ps->rpc_incoming_message_queue->done_queue;
+}
+
+static uvisor_rpc_message_t * incoming_message_array(void)
+{
+    return __uvisor_ps->rpc_incoming_message_queue->messages;
+}
+
+static uvisor_pool_queue_t * fn_group_queue(void)
+{
+    return &__uvisor_ps->rpc_fn_group_queue->queue;
+}
+
+static uvisor_rpc_fn_group_t * fn_group_array(void)
+{
+    return __uvisor_ps->rpc_fn_group_queue->fn_groups;
+}
+
 /* Place a message into the outgoing queue. `timeout_ms` is how long to wait
  * for a slot in the outgoing queue before giving up. `msg_slot` is set to the
  * slot of the message that was allocated. Returns non-zero on failure. */
@@ -181,4 +206,169 @@ int rpc_fncall_wait(uvisor_rpc_result_t result, uint32_t timeout_ms, uint32_t * 
     free_outgoing_msg(msg_slot);
 
     return 0;
+}
+
+static uvisor_rpc_fn_group_t * allocate_function_group(const TFN_Ptr fn_ptr_array[], size_t fn_count)
+{
+    uvisor_pool_slot_t slot;
+    uvisor_rpc_fn_group_t * fn_group;
+
+    static const uint32_t timeout_ms = 0; /* Don't wait for an available slot. */
+    slot = uvisor_pool_queue_allocate(fn_group_queue(), timeout_ms);
+
+    if (slot >= fn_group_queue()->pool->num) {
+        /* Nothing left in pool */
+        return NULL;
+    }
+
+    fn_group = &fn_group_array()[slot];
+
+    fn_group->fn_ptr_array = fn_ptr_array;
+    fn_group->fn_count = fn_count;
+
+    uvisor_pool_queue_enqueue(fn_group_queue(), slot);
+
+    return fn_group;
+}
+
+/* Return a pointer to the function group specified by the fn_ptr_array, or
+ * NULL if that function group isn't found. */
+static uvisor_rpc_fn_group_t * get_function_group(const TFN_Ptr fn_ptr_array[], size_t fn_count)
+{
+    uvisor_pool_slot_t i;
+
+    /* Find the entry with linear search */
+    for (i = 0; i < fn_group_queue()->pool->num; i++) {
+        /* If found: */
+        if (fn_group_array()[i].fn_ptr_array == fn_ptr_array) {
+            /* Return the target. */
+            return &fn_group_array()[i];
+        }
+    }
+
+    /* The entry for the given function pointer wasn't found. */
+    return NULL;
+}
+
+/* Private structure for function group queries */
+typedef struct query_for_fn_group_context {
+    const TFN_Ptr *fn_ptr_array;
+    size_t fn_count;
+} query_for_fn_group_context_t;
+
+static int query_for_fn_group(uvisor_pool_slot_t slot, void * context)
+{
+    query_for_fn_group_context_t * query_context = context;
+    uvisor_rpc_message_t * msg = &incoming_message_array()[slot];
+    size_t i;
+
+    /* See if the target is for a function we can handle.
+     * FIXME Optimize this search for large numbers of target functions per
+     * box. */
+    for (i = 0; i < query_context->fn_count; ++i) {
+        if ((TFN_Ptr) msg->gateway->target == query_context->fn_ptr_array[i]) {
+            /* Yes, we can handle this function call. */
+            return 1;
+        }
+    }
+
+    /* The message wasn't for a function we can handle. */
+    return 0;
+}
+
+/* Return true if and only if we handled an RPC message */
+static int handle_incoming_rpc(uvisor_rpc_fn_group_t * fn_group) {
+    uvisor_pool_slot_t msg_slot;
+    uvisor_rpc_message_t * msg;
+    query_for_fn_group_context_t context;
+
+    context.fn_ptr_array = fn_group->fn_ptr_array;
+    context.fn_count = fn_group->fn_count;
+
+    msg_slot = uvisor_pool_queue_find_first(incoming_message_todo_queue(), query_for_fn_group, &context);
+    if (msg_slot >= incoming_message_todo_queue()->pool->num) {
+        /* We woke up for no reason. */
+        return 0;
+    }
+
+    /* Dequeue the message */
+    /* TODO Combine finding and dequeing into one operation, so we don't have any
+     * chance to fail dequeing after we find a slot we are interested in. */
+    msg_slot = uvisor_pool_queue_dequeue(incoming_message_todo_queue(), msg_slot);
+    if (msg_slot >= incoming_message_todo_queue()->pool->num)
+    {
+        /* In between finding an RPC we could handle and trying to dequeue it,
+         * somebody else dequeued it. */
+        return 0;
+    }
+
+    msg = &incoming_message_array()[msg_slot];
+
+    /* Verify the RPC gateway magic, for pure paranoia and detecting bugs
+     * reasons. */
+    if (!(msg->gateway->magic == UVISOR_RPC_GATEWAY_MAGIC_ASYNC ||
+          msg->gateway->magic == UVISOR_RPC_GATEWAY_MAGIC_SYNC)) {
+        /* The gateway was not valid, so we aren't going to handle this RPC
+         * message. */
+        return 0;
+    }
+
+    /* Dispatch the RPC. */
+    TFN_Ptr fn = (TFN_Ptr) msg->gateway->target;
+    msg->result = fn(msg->p0, msg->p1, msg->p2, msg->p3);
+
+    msg->state = UVISOR_RPC_MESSAGE_STATE_DONE;
+
+    /* Send the result back to the caller. */
+    uvisor_pool_queue_enqueue(incoming_message_done_queue(), msg_slot);
+
+    return 1;
+}
+
+int rpc_fncall_waitfor(const TFN_Ptr fn_ptr_array[], size_t fn_count, uint32_t timeout_ms)
+{
+    uvisor_rpc_fn_group_t * fn_group;
+    int status;
+    int handled;
+
+    /* Look up the semaphore to see if it exists already. */
+    fn_group = get_function_group(fn_ptr_array, fn_count);
+
+    /* If the function group doesn't exist yet: */
+    if (fn_group == NULL) {
+        /* Allocate a new entry for the function group. */
+        fn_group = allocate_function_group(fn_ptr_array, fn_count);
+
+        /* If we couldn't allocate a function group: */
+        if (fn_group == NULL) {
+            /* Too many function groups have already been allocated. */
+            return UVISOR_ERROR_OUT_OF_STRUCTURES;
+        }
+
+        /* There may already be incoming messages we can handle, enqueued
+         * before our function group was allocated. */
+        handled = handle_incoming_rpc(fn_group);
+        if (handled) {
+            /* We handled a message, so return. We don't want the first (or
+             * any) call to rpc_fncall_waitfor handle more than incoming RPC
+             * message. */
+            return 0;
+        }
+        /* If there was nothing for us to handle yet, go ahead and wait on the
+         * semaphore with the user-provided timeout. Don't return here saying
+         * we didn't handle anything, because we want to obey the user-provided
+         * timeout for all calls to rpc_fncall_waitfor. */
+    }
+
+    /* Wait for incoming RPC. */
+    status = __uvisor_semaphore_pend(&fn_group->semaphore, timeout_ms);
+    if (status) {
+        /* The semaphore pend failed. */
+        return status;
+    }
+
+    /* We woke up. Look for any RPC we can handle. */
+    handled = handle_incoming_rpc(fn_group);
+
+    return handled == 1 ? 0 : -1;
 }
