@@ -189,30 +189,40 @@ static void vmpu_sanity_check_box_namespace(int box_id, const char *const box_na
 
 static void vmpu_box_index_init(uint8_t box_id, const UvisorBoxConfig * const config)
 {
-    void * box_bss;
+    uint8_t * box_bss;
     UvisorBoxIndex * index;
     uint32_t heap_size = config->heap_size;
+    int i;
 
     if (box_id == 0) {
         /* Box 0 still uses the main heap to be backwards compatible. */
-        heap_size = ((void *) __uvisor_config.heap_end - (void *) __uvisor_config.heap_start) - config->index_size;
+        const uint32_t heap_end = (uint32_t) __uvisor_config.heap_end;
+        const uint32_t heap_start = (uint32_t) __uvisor_config.heap_start;
+        heap_size = (heap_end - heap_start) - config->index_size;
     }
 
-    box_bss = (void *) g_context_current_states[box_id].bss;
+    box_bss = (uint8_t *) g_context_current_states[box_id].bss;
 
     /* The box index is at the beginning of the bss section. */
-    index = box_bss;
+    index = (void *) box_bss;
     /* Zero the _entire_ index, so that user data inside the box index is in a
      * known state! This allows checking variables for `NULL`, or `0`, which
      * indicates an initialization requirement. */
-    memset(box_bss, 0, config->index_size);
+    memset(index, 0, config->index_size);
     box_bss += config->index_size;
-    /* Initialize user context. */
-    index->ctx = config->context_size ? box_bss : NULL;
-    box_bss += config->context_size;
+
+    for (i = 0; i < UVISOR_BOX_INDEX_SIZE_COUNT; i++) {
+        index->bss_ptr[i] = (void *) (config->bss_size[i] ? box_bss : NULL);
+        box_bss += config->bss_size[i];
+        if (box_id == 0) {
+            heap_size -= config->bss_size[i];
+        }
+    }
+
     /* Initialize box heap. */
-    index->box_heap = heap_size ? box_bss : NULL;
+    index->box_heap = (void *) (heap_size ? box_bss : NULL);
     index->box_heap_size = heap_size;
+
     /* Active heap pointer is NULL, indicating that the process heap needs to
      * be initialized on first malloc call! */
     index->active_heap = NULL;
@@ -226,6 +236,7 @@ static void vmpu_load_boxes(void)
     int i, count;
     const UvisorBoxAclItem *region;
     const UvisorBoxConfig **box_cfgtbl;
+    uint32_t bss_size;
     uint8_t box_id;
 
     /* Check heap start and end addresses. */
@@ -286,9 +297,13 @@ static void vmpu_load_boxes(void)
         DPRINTF("box[%i] ACL list:\n", box_id);
 
         /* Add ACL's for all box stacks. */
+        bss_size = (*box_cfgtbl)->index_size + (*box_cfgtbl)->heap_size;
+        for (i = 0; i < UVISOR_BOX_INDEX_SIZE_COUNT; i++) {
+            bss_size += (*box_cfgtbl)->bss_size[i];
+        }
         vmpu_acl_stack(
             box_id,
-            (*box_cfgtbl)->index_size + (*box_cfgtbl)->context_size + (*box_cfgtbl)->heap_size,
+            bss_size,
             (*box_cfgtbl)->stack_size
         );
 

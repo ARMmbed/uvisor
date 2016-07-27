@@ -149,18 +149,32 @@ typedef struct {
 } UVISOR_PACKED UvisorBoxAclItem;
 
 typedef struct {
+    /* Contains user provided size of box context without guards of buffers. */
+    uint32_t context_size;
+} UVISOR_PACKED uvisor_sizes_t;
+
+/* The number of additional bss sections per box bss.
+ * The size of each section is stored in the box config, and uVisor core will
+ * iterate over the box bss, split it into sections as defined by the size table
+ * and assign a pointer to beginning of that section into the box index pointer table.
+ */
+#define UVISOR_BOX_INDEX_SIZE_COUNT (sizeof(uvisor_sizes_t) / sizeof(uint32_t))
+
+typedef struct {
     uint32_t magic;
     uint32_t version;
 
     /* Box stack size includes stack guards and rounding buffer. */
     uint32_t stack_size;
-
-    /* Contains the size of the index (must be at least sizeof(UvisorBoxIndex)). */
-    uint32_t index_size;
-    /* Contains user provided size of box context without guards of buffers. */
-    uint32_t context_size;
     /* Contains user provided size of box heap without guards of buffers. */
     uint32_t heap_size;
+    /* Contains the size of the index (must be at least sizeof(UvisorBoxIndex)). */
+    uint32_t index_size;
+
+    union {
+        uint32_t bss_size[UVISOR_BOX_INDEX_SIZE_COUNT];
+        uvisor_sizes_t sizes;
+    };
 
     /* Opaque-to-uVisor data that potentially contains uvisor-lib-specific or
      * OS-specific per-box configuration */
@@ -172,8 +186,13 @@ typedef struct {
 } UVISOR_PACKED UvisorBoxConfig;
 
 typedef struct {
-    /* Pointer to the user context */
-    void * ctx;
+    union {
+        void * bss_ptr[UVISOR_BOX_INDEX_SIZE_COUNT];
+        struct {
+            /* Pointer to the user context */
+            void * ctx;
+        };
+    };
     /* Pointer to the box heap */
     void * box_heap;
     /* Size of the box heap */
