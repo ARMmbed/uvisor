@@ -207,6 +207,11 @@ typedef struct {
      * This is set to `NULL` by uVisor, signalling to the user lib that the
      * box heap needs to be initialized before use! */
     void * active_heap;
+
+    /* Counter that helps to avoid waiting on the same RPC message result twice
+     * by accident. */
+    uint32_t rpc_result_counter;
+
     /* Pointer to the box config */
     const UvisorBoxConfig * config;
 } UVISOR_PACKED UvisorBoxIndex;

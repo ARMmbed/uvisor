@@ -27,6 +27,8 @@ typedef uint32_t (*TFN_Ptr)(uint32_t, uint32_t, uint32_t, uint32_t);
 #define UVISOR_RESULT_SLOT_MASK ((1 << UVISOR_RESULT_SLOT_BITS) - 1)
 
 #define UVISOR_RESULT_COUNTER_MASK (0xFFFFFFFFUL << UVISOR_RESULT_SLOT_BITS)
+
+/* Increment by 2 because we never want to overflow into the invalid value. */
 #define UVISOR_RESULT_COUNTER_INCREMENT (2 << UVISOR_RESULT_SLOT_BITS)
 
 #define UVISOR_RESULT_INVALID_COUNTER (UVISOR_RESULT_COUNTER_MASK)
