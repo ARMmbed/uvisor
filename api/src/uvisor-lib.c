@@ -38,5 +38,8 @@ int uvisor_lib_init(void)
      * allowed would be a backdoor). */
     osRegisterForOsEvents(&export_table->os_event_observer);
 
+    extern void __uvisor_initialize_rpc_queues(void);
+    __uvisor_initialize_rpc_queues();
+
     return 0;
 }

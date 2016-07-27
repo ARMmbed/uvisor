@@ -18,6 +18,8 @@
 #define __UVISOR_API_VMPU_EXPORTS_H__
 
 #include "api/inc/uvisor_exports.h"
+#include "api/inc/pool_queue_exports.h"
+#include "api/inc/rpc_exports.h"
 #include <stdint.h>
 
 /* The maximum box namespace length is 37 so that it is exactly big enough for
@@ -151,6 +153,8 @@ typedef struct {
 typedef struct {
     /* Contains user provided size of box context without guards of buffers. */
     uint32_t context_size;
+    /* Contains total memory used by the RPC queues (incl. management and pool). */
+    uint32_t rpc_outgoing_message_size;
 } UVISOR_PACKED uvisor_sizes_t;
 
 /* The number of additional bss sections per box bss.
@@ -191,6 +195,8 @@ typedef struct {
         struct {
             /* Pointer to the user context */
             void * ctx;
+            /* Pointer to the RPC queues */
+            uvisor_rpc_outgoing_message_queue_t * rpc_outgoing_message_queue;
         };
     };
     /* Pointer to the box heap */

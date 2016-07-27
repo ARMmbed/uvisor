@@ -30,9 +30,6 @@
 /* FIXME This is a dummy implementation. */
 #define UVISOR_BOX_RPC_MAX_INCOMING(max_num_incoming_rpc)
 
-/* This is the token to wait on for the result of an asynchronous RPC. */
-typedef uint32_t uvisor_rpc_result_t;
-
 
 /** Wait for incoming RPC.
  *
