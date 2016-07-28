@@ -16,7 +16,10 @@
  */
 #include "api/inc/lib_hook_exports.h"
 #include "api/inc/box_init.h"
+#include "api/inc/uvisor_semaphore.h"
 
 const UvisorLibHooks __uvisor_lib_hooks = {
     .box_init = __uvisor_lib_box_init,
+    .semaphore_init = __uvisor_semaphore_init,
+    .semaphore_pend = __uvisor_semaphore_pend,
 };

@@ -22,6 +22,8 @@
 #define UVISOR_ERROR_BOX_NAMESPACE_ANONYMOUS    (-4)
 #define UVISOR_ERROR_BAD_MAGIC                  (-5)
 #define UVISOR_ERROR_BAD_VERSION                (-6)
+#define UVISOR_ERROR_OUT_OF_STRUCTURES          (-7)
+#define UVISOR_ERROR_INVALID_PARAMETERS         (-8)
 
 
 #define UVISOR_ERROR_CLASS_MASK     (0xFFFF0000UL)

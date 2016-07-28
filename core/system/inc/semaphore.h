@@ -14,23 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __UVISOR_API_LIB_HOOK_EXPORTS_H__
-#define __UVISOR_API_LIB_HOOK_EXPORTS_H__
+#ifndef __SEMAPHORE_H__
+#define __SEMAPHORE_H__
 
-#include <stdint.h>
+#include "api/inc/uvisor_exports.h"
+#include "api/inc/uvisor_semaphore_exports.h"
 
-/* Predeclaration */
-typedef struct uvisor_semaphore UvisorSemaphore;
+/* This function is not safe to call from interrupt context. */
+int semaphore_init(UvisorSemaphore * semaphore, int32_t count);
 
-/*
- * uVisor library hooks
- *
- * All functions that uVisor needs to call that are implemented in uvisor-lib.
- * These functions will be run by unprivileged code only. */
-typedef struct {
-    void (*box_init)(void * lib_config);
-    int (*semaphore_init)(UvisorSemaphore * semaphore, int32_t count);
-    int (*semaphore_pend)(UvisorSemaphore * semaphore, uint32_t timeout_ms);
-} UvisorLibHooks;
+/* This function is not safe to call from interrupt context, even if the
+ * timeout is zero. */
+int semaphore_pend(UvisorSemaphore * semaphore, uint32_t timeout_ms);
+
+/* This function is safe to call from interrupt context. */
+int semaphore_post(UvisorSemaphore * semaphore);
 
 #endif

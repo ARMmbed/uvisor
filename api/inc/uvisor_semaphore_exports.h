@@ -14,23 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __UVISOR_API_LIB_HOOK_EXPORTS_H__
-#define __UVISOR_API_LIB_HOOK_EXPORTS_H__
+#ifndef __UVISOR_API_UVISOR_SEMAPHORE_EXPORTS_H__
+#define __UVISOR_API_UVISOR_SEMAPHORE_EXPORTS_H__
 
-#include <stdint.h>
+#include "api/inc/uvisor_exports.h"
 
-/* Predeclaration */
-typedef struct uvisor_semaphore UvisorSemaphore;
+/* This must be big enough for all operating systems uVisor runs on. */
+#define UVISOR_SEMAPHORE_INTERNAL_SIZE (16)
 
-/*
- * uVisor library hooks
- *
- * All functions that uVisor needs to call that are implemented in uvisor-lib.
- * These functions will be run by unprivileged code only. */
-typedef struct {
-    void (*box_init)(void * lib_config);
-    int (*semaphore_init)(UvisorSemaphore * semaphore, int32_t count);
-    int (*semaphore_pend)(UvisorSemaphore * semaphore, uint32_t timeout_ms);
-} UvisorLibHooks;
+/* An opaque structure, that one knows the size of so that they can allocate
+ * memory. */
+typedef struct uvisor_semaphore {
+    uint8_t internal[UVISOR_SEMAPHORE_INTERNAL_SIZE];
+} UVISOR_ALIGN(4) UvisorSemaphore;
 
 #endif

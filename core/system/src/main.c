@@ -90,6 +90,14 @@ static void sanity_check_priv_sys_hooks(const UvisorPrivSystemHooks *priv_sys_ho
             __uvisor_config.priv_sys_hooks->priv_os_suspend
             );
     }
+
+    if (__uvisor_config.priv_sys_hooks->priv_uvisor_semaphore_post &&
+            !vmpu_public_flash_addr((uint32_t) __uvisor_config.priv_sys_hooks->priv_uvisor_semaphore_post)) {
+        HALT_ERROR(SANITY_CHECK_FAILED,
+            "priv_uvisor_semaphore_post (0x%08x) not entirely in public flash\n",
+            __uvisor_config.priv_sys_hooks->priv_uvisor_semaphore_post
+            );
+    }
 }
 
 static void load_priv_sys_hooks(void)
@@ -115,6 +123,11 @@ static void load_priv_sys_hooks(void)
     if (__uvisor_config.priv_sys_hooks->priv_os_suspend) {
         g_priv_sys_hooks.priv_os_suspend =
             __uvisor_config.priv_sys_hooks->priv_os_suspend;
+    }
+
+    if (__uvisor_config.priv_sys_hooks->priv_uvisor_semaphore_post) {
+        g_priv_sys_hooks.priv_uvisor_semaphore_post =
+            __uvisor_config.priv_sys_hooks->priv_uvisor_semaphore_post;
     }
 }
 

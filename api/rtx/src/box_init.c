@@ -26,7 +26,7 @@ extern void PendSV_Handler(void);
 extern void SysTick_Handler(void);
 extern uint32_t rt_suspend(void);
 
-UVISOR_SET_PRIV_SYS_HOOKS(SVC_Handler, PendSV_Handler, SysTick_Handler, rt_suspend);
+UVISOR_SET_PRIV_SYS_HOOKS(SVC_Handler, PendSV_Handler, SysTick_Handler, rt_suspend, __uvisor_semaphore_post);
 
 /* This function is called by uVisor in unprivileged mode. On this OS, we
  * create box main threads for the box. */
