@@ -17,6 +17,7 @@
 #ifndef __UVISOR_API_RPC_H__
 #define __UVISOR_API_RPC_H__
 
+#include "api/inc/rpc_exports.h"
 #include "api/inc/uvisor_exports.h"
 #include <stdint.h>
 #include <stddef.h>
@@ -32,7 +33,6 @@
 /* This is the token to wait on for the result of an asynchronous RPC. */
 typedef uint32_t uvisor_rpc_result_t;
 
-typedef uint32_t (*TFN_Ptr)(uint32_t, uint32_t, uint32_t, uint32_t);
 
 /** Wait for incoming RPC.
  *
