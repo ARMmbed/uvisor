@@ -133,3 +133,52 @@ uint32_t rpc_fncall_sync(uint32_t p0, uint32_t p1, uint32_t p2, uint32_t p3, con
 
     return result_value;
 }
+
+/* Start an asynchronous RPC. After this call successfully completes, the
+ * caller can, at any time in any thread, wait on the result object to get the
+ * result of the call. */
+uvisor_rpc_result_t rpc_fncall_async(uint32_t p0, uint32_t p1, uint32_t p2, uint32_t p3, const TRPCGateway * gateway)
+{
+    int status;
+    uvisor_rpc_result_t cookie;
+
+    /* Don't wait any length of time for an outgoing message slot. If there is
+     * no slot available, return immediately with a non-zero status. */
+    status = send_outgoing_rpc(p0, p1, p2, p3, gateway, 0, &cookie);
+    if (status) {
+        return status;
+    }
+
+    return cookie;
+}
+
+int rpc_fncall_wait(uvisor_rpc_result_t result, uint32_t timeout_ms, uint32_t * ret)
+{
+    int status;
+    uvisor_pool_slot_t const msg_slot = uvisor_result_slot(result);
+    uvisor_rpc_result_t const invalid = uvisor_result_build(UVISOR_RESULT_INVALID_COUNTER, msg_slot);
+
+    /* If the cookie is invalid, this message is already being waited for.
+     * Otherwise this is the first wait and we can proceed. */
+    uvisor_rpc_result_t cookie = __sync_val_compare_and_swap(
+            &outgoing_message_array()[msg_slot].wait_cookie,
+            result,
+            invalid);
+    if (cookie != result) {
+        return -1;
+    }
+
+    status = wait_for_rpc_result(msg_slot, timeout_ms);
+
+    if (status) {
+        return status;
+    }
+
+    /* The message result is valid now, because we woke up with a non-fatal
+     * status. */
+    *ret = outgoing_message_array()[msg_slot].result;
+
+    free_outgoing_msg(msg_slot);
+
+    return 0;
+}
