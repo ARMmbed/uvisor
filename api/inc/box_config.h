@@ -49,6 +49,7 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
         { \
             0, \
             sizeof(uvisor_rpc_outgoing_message_queue_t), \
+            sizeof(uvisor_rpc_incoming_message_queue_t), \
         }, \
         NULL, \
         NULL, \
@@ -79,7 +80,8 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
                     (context_size) + \
                     (__uvisor_box_heapsize) + \
                     sizeof(RtxBoxIndex) + \
-                    sizeof(uvisor_rpc_outgoing_message_queue_t) \
+                    sizeof(uvisor_rpc_outgoing_message_queue_t) + \
+                    sizeof(uvisor_rpc_incoming_message_queue_t) \
                 ) \
             * 8) \
         / 6)]; \
@@ -93,6 +95,7 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
         { \
             context_size, \
             sizeof(uvisor_rpc_outgoing_message_queue_t), \
+            sizeof(uvisor_rpc_incoming_message_queue_t), \
         }, \
         __uvisor_box_lib_config, \
         __uvisor_box_namespace, \
