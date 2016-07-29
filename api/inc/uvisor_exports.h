@@ -22,6 +22,8 @@
 /* maximum number of boxes allowed: 1 is the minimum (unprivileged box) */
 #define UVISOR_MAX_BOXES 5U
 
+#define UVISOR_WAIT_FOREVER (0xFFFFFFFFUL)
+
 /* extern keyword */
 #ifdef  __cplusplus
 #define UVISOR_EXTERN extern "C"
