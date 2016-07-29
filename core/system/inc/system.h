@@ -23,8 +23,8 @@
 /* Default vector table (placed in Flash) */
 extern const TIsrVector g_isr_vector[ISR_VECTORS];
 
-/* Default system IRQ hooks (placed in SRAM) */
-extern UvisorPrivSystemIRQHooks g_priv_sys_irq_hooks;
+/* Default system hooks (placed in SRAM) */
+extern UvisorPrivSystemHooks g_priv_sys_hooks;
 
 /* Default ISRs prototypes */
 void isr_default_sys_handler(void);

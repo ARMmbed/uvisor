@@ -46,62 +46,62 @@ UVISOR_NOINLINE void uvisor_init_pre(void)
     DEBUG_INIT();
 }
 
-static void sanity_check_priv_sys_irq_hooks(const UvisorPrivSystemIRQHooks *priv_sys_irq_hooks)
+static void sanity_check_priv_sys_hooks(const UvisorPrivSystemHooks *priv_sys_hooks)
 {
     /* Check that the table is in flash. */
-    if (!vmpu_public_flash_addr((uint32_t) priv_sys_irq_hooks) ||
-        !vmpu_public_flash_addr((uint32_t) priv_sys_irq_hooks +
-            sizeof(priv_sys_irq_hooks))) {
+    if (!vmpu_public_flash_addr((uint32_t) priv_sys_hooks) ||
+        !vmpu_public_flash_addr((uint32_t) priv_sys_hooks +
+            sizeof(priv_sys_hooks))) {
         HALT_ERROR(SANITY_CHECK_FAILED,
-            "priv_sys_irq_hooks (0x%08x) not entirely in public flash\n",
-            priv_sys_irq_hooks
+            "priv_sys_hooks (0x%08x) not entirely in public flash\n",
+            priv_sys_hooks
         );
     }
 
     /*
      * Check that each hook is in flash, if the hook is non-0.
      */
-    if (__uvisor_config.priv_sys_irq_hooks->priv_svc_0 &&
-            !vmpu_public_flash_addr((uint32_t) __uvisor_config.priv_sys_irq_hooks->priv_svc_0)) {
+    if (__uvisor_config.priv_sys_hooks->priv_svc_0 &&
+            !vmpu_public_flash_addr((uint32_t) __uvisor_config.priv_sys_hooks->priv_svc_0)) {
         HALT_ERROR(SANITY_CHECK_FAILED,
             "priv_svc_0 (0x%08x) not entirely in public flash\n",
-            __uvisor_config.priv_sys_irq_hooks->priv_svc_0);
+            __uvisor_config.priv_sys_hooks->priv_svc_0);
     }
 
-    if (__uvisor_config.priv_sys_irq_hooks->priv_pendsv &&
-            !vmpu_public_flash_addr((uint32_t) __uvisor_config.priv_sys_irq_hooks->priv_pendsv)) {
+    if (__uvisor_config.priv_sys_hooks->priv_pendsv &&
+            !vmpu_public_flash_addr((uint32_t) __uvisor_config.priv_sys_hooks->priv_pendsv)) {
         HALT_ERROR(SANITY_CHECK_FAILED,
             "priv_pendsv (0x%08x) not entirely in public flash\n",
-            __uvisor_config.priv_sys_irq_hooks->priv_pendsv);
+            __uvisor_config.priv_sys_hooks->priv_pendsv);
     }
 
-    if (__uvisor_config.priv_sys_irq_hooks->priv_systick &&
-            !vmpu_public_flash_addr((uint32_t) __uvisor_config.priv_sys_irq_hooks->priv_systick)) {
+    if (__uvisor_config.priv_sys_hooks->priv_systick &&
+            !vmpu_public_flash_addr((uint32_t) __uvisor_config.priv_sys_hooks->priv_systick)) {
         HALT_ERROR(SANITY_CHECK_FAILED,
             "priv_systick (0x%08x) not entirely in public flash\n",
-            __uvisor_config.priv_sys_irq_hooks->priv_pendsv
+            __uvisor_config.priv_sys_hooks->priv_pendsv
             );
     }
 }
 
-static void load_priv_sys_irq_hooks(void)
+static void load_priv_sys_hooks(void)
 {
     /* Make sure the hook table is sane. */
-    sanity_check_priv_sys_irq_hooks(__uvisor_config.priv_sys_irq_hooks);
+    sanity_check_priv_sys_hooks(__uvisor_config.priv_sys_hooks);
 
     /*
      * Register each hook.
      */
-    if (__uvisor_config.priv_sys_irq_hooks->priv_svc_0) {
-        g_priv_sys_irq_hooks.priv_svc_0 = __uvisor_config.priv_sys_irq_hooks->priv_svc_0;
+    if (__uvisor_config.priv_sys_hooks->priv_svc_0) {
+        g_priv_sys_hooks.priv_svc_0 = __uvisor_config.priv_sys_hooks->priv_svc_0;
     }
 
-    if (__uvisor_config.priv_sys_irq_hooks->priv_pendsv) {
-        g_priv_sys_irq_hooks.priv_pendsv = __uvisor_config.priv_sys_irq_hooks->priv_pendsv;
+    if (__uvisor_config.priv_sys_hooks->priv_pendsv) {
+        g_priv_sys_hooks.priv_pendsv = __uvisor_config.priv_sys_hooks->priv_pendsv;
     }
 
-    if (__uvisor_config.priv_sys_irq_hooks->priv_systick) {
-        g_priv_sys_irq_hooks.priv_systick = __uvisor_config.priv_sys_irq_hooks->priv_systick;
+    if (__uvisor_config.priv_sys_hooks->priv_systick) {
+        g_priv_sys_hooks.priv_systick = __uvisor_config.priv_sys_hooks->priv_systick;
     }
 }
 
@@ -118,8 +118,8 @@ UVISOR_NOINLINE void uvisor_init_post(void)
         /* init SVC call interface */
         svc_init();
 
-        /* Load privileged system IRQ hooks. */
-        load_priv_sys_irq_hooks();
+        /* Load privileged system hooks. */
+        load_priv_sys_hooks();
 
         DPRINTF("uvisor initialized\n");
 }
