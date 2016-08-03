@@ -19,21 +19,14 @@
 
 int uvisor_lib_init(void)
 {
-    /* Supported */
-    /* Defined in uvisor-input.S */
-    extern uint32_t uvisor_config;
-    extern uint32_t uvisor_export_table_size;
+    TUvisorExportTable const * const export_table = uvisor_export_table();
 
-    uintptr_t uvisor_config_addr = (uintptr_t) &uvisor_config;
-
-    TUvisorExportTable * uvisor_export_table = (TUvisorExportTable *) (uvisor_config_addr - uvisor_export_table_size);
-
-    if (uvisor_export_table->magic != UVISOR_EXPORT_MAGIC) {
+    if (export_table->magic != UVISOR_EXPORT_MAGIC) {
         /* We couldn't find the magic. */
         return -1;
     }
 
-    if (uvisor_export_table->version != UVISOR_EXPORT_VERSION) {
+    if (export_table->version != UVISOR_EXPORT_VERSION) {
         /* The version we understand is not the version we found. */
         return -1;
     }
@@ -42,7 +35,7 @@ int uvisor_lib_init(void)
      * make use of osRegisterForOsEvents we recommend to
      * osRegisterForOsEvents(NULL) to disable further registrations (which if
      * allowed would be a backdoor). */
-     osRegisterForOsEvents(&uvisor_export_table->os_event_observer);
+    osRegisterForOsEvents(&export_table->os_event_observer);
 
     return 0;
 }

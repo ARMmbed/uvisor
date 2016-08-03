@@ -44,4 +44,14 @@ typedef struct {
     uint32_t size;
 } TUvisorExportTable;
 
+static inline TUvisorExportTable const * uvisor_export_table(void)
+{
+    /* Defined in uvisor-input.S */
+    extern uint32_t uvisor_config;
+    extern uint32_t uvisor_export_table_size;
+
+    uintptr_t uvisor_config_addr = (uintptr_t) &uvisor_config;
+    return (TUvisorExportTable *) (uvisor_config_addr - uvisor_export_table_size);
+}
+
 #endif
