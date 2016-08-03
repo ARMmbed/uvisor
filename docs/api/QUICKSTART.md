@@ -135,8 +135,8 @@ Before compiling, we need to override the original `K64F` target to enable the u
 {
     "target_overrides": {
         "K64F": {
-            "target.features_add": ["UVISOR"]
-            "target.extra_labels_add":["UVISOR_SUPPORTED"],
+            "target.features_add": ["UVISOR"],
+            "target.extra_labels_add": ["UVISOR_SUPPORTED"]
         }
     }
 }
