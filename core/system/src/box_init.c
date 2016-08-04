@@ -110,7 +110,7 @@ void UVISOR_NAKED box_init_next(uint32_t src_svc_sp)
  * @internal
  * This function implements a recursive chain of context switches, where all
  * destination contexts execute the same default handler, defined system-wide
- * and registered in flash, in \ref UvisorConfig.lib_box_init.
+ * and registered in flash, in \ref UvisorConfig.lib_hooks->box_init.
  * The default handler receives only one argument from the uVisor, which is the
  * \ref UvisorBoxConfig.lib_config pointer. The default handler can parse the
  * pointed-to data the way it wants; it is implementation-specific.
@@ -144,7 +144,7 @@ bool box_init_context_switch_next(uint32_t src_svc_sp)
 
     /* Get the default system-wide initialization handler from the uVisor
      * configuration table. */
-    uint32_t const dst_fn = (uint32_t) __uvisor_config.lib_box_init;
+    uint32_t const dst_fn = (uint32_t) __uvisor_config.lib_hooks->box_init;
     if (dst_fn == 0) {
         HALT_ERROR(NOT_ALLOWED, "The box initialization procedure requires an unprivileged handler to be specified.");
     }

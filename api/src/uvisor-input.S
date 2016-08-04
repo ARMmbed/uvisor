@@ -109,7 +109,7 @@ uvisor_config:
 
     /* Functions provided by uVisor Lib for use by uVisor in unprivileged mode
      * */
-    .long __uvisor_lib_box_init
+    .long __uvisor_lib_hooks
 
 /* uVisor mode of operation
  * Modes available: UVISOR_ENABLED, UVISOR_DISABLED, UVISOR_PERMISSIVE. */
