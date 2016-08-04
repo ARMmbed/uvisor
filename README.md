@@ -4,7 +4,7 @@ The uVisor is a self-contained software hypervisor that creates independent secu
 
 ## Overview
 
-To start using uVisor you will need to include it as a library in your design. We release the uVisor library periodically in the mbed OS repository, [mbedmicro/mbed](https://github.com/mbedmicro/mbed).
+To start using uVisor you will need to include it as a library in your design. We release the uVisor library periodically into the mbed OS repository, [ARMmbed/mbed-os](https://github.com/ARMmbed/mbed-os).
 
 If you want to learn more about the uVisor security model and get an overview of its features this is the right place. In this document you will read about:
 
@@ -15,6 +15,8 @@ If you want to learn more about the uVisor security model and get an overview of
     * Context switching.
 
 You will find the full uVisor documentation in the [docs](docs) folder – see our [OS-level introduction](https://github.com/ARMmbed/uvisor/raw/docs/uvisor-rtos-docs.pdf) in PDF format.
+
+To see how uVisor is used in practice, we created a [basic uVisor example](https://github.com/ARMmbed/mbed-os-example-uvisor).
 
 Contributions to this repository in the form of issue reporting or pull requests are welcome! Please make sure to read our [contribution guidelines](CONTRIBUTING.md) first.
 
@@ -57,7 +59,7 @@ The design philosophy of uVisor is to provide hardware-enforced compartments (sa
 
 Breaking the established flat security model of micro-controllers into compartmentalised building blocks results in high security levels, as the reach of flaws or external attacks can be limited to less sensitive function blocks.
 
-A basic example of the uVisor features is preventing unauthorised access to flash memory from faulty or compromised code. This not only prevents malware from getting resident on the device, but also enables protection of device secrets like cryptographic keys.
+A [basic example of the uVisor](https://github.com/ARMmbed/mbed-os-example-uvisor) features is preventing unauthorised access to flash memory from faulty or compromised code. This not only prevents malware from getting resident on the device, but also enables protection of device secrets like cryptographic keys.
 
 Services built on top of our security layer can safely depend on an unclonable trusted identity, secure access to internet services and benefit from encryption key protection.
 
