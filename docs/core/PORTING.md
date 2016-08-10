@@ -660,9 +660,16 @@ If you do not want to enable the uVisor features straight away on your mbed targ
         "${original_target}": {
             "target.features_add": ["UVISOR"],
             "target.extra_labels_add":["UVISOR_SUPPORTED"],
-        },
+        }
+    },
+    "macros": [
+      "FEATURE_UVISOR",
+      "TARGET_UVISOR_SUPPORTED"
+    ]
 }
 ```
+
+Please note that the macros `FEATURE_UVISOR` and `TARGET_UVISOR_SUPPORTED` in the configuration file above are automatically defined for C and C++ files, but not for assembly files. Since the startup script (usually in assembly) relies on those symbols, we need to define them manually.
 
 ### Next steps
 [Go to top](#overview)
