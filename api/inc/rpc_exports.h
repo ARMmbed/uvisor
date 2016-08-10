@@ -93,9 +93,20 @@ typedef struct uvisor_rpc_message {
     uint32_t result;
 } uvisor_rpc_message_t;
 
+typedef struct uvisor_rpc_fn_group {
+    /* A pointer to the function group */
+    TFN_Ptr const * fn_ptr_array;
+    size_t fn_count;
+
+    /* The semaphore to wait on for this function group */
+    UvisorSemaphore semaphore;
+} uvisor_rpc_fn_group_t;
+
 #define UVISOR_RPC_OUTGOING_MESSAGE_SLOTS (8)
 
 #define UVISOR_RPC_INCOMING_MESSAGE_SLOTS (8)
+
+#define UVISOR_RPC_FN_GROUP_SLOTS (8)
 
 #define UVISOR_RPC_OUTGOING_MESSAGE_TYPE(slots) \
     struct { \
@@ -114,7 +125,16 @@ typedef struct uvisor_rpc_message {
         uvisor_rpc_message_t messages[slots]; \
     }
 
+#define UVISOR_RPC_FN_GROUP_TYPE(slots) \
+    struct { \
+        uvisor_pool_queue_t queue; \
+        uvisor_pool_t pool; \
+        uvisor_pool_queue_entry_t entries[slots]; \
+        uvisor_rpc_fn_group_t fn_groups[slots]; \
+    }
+
 typedef UVISOR_RPC_OUTGOING_MESSAGE_TYPE(UVISOR_RPC_OUTGOING_MESSAGE_SLOTS) uvisor_rpc_outgoing_message_queue_t;
 typedef UVISOR_RPC_INCOMING_MESSAGE_TYPE(UVISOR_RPC_INCOMING_MESSAGE_SLOTS) uvisor_rpc_incoming_message_queue_t;
+typedef UVISOR_RPC_FN_GROUP_TYPE(UVISOR_RPC_FN_GROUP_SLOTS) uvisor_rpc_fn_group_queue_t;
 
 #endif
