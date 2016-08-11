@@ -22,6 +22,8 @@
 #include "svc.h"
 #include "unvic.h"
 #include "vmpu.h"
+#include "page_allocator_faults.h"
+#include "page_allocator.h"
 
 /* This file contains the configuration-specific symbols. */
 #include "configurations.h"
@@ -30,6 +32,30 @@
 #ifndef ARMv7M_MPU_REGIONS
 #define ARMv7M_MPU_REGIONS 8
 #endif/*ARMv7M_MPU_REGIONS*/
+
+/* The ARMv7-M MPU has 8 MPU regions plus one background region.
+ * Region 0 and 1 are used to unlock Application RAM and Flash.
+ * When switching into a secure box, region 2 is used to protect the boxes
+ * stack and context.
+ * If a box uses the page heap, the next region is used to protect it.
+ * This leaves 4 to 6 MPU regions for round robin scheduling:
+ *
+ *      8      <-- End of MPU regions, K64F_MPU_REGIONS_MAX
+ * +---------+
+ * |    7    |
+ * |   ...   |
+ * |  2/3/4  | <-- Start of round robin
+ * +---------+
+ * |   2/3   | <-- Optional Box Pages
+ * +---------+
+ * |    2    | <-- Secure Box Stack + Context, K64F_MPU_REGIONS_STATIC
+ * +---------+
+ * |    1    | <-- Application SRAM unlock
+ * |    0    | <-- Application Flash unlock
+ * +---------+
+ */
+#define ARMv7M_MPU_REGIONS_STATIC 2
+#define ARMv7M_MPU_REGIONS_MAX (ARMv7M_MPU_REGIONS)
 
 /* Sanity checks on SRAM boundaries */
 #if SRAM_LENGTH_MIN <= 0
@@ -106,6 +132,7 @@ typedef struct {
 } TMpuBox;
 
 static uint32_t g_mpu_region_count, g_box_mem_pos;
+static uint8_t g_mpu_slot, g_mpu_slot_wrap_around;
 static TMpuRegion g_mpu_list[MPU_REGION_COUNT];
 static TMpuBox g_mpu_box[UVISOR_MAX_BOXES];
 
@@ -172,34 +199,38 @@ uint32_t vmpu_fault_find_acl(uint32_t fault_addr, uint32_t size)
     }
 }
 
+static int vmpu_mem_push_page_acl_iterator(uint8_t mask, uint8_t index);
+
 static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint32_t fault_status)
 {
     const TMpuRegion *region;
-
-    /* Initialize the round-robin slot pointer. */
-    static uint32_t mpu_slot = ARMv7M_MPU_RESERVED_REGIONS;
+    uint8_t mask, index, page;
 
     /* no recovery possible if the MPU syndrome register is not valid */
     if (fault_status != 0x82) {
         return 0;
     }
 
-    /* find region for faulting address */
-    if ((region = vmpu_fault_find_region(fault_addr)) == NULL)
-        return 0;
+    if (page_allocator_get_active_mask_for_address(fault_addr, &mask, &index, &page) == UVISOR_ERROR_PAGE_OK)
+    {
+        /* Remember this fault. */
+        page_allocator_register_fault(page);
 
-    /* In a secure box the first available region is for the stack, so it must
-     * be excluded from the round-robin. */
-    if (g_active_box != 0 && mpu_slot == ARMv7M_MPU_RESERVED_REGIONS) {
-        mpu_slot++;
+        vmpu_mem_push_page_acl_iterator(mask, UVISOR_PAGE_MAP_COUNT * 4 - 1 - index);
+    }
+    else {
+        /* find region for faulting address */
+        if ((region = vmpu_fault_find_region(fault_addr)) == NULL)
+            return 0;
+
+        /* FIXME: use random numbers for box number */
+        MPU->RBAR = region->base | g_mpu_slot++ | MPU_RBAR_VALID_Msk;
+        MPU->RASR = region->rasr;
     }
 
-    /* FIXME: use random numbers for box number */
-    MPU->RBAR = region->base | mpu_slot++ | MPU_RBAR_VALID_Msk;
-    MPU->RASR = region->rasr;
-
-    if (mpu_slot >= ARMv7M_MPU_REGIONS)
-        mpu_slot = ARMv7M_MPU_RESERVED_REGIONS;
+    if (g_mpu_slot >= ARMv7M_MPU_REGIONS) {
+        g_mpu_slot = g_mpu_slot_wrap_around;
+    }
 
     return 1;
 }
@@ -312,10 +343,23 @@ void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
     }
 }
 
+static int vmpu_mem_push_page_acl_iterator(uint8_t mask, uint8_t index)
+{
+    vmpu_acl_static_region(
+        g_mpu_slot,
+        (void *) ((uint32_t) __uvisor_config.page_end - g_page_size * 8 * (index + 1)),
+        g_page_size * 8,
+        UVISOR_TACLDEF_DATA | UVISOR_TACL_EXECUTE | UVISOR_TACL_SUBREGIONS(~mask)
+    );
+    g_mpu_slot++;
+    /* We do not add more than one region for the page heap. */
+    return 0;
+}
+
 /* FIXME: added very simple MPU region switching - optimize! */
 void vmpu_switch(uint8_t src_box, uint8_t dst_box)
 {
-    int i, mpu_slot;
+    uint32_t dst_count;
     const TMpuBox *box;
     const TMpuRegion *region;
 
@@ -329,52 +373,68 @@ void vmpu_switch(uint8_t src_box, uint8_t dst_box)
         HALT_ERROR(SANITY_CHECK_FAILED, "ACL add: The destination box ID is out of range (%u).\r\n", dst_box);
     }
 
-    /* update target box first to make target stack available */
-    mpu_slot = ARMv7M_MPU_RESERVED_REGIONS;
+    box = &g_mpu_box[dst_box];
+
+    /* Update target box first to make target stack available. */
+    g_mpu_slot = ARMv7M_MPU_REGIONS_STATIC;
+    g_mpu_slot_wrap_around = ARMv7M_MPU_REGIONS_STATIC;
+    region = box->region;
+    dst_count = box->count;
+
+    /* Only write stack and context ACL for secure boxes. */
     if (dst_box)
     {
-        /* handle target box next */
-        box = &g_mpu_box[dst_box];
-        region = box->region;
+        assert(dst_count);
+        /* Push the stack and context protection ACL into ARMv7M_MPU_REGIONS_STATIC. */
+        MPU->RBAR = region->base | g_mpu_slot | MPU_RBAR_VALID_Msk;
+        MPU->RASR = region->rasr;
+        g_mpu_slot++;
+        g_mpu_slot_wrap_around++;
+        region++;
+        dst_count--;
+    }
 
-        for (i = 0; i < box->count; i++)
-        {
-            if (mpu_slot >= ARMv7M_MPU_REGIONS)
-                 return;
-            MPU->RBAR = region->base | mpu_slot | MPU_RBAR_VALID_Msk;
-            MPU->RASR = region->rasr;
+    /* Push one ACL for the page heap into place. */
+    g_mpu_slot_wrap_around += page_allocator_iterate_active_page_masks(vmpu_mem_push_page_acl_iterator, PAGE_ALLOCATOR_ITERATOR_DIRECTION_BACKWARD);
+    /* g_mpu_slot may now have been incremented by one, if page heap is used by this box. */
 
-            /* process next slot */
-            region++;
-            mpu_slot++;
-        }
+    while (g_mpu_slot < ARMv7M_MPU_REGIONS_MAX && dst_count)
+    {
+        MPU->RBAR = region->base | g_mpu_slot | MPU_RBAR_VALID_Msk;
+        MPU->RASR = region->rasr;
+        g_mpu_slot++;
+        region++;
+        dst_count--;
     }
 
     /* handle main box last */
     box = g_mpu_box;
     region = box->region;
+    dst_count = box->count;
 
-    for (i=0; i<box->count; i++) {
-        if (mpu_slot>=ARMv7M_MPU_REGIONS)
-             return;
-        MPU->RBAR = region->base | mpu_slot | MPU_RBAR_VALID_Msk;
+    while (g_mpu_slot < ARMv7M_MPU_REGIONS_MAX && dst_count)
+    {
+        MPU->RBAR = region->base | g_mpu_slot | MPU_RBAR_VALID_Msk;
         MPU->RASR = region->rasr;
-
-        /* process next slot */
+        g_mpu_slot++;
         region++;
-        mpu_slot++;
+        dst_count--;
     }
 
     /* clear remaining slots */
-    while(mpu_slot<ARMv7M_MPU_REGIONS)
+    while (g_mpu_slot < ARMv7M_MPU_REGIONS_MAX)
     {
         /* We need to make sure that we disable an enabled MPU region before any
          * other modification, hence we cannot select the MPU region using the
          * region number field in the RBAR register. */
-        MPU->RNR = mpu_slot;
+        MPU->RNR = g_mpu_slot;
         MPU->RASR = 0;
         MPU->RBAR = 0;
-        mpu_slot++;
+        g_mpu_slot++;
+    }
+
+    if (g_mpu_slot >= ARMv7M_MPU_REGIONS_MAX) {
+        g_mpu_slot = g_mpu_slot_wrap_around;
     }
 }
 
@@ -704,45 +764,69 @@ void vmpu_arch_init_hw(void)
         UVISOR_TACLDEF_SECURE_CONST | UVISOR_TACL_EXECUTE
     );
 
-    /* Enable the public SRAM. */
-    /* Note: This region can be larger than the physical SRAM. */
-    /* Note: This uses the host-related symbols as uVisor might be placed in a
-     *       different SRAM. If the uVisor shares the SRAM with the host, these
-     *       symbols will be identical to the uVisor-related ones. */
+    /* Enable the public SRAM:
+     *
+     * We use one region for this, which start at SRAM origin (which is always
+     * aligned) and has a power-of-two size that is equal or _larger_ than SRAM.
+     * This means the region may end _behind_ the end of SRAM!
+     *
+     * At the beginning of SRAM uVisor places its private BSS section and behind
+     * that the page heap. In order to use only one region, we require the end of
+     * the page heap to align with 1/8th of the region size, so that we can use
+     * the subregion mask.
+     * The page heap reduces the memory wastage to less than one page size, by
+     * "growing" the page heap downwards from the subregion alignment towards
+     * the uVisor bss.
+     *
+     * Note: The correct alignment needs to be done in the host linkerscript.
+     *       Use `ALIGN( (1 << LOG2CEIL(LENGTH(SRAM)) / 8 )` for GNU linker.
+     *
+     *     2^n     <-- region end
+     *     ...
+     * .---------. <-- uvisor_config.sram_end
+     * |  box 0  |
+     * | public  |
+     * | memory  |
+     * +---------+ <-- uvisor_config.page_end: n/8th of _region_ size (not SRAM size)
+     * |  page   |
+     * |  heap   |
+     * +---------+ <-- aligned to page size
+     * | wastage | <-- wasted SRAM is less than 1 page size
+     * +---------+ <-- uvisor_config.page_start
+     * |  uVisor |
+     * |   bss   |
+     * '---------' <-- uvisor_config.sram_start, region start
+     *
+     * Example: The region size of a 96kB SRAM will be 128kB, and the page heap
+     *          end will have to be aligned to 16kB, _not_ 12kB (= 96kB / 8).
+     *
+     * Note: In case the uVisor bss section is moved to another memory region
+     *       (tightly-coupled memory for example), the page heap remains and
+     *       the same considerations apply. Therefore the uVisor bss section
+     *       location has no impact on this.
+     */
+    /* Calculate the region size by rounding up the SRAM size to the next power-of-two. */
+    const uint32_t total_size = (1 << vmpu_region_bits((uint32_t) __uvisor_config.sram_end - (uint32_t) __uvisor_config.sram_start));
+    /* The alignment is 1/8th of the region size = rounded up SRAM size. */
+    const uint32_t subregions_size = total_size / 8;
+    const uint32_t protected_size = (uint32_t) __uvisor_config.page_end - (uint32_t) __uvisor_config.sram_start;
+    /* The protected size must be aligned to the subregion size. */
+    if (protected_size % subregions_size != 0) {
+        HALT_ERROR(SANITY_CHECK_FAILED,
+                   "The __uvisor_page_end symbol (0x%08X)is not aligned to an MPU subregion boundary.",
+                   (uint32_t) __uvisor_config.page_end);
+    }
+    /* Note: It's called the subregion _disable_ mask, so setting one bit in it _disables_ the
+     *       permissions in this subregion. Totally not confusing, amiright!? */
+    const uint8_t subregions_disable_mask = (uint8_t) ((1UL << (protected_size / subregions_size)) - 1UL);
+
+    /* Unlock the upper SRAM subregion only. */
     vmpu_acl_static_region(
         1,
-        (void *) HOST_SRAM_ORIGIN_MIN,
-        UVISOR_REGION_ROUND_UP(HOST_SRAM_LENGTH_MAX),
-        UVISOR_TACLDEF_DATA | UVISOR_TACL_EXECUTE
+        __uvisor_config.sram_start,
+        total_size,
+        UVISOR_TACLDEF_DATA | UVISOR_TACL_EXECUTE | UVISOR_TACL_SUBREGIONS(subregions_disable_mask)
     );
-
-#if !defined(UVISOR_IN_STANDALONE_SRAM)
-    /* Calculate the subregion mask based on the __uvisor_bss_end symbol.
-     * The BSS section occupied by uVisor in the host linker script must be
-     * aligned to an MPU subregion boundary, so that the maximum memory wasted
-     * for padding purposes is 1/8 of the total uVisor BSS section. */
-    uint32_t original_size = (uint32_t) __uvisor_config.bss_end - SRAM_ORIGIN;
-    uint32_t rounded_size = UVISOR_REGION_ROUND_UP(original_size);
-    uint32_t subregions_size = rounded_size / 8;
-    if (original_size % subregions_size != 0) {
-        HALT_ERROR(SANITY_CHECK_FAILED,
-                   "The __uvisor_bss_end symbol (0x%08X)is not aligned to an MPU subregion boundary.",
-                   (uint32_t) __uvisor_config.bss_end);
-    }
-    uint8_t subregions_mask = (uint8_t) ~(0xFFUL >> (8 - (original_size / subregions_size)));
-
-    /* Protect the uVisor SRAM.
-     * This region needs protection only if uVisor shares the SRAM with the
-     * host. The configuration requires that uVisor is right at the beginning of
-     * the SRAM. If not, uVisor would end up owning a memory regions that
-     * contains non-uVisor data. */
-    vmpu_acl_static_region(
-        2,
-        (void *) SRAM_ORIGIN,
-        rounded_size,
-        UVISOR_TACL_SREAD | UVISOR_TACL_SWRITE | UVISOR_TACL_SUBREGIONS(subregions_mask)
-    );
-#endif /* !defined(UVISOR_IN_STANDALONE_SRAM) */
 }
 
 int vmpu_is_region_size_valid(uint32_t size)
