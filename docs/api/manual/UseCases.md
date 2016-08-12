@@ -504,8 +504,8 @@ To make a synchronous RPC gateway, we use the `UVISOR_BOX_RPC_GATEWAY_SYNC` macr
 
 These are the parameters.
  * `box_name` - The name of the target box as declared in `UVISOR_BOX_CONFIG`
- * `gw_name` - The new, callable function pointer for performing RPC
- * `fn_name` - The function being designated as an RPC target
+ * `gw_name` - The new, callable function pointer for initiating an RPC from the caller's box
+ * `fn_name` - The function that will run in the callee's box as an RPC target
  * `fn_ret`  - The return type of the function being designated as an RPC target
  * `__VA_ARGS__` - The type of each parameter passed to the target function. There can be up to 4 parameters in a target function. Each parameter must be no more than uint32_t in size. If the target function accepts no arguments, pass `void` here.
 
@@ -536,8 +536,8 @@ To make an asynchronous RPC gateway, we use the `UVISOR_BOX_RPC_GATEWAY_ASYNC` m
 
 The parameters are the same as the `UVISOR_BOX_RPC_GATEWAY_SYNC` macro.
  * `box_name` - The name of the target box as declared in `UVISOR_BOX_CONFIG`
- * `gw_name` - The new, callable function pointer for performing RPC
- * `fn_name` - The function being designated as an RPC target
+ * `gw_name` - The new, callable function pointer for initiating an RPC from the caller's box
+ * `fn_name` - The function that will run in the callee's box as an RPC target
  * `fn_ret`  - The return type of the function being designated as an RPC target
  * `__VA_ARGS__` - The type of each parameter passed to the target function. There can be up to 4 parameters in a target function. Each parameter must be no more than uint32_t in size. If the target function accepts no arguments, pass `void` here.
 

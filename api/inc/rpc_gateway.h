@@ -40,8 +40,8 @@
  *
  * @param box_name[in] The name of the source box as declared in
  *                     `UVISOR_BOX_CONFIG`
- * @param gw_name[in]  The new, callable function pointer for performing RPC
- * @param fn_name[in]  The function being designated as an RPC target
+ * @param gw_name[in]  The new, callable function pointer for initiating an RPC from the caller's box
+ * @param fn_name[in]  The function that will run in the callee's box as an RPC target
  * @param fn_ret[in]   The return type of the function being designated as an
  *                     RPC target
  * @param __VA_ARGS__  The type of each parameter passed to the target
@@ -87,8 +87,8 @@
  *
  * @param box_name[in] The name of the source box as declared in
  *                     `UVISOR_BOX_CONFIG`
- * @param gw_name[in]  The new, callable function pointer for performing RPC
- * @param fn_name[in]  The function being designated as an RPC target
+ * @param gw_name[in]  The new, callable function pointer for initiating an RPC from the caller's box
+ * @param fn_name[in]  The function that will run in the callee's box as an RPC target
  * @param fn_ret[in]   The return type of the function being designated as an
  *                     RPC target
  * @param __VA_ARGS__  The type of each parameter passed to the target
