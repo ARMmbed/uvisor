@@ -14,12 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "api/inc/uvisor-lib.h"
-#include "core/uvisor.h"
-#include <stddef.h>
-#include <stdint.h>
+#ifndef __UVISOR_API_BOX_ID_H__
+#define __UVISOR_API_BOX_ID_H__
 
-int uvisor_box_namespace(int box_id, char *box_namespace, size_t length)
-{
-    return UVISOR_SVC(UVISOR_SVC_ID_BOX_NAMESPACE_FROM_ID, "", box_id, box_namespace, length);
-}
+#include "api/inc/uvisor_exports.h"
+
+/* Return the numeric box ID of the current box. */
+UVISOR_EXTERN int uvisor_box_id_self(void);
+
+/* Return the numeric box ID of the box that is calling through the most recent
+ * secure gateway. Return -1 if there is no secure gateway calling box. */
+UVISOR_EXTERN int uvisor_box_id_caller(void);
+
+#endif /* __UVISOR_API_BOX_ID_H__ */

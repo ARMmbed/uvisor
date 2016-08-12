@@ -16,10 +16,13 @@
  */
 #include "api/inc/uvisor-lib.h"
 #include "core/uvisor.h"
-#include <stddef.h>
-#include <stdint.h>
 
-int uvisor_box_namespace(int box_id, char *box_namespace, size_t length)
+int uvisor_box_id_self(void)
 {
-    return UVISOR_SVC(UVISOR_SVC_ID_BOX_NAMESPACE_FROM_ID, "", box_id, box_namespace, length);
+    return UVISOR_SVC(UVISOR_SVC_ID_BOX_ID_SELF, "");
+}
+
+int uvisor_box_id_caller(void)
+{
+    return UVISOR_SVC(UVISOR_SVC_ID_BOX_ID_CALLER, "");
 }

@@ -153,13 +153,6 @@ UVISOR_EXTERN const uint32_t __uvisor_mode;
 
 #define uvisor_ctx (*__uvisor_ps)
 
-/* Return the numeric box ID of the current box. */
-UVISOR_EXTERN int uvisor_box_id_self(void);
-
-/* Return the numeric box ID of the box that is calling through the most recent
- * secure gateway. Return -1 if there is no secure gateway calling box. */
-UVISOR_EXTERN int uvisor_box_id_caller(void);
-
 /* Copy the box namespace of the specified box ID to the memory provided by
  * box_namespace. The box_namespace's length must be at least
  * MAX_BOX_NAMESPACE_LENGTH bytes. Return how many bytes were copied into
