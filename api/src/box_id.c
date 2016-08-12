@@ -15,14 +15,16 @@
  * limitations under the License.
  */
 #include "api/inc/uvisor-lib.h"
-#include "core/uvisor.h"
+#include "api/inc/vmpu_exports.h"
+
+extern UvisorBoxIndex * __uvisor_ps;
 
 int uvisor_box_id_self(void)
 {
-    return UVISOR_SVC(UVISOR_SVC_ID_BOX_ID_SELF, "");
+    return __uvisor_ps->box_id_self;
 }
 
 int uvisor_box_id_caller(void)
 {
-    return UVISOR_SVC(UVISOR_SVC_ID_BOX_ID_CALLER, "");
+    return UVISOR_ERROR_NOT_IMPLEMENTED;
 }

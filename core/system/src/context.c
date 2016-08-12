@@ -196,6 +196,8 @@ void context_switch_in(TContextSwitchType context_type, uint8_t dst_id, uint32_t
 
         /* Update the ID of the currently active box. */
         g_active_box = dst_id;
+        UvisorBoxIndex * index = (UvisorBoxIndex *) *(__uvisor_config.uvisor_box_context);
+        index->box_id_self = dst_id;
 
         /* Switch MPU configurations. */
         /* This function halts if it finds an error. */

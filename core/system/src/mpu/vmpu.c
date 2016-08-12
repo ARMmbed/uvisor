@@ -494,29 +494,6 @@ void vmpu_init_post(void)
     vmpu_load_boxes();
 }
 
-int vmpu_box_id_self(void)
-{
-    return g_active_box;
-}
-
-int vmpu_box_id_caller(void)
-{
-    TContextPreviousState * previous_state;
-
-    previous_state = context_state_previous();
-    if (previous_state == NULL) {
-        /* There is no previous context. */
-        return -1;
-    }
-
-    if (previous_state->type != CONTEXT_SWITCH_FUNCTION_GATEWAY) {
-        /* The previous context is not a secure gateway. */
-        return -1;
-    } else {
-        return previous_state->src_id;
-    }
-}
-
 static int copy_box_namespace(const char *src, char *dst)
 {
     int bytes_copied;

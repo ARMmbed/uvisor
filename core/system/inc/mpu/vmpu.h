@@ -163,8 +163,6 @@ extern void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp);
 extern uint32_t  g_vmpu_box_count;
 bool g_vmpu_boxes_counted;
 
-extern int vmpu_box_id_self(void);
-extern int vmpu_box_id_caller(void);
 extern int vmpu_box_namespace_from_id(int box_id, char *box_name, size_t length);
 
 /** Determine if the passed size can be mapped to an exact region size
