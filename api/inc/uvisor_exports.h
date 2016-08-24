@@ -59,6 +59,7 @@
 #define UVISOR_WEAK        __weak
 #define UVISOR_NORETURN    __noreturn
 #define UVISOR_RAMFUNC     __ramfunc
+#define UVISOR_DEPRECATED
 #else
 #define UVISOR_ALIGN(x)    __attribute__((aligned(x)))
 #define UVISOR_FORCEINLINE inline __attribute__((always_inline))
@@ -66,6 +67,7 @@
 #define UVISOR_WEAK        __attribute__((weak))
 #define UVISOR_NORETURN    __attribute__((noreturn))
 #define UVISOR_RAMFUNC     __attribute__ ((section (".ramfunc"), noinline))
+#define UVISOR_DEPRECATED  __attribute__((deprecated))
 #endif
 
 /* array count macro */
