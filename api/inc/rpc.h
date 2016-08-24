@@ -22,14 +22,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
-/** Specify the maximum number of incoming RPC messages for a box
- *
- * @param max_num_incoming_rpc The maximum number of incoming RPC messages for
- *                             a box
- */
-/* FIXME This is a dummy implementation. */
-#define UVISOR_BOX_RPC_MAX_INCOMING(max_num_incoming_rpc)
-
 
 /** Wait for incoming RPC.
  *
