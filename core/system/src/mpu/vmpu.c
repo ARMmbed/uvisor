@@ -21,6 +21,7 @@
 #include "memory_map.h"
 #include "svc.h"
 #include "vmpu.h"
+#include "vmpu_mpu.h"
 
 #ifndef MPU_MAX_PRIVATE_FUNCTIONS
 #define MPU_MAX_PRIVATE_FUNCTIONS 16
@@ -312,9 +313,9 @@ static void vmpu_load_boxes(void)
                 if (region->acl & UVISOR_TACL_IRQ) {
                     vmpu_acl_irq(box_id, region->param1, region->param2);
                 } else {
-                    vmpu_acl_add(
+                    vmpu_region_add_static_acl(
                         box_id,
-                        region->param1,
+                        (uint32_t) region->param1,
                         region->param2,
                         region->acl | UVISOR_TACL_USER
                     );

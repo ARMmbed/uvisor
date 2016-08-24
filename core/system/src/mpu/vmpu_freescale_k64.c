@@ -22,6 +22,7 @@
 #include "svc.h"
 #include "unvic.h"
 #include "vmpu.h"
+#include "vmpu_mpu.h"
 #include "vmpu_freescale_k64.h"
 #include "vmpu_freescale_k64_aips.h"
 #include "vmpu_freescale_k64_mem.h"
@@ -157,49 +158,10 @@ void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
     }
 }
 
-void vmpu_acl_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
-{
-    int res;
-
-#ifndef NDEBUG
-    const MemMap *map;
-#endif/*NDEBUG*/
-
-    /* check for maximum box ID */
-    if (!vmpu_is_box_id_valid(box_id)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "ACL add: The box ID is out of range (%u).\r\n", box_id);
-    }
-
-    /* check for alignment to 32 bytes */
-    if(((uint32_t)start) & 0x1F)
-        HALT_ERROR(SANITY_CHECK_FAILED, "ACL start address is not aligned [0x%08X]\n", start);
-
-    /* round ACLs if needed */
-    if(acl & UVISOR_TACL_SIZE_ROUND_DOWN)
-        size = UVISOR_REGION_ROUND_DOWN(size);
-    else
-        if(acl & UVISOR_TACL_SIZE_ROUND_UP)
-            size = UVISOR_REGION_ROUND_UP(size);
-
-    DPRINTF("\t@0x%08X size=%06i acl=0x%04X [%s]\n", start, size, acl,
-        ((map = memory_map_name((uint32_t)start))!=NULL) ? map->name : "unknown"
-    );
-
-    /* check for peripheral memory, proceed with general memory */
-    if(acl & UVISOR_TACL_PERIPHERAL)
-        res = vmpu_aips_add(box_id, start, size, acl);
-    else
-        res = vmpu_mem_add(box_id, start, size, acl);
-
-    if(!res)
-        HALT_ERROR(NOT_ALLOWED, "ACL in unhandled memory area\n");
-    else
-        if(res<0)
-            HALT_ERROR(SANITY_CHECK_FAILED, "ACL sanity check failed [%i]\n", res);
-}
-
 void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
 {
+    static uint32_t g_box_mem_pos = 0;
+
     /* handle main box */
     if (box_id == 0)
     {
@@ -215,13 +177,20 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
         return;
     }
 
+    if (!g_box_mem_pos) {
+        /* initialize box memories, leave stack-band sized gap */
+        g_box_mem_pos = UVISOR_REGION_ROUND_UP(
+            (uint32_t)__uvisor_config.bss_boxes_start) +
+            UVISOR_STACK_BAND_SIZE;
+    }
+
     /* ensure stack & context alignment */
     stack_size = UVISOR_REGION_ROUND_UP(UVISOR_MIN_STACK(stack_size));
 
     /* add stack ACL */
-    vmpu_acl_add(
+    vmpu_region_add_static_acl(
         box_id,
-        (void*)g_box_mem_pos,
+        g_box_mem_pos,
         stack_size,
         UVISOR_TACLDEF_STACK
     );
@@ -250,9 +219,9 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
     );
 
     /* add context ACL */
-    vmpu_acl_add(
+    vmpu_region_add_static_acl(
         box_id,
-        (void*)g_box_mem_pos,
+        g_box_mem_pos,
         bss_size,
         UVISOR_TACLDEF_DATA
     );
@@ -263,6 +232,9 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
 void vmpu_switch(uint8_t src_box, uint8_t dst_box)
 {
     /* check for errors */
+    if (!vmpu_is_box_id_valid(src_box)) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "vMPU switch: The source box ID is out of range (%u).\r\n", src_box);
+    }
     if (!vmpu_is_box_id_valid(dst_box)) {
         HALT_ERROR(SANITY_CHECK_FAILED, "vMPU switch: The destination box ID is out of range (%u).\r\n", dst_box);
     }
@@ -277,31 +249,30 @@ void vmpu_switch(uint8_t src_box, uint8_t dst_box)
 uint32_t vmpu_fault_find_acl(uint32_t fault_addr, uint32_t size)
 {
     /* only support peripheral access and corner cases for now */
-    switch (fault_addr) {
-        case (uint32_t) &SCB->SCR:
-            return UVISOR_TACL_UWRITE | UVISOR_TACL_UREAD;
-        default:
-            /* translate fault_addr into its physical address if it is in the bit-banding region */
-            if (fault_addr >= VMPU_PERIPH_BITBAND_START && fault_addr <= VMPU_PERIPH_BITBAND_END) {
-                fault_addr = VMPU_PERIPH_BITBAND_ALIAS_TO_ADDR(fault_addr);
-            }
-            else if (fault_addr >= VMPU_SRAM_BITBAND_START && fault_addr <= VMPU_SRAM_BITBAND_END) {
-                fault_addr = VMPU_SRAM_BITBAND_ALIAS_TO_ADDR(fault_addr);
-            }
-
-            /* look for ACL */
-            if( (fault_addr>=AIPS0_BASE) &&
-                ((fault_addr<(AIPS0_BASE+(0xFEUL*(AIPSx_SLOT_SIZE))))) )
-                return vmpu_fault_find_acl_aips(g_active_box, fault_addr, size);
-            else
-                return vmpu_fault_find_acl_mem(g_active_box, fault_addr, size);
+    /* FIXME: Use SECURE_ACCESS for SCR! */
+    if (fault_addr == (uint32_t) &SCB->SCR) {
+        return UVISOR_TACL_UWRITE | UVISOR_TACL_UREAD;
     }
+
+    /* translate fault_addr into its physical address if it is in the bit-banding region */
+    if (VMPU_PERIPH_BITBAND_START <= fault_addr && fault_addr <= VMPU_PERIPH_BITBAND_END) {
+        fault_addr = VMPU_PERIPH_BITBAND_ALIAS_TO_ADDR(fault_addr);
+    }
+    else if (VMPU_SRAM_BITBAND_START <= fault_addr && fault_addr <= VMPU_SRAM_BITBAND_END) {
+        fault_addr = VMPU_SRAM_BITBAND_ALIAS_TO_ADDR(fault_addr);
+    }
+
+    /* look for ACL */
+    if( (AIPS0_BASE <= fault_addr) && (fault_addr < (AIPS0_BASE + 0xFEUL * AIPSx_SLOT_SIZE)) ) {
+        return vmpu_fault_find_acl_aips(g_active_box, fault_addr, size);
+    }
+
+    return 0;
 }
 
 void vmpu_load_box(uint8_t box_id)
 {
-    if(box_id != 0)
-    {
+    if(box_id != 0) {
         HALT_ERROR(NOT_IMPLEMENTED, "currently only box 0 can be loaded");
     }
     vmpu_aips_switch(box_id, box_id);
@@ -310,47 +281,10 @@ void vmpu_load_box(uint8_t box_id)
 
 void vmpu_arch_init(void)
 {
-    /* enable mem, bus and usage faults */
-    SCB->SHCSR |= 0x70000;
-
-    /* initialize box memories, leave stack-band sized gap */
-    g_box_mem_pos = UVISOR_REGION_ROUND_UP(
-        (uint32_t)__uvisor_config.bss_boxes_start) +
-        UVISOR_STACK_BAND_SIZE;
+    vmpu_mpu_init();
 
     /* init memory protection */
     vmpu_mem_init();
-}
 
-int vmpu_is_region_size_valid(uint32_t size)
-{
-    /* Align size to 32B. */
-    const uint32_t masked_size = size & ~31;
-    if (masked_size < 32 || (1 << 29) < masked_size) {
-        /* 2^5 == 32, which is the minimum region size. */
-        /* 2^29 == 512M, which is the maximum region size. */
-        return 0;
-    }
-    /* There is no rounding, we only care about an exact match! */
-    return (masked_size == size);
-}
-
-uint32_t vmpu_round_up_region(uint32_t addr, uint32_t size)
-{
-    if (!vmpu_is_region_size_valid(size)) {
-        /* Region size must be valid! */
-        return 0;
-    }
-    /* Alignment is always 32B. */
-    const uint32_t mask = 31;
-
-    /* Adding the mask can overflow. */
-    const uint32_t rounded_addr = addr + mask;
-    /* Check for overflow. */
-    if (rounded_addr < addr) {
-        /* This means the address was too large to align. */
-        return 0;
-    }
-    /* Mask the rounded address to get the aligned address. */
-    return (rounded_addr & ~mask);
+    vmpu_mpu_lock();
 }
