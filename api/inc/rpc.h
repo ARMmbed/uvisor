@@ -33,13 +33,18 @@
 
 /** Wait for incoming RPC.
  *
- * @param fn_ptr_array an array of RPC function targets that this call to
- *                     `rpc_fncall_waitfor` should handle RPC to
- * @param fn_count     the number of function targets in this array
- * @param timeout_ms   specifies how long to wait (in ms) for an incoming RPC
- *                     message before returning
+ * @param fn_ptr_array       an array of RPC function targets that this call to
+ *                           `rpc_fncall_waitfor` should handle RPC to
+ * @param fn_count           the number of function targets in this array
+ * @param box_id_caller[out] a memory location to store the box ID of the
+ *                           calling box (the source box of the RPC). This is
+ *                           set before the RPC is dispatched, so that the RPC
+ *                           target function can read from this location to
+ *                           determine the calling box ID. Optional.
+ * @param timeout_ms         specifies how long to wait (in ms) for an incoming
+ *                           RPC message before returning
  */
-UVISOR_EXTERN int rpc_fncall_waitfor(const TFN_Ptr fn_ptr_array[], size_t fn_count, uint32_t timeout_ms);
+UVISOR_EXTERN int rpc_fncall_waitfor(const TFN_Ptr fn_ptr_array[], size_t fn_count, int * box_id_caller, uint32_t timeout_ms);
 
 /** Wait for an outgoing RPC to finish.
  *

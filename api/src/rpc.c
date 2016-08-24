@@ -277,7 +277,7 @@ static int query_for_fn_group(uvisor_pool_slot_t slot, void * context)
 }
 
 /* Return true if and only if we handled an RPC message */
-static int handle_incoming_rpc(uvisor_rpc_fn_group_t * fn_group) {
+static int handle_incoming_rpc(uvisor_rpc_fn_group_t * fn_group, int * box_id_caller) {
     uvisor_pool_slot_t msg_slot;
     uvisor_rpc_message_t * msg;
     query_for_fn_group_context_t context;
@@ -313,6 +313,13 @@ static int handle_incoming_rpc(uvisor_rpc_fn_group_t * fn_group) {
         return 0;
     }
 
+    /* Save the calling box ID before the RPC target function is called, so
+     * that the RPC target function can read that variable to find out what box
+     * called it. */
+    if (box_id_caller) {
+        *box_id_caller = msg->other_box_id;
+    }
+
     /* Dispatch the RPC. */
     TFN_Ptr fn = (TFN_Ptr) msg->gateway->target;
     msg->result = fn(msg->p0, msg->p1, msg->p2, msg->p3);
@@ -325,7 +332,7 @@ static int handle_incoming_rpc(uvisor_rpc_fn_group_t * fn_group) {
     return 1;
 }
 
-int rpc_fncall_waitfor(const TFN_Ptr fn_ptr_array[], size_t fn_count, uint32_t timeout_ms)
+int rpc_fncall_waitfor(const TFN_Ptr fn_ptr_array[], size_t fn_count, int * box_id_caller, uint32_t timeout_ms)
 {
     uvisor_rpc_fn_group_t * fn_group;
     int status;
@@ -347,7 +354,7 @@ int rpc_fncall_waitfor(const TFN_Ptr fn_ptr_array[], size_t fn_count, uint32_t t
 
         /* There may already be incoming messages we can handle, enqueued
          * before our function group was allocated. */
-        handled = handle_incoming_rpc(fn_group);
+        handled = handle_incoming_rpc(fn_group, box_id_caller);
         if (handled) {
             /* We handled a message, so return. We don't want the first (or
              * any) call to rpc_fncall_waitfor handle more than incoming RPC
@@ -368,7 +375,7 @@ int rpc_fncall_waitfor(const TFN_Ptr fn_ptr_array[], size_t fn_count, uint32_t t
     }
 
     /* We woke up. Look for any RPC we can handle. */
-    handled = handle_incoming_rpc(fn_group);
+    handled = handle_incoming_rpc(fn_group, box_id_caller);
 
     return handled == 1 ? 0 : -1;
 }
