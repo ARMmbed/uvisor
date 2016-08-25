@@ -31,6 +31,7 @@ $ mbed new uvisor-example
 
 The mbed-cli tools will automatically fetch the mbed codebase for you. By default, git will be used to track your code changes, so your application will be ready to be pushed to a git server, if you want to.
 
+
 Once the import process is finished, create a `source` folder:
 ```bash
 $ mkdir ~/code/uvisor-example/source
@@ -52,6 +53,12 @@ int main(void)
         Thread::wait(500);
     }
 }
+```
+
+Fetch mbed-os-5.1.1 -- the latest stable mbed release known to work with the included example code. The mbed tool, by default, checks out the latest commit which is prone to bugs. 
+```bash
+$ cd mbed-os
+$ mbed update mbed-os-5.1.1
 ```
 
 This simple application just blinks an LED from the main thread, which is created by default by the OS.
@@ -114,6 +121,9 @@ static const UvisorBoxAclItem g_main_box_acls[] = {
     {OSC,   sizeof(*OSC),   UVISOR_TACLDEF_PERIPH},
     {MCG,   sizeof(*MCG),   UVISOR_TACLDEF_PERIPH},
     {UART0, sizeof(*UART0), UVISOR_TACLDEF_PERIPH},
+
+    /* Required for both */
+    {PIT,    sizeof(*PIT),    UVISOR_TACLDEF_PERIPH},
 };
 
 /* Enable uVisor, using the ACLs we just created. */
