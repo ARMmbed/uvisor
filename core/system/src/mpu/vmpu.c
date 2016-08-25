@@ -307,6 +307,9 @@ static void vmpu_load_boxes(void)
             (*box_cfgtbl)->stack_size
         );
 
+        /* Save the BSS size for this box. */
+        g_context_current_states[box_id].bss_size = bss_size;
+
         /* Initialize box index. */
         vmpu_box_index_init(
             box_id,
