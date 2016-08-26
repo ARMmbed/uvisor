@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #include "api/inc/export_table_exports.h"
+#include "api/inc/halt_exports.h"
 #include "rt_OsEventObserver.h"
 
 int uvisor_lib_init(void)
@@ -23,12 +24,12 @@ int uvisor_lib_init(void)
 
     if (export_table->magic != UVISOR_EXPORT_MAGIC) {
         /* We couldn't find the magic. */
-        return -1;
+        return UVISOR_ERROR_BAD_MAGIC;
     }
 
     if (export_table->version != UVISOR_EXPORT_VERSION) {
         /* The version we understand is not the version we found. */
-        return -1;
+        return UVISOR_ERROR_BAD_VERSION;
     }
 
     /* osRegisterForOsEvents won't allow a second call. For systems that don't

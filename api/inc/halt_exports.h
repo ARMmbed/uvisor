@@ -20,6 +20,8 @@
 #define UVISOR_ERROR_INVALID_BOX_ID             (-2)
 #define UVISOR_ERROR_BUFFER_TOO_SMALL           (-3)
 #define UVISOR_ERROR_BOX_NAMESPACE_ANONYMOUS    (-4)
+#define UVISOR_ERROR_BAD_MAGIC                  (-5)
+#define UVISOR_ERROR_BAD_VERSION                (-6)
 
 
 #define UVISOR_ERROR_CLASS_MASK     (0xFFFF0000UL)
