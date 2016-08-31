@@ -138,7 +138,7 @@ vpath %.c $(CORE_SYSTEM_DIR)/src:\
           $(CORE_SYSTEM_DIR)/src/mpu:\
           $(CORE_DEBUG_DIR)/src:\
           $(CORE_LIB_DIR)/printf:\
-          $(PLATFORM_DIR)/src
+          $(PLATFORM_DIR)/$(PLATFORM)/src
 endif
 
 SYSLIBS:=-lgcc -lc -lnosys
