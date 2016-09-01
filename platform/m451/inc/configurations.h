@@ -35,10 +35,6 @@
 #   define FLASH_LENGTH_MIN 0xA000
 #   define SRAM_LENGTH_MIN  0x4000
 
-    /* Host platform memory requirements */
-#   define HOST_SRAM_ORIGIN_MIN 0x20000000
-#   define HOST_SRAM_LENGTH_MAX 0x8000
-
 /*******************************************************************************
  * Hardware-specific configurations
  *

@@ -34,10 +34,6 @@
 #if SRAM_LENGTH_MIN <= 0
 #error "SRAM_LENGTH_MIN must be strictly positive."
 #endif
-#if HOST_SRAM_LENGTH_MAX <= 0
-#error "HOST_SRAM_LENGTH_MAX must be strictly positive."
-#endif
-
 
 static const MpuRegion* vmpu_fault_find_region(uint32_t fault_addr)
 {

@@ -37,10 +37,6 @@
 #define FLASH_ORIGIN 0x0
 #define FLASH_OFFSET 0x400
 
-/* Host platform memory requirements */
-#define HOST_SRAM_ORIGIN_MIN 0x20000000
-#define HOST_SRAM_LENGTH_MAX 0x20000
-
 /*******************************************************************************
  * Hardware-specific configurations
  *
