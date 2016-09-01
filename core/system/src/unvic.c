@@ -22,6 +22,13 @@
 #include "unvic.h"
 #include "vmpu.h"
 
+/* Define the correct NVIC Priority Register name. */
+#if defined(CORE_CORTEX_M81)
+#define NVIC_IPR NVIC->IPR
+#else /* defined(CORE_CORTEX_M81) */
+#define NVIC_IPR NVIC->IP
+#endif /* defined(CORE_CORTEX_M81) */
+
 /* unprivileged vector table */
 TIsrUVector g_unvic_vector[NVIC_VECTORS];
 uint8_t g_nvic_prio_bits;
@@ -569,7 +576,7 @@ void unvic_init(void)
      * The architecture specifies that unused/not implemented bits in the
      * NVIC IP registers read back as 0. */
     __disable_irq();
-    prio = (uint8_t volatile *) &(NVIC->IP[0]);
+    prio = (uint8_t volatile *) &(NVIC_IPR[0]);
     prio_bits = *prio;
     *prio = 0xFFU;
     g_nvic_prio_bits = (uint8_t) __builtin_popcount(*prio);
