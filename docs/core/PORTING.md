@@ -314,10 +314,10 @@ ResetHandler:
     ...
     ldr r0, =SystemInit
     blx r0
-#if       defined(FEATURE_UVISOR) && defined(UVISOR_SUPPORTED)
+#if defined(FEATURE_UVISOR) && defined(TARGET_UVISOR_SUPPORTED)
     ldr r0, =uvisor_init    /* [*] Insert this. */
     blx r0                  /* [*] Insert this. */
-#endif /* defined(FEATURE_UVISOR) && defined(UVISOR_SUPPORTED) */
+#endif /* defined(FEATURE_UVISOR) && defined(TARGET_UVISOR_SUPPORTED) */
     ldr r0, =__start
     bx  r0
     ...
@@ -413,17 +413,24 @@ SECTIONS
         . = ALIGN(32);
         __uvisor_bss_boxes_end = .;
 
+        . = ALIGN(32);
+        __uvisor_bss_end = .;
+    } > m_data
+
+    /* Ensure that the page heap is put right after the uVisor BSS section in
+     * SRAM. */
+    /* Heap space for the page allocator */
+    .page_heap (NOLOAD) :
+    {
+        . = ALIGN(32);
+        __uvisor_page_start = .;
+        KEEP(*(.keep.uvisor.page_heap))
         /************************** ARMv7-M MPU only **************************/
-        __uvisor_bss_end_padding_max = (2 << (LOG2CEIL(__uvisor_bss_end - ORIGIN(m_data)) - 1)) / 8;
-        . = MIN(
-            __uvisor_bss_end_padding_max * (((__uvisor_bss_end - ORIGIN(m_data)) / __uvisor_bss_end_padding_max) +
-            MIN((__uvisor_bss_end - ORIGIN(m_data)) % __uvisor_bss_end_padding_max, 1)) - __UVISOR_SRAM_OFFSET,
-            ORIGIN(m_data) + LENGTH(m_data)
-        );
+        . = ALIGN((1 << LOG2CEIL(LENGTH(m_data))) / 8);
         /********************** Other MPU architectures ***********************/
         . = ALIGN(32);
         /**********************************************************************/
-        __uvisor_bss_end= .;
+        __uvisor_page_end = .;
     } > m_data
 
     /* Now we can place the .data section, which will be loaded to SRAM. */
@@ -434,7 +441,7 @@ SECTIONS
 
     /* uVisor configuration section
      * This section must be located after all other flash regions. */
-    .uvisor.secure (NOLOAD):
+    .uvisor.secure :
     {
         . = ALIGN(32);
         __uvisor_secure_start = .;
@@ -484,32 +491,24 @@ SECTIONS
     /* Note: The uVisor requires the original heap start and end addresses to be
              provided. */
 
-    .heap :
+    .heap (NOLOAD):
     {
         . = ALIGN(8);
-        __uvisor_heap_start = .;
+        __uvisor_heap_start = .;  /* <----- Add this! */
         __end__ = .;
         PROVIDE(end = .);
         __HeapBase = .;
         . += HEAP_SIZE;
         __HeapLimit = .;
-        __uvisor_heap_end = .;
+        __uvisor_heap_end = .;    /* <----- Add this! */
     } > m_data
 
-    .stack :
-    {
-        . = ALIGN(8);
-        . += STACK_SIZE;
-        __StackTop = .;
-    } > m_data
+    /* Initialize the stack at the end of the memory block. */
+    __StackTop = ORIGIN(m_data) + LENGTH(m_data);
+    __StackLimit = __StackTop - STACK_SIZE;
+    PROVIDE(__stack = __StackTop);
 
-    /* Heap space for the page allocator */
-    .page_heap (NOLOAD) :
-    {
-        __uvisor_page_start = .;
-        . = ORIGIN(m_data) + LENGTH(m_data) - 4;
-        __uvisor_page_end = .;
-    } > m_data
+    ...
 
     /* Provide physical memory boundaries for uVisor. */
     __uvisor_flash_start = ORIGIN(m_interrupts);
