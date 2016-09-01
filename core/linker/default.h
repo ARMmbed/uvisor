@@ -36,13 +36,18 @@ ENTRY(main_entry)
 #error "uVisor does not fit into the target memory. UVISOR_SRAM_LENGTH_USED must be smaller than UVISOR_SRAM_LENGTH_AVAIL."
 #endif /* UVISOR_SRAM_LENGTH_USED > UVISOR_SRAM_LENGTH_AVAIL */
 
-#ifndef STACK_GUARD_BAND
-#define STACK_GUARD_BAND 32
-#endif /* STACK_GUARD_BAND */
+/* Default uVisor stack size
+ * Note: This is uVisor own stack, not the boxes' stack. */
+#if !defined(STACK_SIZE)
+#define STACK_SIZE 2048
+#endif /* !defined(STACK_SIZE) */
 
-#ifndef STACK_SIZE
-#define STACK_SIZE 1024
-#endif /* STACK_SIZE */
+/* Default uVisor own stack guard band
+ * Note: Currently we do not actively use the stack guard to isolate the uVisor
+ *       stack from the rest of the protected memories. For this reason the
+ *       symbol is arbitrarily small and cannot be defined by the
+ *       platform-specific configurations. */
+#define STACK_GUARD_BAND 32
 
 MEMORY
 {

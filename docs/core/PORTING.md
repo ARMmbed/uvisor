@@ -183,19 +183,18 @@ This file contains uVisor customizations that are not hardware-specific but can 
 
 The symbols that you can specify here are listed in the table below.
 
-| Symbol                        | Description |
-|-------------------------------|-------------|
-| `STACK_GUARD_BAND`            | TODO        |
-| `STACK_SIZE`                  | TODO        |
-| `NDEBUG`                      | TODO        |
-| `DEBUG_MAX_BUFFER`            | TODO        |
-| `CHANNEL_DEBUG`               | TODO        |
-| `MPU_MAX_PRIVATE_FUNCTIONS`   | TODO        |
-| `MPU_REGION_COUNT`            | TODO        |
-| `ARMv7M_MPU_REGIONS`          | TODO        |
-| `ARMv7M_ALIGNMENR_BITS`       | TODO        |
-| `ARMv7M_MPU_RESERVED_REGIONS` | TODO        |
-| `UVISOR_MAX_ACLS`             | TODO        |
+| Symbol                        | Description                    |
+|-------------------------------|--------------------------------|
+| `STACK_SIZE`                  | The size of uVisor's own stack |
+| `NDEBUG`                      | TODO                           |
+| `DEBUG_MAX_BUFFER`            | TODO                           |
+| `CHANNEL_DEBUG`               | TODO                           |
+| `MPU_MAX_PRIVATE_FUNCTIONS`   | TODO                           |
+| `MPU_REGION_COUNT`            | TODO                           |
+| `ARMv7M_MPU_REGIONS`          | TODO                           |
+| `ARMv7M_ALIGNMENR_BITS`       | TODO                           |
+| `ARMv7M_MPU_RESERVED_REGIONS` | TODO                           |
+| `UVISOR_MAX_ACLS`             | TODO                           |
 
 **Table 3**. Optional hardware-specific `config.h` symbols
 
@@ -207,7 +206,9 @@ The symbols that you can specify here are listed in the table below.
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
-#define STACK_SIZE 2048
+/* Your custom optional settings here. See Table 3. */
+...
+
 #include "configurations.h"
 
 #endif /* __CONFIG_H__ */
