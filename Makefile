@@ -140,7 +140,11 @@ ifeq ("$(PROGRAM_VERSION)","")
 PROGRAM_VERSION:='unknown'
 endif
 
+ifeq ("$(ARCH_MPU)","ARMv8M")
+FLAGS_CORE:=-march=armv8-m.main -mthumb
+else
 FLAGS_CORE:=-mcpu=cortex-m3 -march=armv7-m -mthumb
+endif
 
 LDFLAGS:=\
         $(FLAGS_CORE) \
