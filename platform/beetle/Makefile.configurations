@@ -17,4 +17,4 @@
 #
 ###########################################################################
 CONFIGURATIONS:= \
-	CONFIGURATION_BEETLE_M3_0x20000000_0x0
+	CONFIGURATION_BEETLE_M3_0x20000000_0x140

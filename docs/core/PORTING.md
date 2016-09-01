@@ -153,22 +153,55 @@ This file contains the uVisor configurations for your family. Remember that each
 #ifndef __CONFIGURATIONS_H__
 #define __CONFIGURATIONS_H__
 
-#define FLASH_ORIGIN     0x0
-#define FLASH_OFFSET     0x400
+/*******************************************************************************
+ * Family-wide configurations
+ ******************************************************************************/
+
+/* The symbols below *must* be calculated from values across the family. */
+
+/* Maximum number of vectors seen across the family:
+ *   NVIC_VECTORS = max(NVIC_VECTORS_i) for i in family */
+#define NVIC_VECTORS 122
+
+/* Minimum memory requirements:
+ *   FLASH_LENGTH_MIN = min(FLASH_LENGTH_i) for i in family
+ *   SRAM_LENGTH_MIN = min(SRAM_LENGTH_i) for i in family */
 #define FLASH_LENGTH_MIN 0x80000
 #define SRAM_LENGTH_MIN  0x10000
-#define NVIC_VECTORS     122
+
+/* The symbols below can be either configuration-specific or family-wide,
+ * depending on your requirements. See the porting guide for more details. */
+
+/* Memory boundaries */
+#define FLASH_ORIGIN 0x0
+#define FLASH_OFFSET 0x400
+
+/* ARM core selection */
 #define CORE_CORTEX_M4
 
+/*******************************************************************************
+ * Hardware-specific configurations
+ ******************************************************************************/
+
+/* The symbols below are specific to each configuration. */
+
 #if defined(CONFIGURATION_${family}_1)
+
+/* Memory boundaries */
 #define SRAM_ORIGIN 0x20000000
 #define SRAM_OFFSET 0x400
-#endif
 
-#if defined(CONFIGURATION_${family}_2)
+#elif defined(CONFIGURATION_${family}_2)
+
+/* Memory boundaries */
 #define SRAM_ORIGIN 0x1FFF0000
 #define SRAM_OFFSET 0x200
-#endif
+
+#else /* Hardware-specific configurations */
+
+#error "Unrecognized uVisor configuration. Check your Makefile."
+
+#endif /* Hardware-specific configurations */
 
 #endif /* __CONFIGURATIONS_H__ */
 ```

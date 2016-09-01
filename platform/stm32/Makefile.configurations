@@ -16,5 +16,5 @@
 #  limitations under the License.
 #
 ###########################################################################
-CONFIGURATIONS:= \
+CONFIGURATIONS:=\
 	CONFIGURATION_STM32_M4_0x10000000_0x0

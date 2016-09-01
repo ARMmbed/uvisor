@@ -16,16 +16,14 @@
 #  limitations under the License.
 #
 ###########################################################################
-
 # uVisor configurations for EFM32 devices
-# The M3_P1 configuration supports
+# The M3_P1 configuration supports:
 #  - EFM32 Giant Gecko
 #  - EFM32 Leopard Gecko
 #  - EFM32 Jade Gecko
-# The M4_P1 configuration supports
+# The M4_P1 configuration supports:
 #  - EFM32 Wonder Gecko
 #  - EFM32 Pearl Gecko
-
-CONFIGURATIONS:=              \
+CONFIGURATIONS:=\
 	CONFIGURATION_EFM32_M3_P1 \
 	CONFIGURATION_EFM32_M4_P1

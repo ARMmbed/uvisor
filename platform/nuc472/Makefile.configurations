@@ -16,5 +16,5 @@
 #  limitations under the License.
 #
 ###########################################################################
-CONFIGURATIONS:= \
+CONFIGURATIONS:=\
 	CONFIGURATION_NUC472_M4_0x20000000_0x0

@@ -18,23 +18,29 @@
 #define __CONFIGURATIONS_H__
 
 /*******************************************************************************
- * Universal configurations
+ * Family-wide configurations
  ******************************************************************************/
 
-/* Maximum number of interrupt vectors */
+/* The symbols below *must* be calculated from values across the family. */
+
+/* Maximum number of vectors seen across the family:
+ *   NVIC_VECTORS = max(NVIC_VECTORS_i) for i in family */
 #define NVIC_VECTORS 40
+
+/* Minimum memory requirements:
+ *   FLASH_LENGTH_MIN = min(FLASH_LENGTH_i) for i in family
+ *   SRAM_LENGTH_MIN = min(SRAM_LENGTH_i) for i in family */
+#define FLASH_LENGTH_MIN 0x10000    /* 64k */
+#define SRAM_LENGTH_MIN  0x8000     /* 32k */
+
+/* The symbols below can be either configuration-specific or family-wide,
+ * depending on your requirements. See the porting guide for more details. */
 
 /* Memory boundaries */
 #define FLASH_ORIGIN 0x00000000
 #define FLASH_OFFSET 0x100
-
-/* Memory boundaries */
 #define SRAM_ORIGIN  0x20000000
 #define SRAM_OFFSET  0x0
-
-/* Minimum memory requirements */
-#define FLASH_LENGTH_MIN 0x10000    /* 64k */
-#define SRAM_LENGTH_MIN  0x8000     /* 32k */
 
 /*******************************************************************************
  * Hardware-specific configurations
@@ -43,14 +49,23 @@
  *   - CORE
  *   - PLATFORM
  ******************************************************************************/
+
+/* The symbols below are specific to each configuration. */
+
 #if defined(CONFIGURATION_EFM32_M3_P1)
-    /* ARM core selection */
-#   define CORE_CORTEX_M3
+
+/* ARM core selection */
+#define CORE_CORTEX_M3
+
 #elif defined(CONFIGURATION_EFM32_M4_P1)
-    /* ARM core selection */
-#   define CORE_CORTEX_M4
-#else
-#    error "Unrecognized uVisor configuration. Check your Makefile."
-#endif
+
+/* ARM core selection */
+#define CORE_CORTEX_M4
+
+#else /* Hardware-specific configurations */
+
+#error "Unrecognized uVisor configuration. Check your Makefile."
+
+#endif /* Hardware-specific configurations */
 
 #endif /* __CONFIGURATIONS_H__ */
