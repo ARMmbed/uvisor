@@ -41,7 +41,8 @@ typedef struct
  * @returns             rounded size of the MPU region depending on ACL flags.
  * @retval 0            start, size or access rights are not consistent for this platform
  */
-uint32_t vmpu_region_translate_acl(MpuRegion * const region, uint32_t start, uint32_t size, UvisorBoxAcl acl);
+uint32_t vmpu_region_translate_acl(MpuRegion * const region, uint32_t start, uint32_t size,
+    UvisorBoxAcl acl, uint32_t acl_hw_spec);
 
 /** Bind an ACL to a box.
  *
@@ -55,7 +56,8 @@ uint32_t vmpu_region_translate_acl(MpuRegion * const region, uint32_t start, uin
  * @returns             rounded size of the MPU region depending on ACL flags.
  * @retval 0            start, size or access rights are not consistent for this platform
  */
-uint32_t vmpu_region_add_static_acl(uint8_t box_id, uint32_t start, uint32_t size, UvisorBoxAcl acl);
+uint32_t vmpu_region_add_static_acl(uint8_t box_id, uint32_t start, uint32_t size,
+    UvisorBoxAcl acl, uint32_t acl_hw_spec);
 
 /** Returns all MPU regions of a box as an array of `MpuRegion`s.
  *
@@ -89,11 +91,13 @@ void vmpu_mpu_init(void);
  * @param index         MPU index to write this region to
  * @param start         start address of ACL region
  * @param size          size of the ACL region
- * @param acl           access rights of the ACL region
+ * @param acl           access rights for the ACL region
+ * @param acl_hw_spec   hardware-specific access rights for the ACL region
  * @returns             rounded size of the MPU region depending on ACL flags.
  * @retval 0            index, start, size or access rights are not consistent for this platform
  */
-uint32_t vmpu_mpu_set_static_acl(uint8_t index, uint32_t start, uint32_t size, UvisorBoxAcl acl);
+uint32_t vmpu_mpu_set_static_acl(uint8_t index, uint32_t start, uint32_t size,
+    UvisorBoxAcl acl, uint32_t acl_hw_spec);
 
 /** Lock the MPU after setting global ACLs using `vmpu_mpu_set_static_acl`. */
 void vmpu_mpu_lock(void);

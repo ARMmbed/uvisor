@@ -235,7 +235,8 @@ static int vmpu_mem_push_page_acl_iterator(uint8_t mask, uint8_t index)
         &region,
         ((uint32_t) __uvisor_config.page_end - size * (index + 1)),
         size,
-        UVISOR_TACLDEF_DATA | UVISOR_TACL_EXECUTE | UVISOR_TACL_SUBREGIONS(~mask)
+        UVISOR_TACLDEF_DATA | UVISOR_TACL_EXECUTE,
+        ~mask
     );
     vmpu_mpu_push(&region, 100);
     /* We do not add more than one region for the page heap. */
@@ -375,7 +376,8 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
         box_id,
         box_mem_pos,
         size,
-        UVISOR_TACLDEF_STACK | (slots_ctx ? UVISOR_TACL_SUBREGIONS(1UL << slots_ctx) : 0)
+        UVISOR_TACLDEF_STACK,
+        slots_ctx ? 1UL << slots_ctx : 0
     );
 
     /* move on to the next memory block */
@@ -409,7 +411,8 @@ void vmpu_arch_init_hw(void)
         0,
         FLASH_ORIGIN,
         ((uint32_t) __uvisor_config.secure_end) - FLASH_ORIGIN,
-        UVISOR_TACLDEF_SECURE_CONST | UVISOR_TACL_EXECUTE
+        UVISOR_TACLDEF_SECURE_CONST | UVISOR_TACL_EXECUTE,
+        0
     );
 
     /* Enable the public SRAM:
@@ -473,6 +476,7 @@ void vmpu_arch_init_hw(void)
         1,
         (uint32_t) __uvisor_config.sram_start,
         total_size,
-        UVISOR_TACLDEF_DATA | UVISOR_TACL_UEXECUTE | UVISOR_TACL_SUBREGIONS(subregions_disable_mask)
+        UVISOR_TACLDEF_DATA | UVISOR_TACL_UEXECUTE,
+        subregions_disable_mask
     );
 }

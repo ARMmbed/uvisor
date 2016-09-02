@@ -63,15 +63,20 @@ void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
 
 void vmpu_mem_init(void)
 {
-    /* enable read access to unsecure flash regions - allow execution */
+    /* enable read access to unsecure flash regions
+     * - allow execution
+     * - give read access to ENET DMA bus master */
     vmpu_mpu_set_static_acl(1, FLASH_ORIGIN, (uint32_t) __uvisor_config.secure_end - FLASH_ORIGIN,
         UVISOR_TACL_SREAD |
         UVISOR_TACL_SEXECUTE |
         UVISOR_TACL_UREAD |
         UVISOR_TACL_UEXECUTE |
-        UVISOR_TACL_USER);
+        UVISOR_TACL_USER,
+        0x4UL << 18);
 
-    /* rest of SRAM, accessible to mbed - non-executable for uvisor */
+    /* rest of SRAM, accessible to mbed
+     * - non-executable for uvisor
+     * - five read/write access to ENET DMA bus master */
     vmpu_mpu_set_static_acl(2, (uint32_t) __uvisor_config.page_end,
         (uint32_t) __uvisor_config.sram_end - (uint32_t) __uvisor_config.page_end,
         UVISOR_TACL_SREAD |
@@ -79,5 +84,6 @@ void vmpu_mem_init(void)
         UVISOR_TACL_UREAD |
         UVISOR_TACL_UWRITE |
         UVISOR_TACL_UEXECUTE |
-        UVISOR_TACL_USER);
+        UVISOR_TACL_USER,
+        0x6UL << 18);
 }

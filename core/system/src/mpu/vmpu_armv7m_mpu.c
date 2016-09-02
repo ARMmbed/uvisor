@@ -181,7 +181,8 @@ static uint32_t vmpu_map_acl(UvisorBoxAcl acl)
     return flags;
 }
 
-uint32_t vmpu_region_translate_acl(MpuRegion * const region, uint32_t start, uint32_t size, UvisorBoxAcl acl)
+uint32_t vmpu_region_translate_acl(MpuRegion * const region, uint32_t start, uint32_t size,
+    UvisorBoxAcl acl, uint32_t acl_hw_spec)
 {
     uint32_t config, bits, mask, size_rounded, subregions;
 
@@ -213,8 +214,8 @@ uint32_t vmpu_region_translate_acl(MpuRegion * const region, uint32_t start, uin
     /* map generic ACL's to internal ACL's */
     config = vmpu_map_acl(acl);
 
-    /* calculate subregions from ACL */
-    subregions = ((acl >> UVISOR_TACL_SUBREGIONS_POS) << MPU_RASR_SRD_Pos) & MPU_RASR_SRD_Msk;
+    /* calculate subregions from hw-specific ACL */
+    subregions = (acl_hw_spec << MPU_RASR_SRD_Pos) & MPU_RASR_SRD_Msk;
 
     /* enable region & add size */
     region->config = config | MPU_RASR_ENABLE_Msk | ((uint32_t) (bits - 1) << MPU_RASR_SIZE_Pos) | subregions;
@@ -225,7 +226,8 @@ uint32_t vmpu_region_translate_acl(MpuRegion * const region, uint32_t start, uin
     return size_rounded;
 }
 
-uint32_t vmpu_region_add_static_acl(uint8_t box_id, uint32_t start, uint32_t size, UvisorBoxAcl acl)
+uint32_t vmpu_region_add_static_acl(uint8_t box_id, uint32_t start, uint32_t size,
+    UvisorBoxAcl acl, uint32_t acl_hw_spec)
 {
     MpuRegion * region;
     MpuRegionSlice * box;
@@ -249,7 +251,8 @@ uint32_t vmpu_region_add_static_acl(uint8_t box_id, uint32_t start, uint32_t siz
         HALT_ERROR(SANITY_CHECK_FAILED, "unordered region allocation\n");
     }
 
-    rounded_size = vmpu_region_translate_acl(region, start, size, acl);
+    rounded_size = vmpu_region_translate_acl(region, start, size,
+        acl, acl_hw_spec);
 
     box->count++;
     g_mpu_region_count++;
@@ -362,7 +365,8 @@ void vmpu_mpu_lock(void)
     MPU->CTRL = MPU_CTRL_ENABLE_Msk | MPU_CTRL_PRIVDEFENA_Msk;
 }
 
-uint32_t vmpu_mpu_set_static_acl(uint8_t index, uint32_t start, uint32_t size, UvisorBoxAcl acl)
+uint32_t vmpu_mpu_set_static_acl(uint8_t index, uint32_t start, uint32_t size,
+    UvisorBoxAcl acl, uint32_t acl_hw_spec)
 {
     MpuRegion region;
     uint32_t rounded_size;
@@ -372,7 +376,8 @@ uint32_t vmpu_mpu_set_static_acl(uint8_t index, uint32_t start, uint32_t size, U
         return 0;
     }
 
-    rounded_size = vmpu_region_translate_acl(&region, start, size, acl);
+    rounded_size = vmpu_region_translate_acl(&region, start, size,
+        acl, acl_hw_spec);
 
     /* apply RASR & RBAR */
     MPU->RBAR = MPU_RBAR(index, region.start);
