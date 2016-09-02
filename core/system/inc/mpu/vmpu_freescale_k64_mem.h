@@ -26,12 +26,12 @@
  *    |---|------------|------------|-------|
  *    | 0 | core       | r/w        | -     |
  *    | 1 | debugger   | r/w/x      | r/w/x |
- *    | 2 | dma        | r/w        | -     |
- *    | 3 | enet       | r/w        | -     |
+ *    | 2 | dma        | -          | -     |
+ *    | 3 | enet       | -          | -     |
  *    | 4 | usb        | NA         | -     |
  *    | 5 | core       | NA         | -     |
  */
-#define UVISOR_TACL_BACKGROUND 0x000827D0U
+#define UVISOR_TACL_BACKGROUND 0x000007D0U
 
 extern int vmpu_mem_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl);
 extern void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box);
