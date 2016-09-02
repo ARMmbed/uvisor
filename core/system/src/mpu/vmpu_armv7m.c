@@ -388,7 +388,7 @@ void vmpu_arch_init(void)
 {
     /* Init protected box memory enumeration pointer. */
     DPRINTF("\n\rbox stack segment start=0x%08X end=0x%08X (length=%i)\n\r",
-        __uvisor_config.bss_boxes_start, __uvisor_config.bss_boxes_start,
+        __uvisor_config.bss_boxes_start, __uvisor_config.bss_boxes_end,
         ((uint32_t) __uvisor_config.bss_boxes_end) - ((uint32_t) __uvisor_config.bss_boxes_start));
 
     vmpu_mpu_init();
