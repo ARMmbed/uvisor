@@ -70,10 +70,16 @@ uint32_t vmpu_round_up_region(uint32_t addr, uint32_t size)
     return (rounded_addr & ~mask);
 }
 
-static uint32_t vmpu_map_acl(UvisorBoxAcl acl)
+static uint32_t vmpu_map_acl(UvisorBoxAcl acl, uint32_t acl_hw_spec)
 {
     /* handle user permissions */
     uint32_t perm = (acl & UVISOR_TACL_USER) ? (acl & UVISOR_TACL_UACL) : 0;
+
+    /* Allow uVisor-internal code to extend permissions for certain
+     * ACLs by hardware-specific ACLs like DMA busmaster access.
+     * Ensure that core ACLs are specified trough the generic ACL
+     * method by masking it out. */
+    perm |= (acl_hw_spec & ~0x3FUL);
 
     /* if S-perms are identical to U-perms, refer from S to U */
     if(((acl & UVISOR_TACL_SACL) >> 3) == perm) {
@@ -103,7 +109,8 @@ static uint32_t vmpu_map_acl(UvisorBoxAcl acl)
     return perm;
 }
 
-uint32_t vmpu_region_translate_acl(MpuRegion * const region, uint32_t start, uint32_t size, UvisorBoxAcl acl)
+uint32_t vmpu_region_translate_acl(MpuRegion * const region, uint32_t start, uint32_t size,
+    UvisorBoxAcl acl, uint32_t acl_hw_spec)
 {
     /* ensure that ACL size can be rounded up to slot size */
     if(size % 32)
@@ -126,7 +133,7 @@ uint32_t vmpu_region_translate_acl(MpuRegion * const region, uint32_t start, uin
         return 0;
     }
 
-    region->config = vmpu_map_acl(acl);
+    region->config = vmpu_map_acl(acl, acl_hw_spec);
     region->start = start;
     region->end = start + size;
     region->acl = acl;
@@ -147,7 +154,8 @@ static int vmpu_mem_overlap(uint32_t s1, uint32_t e1, uint32_t s2, uint32_t e2)
         ((s1 >= s2) && (e1 <= e2)) );
 }
 
-static uint32_t vmpu_region_add_static_acl_internal(uint8_t box_id, uint32_t start, uint32_t size, UvisorBoxAcl acl)
+static uint32_t vmpu_region_add_static_acl_internal(uint8_t box_id, uint32_t start, uint32_t size,
+    UvisorBoxAcl acl, uint32_t acl_hw_spec)
 {
     MpuRegion * region;
     MpuRegionSlice * box;
@@ -195,7 +203,8 @@ static uint32_t vmpu_region_add_static_acl_internal(uint8_t box_id, uint32_t sta
         HALT_ERROR(SANITY_CHECK_FAILED, "unordered region allocation\n");
     }
 
-    rounded_size = vmpu_region_translate_acl(region, start, size, acl);
+    rounded_size = vmpu_region_translate_acl(region, start, size,
+        acl, acl_hw_spec);
 
     box->count++;
     g_mpu_region_count++;
@@ -203,7 +212,8 @@ static uint32_t vmpu_region_add_static_acl_internal(uint8_t box_id, uint32_t sta
     return rounded_size;
 }
 
-uint32_t vmpu_region_add_static_acl(uint8_t box_id, uint32_t start, uint32_t size, UvisorBoxAcl acl)
+uint32_t vmpu_region_add_static_acl(uint8_t box_id, uint32_t start, uint32_t size,
+    UvisorBoxAcl acl, uint32_t acl_hw_spec)
 {
     int res;
 
@@ -230,7 +240,8 @@ uint32_t vmpu_region_add_static_acl(uint8_t box_id, uint32_t start, uint32_t siz
     }
     else {
         size = vmpu_region_add_static_acl_internal(box_id, start, size,
-            (acl & UVISOR_TACLDEF_STACK) | UVISOR_TACL_STACK | UVISOR_TACL_USER);
+            (acl & UVISOR_TACLDEF_STACK) | UVISOR_TACL_STACK | UVISOR_TACL_USER,
+            acl_hw_spec);
         res = size ? 1 : 0;
     }
 
@@ -320,7 +331,8 @@ void vmpu_mpu_lock(void)
     MPU->RGDAAC[0] = UVISOR_TACL_BACKGROUND;
 }
 
-uint32_t vmpu_mpu_set_static_acl(uint8_t index, uint32_t start, uint32_t size, UvisorBoxAcl acl)
+uint32_t vmpu_mpu_set_static_acl(uint8_t index, uint32_t start, uint32_t size,
+    UvisorBoxAcl acl, uint32_t acl_hw_spec)
 {
     MpuRegion region;
     MPU_Region * mpu_region;
@@ -331,7 +343,8 @@ uint32_t vmpu_mpu_set_static_acl(uint8_t index, uint32_t start, uint32_t size, U
         return 0;
     }
 
-    rounded_size = vmpu_region_translate_acl(&region, start, size, acl);
+    rounded_size = vmpu_region_translate_acl(&region, start, size,
+        acl, acl_hw_spec);
 
     mpu_region = (MPU_Region *) MPU->WORD[index];
     mpu_region->STARTADDR = region.start;

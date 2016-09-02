@@ -317,7 +317,8 @@ static void vmpu_load_boxes(void)
                         box_id,
                         (uint32_t) region->param1,
                         region->param2,
-                        region->acl | UVISOR_TACL_USER
+                        region->acl | UVISOR_TACL_USER,
+                        0
                     );
                 }
 

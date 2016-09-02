@@ -192,7 +192,8 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
         box_id,
         g_box_mem_pos,
         stack_size,
-        UVISOR_TACLDEF_STACK
+        UVISOR_TACLDEF_STACK,
+        0
     );
 
     /* set stack pointer to box stack size minus guard band */
@@ -223,7 +224,8 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
         box_id,
         g_box_mem_pos,
         bss_size,
-        UVISOR_TACLDEF_DATA
+        UVISOR_TACLDEF_DATA,
+        0
     );
 
     g_box_mem_pos += bss_size + UVISOR_STACK_BAND_SIZE;
