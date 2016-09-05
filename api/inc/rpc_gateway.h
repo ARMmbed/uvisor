@@ -57,10 +57,11 @@
     /* Instanstiate the gateway. This gets resolved at link-time. */ \
     UVISOR_EXTERN TRPCGateway const gw_name ## _rpc_gateway = { \
         .ldr_pc   = LDR_PC_PC_IMM_OPCODE(__UVISOR_OFFSETOF(TRPCGateway, ldr_pc), \
-                                         __UVISOR_OFFSETOF(TRPCGateway, function)), \
+                                         __UVISOR_OFFSETOF(TRPCGateway, caller)), \
         .magic    = UVISOR_RPC_GATEWAY_MAGIC_SYNC, \
         .box_ptr  = (uint32_t) &box_name ## _cfg_ptr, \
-        .function = (uint32_t) _sgw_sync_ ## fn_name, \
+        .target = (uint32_t) fn_name, \
+        .caller = (uint32_t) _sgw_sync_ ## fn_name, \
     }; \
     \
     /* Pointer to the gateway we just created. The pointer is located in a
@@ -102,10 +103,11 @@
     /* Instanstiate the gateway. This gets resolved at link-time. */ \
     UVISOR_EXTERN TRPCGateway const gw_name ## _rpc_gateway = { \
         .ldr_pc   = LDR_PC_PC_IMM_OPCODE(__UVISOR_OFFSETOF(TRPCGateway, ldr_pc), \
-                                         __UVISOR_OFFSETOF(TRPCGateway, function)), \
+                                         __UVISOR_OFFSETOF(TRPCGateway, caller)), \
         .magic    = UVISOR_RPC_GATEWAY_MAGIC_ASYNC, \
         .box_ptr  = (uint32_t) &box_name ## _cfg_ptr, \
-        .function = (uint32_t) _sgw_async_ ## fn_name, \
+        .target = (uint32_t) fn_name, \
+        .caller = (uint32_t) _sgw_async_ ## fn_name, \
     }; \
     \
     /* Pointer to the gateway we just created. The pointer is located in a

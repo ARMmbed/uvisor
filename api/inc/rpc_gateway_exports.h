@@ -25,14 +25,15 @@
  *
  * This struct is packed because we must ensure that the `ldr_pc` field has no
  * padding before itself and will be located at a valid instruction location,
- * and that the `function` field is at a pre-determined offset from the
- * `ldr_pc` field.
+ * and that the `caller` and `target` field are at a pre-determined offset from
+ * the `ldr_pc` field.
  */
-typedef struct {
+typedef struct RPCGateway {
     uint32_t ldr_pc;
     uint32_t magic;
     uint32_t box_ptr;
-    uint32_t function; /* It's like a pretend literal pool. */
+    uint32_t target;
+    uint32_t caller; /* This is not for use by anything other than the ldr_pc. It's like a pretend literal pool. */
 } UVISOR_PACKED UVISOR_ALIGN(4) TRPCGateway;
 
 #endif /* __UVISOR_API_RPC_GATEWAY_EXPORTS_H__ */
