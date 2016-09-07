@@ -61,7 +61,7 @@ A single family of micro-controllers might trigger different releases of uVisor.
 | `FLASH_LENGTH_MIN` | min( [`FLASH_LENGTH(i)` for `i` in family's devices] )                     |
 | `SRAM_LENGTH_MIN`  | min( [`SRAM_LENGTH(i)` for `i` in family's devices] )                      |
 | `NVIC_VECTORS`     | max( [`NVIC_VECTORS(i)` for `i` in family's devices] )                     |
-| `CORE_*`           | Core version (e.g `CORE_CORTEX_M3`)                                        |
+| `CORE_*`           | Core version (e.g. `CORE_CORTEX_M3`)                                        |
 
 **Table 1**. Hardware-specific features that differentiate uVisor builds
 
@@ -78,11 +78,11 @@ Let's assume for simplicity that the `${family}` that you want to port is made o
 | `FLASH_ORIGIN`    | 0x0          | 0x0          | 0x0          | 0x0          |
 | `FLASH_OFFSET`    | 0x400        | 0x400        | 0x400        | 0x400        |
 | `SRAM_ORIGIN`     | 0x20000000   | 0x20000000   | 0x1FFF0000   | 0x1FFF0000   |
-| `SRAM_OFFSET`     | 0x200        | 0x200        | 0x400        | 0x400        |
+| `SRAM_OFFSET`     | 0x400        | 0x400        | 0x400        | 0x400        |
 | `FLASH_LENGTH(i)` | 0x100000     | 0x100000     | 0x80000      | 0x80000      |
 | `SRAM_LENGTH(i)`  | 0x10000      | 0x20000      | 0x10000      | 0x20000      |
 | `NVIC_VECTORS(i)` | 86           | 122          | 86           | 122          |
-| `CORE_`           | `CORTEX_M4`  | `CORTEX_M4`  | `CORTEX_M4`  | `CORTEX_M4`  |
+| `CORE_`           | `CORTEX_M4`  | `CORTEX_M4`  | `CORTEX_M3`  | `CORTEX_M3`  |
 
 **Table 2**. Example uVisor configuration values
 
@@ -90,16 +90,16 @@ Following the descriptions of Table 1, some values are common among the 4 device
 
 * `NVIC_VECTORS` is the maximum `NVIC_VECTORS(i)`, hence it is 122.
 * `FLASH_LENGTH_MIN` and `SRAM_LENGTH_MIN` are 0x80000 and 0x10000, respectively.
-* `FLASH_ORIGIN` and `FLASH_OFFSET` are the same for all the devices, so they will be common to all configurations. The same applies to the core version, so `CORE_CORTEX_M4` will be defined.
+* `FLASH_ORIGIN`, `FLASH_OFFSET` and `SRAM_OFFSET` are the same for all the devices, so they will be common to all configurations.
 
-The remaining values must be combined to form distinct configurations. In this case we only need to combine `SRAM_ORIGIN` and `SRAM_OFFSET`. If you look at the table above, you will see that they appear in 2 out of the 4 possible value combinations. Hence, we have a total of 2 uVisor configurations:
+The remaining values must be combined to form distinct configurations. In this case we only need to combine `SRAM_ORIGIN` and `CORE_*`. If you look at the table above, you will see that they appear in 2 out of the 4 possible value combinations. Hence, we have a total of 2 uVisor configurations. We call them after the parameters that make them unique:
 
 ```bash
-CONFIGURATION_${family}_1 = {0x0, 0x400, 0x20000000, 0x200, 0x80000, 0x10000, 122, CORE_CORTEX_M4}
-CONFIGURATION_${family}_2 = {0x0, 0x400, 0x1FFF0000, 0x400, 0x80000, 0x10000, 122, CORE_CORTEX_M4}
+CONFIGURATION_0x20000000_CORTEX_M4 = {0x0, 0x400, 0x20000000, 0x400, 0x80000, 0x10000, 122, CORE_CORTEX_M4}
+CONFIGURATION_0x1FFF0000_CORTEX_M3 = {0x0, 0x400, 0x1FFF0000, 0x400, 0x80000, 0x10000, 122, CORE_CORTEX_M3}
 ```
 
-`${device0}` and `${device1}` belong to `CONFIGURATION_${family}_1`; `${device2}` and `${device3}` belong to `CONFIGURATION_${family}_2`.
+`${device0}` and `${device1}` belong to `CONFIGURATION_0x20000000_CORTEX_M4`; `${device2}` and `${device3}` belong to `CONFIGURATION_0x1FFF0000_CORTEX_M3`.
 
 ---
 
@@ -175,27 +175,33 @@ This file contains the uVisor configurations for your family. Remember that each
 /* Memory boundaries */
 #define FLASH_ORIGIN 0x0
 #define FLASH_OFFSET 0x400
-
-/* ARM core selection */
-#define CORE_CORTEX_M4
+#define SRAM_OFFSET  0x400
 
 /*******************************************************************************
  * Hardware-specific configurations
+ *
+ * Configurations are named after the parameter values, in this order:
+ *   - SRAM_ORIGIN
+ *   - CORE
  ******************************************************************************/
 
 /* The symbols below are specific to each configuration. */
 
-#if defined(CONFIGURATION_${family}_1)
+#if defined(CONFIGURATION_0x20000000_CORTEX_M4)
 
 /* Memory boundaries */
 #define SRAM_ORIGIN 0x20000000
-#define SRAM_OFFSET 0x400
 
-#elif defined(CONFIGURATION_${family}_2)
+/* ARM core selection */
+#define CORE_CORTEX_M4
+
+#elif defined(CONFIGURATION_0x1FFF0000_CORTEX_M3)
 
 /* Memory boundaries */
 #define SRAM_ORIGIN 0x1FFF0000
-#define SRAM_OFFSET 0x200
+
+/* ARM core selection */
+#define CORE_CORTEX_M3
 
 #else /* Hardware-specific configurations */
 
@@ -270,8 +276,8 @@ ARCH_MPU:=ARMv7M
 
 # Family configurations
 CONFIGURATIONS:=\
-    CONFIGURATION_${family}_1 \
-    CONFIGURATION_${family}_2
+    CONFIGURATION_0x20000000_CORTEX_M4 \
+    CONFIGURATION_0x1FFF0000_CORTEX_M3
 ```
 
 ### Build
@@ -617,7 +623,7 @@ The translation requires you to add an element to the following line in the `Mak
 TARGET_TRANSLATION:=MCU_K64F.kinetis EFM32.efm32 STM32F4.stm32
 ```
 
-Following the previous examples in this porting guide, we assumed that your device `${family}` contains four devices, `${device0}`, `${device1}`, `${device2}`, and `${device3}`. The first two belong to the `CONFIGURATION_${family}_1` configuration, the other two to the `CONFIGURATION_${family}_2` one.
+Following the previous examples in this porting guide, we assumed that your device `${family}` contains four devices, `${device0}`, `${device1}`, `${device2}`, and `${device3}`. The first two belong to the `CONFIGURATION_0x20000000_CORTEX_M4` configuration, the other two to the `CONFIGURATION_0x1FFF0000_CORTEX_M3` one.
 
 If we assume that in mbed OS you have two targets named `TARGET_${device0_or_1}`, `TARGET_${device2_or_3}` then the `Makefile` translation will look like the following:
 

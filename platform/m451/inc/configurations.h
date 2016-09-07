@@ -51,7 +51,7 @@
 
 /* The symbols below are specific to each configuration. */
 
-#if defined(CONFIGURATION_M451_M4_0x20000000_0x0)
+#if defined(CONFIGURATION_M451_CORTEX_M4_0x20000000_0x0)
 
 /* ARM core selection */
 #define CORE_CORTEX_M4

@@ -51,7 +51,7 @@
 
 /* The symbols below are specific to each configuration. */
 
-#if defined(CONFIGURATION_KINETIS_M4_0x1FFF0000)
+#if defined(CONFIGURATION_KINETIS_CORTEX_M4_0x1FFF0000)
 
 /* ARM core selection */
 #define CORE_CORTEX_M4

@@ -52,12 +52,12 @@
 
 /* The symbols below are specific to each configuration. */
 
-#if defined(CONFIGURATION_EFM32_M3_P1)
+#if defined(CONFIGURATION_EFM32_CORTEX_M3_P1)
 
 /* ARM core selection */
 #define CORE_CORTEX_M3
 
-#elif defined(CONFIGURATION_EFM32_M4_P1)
+#elif defined(CONFIGURATION_EFM32_CORTEX_M4_P1)
 
 /* ARM core selection */
 #define CORE_CORTEX_M4

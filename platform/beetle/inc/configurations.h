@@ -51,7 +51,7 @@
 
 /* The symbols below are specific to each configuration. */
 
-#if defined(CONFIGURATION_BEETLE_M3_0x20000000_0x140)
+#if defined(CONFIGURATION_BEETLE_CORTEX_M3_0x20000000_0x140)
 
 /* ARM core selection */
 #define CORE_CORTEX_M3
