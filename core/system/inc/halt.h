@@ -19,19 +19,6 @@
 
 #include "api/inc/halt_exports.h"
 
-typedef enum {
-    PERMISSION_DENIED = 1,
-    SANITY_CHECK_FAILED,
-    NOT_IMPLEMENTED,
-    NOT_ALLOWED,
-    FAULT_MEMMANAGE,
-    FAULT_BUS,
-    FAULT_USAGE,
-    FAULT_HARD,
-    FAULT_DEBUG,
-    __THALTERROR_MAX /* always keep as the last element of the enum */
-} THaltError;
-
 #ifdef  NDEBUG
 #define HALT_ERROR(reason, ...) halt(reason)
 #else /*NDEBUG*/
