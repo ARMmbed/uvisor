@@ -192,9 +192,6 @@ static void debug_deprivilege_and_return(void * debug_handler, void * return_han
 
     /* Destination box: The debug box. */
     uint8_t dst_id = g_debug_box.box_id;
-    if (g_active_box == dst_id) {
-        HALT_ERROR(NOT_ALLOWED, "The system is already running in the context of the debug box.\n\r");
-    }
 
     /* Copy the xPSR from the source exception stack frame. */
     uint32_t xpsr = ((uint32_t *) src_sp)[7];
@@ -228,11 +225,18 @@ uint32_t debug_get_version(void)
 
 void debug_halt_error(THaltError reason)
 {
-    /* If the debug box does not exist (or it has not been initialized yet),
-     * just halt. */
-    if (!g_debug_box.initialized) {
+    static int debugged_once_before = 0;
+
+    /* If the debug box does not exist (or it has not been initialized yet), or
+     * the debug box was already called once, just loop forever. */
+    if (!g_debug_box.initialized || debugged_once_before) {
         while(1);
     } else {
+        /* Remember that debug_deprivilege_and_return() has been called once.
+         * We'll reboot after the debug handler is run, so this will go back to
+         * zero after the reboot. */
+        debugged_once_before = 1;
+
         /* The following arguments are passed to the destination function:
          *   1. reason
          * Upon return from the debug handler, the system will reboot. */
