@@ -32,6 +32,7 @@ typedef enum {
 } THaltUserError;
 
 typedef enum {
+    HALT_NO_ERROR = 0,
     PERMISSION_DENIED = 1,
     SANITY_CHECK_FAILED,
     NOT_IMPLEMENTED,
