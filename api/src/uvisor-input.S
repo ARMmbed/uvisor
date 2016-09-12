@@ -126,6 +126,7 @@ __uvisor_page_size:
 /* __uvisor_ps is written inside uvisor_init. It must not be
  * overwritten by libc init and therefore is placed in .uninitialized. */
 .section .uninitialized
+.balign 4
 __uvisor_box_context:
 __uvisor_ps:
     .long 0
