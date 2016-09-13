@@ -106,8 +106,6 @@ Currently the following messages are printed:
 
 ## The debug box
 
-> Warning: We are currently working on porting the debug box to the new version of mbed OS. Coming soon.
-
 > Warning: The debug box feature is an early prototype. The APIs and procedures described here might change several times in non-backwards-compatible ways.
 
 The uVisor code is instrumented to output debug information when it is relevant. In order to keep the uVisor as simple and hardware-independent as possible, some of this information is not handled and interpreted directly by uVisor.
@@ -131,9 +129,20 @@ The following is an example of how to implement and configure a debug box.
 #include "mbed.h"
 #include "uvisor-lib/uvisor-lib.h"
 
+struct box_context {
+    uint32_t unused;
+};
+
+static const UvisorBoxAclItem acl[] = {
+};
+
+static void box_debug_main(const void *);
+
 /* Configure the debug box. */
 UVISOR_BOX_NAMESPACE(NULL);
 UVISOR_BOX_CONFIG(box_debug, UVISOR_BOX_STACK_SIZE);
+UVISOR_BOX_MAIN(box_debug_main, osPriorityNormal, UVISOR_BOX_STACK_SIZE);
+UVISOR_BOX_CONFIG(box_debug, acl, UVISOR_BOX_STACK_SIZE, box_context);
 
 static uint32_t get_version(void) {
     return 0;
@@ -144,7 +153,8 @@ static void halt_error(int reason) {
     /* We will now reboot. */
 }
 
-UVISOR_EXTERN void __box_debug_init(void) {
+static void box_debug_main(const void *)
+{
     /* Debug box driver -- Version 0 */
     static const TUvisorDebugDriver driver = {
         get_version,
@@ -153,11 +163,6 @@ UVISOR_EXTERN void __box_debug_init(void) {
 
     /* Register the debug box with uVisor. */
     uvisor_debug_init(&driver);
-}
-
-void box_debug::init(void) {
-    /* The debug box is initialized from the context of box_debug. */
-    secure_gateway(box_debug, __box_debug_init);
 }
 ```
 

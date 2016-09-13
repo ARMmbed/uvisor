@@ -17,7 +17,7 @@
 #ifndef __LINKER_H__
 #define __LINKER_H__
 
-#include "api/inc/priv_sys_irq_hook_exports.h"
+#include "api/inc/priv_sys_hook_exports.h"
 
 extern uint32_t const __code_end__;
 extern uint32_t const __stack_start__;
@@ -93,8 +93,8 @@ typedef struct {
     uint32_t * sram_start;
     uint32_t * sram_end;
 
-    /* Privileged system IRQ hooks */
-    UvisorPrivSystemIRQHooks const * const priv_sys_irq_hooks;
+    /* Privileged system hooks */
+    UvisorPrivSystemHooks const * const priv_sys_hooks;
 
     /* Functions provided by uVisor Lib for use by uVisor in unprivileged mode
      * */

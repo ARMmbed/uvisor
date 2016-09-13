@@ -21,7 +21,7 @@
 .type  uvisor_init, %function
 .weak  __uvisor_mode
 .weak  __uvisor_page_size
-.globl __uvisor_priv_sys_irq_hooks
+.globl __uvisor_priv_sys_hooks
 
 .section .uvisor.main, "x"
     .thumb
@@ -104,8 +104,8 @@ uvisor_config:
     .long __uvisor_sram_start;
     .long __uvisor_sram_end;
 
-    /* Privileged system IRQ hooks */
-    .long __uvisor_priv_sys_irq_hooks
+    /* Privileged system hooks */
+    .long __uvisor_priv_sys_hooks
 
     /* Functions provided by uVisor Lib for use by uVisor in unprivileged mode
      * */

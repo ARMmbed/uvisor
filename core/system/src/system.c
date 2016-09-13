@@ -36,7 +36,7 @@ void UVISOR_NAKED PendSV_IRQn_Handler(void)
     asm volatile(
         "ldr  r0, %[priv_pendsv]\n"  /* Load the hook from the hook table. */
         "bx   r0\n"                  /* Branch to the hook (without link). */
-        :: [priv_pendsv] "m" (g_priv_sys_irq_hooks.priv_pendsv)
+        :: [priv_pendsv] "m" (g_priv_sys_hooks.priv_pendsv)
     );
 }
 
@@ -45,7 +45,7 @@ void UVISOR_NAKED SysTick_IRQn_Handler(void)
     asm volatile(
         "ldr  r0, %[priv_systick]\n" /* Load the hook from the hook table. */
         "bx   r0\n"                  /* Branch to the hook (without link). */
-        :: [priv_systick] "m" (g_priv_sys_irq_hooks.priv_systick)
+        :: [priv_systick] "m" (g_priv_sys_hooks.priv_systick)
     );
 }
 
@@ -77,8 +77,8 @@ __attribute__((section(".isr"))) const TIsrVector g_isr_vector[ISR_VECTORS] =
     [NVIC_OFFSET ... (ISR_VECTORS - 1)] = isr_default_handler
 };
 
-/* Default privileged system IRQ hooks (placed in SRAM) */
-UvisorPrivSystemIRQHooks g_priv_sys_irq_hooks = {
+/* Default privileged system hooks (placed in SRAM) */
+UvisorPrivSystemHooks g_priv_sys_hooks = {
     .priv_svc_0 = __svc_not_implemented,
     .priv_pendsv = isr_default_sys_handler,
     .priv_systick = isr_default_sys_handler,

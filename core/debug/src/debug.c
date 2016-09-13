@@ -182,51 +182,36 @@ void debug_reboot(void)
 /* FIXME: Currently it is not possible to return to a regular execution flow
  *        after the execution of the debug box handler. It is possible to
  *        reboot, though. */
-static void debug_deprivilege_and_return(void *debug_handler, void *return_handler,
+static void debug_deprivilege_and_return(void * debug_handler, void * return_handler,
                                          uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3)
 {
-    uint8_t src_id, dst_id;
-    uint32_t dst_sp_align;
-    uint32_t *src_sp, *dst_sp;
-
-    /* Gather information from the current state.
-     * The destination box is always the debug box. */
+    /* Source box: Get the current stack pointer. */
     /* Note: The source stack pointer is only used to assess the stack
      *       alignment. */
-    src_sp = (uint32_t *) context_validate_exc_sf(__get_PSP());
-    src_id = g_active_box;
-    dst_sp = (uint32_t *) g_context_current_states[g_debug_box.box_id].sp;
-    dst_id = g_debug_box.box_id;
+    uint32_t src_sp = context_validate_exc_sf(__get_PSP());
 
-    /* Check source and destination box IDs */
-    if (src_id == dst_id) {
+    /* Destination box: The debug box. */
+    uint8_t dst_id = g_debug_box.box_id;
+    if (g_active_box == dst_id) {
         HALT_ERROR(NOT_ALLOWED, "The system is already running in the context of the debug box.\n\r");
     }
 
-    /* Create the exception stack frame. */
-    dst_sp_align = ((uint32_t) dst_sp & 0x4) ? 1 : 0;
-    dst_sp -= (CONTEXT_SWITCH_EXC_SF_SIZE + dst_sp_align);
+    /* Copy the xPSR from the source exception stack frame. */
+    uint32_t xpsr = ((uint32_t *) src_sp)[7];
 
-    /* Populate the exception stack frame:
-     *   - The scratch registers are populated with the handler arguments.
-     *   - r12 is cleared.
-     *   - lr is the thunk function (die).
-     *   - The return address is the destination function. */
-    dst_sp[0] = a0;
-    dst_sp[1] = a1;
-    dst_sp[2] = a2;
-    dst_sp[3] = a3;
-    dst_sp[4] = 0;
-    dst_sp[5] = (uint32_t) return_handler;
-    dst_sp[6] = (uint32_t) debug_handler;
-    dst_sp[7] = src_sp[7] | (dst_sp_align << 9);
+    /* Destination box: Forge the destination stack frame. */
+    /* Note: We manually have to set the 4 parameters on the destination stack,
+     *       so we will set the API to have nargs=0. */
+    uint32_t dst_sp = context_forge_exc_sf(src_sp, dst_id, (uint32_t) debug_handler, (uint32_t) return_handler, xpsr, 0);
+    ((uint32_t *) dst_sp)[0] = a0;
+    ((uint32_t *) dst_sp)[1] = a1;
+    ((uint32_t *) dst_sp)[2] = a2;
+    ((uint32_t *) dst_sp)[3] = a3;
 
-    /* Set the context stack pointer for the destination box. */
-    *(__uvisor_config.uvisor_box_context) = (uint32_t *) g_context_current_states[dst_id].bss;
+    /* Suspend the OS. */
+    g_priv_sys_hooks.priv_os_suspend();
 
-    /* Switch boxes. */
-    vmpu_switch(src_id, dst_id);
-    __set_PSP((uint32_t) dst_sp);
+    context_switch_in(CONTEXT_SWITCH_FUNCTION_DEBUG, dst_id, src_sp, dst_sp);
 
     /* Upon execution return debug_handler will be executed. Upon return from
      * debug_handler, return_handler will be executed. */

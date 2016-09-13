@@ -248,7 +248,7 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
         :: [svc_mode_mask]       "I" ((UVISOR_SVC_MODE_MASK) & 0xFF),
            [svc_fast_index_mask] "I" ((UVISOR_SVC_FAST_INDEX_MASK) & 0xFF),
            [svc_vtor_tbl_count]  "i" (UVISOR_ARRAY_COUNT(g_svc_vtor_tbl) - 1),
-           [priv_svc_0]          "m" (g_priv_sys_irq_hooks.priv_svc_0)
+           [priv_svc_0]          "m" (g_priv_sys_hooks.priv_svc_0)
     );
 }
 
