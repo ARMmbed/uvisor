@@ -468,11 +468,14 @@ void vmpu_arch_init_hw(void)
     const uint8_t subregions_disable_mask = (uint8_t) ((1UL << (protected_size / subregions_size)) - 1UL);
 
     /* Unlock the upper SRAM subregion only. */
+    /* Note: We allow code execution for backwards compatibility. Both the user
+     *       and superuser flags are set since the ARMv7-M MPU cannot
+     *       distinguish between the two. */
     vmpu_mpu_set_static_acl(
         1,
         (uint32_t) __uvisor_config.sram_start,
         total_size,
-        UVISOR_TACLDEF_DATA | UVISOR_TACL_UEXECUTE,
+        UVISOR_TACLDEF_DATA | UVISOR_TACL_EXECUTE,
         subregions_disable_mask
     );
 }
