@@ -61,7 +61,7 @@ A single family of micro-controllers might trigger different releases of uVisor.
 | `FLASH_LENGTH_MIN` | min( [`FLASH_LENGTH(i)` for `i` in family's devices] )                     |
 | `SRAM_LENGTH_MIN`  | min( [`SRAM_LENGTH(i)` for `i` in family's devices] )                      |
 | `NVIC_VECTORS`     | max( [`NVIC_VECTORS(i)` for `i` in family's devices] )                     |
-| `CORE_*`           | Core version (e.g `CORE_CORTEX_M3`)                                        |
+| `CORE_*`           | Core version (e.g. `CORE_CORTEX_M3`)                                        |
 
 **Table 1**. Hardware-specific features that differentiate uVisor builds
 
@@ -78,11 +78,11 @@ Let's assume for simplicity that the `${family}` that you want to port is made o
 | `FLASH_ORIGIN`    | 0x0          | 0x0          | 0x0          | 0x0          |
 | `FLASH_OFFSET`    | 0x400        | 0x400        | 0x400        | 0x400        |
 | `SRAM_ORIGIN`     | 0x20000000   | 0x20000000   | 0x1FFF0000   | 0x1FFF0000   |
-| `SRAM_OFFSET`     | 0x200        | 0x200        | 0x400        | 0x400        |
+| `SRAM_OFFSET`     | 0x400        | 0x400        | 0x400        | 0x400        |
 | `FLASH_LENGTH(i)` | 0x100000     | 0x100000     | 0x80000      | 0x80000      |
 | `SRAM_LENGTH(i)`  | 0x10000      | 0x20000      | 0x10000      | 0x20000      |
 | `NVIC_VECTORS(i)` | 86           | 122          | 86           | 122          |
-| `CORE_`           | `CORTEX_M4`  | `CORTEX_M4`  | `CORTEX_M4`  | `CORTEX_M4`  |
+| `CORE_`           | `CORTEX_M4`  | `CORTEX_M4`  | `CORTEX_M3`  | `CORTEX_M3`  |
 
 **Table 2**. Example uVisor configuration values
 
@@ -90,16 +90,16 @@ Following the descriptions of Table 1, some values are common among the 4 device
 
 * `NVIC_VECTORS` is the maximum `NVIC_VECTORS(i)`, hence it is 122.
 * `FLASH_LENGTH_MIN` and `SRAM_LENGTH_MIN` are 0x80000 and 0x10000, respectively.
-* `FLASH_ORIGIN` and `FLASH_OFFSET` are the same for all the devices, so they will be common to all configurations. The same applies to the core version, so `CORE_CORTEX_M4` will be defined.
+* `FLASH_ORIGIN`, `FLASH_OFFSET` and `SRAM_OFFSET` are the same for all the devices, so they will be common to all configurations.
 
-The remaining values must be combined to form distinct configurations. In this case we only need to combine `SRAM_ORIGIN` and `SRAM_OFFSET`. If you look at the table above, you will see that they appear in 2 out of the 4 possible value combinations. Hence, we have a total of 2 uVisor configurations:
+The remaining values must be combined to form distinct configurations. In this case we only need to combine `SRAM_ORIGIN` and `CORE_*`. If you look at the table above, you will see that they appear in 2 out of the 4 possible value combinations. Hence, we have a total of 2 uVisor configurations. We call them after the parameters that make them unique:
 
 ```bash
-CONFIGURATION_${family}_1 = {0x0, 0x400, 0x20000000, 0x200, 0x80000, 0x10000, 122, CORE_CORTEX_M4}
-CONFIGURATION_${family}_2 = {0x0, 0x400, 0x1FFF0000, 0x400, 0x80000, 0x10000, 122, CORE_CORTEX_M4}
+CONFIGURATION_0x20000000_CORTEX_M4 = {0x0, 0x400, 0x20000000, 0x400, 0x80000, 0x10000, 122, CORE_CORTEX_M4}
+CONFIGURATION_0x1FFF0000_CORTEX_M3 = {0x0, 0x400, 0x1FFF0000, 0x400, 0x80000, 0x10000, 122, CORE_CORTEX_M3}
 ```
 
-`${device0}` and `${device1}` belong to `CONFIGURATION_${family}_1`; `${device2}` and `${device3}` belong to `CONFIGURATION_${family}_2`.
+`${device0}` and `${device1}` belong to `CONFIGURATION_0x20000000_CORTEX_M4`; `${device2}` and `${device3}` belong to `CONFIGURATION_0x1FFF0000_CORTEX_M3`.
 
 ---
 
@@ -153,22 +153,61 @@ This file contains the uVisor configurations for your family. Remember that each
 #ifndef __CONFIGURATIONS_H__
 #define __CONFIGURATIONS_H__
 
-#define FLASH_ORIGIN     0x0
-#define FLASH_OFFSET     0x400
+/*******************************************************************************
+ * Family-wide configurations
+ ******************************************************************************/
+
+/* The symbols below *must* be calculated from values across the family. */
+
+/* Maximum number of vectors seen across the family:
+ *   NVIC_VECTORS = max(NVIC_VECTORS_i) for i in family */
+#define NVIC_VECTORS 122
+
+/* Minimum memory requirements:
+ *   FLASH_LENGTH_MIN = min(FLASH_LENGTH_i) for i in family
+ *   SRAM_LENGTH_MIN = min(SRAM_LENGTH_i) for i in family */
 #define FLASH_LENGTH_MIN 0x80000
 #define SRAM_LENGTH_MIN  0x10000
-#define NVIC_VECTORS     122
+
+/* The symbols below can be either configuration-specific or family-wide,
+ * depending on your requirements. See the porting guide for more details. */
+
+/* Memory boundaries */
+#define FLASH_ORIGIN 0x0
+#define FLASH_OFFSET 0x400
+#define SRAM_OFFSET  0x400
+
+/*******************************************************************************
+ * Hardware-specific configurations
+ *
+ * Configurations are named after the parameter values, in this order:
+ *   - SRAM_ORIGIN
+ *   - CORE
+ ******************************************************************************/
+
+/* The symbols below are specific to each configuration. */
+
+#if defined(CONFIGURATION_0x20000000_CORTEX_M4)
+
+/* Memory boundaries */
+#define SRAM_ORIGIN 0x20000000
+
+/* ARM core selection */
 #define CORE_CORTEX_M4
 
-#if defined(CONFIGURATION_${family}_1)
-#define SRAM_ORIGIN 0x20000000
-#define SRAM_OFFSET 0x400
-#endif
+#elif defined(CONFIGURATION_0x1FFF0000_CORTEX_M3)
 
-#if defined(CONFIGURATION_${family}_2)
+/* Memory boundaries */
 #define SRAM_ORIGIN 0x1FFF0000
-#define SRAM_OFFSET 0x200
-#endif
+
+/* ARM core selection */
+#define CORE_CORTEX_M3
+
+#else /* Hardware-specific configurations */
+
+#error "Unrecognized uVisor configuration. Check your Makefile."
+
+#endif /* Hardware-specific configurations */
 
 #endif /* __CONFIGURATIONS_H__ */
 ```
@@ -183,19 +222,18 @@ This file contains uVisor customizations that are not hardware-specific but can 
 
 The symbols that you can specify here are listed in the table below.
 
-| Symbol                        | Description |
-|-------------------------------|-------------|
-| `STACK_GUARD_BAND`            | TODO        |
-| `STACK_SIZE`                  | TODO        |
-| `NDEBUG`                      | TODO        |
-| `DEBUG_MAX_BUFFER`            | TODO        |
-| `CHANNEL_DEBUG`               | TODO        |
-| `MPU_MAX_PRIVATE_FUNCTIONS`   | TODO        |
-| `MPU_REGION_COUNT`            | TODO        |
-| `ARMv7M_MPU_REGIONS`          | TODO        |
-| `ARMv7M_ALIGNMENR_BITS`       | TODO        |
-| `ARMv7M_MPU_RESERVED_REGIONS` | TODO        |
-| `UVISOR_MAX_ACLS`             | TODO        |
+| Symbol                        | Description                    |
+|-------------------------------|--------------------------------|
+| `STACK_SIZE`                  | The size of uVisor's own stack |
+| `NDEBUG`                      | TODO                           |
+| `DEBUG_MAX_BUFFER`            | TODO                           |
+| `CHANNEL_DEBUG`               | TODO                           |
+| `MPU_MAX_PRIVATE_FUNCTIONS`   | TODO                           |
+| `MPU_REGION_COUNT`            | TODO                           |
+| `ARMv7M_MPU_REGIONS`          | TODO                           |
+| `ARMv7M_ALIGNMENR_BITS`       | TODO                           |
+| `ARMv7M_MPU_RESERVED_REGIONS` | TODO                           |
+| `UVISOR_MAX_ACLS`             | TODO                           |
 
 **Table 3**. Optional hardware-specific `config.h` symbols
 
@@ -207,7 +245,9 @@ The symbols that you can specify here are listed in the table below.
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
-#define STACK_SIZE 2048
+/* Your custom optional settings here. See Table 3. */
+...
+
 #include "configurations.h"
 
 #endif /* __CONFIG_H__ */
@@ -236,8 +276,8 @@ ARCH_MPU:=ARMv7M
 
 # Family configurations
 CONFIGURATIONS:=\
-    CONFIGURATION_${family}_1 \
-    CONFIGURATION_${family}_2
+    CONFIGURATION_0x20000000_CORTEX_M4 \
+    CONFIGURATION_0x1FFF0000_CORTEX_M3
 ```
 
 ### Build
@@ -280,10 +320,10 @@ ResetHandler:
     ...
     ldr r0, =SystemInit
     blx r0
-#if       defined(FEATURE_UVISOR) && defined(UVISOR_SUPPORTED)
+#if defined(FEATURE_UVISOR) && defined(TARGET_UVISOR_SUPPORTED)
     ldr r0, =uvisor_init    /* [*] Insert this. */
     blx r0                  /* [*] Insert this. */
-#endif /* defined(FEATURE_UVISOR) && defined(UVISOR_SUPPORTED) */
+#endif /* defined(FEATURE_UVISOR) && defined(TARGET_UVISOR_SUPPORTED) */
     ldr r0, =__start
     bx  r0
     ...
@@ -379,17 +419,24 @@ SECTIONS
         . = ALIGN(32);
         __uvisor_bss_boxes_end = .;
 
+        . = ALIGN(32);
+        __uvisor_bss_end = .;
+    } > m_data
+
+    /* Ensure that the page heap is put right after the uVisor BSS section in
+     * SRAM. */
+    /* Heap space for the page allocator */
+    .page_heap (NOLOAD) :
+    {
+        . = ALIGN(32);
+        __uvisor_page_start = .;
+        KEEP(*(.keep.uvisor.page_heap))
         /************************** ARMv7-M MPU only **************************/
-        __uvisor_bss_end_padding_max = (2 << (LOG2CEIL(__uvisor_bss_end - ORIGIN(m_data)) - 1)) / 8;
-        . = MIN(
-            __uvisor_bss_end_padding_max * (((__uvisor_bss_end - ORIGIN(m_data)) / __uvisor_bss_end_padding_max) +
-            MIN((__uvisor_bss_end - ORIGIN(m_data)) % __uvisor_bss_end_padding_max, 1)) - __UVISOR_SRAM_OFFSET,
-            ORIGIN(m_data) + LENGTH(m_data)
-        );
+        . = ALIGN((1 << LOG2CEIL(LENGTH(m_data))) / 8);
         /********************** Other MPU architectures ***********************/
         . = ALIGN(32);
         /**********************************************************************/
-        __uvisor_bss_end= .;
+        __uvisor_page_end = .;
     } > m_data
 
     /* Now we can place the .data section, which will be loaded to SRAM. */
@@ -400,7 +447,7 @@ SECTIONS
 
     /* uVisor configuration section
      * This section must be located after all other flash regions. */
-    .uvisor.secure (NOLOAD):
+    .uvisor.secure :
     {
         . = ALIGN(32);
         __uvisor_secure_start = .;
@@ -450,32 +497,24 @@ SECTIONS
     /* Note: The uVisor requires the original heap start and end addresses to be
              provided. */
 
-    .heap :
+    .heap (NOLOAD):
     {
         . = ALIGN(8);
-        __uvisor_heap_start = .;
+        __uvisor_heap_start = .;  /* <----- Add this! */
         __end__ = .;
         PROVIDE(end = .);
         __HeapBase = .;
         . += HEAP_SIZE;
         __HeapLimit = .;
-        __uvisor_heap_end = .;
+        __uvisor_heap_end = .;    /* <----- Add this! */
     } > m_data
 
-    .stack :
-    {
-        . = ALIGN(8);
-        . += STACK_SIZE;
-        __StackTop = .;
-    } > m_data
+    /* Initialize the stack at the end of the memory block. */
+    __StackTop = ORIGIN(m_data) + LENGTH(m_data);
+    __StackLimit = __StackTop - STACK_SIZE;
+    PROVIDE(__stack = __StackTop);
 
-    /* Heap space for the page allocator */
-    .page_heap (NOLOAD) :
-    {
-        __uvisor_page_start = .;
-        . = ORIGIN(m_data) + LENGTH(m_data) - 4;
-        __uvisor_page_end = .;
-    } > m_data
+    ...
 
     /* Provide physical memory boundaries for uVisor. */
     __uvisor_flash_start = ORIGIN(m_interrupts);
@@ -584,7 +623,7 @@ The translation requires you to add an element to the following line in the `Mak
 TARGET_TRANSLATION:=MCU_K64F.kinetis EFM32.efm32 STM32F4.stm32
 ```
 
-Following the previous examples in this porting guide, we assumed that your device `${family}` contains four devices, `${device0}`, `${device1}`, `${device2}`, and `${device3}`. The first two belong to the `CONFIGURATION_${family}_1` configuration, the other two to the `CONFIGURATION_${family}_2` one.
+Following the previous examples in this porting guide, we assumed that your device `${family}` contains four devices, `${device0}`, `${device1}`, `${device2}`, and `${device3}`. The first two belong to the `CONFIGURATION_0x20000000_CORTEX_M4` configuration, the other two to the `CONFIGURATION_0x1FFF0000_CORTEX_M3` one.
 
 If we assume that in mbed OS you have two targets named `TARGET_${device0_or_1}`, `TARGET_${device2_or_3}` then the `Makefile` translation will look like the following:
 

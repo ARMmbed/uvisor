@@ -21,17 +21,20 @@
  * Family-wide configurations
  ******************************************************************************/
 
-/* NVIC configuration */
-/* Note: This is the maximum of all the avilable NVIC vectors and hence it is
- *       common to all configurations */
+/* The symbols below *must* be calculated from values across the family. */
+
+/* Maximum number of vectors seen across the family:
+ *   NVIC_VECTORS = max(NVIC_VECTORS_i) for i in family */
 #define NVIC_VECTORS 86
 
-/* Minimum memory requirements
- * These symbols basically encode the following:
- *   FLASH_LENGTH_MIN = min(FLASH_LENGTH_i) for i in device family
- *   SRAM_LENGTH_MIN  = min(SRAM_LENGTH_i)  for i in device family */
+/* Minimum memory requirements:
+ *   FLASH_LENGTH_MIN = min(FLASH_LENGTH_i) for i in family
+ *   SRAM_LENGTH_MIN = min(SRAM_LENGTH_i) for i in family */
 #define FLASH_LENGTH_MIN 0x100000
 #define SRAM_LENGTH_MIN  0x10000
+
+/* The symbols below can be either configuration-specific or family-wide,
+ * depending on your requirements. See the porting guide for more details. */
 
 /* Memory boundaries */
 #define FLASH_ORIGIN 0x00000000
@@ -44,9 +47,11 @@
  * Configurations are named after the parameter values, in this order:
  *   - CORE
  *   - SRAM_ORIGIN
- *
  ******************************************************************************/
-#if defined(CONFIGURATION_KINETIS_M4_0x1FFF0000)
+
+/* The symbols below are specific to each configuration. */
+
+#if defined(CONFIGURATION_KINETIS_CORTEX_M4_0x1FFF0000)
 
 /* ARM core selection */
 #define CORE_CORTEX_M4
@@ -54,10 +59,10 @@
 /* Memory boundaries */
 #define SRAM_ORIGIN 0x1FFF0000
 
-#else /* defined(CONFIGURATION_KINETIS_M4_0x1FFF0000) */
+#else /* Hardware-specific configurations */
 
 #error "Unrecognized uVisor configuration. Check your Makefile."
 
-#endif /* unrecognized configuration */
+#endif /* Hardware-specific configurations */
 
 #endif /* __CONFIGURATIONS_H__ */

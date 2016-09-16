@@ -100,7 +100,8 @@ To enable the uVisor on the app, just add the following lines at the beginning o
 extern "C" void SVC_Handler(void);
 extern "C" void PendSV_Handler(void);
 extern "C" void SysTick_Handler(void);
-UVISOR_SET_PRIV_SYS_HOOKS(SVC_Handler, PendSV_Handler, SysTick_Handler);
+extern "C" uint32_t rt_suspend(void);
+UVISOR_SET_PRIV_SYS_HOOKS(SVC_Handler, PendSV_Handler, SysTick_Handler, rt_suspend);
 
 /* Main box Access Control Lists (ACLs). */
 /* Note: These are specific to the NXP FRDM-K64F board. See the section below
