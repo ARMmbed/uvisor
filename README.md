@@ -16,7 +16,7 @@ If you want to learn more about the uVisor security model and get an overview of
 
 You will find the full uVisor documentation in the [docs](docs) folder – see our [OS-level introduction](https://github.com/ARMmbed/uvisor/raw/docs/uvisor-rtos-docs.pdf) in PDF format.
 
-To see how uVisor is used in practice, we created a [basic uVisor example](https://github.com/ARMmbed/mbed-os-example-uvisor).
+To see how uVisor is used in practice, we created a [basic threaded uVisor example](https://github.com/ARMmbed/mbed-os-example-uvisor). For interrupt support in uVisor please refer to our [uVisor interrupt example](https://github.com/ARMmbed/mbed-os-example-uvisor-irq). 
 
 Contributions to this repository in the form of issue reporting or pull requests are welcome! Please make sure to read our [contribution guidelines](CONTRIBUTING.md) first.
 
@@ -60,6 +60,7 @@ The design philosophy of uVisor is to provide hardware-enforced compartments (sa
 Breaking the established flat security model of micro-controllers into compartmentalised building blocks results in high security levels, as the reach of flaws or external attacks can be limited to less sensitive function blocks.
 
 A [basic example of the uVisor](https://github.com/ARMmbed/mbed-os-example-uvisor) features is preventing unauthorised access to flash memory from faulty or compromised code. This not only prevents malware from getting resident on the device, but also enables protection of device secrets like cryptographic keys.
+For interrupt support in uVisor please refer to our [uVisor interrupt example](https://github.com/ARMmbed/mbed-os-example-uvisor-irq). 
 
 Services built on top of our security layer can safely depend on an unclonable trusted identity, secure access to internet services and benefit from encryption key protection.
 
