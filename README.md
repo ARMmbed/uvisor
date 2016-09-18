@@ -98,7 +98,7 @@ Different memory layouts can be used on different platforms, depending on the im
 
 ![uVisor memory layout](docs/img/memory_layout.png)
 
-The uVisor secures two main memory blocks, in flash and SRAM respectively. In both cases, it protects its own data and the data of the secure boxes it manages for the unprivileged code.
+The uVisor secures two main memory blocks, in flash and SRAM respectively. In both cases, it protects its own data and the data of the secure boxes it manages for the unprivileged code. For a more detailed view please refer to our interactive [linker section visualization](http://www.meriac.com/mbed/mbed-os-example-uvisor-irq/)).
 
 All the unprivileged code that is not protected in a secure domain is referred to as the *main box*.
 
