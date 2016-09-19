@@ -37,11 +37,13 @@ typedef struct {
  * register a particular privileged system IRQ hook, you can supply NULL for
  * that hook parameter. */
 #define UVISOR_SET_PRIV_SYS_HOOKS(priv_svc_0_, priv_pendsv_, priv_systick_, priv_os_suspend_) \
-    UVISOR_EXTERN const UvisorPrivSystemHooks __uvisor_priv_sys_hooks = { \
+    UVISOR_EXTERN_C_BEGIN \
+    const UvisorPrivSystemHooks __uvisor_priv_sys_hooks = { \
         .priv_svc_0 = priv_svc_0_, \
         .priv_pendsv = priv_pendsv_, \
         .priv_systick = priv_systick_, \
         .priv_os_suspend = priv_os_suspend_, \
-    };
+    }; \
+    UVISOR_EXTERN_C_END
 
 #endif
