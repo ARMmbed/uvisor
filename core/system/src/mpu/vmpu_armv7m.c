@@ -229,7 +229,7 @@ static int vmpu_mem_push_page_acl_iterator(uint8_t mask, uint8_t index)
     uint32_t size = g_page_size * 8;
     vmpu_region_translate_acl(
         &region,
-        ((uint32_t) __uvisor_config.page_end - size * (index + 1)),
+        (g_page_head_end_rounded - size * (index + 1)),
         size,
         UVISOR_TACLDEF_DATA | UVISOR_TACL_EXECUTE,
         ~mask
@@ -478,4 +478,28 @@ void vmpu_arch_init_hw(void)
         UVISOR_TACLDEF_DATA | UVISOR_TACL_EXECUTE,
         subregions_disable_mask
     );
+
+    /* On page heap alignments:
+     *
+     * Individual pages in the page heap are protected by subregions.
+     * A page of size 2^N must have its start address aligned to 2^N.
+     * However, for page sizes > 1/8th region size, the start address is
+     * not guaranteed to be aligned to 2^N.
+     *
+     * Example: 2^N = page size, 2^(N-1) = 1/8th SRAM (32kB page size in a 128kB SRAM).
+     *
+     * |           |
+     * +-----------+ <-- uvisor_config.page_end: 0x30000 = 3/8th * 128kB is aligned to 16kB.
+     * | 32kB page |
+     * +-----------+ <-- page start address: 0x30000 - 32kB = 0x10000 is not aligned to 32kB!!
+     * |           |
+     *
+     * Due to these contradicting alignment requirements, it is not possible
+     * to have a page size larger than 1/8th region size.
+     */
+    if (subregions_size < *__uvisor_config.page_size) {
+        HALT_ERROR(SANITY_CHECK_FAILED,
+                   "The page size (%ukB) must not be larger than 1/8th of SRAM (%ukB).",
+                   *__uvisor_config.page_size / 1024, subregions_size / 1024);
+    }
 }
