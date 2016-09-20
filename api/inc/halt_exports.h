@@ -29,6 +29,7 @@
 
 typedef enum {
     USER_NOT_ALLOWED = 1,
+    DEBUG_BOX_HALT,
 } THaltUserError;
 
 typedef enum {
