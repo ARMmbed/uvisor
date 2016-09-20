@@ -60,4 +60,9 @@ UVISOR_EXTERN void vIRQ_DisableAll(void);
  * ::vIRQ_DisableAll for more information. */
 UVISOR_EXTERN void vIRQ_EnableAll(void);
 
+/** Reset the device.
+ * @warning Currently only the debug box can reset the device.
+ */
+UVISOR_EXTERN void vIRQ_SystemReset(void);
+
 #endif /* __UVISOR_API_INTERRUPTS_H__ */
