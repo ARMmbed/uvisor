@@ -98,21 +98,12 @@ TContextPreviousState * context_state_previous(void)
 /* Forge a new exception stack frame and copy arguments from an old one. */
 uint32_t context_forge_exc_sf(uint32_t src_sp, uint8_t dst_id, uint32_t dst_fn, uint32_t dst_lr, uint32_t xpsr, int nargs)
 {
-    uint8_t src_id;
     uint32_t dst_sp;
     uint32_t exc_sf_alignment_words;
 
-    /* Source box: Gather information from the current state. */
-    src_id = g_active_box;
-
     /* Destination box: Gather information from the current state. */
-    /* Note: Here we allow source and destination box IDs to be the same, as
-     * this function is used also for IRQs. */
-    if (src_id == dst_id) {
-        dst_sp = src_sp;
-    } else {
-        dst_sp = g_context_current_states[dst_id].sp;
-    }
+    /* FIXME: This prevents IRQ interrupt nesting. */
+    dst_sp = g_context_current_states[dst_id].sp;
 
     /* Forge an exception stack frame in the destination box stack. */
     exc_sf_alignment_words = (dst_sp & 0x4) ? 1 : 0;
