@@ -22,12 +22,6 @@
 #include "api/inc/uvisor_exports.h"
 #include <stdint.h>
 
-/* ldr pc, [pc, #<label - instr + 4>]
- * LDR (immediate) - ARMv7M ARM section A7.7.42
- * 1111;1 00 0; 0 10 1; <Rn - 1111>; <Rt - 1111>; <imm12> (Encoding T3) */
-#define LDR_PC_PC_IMM_OPCODE(instr, label) \
-    ((uint32_t) (0xF000F8DFUL | ((((uint32_t) (label) - ((uint32_t) (instr) + 4)) & 0xFFFUL) << 16)))
-
 /** Synchronous RPC Gateway
  *
  * This macro declares a new function pointer (with no name mangling) named
