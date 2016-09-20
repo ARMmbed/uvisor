@@ -156,22 +156,20 @@ void debug_fault(THaltError reason, uint32_t lr, uint32_t sp)
     DEBUG_PRINT_END();
 }
 
-static void __debug_reboot(void)
+static void debug_die(void)
 {
-    UVISOR_SVC(UVISOR_SVC_ID_DEBUG_REBOOT, "");
+    UVISOR_SVC(UVISOR_SVC_ID_HALT_USER_ERR, "", DEBUG_BOX_HALT);
 }
 
-/* This function must be called as an SVCall handler.
- * All debug handlers that are required to reboot upon exit should use the
- * __debug_reboot function as return value, which triggers the SVCall. This note
- * applies to uVisor internally, as the actual debug box does not need to care
- * about this. */
-void debug_reboot(void)
+void debug_reboot(TResetReason reason)
 {
-    /* FIXME: The halt will be replaced with a proper return code. An ACL will
-     *        be created to allow single boxes to reset the device. */
     if (!g_debug_box.initialized || g_active_box != g_debug_box.box_id) {
         HALT_ERROR(NOT_ALLOWED, "This function can only be called from the context of an initialized debug box.\n\r");
+    }
+
+    /* Note: Currently we do not act differently based on the reset reason. */
+    if (reason >= __TRESETREASON_MAX) {
+        HALT_ERROR(NOT_ALLOWED, "Invalid reset reason: %d.\r\n", reason);
     }
 
     /* Reboot.
@@ -180,8 +178,7 @@ void debug_reboot(void)
 }
 
 /* FIXME: Currently it is not possible to return to a regular execution flow
- *        after the execution of the debug box handler. It is possible to
- *        reboot, though. */
+ *        after the execution of the debug box handler. */
 static void debug_deprivilege_and_return(void * debug_handler, void * return_handler,
                                          uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3)
 {
@@ -230,7 +227,7 @@ void debug_halt_error(THaltError reason)
     /* If the debug box does not exist (or it has not been initialized yet), or
      * the debug box was already called once, just loop forever. */
     if (!g_debug_box.initialized || debugged_once_before) {
-        while(1);
+        while (1);
     } else {
         /* Remember that debug_deprivilege_and_return() has been called once.
          * We'll reboot after the debug handler is run, so this will go back to
@@ -239,8 +236,8 @@ void debug_halt_error(THaltError reason)
 
         /* The following arguments are passed to the destination function:
          *   1. reason
-         * Upon return from the debug handler, the system will reboot. */
-        debug_deprivilege_and_return(g_debug_box.driver->halt_error, __debug_reboot, reason, 0, 0, 0);
+         * Upon return from the debug handler, the system will die. */
+        debug_deprivilege_and_return(g_debug_box.driver->halt_error, debug_die, reason, 0, 0, 0);
     }
 }
 

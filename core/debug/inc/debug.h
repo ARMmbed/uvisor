@@ -47,7 +47,7 @@ void debug_map_addr_to_periph(uint32_t address);
 void debug_register_driver(const TUvisorDebugDriver * const driver);
 uint32_t debug_get_version(void);
 void debug_halt_error(THaltError reason);
-void debug_reboot(void);
+void debug_reboot(TResetReason reason);
 
 #define DEBUG_PRINT_HEAD(x) {\
     DPRINTF("\n***********************************************************\n");\

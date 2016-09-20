@@ -165,3 +165,13 @@ int vIRQ_GetLevel(void)
         return UVISOR_SVC(UVISOR_SVC_ID_IRQ_LEVEL_GET, "");
     }
 }
+
+void vIRQ_SystemReset(TResetReason reason)
+{
+    if(__uvisor_mode == 0) {
+        NVIC_SystemReset();
+    }
+    else {
+        UVISOR_SVC(UVISOR_SVC_ID_DEBUG_REBOOT, "", reason);
+    }
+}
