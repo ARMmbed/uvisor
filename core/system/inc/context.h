@@ -25,7 +25,8 @@
  *
  * @warning Currently only the FPU-disabled case is supported. Exceptions that
  * generates when the FPU is enabled will escalate to a hard fault. */
-#define CONTEXT_SWITCH_EXC_SF_SIZE 8
+#define CONTEXT_SWITCH_EXC_SF_WORDS 8
+#define CONTEXT_SWITCH_EXC_SF_BYTES (CONTEXT_SWITCH_EXC_SF_WORDS * sizeof(uint32_t))
 
 /** Maximum number of arguments that can be passed to a function-bound context
  * switch. */
