@@ -166,12 +166,12 @@ int vIRQ_GetLevel(void)
     }
 }
 
-void vIRQ_SystemReset(void)
+void vIRQ_SystemReset(TResetReason reason)
 {
     if(__uvisor_mode == 0) {
         NVIC_SystemReset();
     }
     else {
-        UVISOR_SVC(UVISOR_SVC_ID_DEBUG_REBOOT, "");
+        UVISOR_SVC(UVISOR_SVC_ID_DEBUG_REBOOT, "", reason);
     }
 }

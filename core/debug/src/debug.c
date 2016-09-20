@@ -161,12 +161,15 @@ static void debug_die(void)
     UVISOR_SVC(UVISOR_SVC_ID_HALT_USER_ERR, "", DEBUG_BOX_HALT);
 }
 
-/* FIXME: The halt will be replaced with a proper return code. An ACL will be
- *        created to allow single boxes to reset the device. */
-void debug_reboot(void)
+void debug_reboot(TResetReason reason)
 {
     if (!g_debug_box.initialized || g_active_box != g_debug_box.box_id) {
         HALT_ERROR(NOT_ALLOWED, "This function can only be called from the context of an initialized debug box.\n\r");
+    }
+
+    /* Note: Currently we do not act differently based on the reset reason. */
+    if (reason >= __TRESETREASON_MAX) {
+        HALT_ERROR(NOT_ALLOWED, "Invalid reset reason: %d.\r\n", reason);
     }
 
     /* Reboot.
