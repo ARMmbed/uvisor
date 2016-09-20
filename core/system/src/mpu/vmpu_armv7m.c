@@ -359,8 +359,10 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
 
     /* allocate context pointer */
     g_context_current_states[box_id].bss = slots_ctx ? box_mem_pos : (uint32_t) NULL;
-    /* ensure stack band on top for stack underflow dectection */
-    g_context_current_states[box_id].sp = (box_mem_pos + size - UVISOR_STACK_BAND_SIZE);
+    /* `(box_mem_pos + size)` is already outside the memory protected by the
+     * MPU region, so a pointer 8B below stack top is chosen (8B due to stack
+     * alignment requirements). */
+    g_context_current_states[box_id].sp = (box_mem_pos + size) - 8;
 
     /* Reset uninitialized secured box context. */
     if (slots_ctx) {
