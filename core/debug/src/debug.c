@@ -65,7 +65,7 @@ void debug_exception_frame(uint32_t lr, uint32_t sp)
     int i;
     int mode = lr & 0x4;
 
-    char exc_sf_verbose[CONTEXT_SWITCH_EXC_SF_SIZE + 1][6] = {
+    char exc_sf_verbose[CONTEXT_SWITCH_EXC_SF_WORDS + 1][6] = {
         "r0", "r1", "r2", "r3", "r12",
         "lr", "pc", "xPSR", "align"
     };
@@ -77,12 +77,12 @@ void debug_exception_frame(uint32_t lr, uint32_t sp)
 
     /* print exception stack frame */
     dprintf("  Exception stack frame:\n");
-    i = CONTEXT_SWITCH_EXC_SF_SIZE;
+    i = CONTEXT_SWITCH_EXC_SF_WORDS;
     if(((uint32_t *) sp)[8] & (1 << 9))
     {
         dprintf("    %csp[%02d]: 0x%08X | %s\n", mode ? 'p' : 'm', i, ((uint32_t *) sp)[i], exc_sf_verbose[i]);
     }
-    for(i = CONTEXT_SWITCH_EXC_SF_SIZE - 1; i >= 0; --i)
+    for(i = CONTEXT_SWITCH_EXC_SF_WORDS - 1; i >= 0; --i)
     {
         dprintf("    %csp[%02d]: 0x%08X | %s\n", mode ? 'p' : 'm', i, ((uint32_t *) sp)[i], exc_sf_verbose[i]);
     }

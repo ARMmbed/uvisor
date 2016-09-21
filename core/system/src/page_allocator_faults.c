@@ -83,7 +83,7 @@ int page_allocator_get_active_mask_for_address(uint32_t address, uint8_t * mask,
     }
     *page = p;
     /* Compute the page mask and index. */
-    p += UVISOR_PAGE_MAP_COUNT * 32 - g_page_count_total;
+    p += g_page_map_shift;
     *mask = (uint8_t) (g_page_owner_map[box_id][p / 32] >> ((p % 32) & ~7));
     *index = p / 8;
 
