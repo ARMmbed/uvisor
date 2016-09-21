@@ -18,6 +18,7 @@
 #define __LINKER_H__
 
 #include "api/inc/priv_sys_hook_exports.h"
+#include "api/inc/lib_hook_exports.h"
 
 extern uint32_t const __code_end__;
 extern uint32_t const __stack_start__;
@@ -98,7 +99,7 @@ typedef struct {
 
     /* Functions provided by uVisor Lib for use by uVisor in unprivileged mode
      * */
-    void (*lib_box_init)(void * lib_config);
+    UvisorLibHooks const * const lib_hooks;
 } UVISOR_PACKED UvisorConfig;
 
 extern UvisorConfig const __uvisor_config;

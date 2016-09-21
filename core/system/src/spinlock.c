@@ -14,12 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "api/inc/uvisor-lib.h"
-#include "core/uvisor.h"
-#include <stddef.h>
-#include <stdint.h>
+#include "spinlock.h"
 
-int uvisor_box_namespace(int box_id, char *box_namespace, size_t length)
+void spin_init(UvisorSpinlock * spinlock)
 {
-    return UVISOR_SVC(UVISOR_SVC_ID_BOX_NAMESPACE_FROM_ID, "", box_id, box_namespace, length);
+    __sync_synchronize();
+    spinlock->acquired = false;
+}
+
+bool spin_trylock(UvisorSpinlock * spinlock)
+{
+    return __sync_bool_compare_and_swap(&spinlock->acquired, false, true);
+}
+
+void spin_lock(UvisorSpinlock * spinlock)
+{
+    while (spin_trylock(spinlock) == false);
+}
+
+void spin_unlock(UvisorSpinlock * spinlock)
+{
+    __sync_synchronize();
+    spinlock->acquired = false;
 }

@@ -54,8 +54,8 @@ const void *g_svc_vtor_tbl[] = {
     benchmark_stop,             // 12
     halt_user_error,            // 13
     unvic_irq_level_get,        // 14
-    vmpu_box_id_self,           // 15
-    vmpu_box_id_caller,         // 16
+    __svc_not_implemented,      // 15 Deprecated: vmpu_box_id_self
+    __svc_not_implemented,      // 16 Deprecated: vmpu_box_id_caller
     vmpu_box_namespace_from_id, // 17
     debug_reboot,               // 18
     /* FIXME: This function will be made automatic when the debug box ACL is

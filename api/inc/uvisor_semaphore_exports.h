@@ -14,12 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "api/inc/uvisor-lib.h"
-#include "core/uvisor.h"
-#include <stddef.h>
-#include <stdint.h>
+#ifndef __UVISOR_API_UVISOR_SEMAPHORE_EXPORTS_H__
+#define __UVISOR_API_UVISOR_SEMAPHORE_EXPORTS_H__
 
-int uvisor_box_namespace(int box_id, char *box_namespace, size_t length)
-{
-    return UVISOR_SVC(UVISOR_SVC_ID_BOX_NAMESPACE_FROM_ID, "", box_id, box_namespace, length);
-}
+#include "api/inc/uvisor_exports.h"
+
+/* This must be big enough for all operating systems uVisor runs on. */
+#define UVISOR_SEMAPHORE_INTERNAL_SIZE (16)
+
+/* An opaque structure, that one knows the size of so that they can allocate
+ * memory. */
+typedef struct uvisor_semaphore {
+    uint8_t internal[UVISOR_SEMAPHORE_INTERNAL_SIZE];
+} UVISOR_ALIGN(4) UvisorSemaphore;
+
+#endif

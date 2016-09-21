@@ -504,8 +504,8 @@ To make a synchronous RPC gateway, we use the `UVISOR_BOX_RPC_GATEWAY_SYNC` macr
 
 These are the parameters.
  * `box_name` - The name of the target box as declared in `UVISOR_BOX_CONFIG`
- * `gw_name` - The new, callable function pointer for performing RPC
- * `fn_name` - The function being designated as an RPC target
+ * `gw_name` - The new, callable function pointer for initiating an RPC from the caller's box
+ * `fn_name` - The function that will run in the callee's box as an RPC target
  * `fn_ret`  - The return type of the function being designated as an RPC target
  * `__VA_ARGS__` - The type of each parameter passed to the target function. There can be up to 4 parameters in a target function. Each parameter must be no more than uint32_t in size. If the target function accepts no arguments, pass `void` here.
 
@@ -536,8 +536,8 @@ To make an asynchronous RPC gateway, we use the `UVISOR_BOX_RPC_GATEWAY_ASYNC` m
 
 The parameters are the same as the `UVISOR_BOX_RPC_GATEWAY_SYNC` macro.
  * `box_name` - The name of the target box as declared in `UVISOR_BOX_CONFIG`
- * `gw_name` - The new, callable function pointer for performing RPC
- * `fn_name` - The function being designated as an RPC target
+ * `gw_name` - The new, callable function pointer for initiating an RPC from the caller's box
+ * `fn_name` - The function that will run in the callee's box as an RPC target
  * `fn_ret`  - The return type of the function being designated as an RPC target
  * `__VA_ARGS__` - The type of each parameter passed to the target function. There can be up to 4 parameters in a target function. Each parameter must be no more than uint32_t in size. If the target function accepts no arguments, pass `void` here.
 
@@ -570,21 +570,9 @@ Making a box capable of handling incoming RPC requires two steps.
  1. Specify the maximum number of incoming RPC calls for the box
  1. Call `rpc_fncall_waitfor` from at least one thread
 
-##### Limiting the maximum number of incoming RPC calls
+##### Limits on the maximum number of outstanding RPC calls
 
-To specify the maximum number of incoming RPC calls for a box, the following macro is used.
-
-```C++
-UVISOR_BOX_RPC_MAX_INCOMING(max_num_incoming_rpc)
-```
-
-Before the box configuration, use the `UVISOR_BOX_RPC_MAX_INCOMING` macro to specify how many RPC calls can be queued up at once.
-```C++
-/* secure_unicorn.cpp */
-
-UVISOR_BOX_RPC_MAX_INCOMING(10);
-```
-With the above configuration, up to 10 RPC calls can be queued up for all RPC executors. If the executors can't execute incoming RPC calls fast enough, uVisor will prevent new RPC calls from getting queued up until space allows.
+As currently implemented, up to 8 RPC calls can be queued up for all RPC executors. If the executors can't execute incoming RPC calls fast enough, uVisor will prevent new RPC calls from getting queued up until space allows.
 
 So, what happens on the caller side when a callee can't handle their call? Asynchronous callers will receive a timeout if the call can't be completed quickly enough. Synchronous callers will block forever until space is available.
 
