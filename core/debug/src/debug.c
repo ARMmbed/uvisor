@@ -163,14 +163,11 @@ static void debug_die(void)
 
 void debug_reboot(TResetReason reason)
 {
-    if (!g_debug_box.initialized || g_active_box != g_debug_box.box_id) {
-        HALT_ERROR(NOT_ALLOWED, "This function can only be called from the context of an initialized debug box.\n\r");
+    if (!g_debug_box.initialized || g_active_box != g_debug_box.box_id || reason >= __TRESETREASON_MAX) {
+        halt(NOT_ALLOWED);
     }
 
     /* Note: Currently we do not act differently based on the reset reason. */
-    if (reason >= __TRESETREASON_MAX) {
-        HALT_ERROR(NOT_ALLOWED, "Invalid reset reason: %d.\r\n", reason);
-    }
 
     /* Reboot.
      * If called from unprivileged code, NVIC_SystemReset causes a fault. */
