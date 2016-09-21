@@ -14,12 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "api/inc/uvisor-lib.h"
-#include "core/uvisor.h"
-#include <stddef.h>
+#ifndef __UVISOR_API_LIB_HOOK_EXPORTS_H__
+#define __UVISOR_API_LIB_HOOK_EXPORTS_H__
+
 #include <stdint.h>
 
-int uvisor_box_namespace(int box_id, char *box_namespace, size_t length)
-{
-    return UVISOR_SVC(UVISOR_SVC_ID_BOX_NAMESPACE_FROM_ID, "", box_id, box_namespace, length);
-}
+/* Predeclaration */
+typedef struct uvisor_semaphore UvisorSemaphore;
+
+/*
+ * uVisor library hooks
+ *
+ * All functions that uVisor needs to call that are implemented in uvisor-lib.
+ * These functions will be run by unprivileged code only. */
+typedef struct {
+    void (*box_init)(void * lib_config);
+    int (*semaphore_init)(UvisorSemaphore * semaphore, int32_t count);
+    int (*semaphore_pend)(UvisorSemaphore * semaphore, uint32_t timeout_ms);
+} UvisorLibHooks;
+
+#endif

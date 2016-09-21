@@ -15,11 +15,16 @@
  * limitations under the License.
  */
 #include "api/inc/uvisor-lib.h"
-#include "core/uvisor.h"
-#include <stddef.h>
-#include <stdint.h>
+#include "api/inc/vmpu_exports.h"
 
-int uvisor_box_namespace(int box_id, char *box_namespace, size_t length)
+extern UvisorBoxIndex * __uvisor_ps;
+
+int uvisor_box_id_self(void)
 {
-    return UVISOR_SVC(UVISOR_SVC_ID_BOX_NAMESPACE_FROM_ID, "", box_id, box_namespace, length);
+    return __uvisor_ps->box_id_self;
+}
+
+int uvisor_box_id_caller(void)
+{
+    return UVISOR_ERROR_NOT_IMPLEMENTED;
 }

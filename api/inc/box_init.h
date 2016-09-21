@@ -14,12 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "api/inc/uvisor-lib.h"
-#include "core/uvisor.h"
-#include <stddef.h>
-#include <stdint.h>
+#ifndef __UVISOR_API_BOX_INIT_H__
+#define __UVISOR_API_BOX_INIT_H__
 
-int uvisor_box_namespace(int box_id, char *box_namespace, size_t length)
-{
-    return UVISOR_SVC(UVISOR_SVC_ID_BOX_NAMESPACE_FROM_ID, "", box_id, box_namespace, length);
-}
+#include "api/inc/uvisor-lib.h"
+
+UVISOR_EXTERN void __uvisor_lib_box_init(void * lib_config);
+
+#endif

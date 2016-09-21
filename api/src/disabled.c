@@ -93,7 +93,7 @@ static void uvisor_disabled_init_context(void)
         box_cfgtbl < (const UvisorBoxConfig**) &__uvisor_cfgtbl_ptr_end;
         box_cfgtbl++) {
         /* Read the context size from the box configuration table. */
-        context_size = (size_t) (*box_cfgtbl)->context_size;
+        context_size = (size_t) (*box_cfgtbl)->sizes.context_size;
 
         /* Initialize box context. */
         /* Note: Also box 0 has technically a context, although we force it to
