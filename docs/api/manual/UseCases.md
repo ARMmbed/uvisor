@@ -583,12 +583,13 @@ An RPC needs some context in which to execute. The context in which an RPC runs 
 Let's have a look at this function.
 
 ```C++
-int rpc_fncall_waitfor(const TFN_Ptr fn_ptr_array[], size_t fn_count, uint32_t timeout_ms);
+int rpc_fncall_waitfor(const TFN_Ptr fn_ptr_array[], size_t fn_count, int * box_id_caller, uint32_t timeout_ms);
 ```
 
 There are not so many parameters.
  * `fn_ptr_array` - an array of RPC function targets that this call to `rpc_fncall_waitfor` should handle RPC to
  * `fn_count` - the number of function targets in this array
+ * `box_id_caller` - a memory location to store the box ID of the calling box (the source box of the RPC). This is set before the RPC is dispatched, so that the RPC target function can read from this location to determine the calling box ID. Optional.
  * `timeout_ms` - specifies how long to wait (in ms) for an incoming RPC calls before returning
 
 And finally, the return value specifies the status of the wait (whether it timed out, or if the pool is too small, or if an RPC was handled).
@@ -606,8 +607,9 @@ static void unicorn_barf_rpc_thread(const void *)
     while (1) {
         int status;
         static const uint32_t timeout_ms = UVISOR_WAIT_FOREVER;
+        static const int * box_id_caller = NULL;
 
-        status = rpc_fncall_waitfor(my_fn_array, ARRAY_COUNT(my_fn_array), timeout_ms);
+        status = rpc_fncall_waitfor(my_fn_array, ARRAY_COUNT(my_fn_array), box_id_caller, timeout_ms);
         if (!status) {
             /* ... Handle unsuccessful status ... */
         }
