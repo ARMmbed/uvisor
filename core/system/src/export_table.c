@@ -27,6 +27,16 @@
 #include "halt.h"
 #include "vmpu.h"
 
+/* Wrap a function call into an atomic section with IRQ state restoration. */
+#define atomic_call_wrapper(fn) { \
+        uint32_t primask = __get_PRIMASK(); \
+        __disable_irq(); \
+        fn; \
+        if (!(primask & 0x01)) { \
+            __enable_irq(); \
+        } \
+    }
+
 /* By default a maximum of 16 threads are allowed. This can only be overridden
  * by the porting engineer for the current platform. */
 #ifndef UVISOR_EXPORT_TABLE_THREADS_MAX_COUNT
@@ -584,6 +594,18 @@ static void thread_switch(void * c)
     }
 }
 
+/* uVisor expects all calls to its API to be executed in the highest priority
+ * interrupt (SVC) since they are not re-entrant.
+ * If this is not the case, we need to make sure that no other interrupt can
+ * preempt these calls by wrapping them in an atomic section.
+ */
+static void thread_switch_atomic(void * c)
+{
+    atomic_call_wrapper(
+        thread_switch(c)
+    );
+}
+
 static void boxes_init(void)
 {
     /* Tell uVisor to call the uVisor lib box_init function for each box with
@@ -606,7 +628,7 @@ const TUvisorExportTable __uvisor_export_table = {
         .pre_start = boxes_init,
         .thread_create = thread_create,
         .thread_destroy = thread_destroy,
-        .thread_switch = thread_switch,
+        .thread_switch = thread_switch_atomic,
     },
     .pool = {
         .init = uvisor_pool_init,
