@@ -16,7 +16,7 @@ If you want to learn more about the uVisor security model and get an overview of
 
 You will find the full uVisor documentation in the [docs](docs) folder – see our [OS-level introduction](https://github.com/ARMmbed/uvisor/raw/docs/uvisor-rtos-docs.pdf) in PDF format.
 
-To see how uVisor is used in practice, we created a [basic threaded uVisor example](https://github.com/ARMmbed/mbed-os-example-uvisor). For interrupt support in uVisor please refer to our [uVisor interrupt example](https://github.com/ARMmbed/mbed-os-example-uvisor-irq). 
+To see how uVisor is used in practice, we created a [basic uVisor example](https://github.com/ARMmbed/mbed-os-example-uvisor), which shows how to setup a secure interrupt and instantiate C++ objects in the context of a secure box. For an example on how to configure multiple boxes and threads within them, please refer to our [uVisor threaded example](https://github.com/ARMmbed/mbed-os-example-uvisor-thread).
 
 Contributions to this repository in the form of issue reporting or pull requests are welcome! Please make sure to read our [contribution guidelines](CONTRIBUTING.md) first.
 
@@ -59,8 +59,7 @@ The design philosophy of uVisor is to provide hardware-enforced compartments (sa
 
 Breaking the established flat security model of micro-controllers into compartmentalised building blocks results in high security levels, as the reach of flaws or external attacks can be limited to less sensitive function blocks.
 
-A [basic example of the uVisor](https://github.com/ARMmbed/mbed-os-example-uvisor) features is preventing unauthorised access to flash memory from faulty or compromised code. This not only prevents malware from getting resident on the device, but also enables protection of device secrets like cryptographic keys.
-For interrupt support in uVisor please refer to our [uVisor interrupt example](https://github.com/ARMmbed/mbed-os-example-uvisor-irq). 
+A [basic example of the uVisor](https://github.com/ARMmbed/mbed-os-example-uvisor) features is preventing unauthorised access to flash memory from faulty or compromised code. This not only prevents malware from getting resident on the device, but also enables protection of device secrets like cryptographic keys. For an example of how to setup multiple secure boxes and threads within them, please refer to our [uVisor threaded example](https://github.com/ARMmbed/mbed-os-example-uvisor-thread).
 
 Services built on top of our security layer can safely depend on an unclonable trusted identity, secure access to internet services and benefit from encryption key protection.
 
