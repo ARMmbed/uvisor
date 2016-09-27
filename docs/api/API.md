@@ -210,13 +210,13 @@ A box identity identifies a security domain uniquely and globally.
 
 The box identity API can be used to determine the source box of an inbound secure gateway call. This can be useful for implementing complex authorization logic between mutually distrustful security domains.
 
-uVisor provides the ability to retrieve the box ID of the current box (`uvisor_box_id_self`), or of the box that most recently called the current box through a secure gateway (`uvisor_box_id_caller`).
+uVisor provides the ability to retrieve the box ID of the current box (`uvisor_box_id_self`), or of the box that called the current box through an RPC gateway via the `box_id_caller` parameter of `rpc_fncall_waitfor`.
 
 The box ID number is not constant and can change between reboots. But, the box ID number can be used as a token to retrieve a constant string identifier, known as the box namespace.
 
 A box namespace is a static, box-specific string, that can help identify which box has which ID at run-time. In the future, the box namespace will be guaranteed to be globally unique.
 
-A full example using this API is available at [example-uvisor-box-id](https://github.com/ARMmbed/example-uvisor-box-id).
+A full example using this API is available at [mbed-os-example-uvisor-number-store](https://github.com/ARMmbed/mbed-os-example-uvisor-number-store).
 
 ```C
 int uvisor_box_id_self(void)
@@ -236,19 +236,21 @@ int uvisor_box_id_self(void)
 ---
 
 ```C
-int uvisor_box_id_caller(void)
+int rpc_fncall_waitfor(const TFN_Ptr fn_ptr_array[], size_t fn_count, int * box_id_caller, uint32_t timeout_ms)
 ```
 
 <table>
   <tr>
     <td>Description</td>
-    <td colspan="2">Get the ID of the box that is calling the current box through the most recent secure gateway</td>
+    <td colspan="2">Handle incoming RPC, setting the parameter `box_id_caller` to the caller box ID.</td>
   </tr>
   <tr>
-    <td>Return value</td>
-    <td colspan="2">The ID of the caller box, or -1 if there is no secure gateway calling box</td>
+    <td>`box_id_caller` value</td>
+    <td colspan="2">After a call, `box_id_caller` is set to the box ID of the calling box (the source box of the RPC). This is set before the RPC is dispatched, so that the RPC target function can read from this location to determine the calling box ID. This parameter is optional.</td>
   </tr>
 </table>
+
+> When deciding which memory to provide for `rpc_fncall_waitfor` to use when writing `box_id_caller`, strongly prefer thread local storage when multiple threads in a box can handle incoming RPC.
 
 ---
 
