@@ -24,6 +24,7 @@
 #include <stdint.h>
 
 UVISOR_EXTERN const uint32_t __uvisor_mode;
+UVISOR_EXTERN void const * const main_cfg_ptr;
 
 #define UVISOR_DISABLED   0
 #define UVISOR_PERMISSIVE 1
