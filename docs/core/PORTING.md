@@ -344,6 +344,8 @@ The snippet below can be used as a template for your `ld` linker script.
 
 Please note that every occurrence of `...` identifies parts of the existing linker script that have been omitted here for clarity. You will find details and requirements for each section in a table below. In addition, we assume that the linker script applies to a device that has one flash memory and one SRAM module, and that interrupt vectors are relocated in SRAM by the host OS (although this does not strictly influence uVisor).
 
+> Note: After making the the necessary changes to your linker script, `HEAP_SIZE` becomes the minimum heap size. The heap will grow to fill all available RAM between the stack and data sections. If there is not enough room for the minimum heap size, the linker will generate an error. The reason for this change is to ease transitioning applications from the legacy heap to the [uVisor page heap](https://github.com/ARMmbed/uvisor/blob/master/docs/api/manual/UseCases.md#tier-1-page-allocator); after an application is fully transitioned to the [uVisor page heap](https://github.com/ARMmbed/uvisor/blob/master/docs/api/manual/UseCases.md#tier-1-page-allocator), the legacy heap is no longer required and can have a `HEAP_SIZE` size of 0.
+
 ```
 ...
 
@@ -494,6 +496,11 @@ SECTIONS
 
     /* Heap and stack go here. */
 
+    /* Initialize the stack at the end of the memory block. */
+    __StackTop = ORIGIN(m_data) + LENGTH(m_data); /* <----- Move the stack
+    __StackLimit = __StackTop - STACK_SIZE;                 block before the
+    PROVIDE(__stack = __StackTop);                          heap. */
+
     /* Note: The uVisor requires the original heap start and end addresses to be
              provided. */
 
@@ -505,14 +512,12 @@ SECTIONS
         PROVIDE(end = .);
         __HeapBase = .;
         . += HEAP_SIZE;
-        __HeapLimit = .;
-        __uvisor_heap_end = .;    /* <----- Add this! */
     } > m_data
 
-    /* Initialize the stack at the end of the memory block. */
-    __StackTop = ORIGIN(m_data) + LENGTH(m_data);
-    __StackLimit = __StackTop - STACK_SIZE;
-    PROVIDE(__stack = __StackTop);
+    __HeapLimit = __StackLimit;       /* <----- Move this out of the heap
+                                                section and point it directly
+                                                at the __StackLimit. */
+    __uvisor_heap_end = __StackLimit; /* <----- Add this! */
 
     ...
 
