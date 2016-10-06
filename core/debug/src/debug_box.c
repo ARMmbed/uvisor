@@ -142,3 +142,31 @@ void debug_register_driver(const TUvisorDebugDriver * const driver)
     g_debug_box.box_id = g_active_box;
     g_debug_box.initialized = 1;
 }
+
+/* FIXME This is a bit platform specific. Consider moving to a platform
+ * specific location. */
+uint32_t debug_box_enter_from_priv(uint32_t lr) {
+    uint32_t shcsr;
+    uint32_t from_priv = !(lr & 0x4);
+
+    /* If we are not handling an exception caused from privileged mode, return
+     * the original lr. */
+    if (!from_priv) {
+        return lr;
+    }
+
+    shcsr = SCB->SHCSR;
+
+    /* Make sure SVC is active. */
+    assert(shcsr & SCB_SHCSR_SVCALLACT_Msk);
+
+    /* We had a fault (from SVC), so clear the SVC fault before returning. SVC
+     * and all other exceptions must be no longer active after the EXC RETURN,
+     * or else we cause usage faults when doing SVCs later (for example, to
+     * reboot via the debug_reboot SVC). */
+    SCB->SHCSR = shcsr & ~SCB_SHCSR_SVCALLACT_Msk;
+
+    /* Return to Thread mode and use the Process Stack for return. The PSP will
+     * have been changed already. */
+    return 0xFFFFFFFD;
+}

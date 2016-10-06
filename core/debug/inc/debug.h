@@ -42,6 +42,13 @@ uint32_t debug_get_version(void);
 void debug_halt_error(THaltError reason);
 void debug_reboot(TResetReason reason);
 
+/* Enter the debug box from a privileged mode exception handler. This function
+ * requires the caller to have already switched the PSP to the debug box stack.
+ * We currently only call this on MPU faults and Hard Faults in
+ * vmpu_sys_mux_handler. If called from outside a privileged mode exception
+ * handler, this function does nothing. */
+uint32_t debug_box_enter_from_priv(uint32_t lr);
+
 #ifdef  NDEBUG
 
 #define DEBUG_INIT(...)          {}

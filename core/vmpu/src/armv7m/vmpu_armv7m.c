@@ -90,8 +90,11 @@ static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr
     const MpuRegion *region;
     uint8_t mask, index, page;
 
-    /* No recovery is possible if the MPU syndrome register is not valid. */
-    if (fault_status == (SCB_CFSR_MMARVALID_Msk | SCB_CFSR_DACCVIOL_Msk)) {
+    /* No recovery is possible if the MPU syndrome register is not valid or
+     * this is not a stacking fault (where the MPU syndrome register would not
+     * be valid, but we can still recover). */
+    if (!((fault_status == (SCB_CFSR_MMARVALID_Msk | SCB_CFSR_DACCVIOL_Msk)) ||
+          (fault_status & (SCB_CFSR_MSTKERR_Msk | SCB_CFSR_MUNSTKERR_Msk)))) {
         return 0;
     }
 
@@ -112,7 +115,7 @@ static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr
     return 1;
 }
 
-void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
+uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
 {
     uint32_t psp, pc;
     uint32_t fault_addr, fault_status;
@@ -127,29 +130,45 @@ void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
 
     switch (ipsr) {
         case MemoryManagement_IRQn:
-            /* Currently we only support recovery from unprivileged mode. */
-            if (lr & 0x4) {
+            fault_status = VMPU_SCB_MMFSR;
+
+            /* If we are having an unstacking fault, we can't read the pc
+             * at fault. */
+            if (fault_status & (SCB_CFSR_MSTKERR_Msk | SCB_CFSR_MUNSTKERR_Msk)) {
+                /* Fake pc */
+                pc = 0x0;
+
+                /* The stack pointer is at fault. MMFAR doesn't contain a
+                 * valid fault address. */
+                fault_addr = lr & 0x4 ? psp : msp;
+            } else {
                 /* pc at fault */
-                pc = vmpu_unpriv_uint32_read(psp + (6 * 4));
+                if (lr & 0x4) {
+                    pc = vmpu_unpriv_uint32_read(psp + (6 * 4));
+                } else {
+                    /* We can be privileged here if we tried doing an ldrt or
+                     * strt to a region not currently loaded in the MPU. In
+                     * such cases, we are reading from the msp and shouldn't go
+                     * through vmpu_unpriv_uint32_read. A box wouldn't have
+                     * access to our stack. */
+                    pc = *(uint32_t *) (msp + (6 * 4));
+                }
 
                 /* Backup fault address and status */
                 fault_addr = SCB->MMFAR;
-                fault_status = VMPU_SCB_MMFSR;
-
-                /* Check if the fault is an MPU fault. */
-                if (vmpu_fault_recovery_mpu(pc, psp, fault_addr, fault_status)) {
-                    VMPU_SCB_MMFSR = fault_status;
-                    return;
-                }
-
-                /* If recovery was not successful, throw an error and halt. */
-                DEBUG_FAULT(FAULT_MEMMANAGE, lr, psp);
-                VMPU_SCB_MMFSR = fault_status;
-                HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied");
-            } else {
-                DEBUG_FAULT(FAULT_MEMMANAGE, lr, msp);
-                HALT_ERROR(FAULT_MEMMANAGE, "Cannot recover from privileged MemManage fault");
             }
+
+            /* Check if the fault is an MPU fault. */
+            if (vmpu_fault_recovery_mpu(pc, psp, fault_addr, fault_status)) {
+                VMPU_SCB_MMFSR = fault_status;
+                return lr;
+            }
+
+            /* If recovery was not successful, throw an error and halt. */
+            DEBUG_FAULT(FAULT_MEMMANAGE, lr, lr & 0x4 ? psp : msp);
+            VMPU_SCB_MMFSR = fault_status;
+            HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied");
+            lr = debug_box_enter_from_priv(lr);
             break;
 
         case BusFault_IRQn:
@@ -173,16 +192,13 @@ void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
                 /* Check if the fault is the special register corner case. */
                 if (!vmpu_fault_recovery_bus(pc, psp, fault_addr, fault_status)) {
                     VMPU_SCB_BFSR = fault_status;
-                    return;
+                    return lr;
                 }
-
-                /* If recovery was not successful, throw an error and halt. */
-                DEBUG_FAULT(FAULT_BUS, lr, psp);
-                HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied");
-            } else {
-                DEBUG_FAULT(FAULT_BUS, lr, msp);
-                HALT_ERROR(FAULT_BUS, "Cannot recover from privileged bus fault");
             }
+
+            /* If recovery was not successful, throw an error and halt. */
+            DEBUG_FAULT(FAULT_BUS, lr, lr & 0x4 ? psp : msp);
+            HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied");
             break;
 
         case UsageFault_IRQn:
@@ -193,6 +209,7 @@ void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
         case HardFault_IRQn:
             DEBUG_FAULT(FAULT_HARD, lr, lr & 0x4 ? psp : msp);
             HALT_ERROR(FAULT_HARD, "Cannot recover from a hard fault.");
+            lr = debug_box_enter_from_priv(lr);
             break;
 
         case DebugMonitor_IRQn:
@@ -212,6 +229,8 @@ void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
             HALT_ERROR(NOT_ALLOWED, "Active IRQn(%i) is not a system interrupt", ipsr);
             break;
     }
+
+    return lr;
 }
 
 static int vmpu_mem_push_page_acl_iterator(uint8_t mask, uint8_t index)
