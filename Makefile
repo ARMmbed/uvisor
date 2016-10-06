@@ -221,10 +221,10 @@ fresh: clean all
 platform-%:
 	@echo
 	@# 2nd-level make
-	make BUILD_MODE=debug PLATFORM=$* configurations
+	$(MAKE) BUILD_MODE=debug PLATFORM=$* configurations
 	@echo
 	@# 2nd-level make
-	make BUILD_MODE=release PLATFORM=$* configurations
+	$(MAKE) BUILD_MODE=release PLATFORM=$* configurations
 
 # This middleware target is needed because the 1st-level make does not know the
 # configurations yet.
@@ -244,9 +244,9 @@ ifndef BUILD_MODE
 	$(error "Missing build mode. Use PLATFORM=<platform> BUILD_MODE=<build_mode> make CONFIGURATION_<configuration>")
 endif
 	@# 3rd-level make
-	make BUILD_MODE=$(BUILD_MODE) PLATFORM=$(PLATFORM) CONFIGURATION=$@ build_core
+	$(MAKE) BUILD_MODE=$(BUILD_MODE) PLATFORM=$(PLATFORM) CONFIGURATION=$@ build_core
 	@# 3rd-level make
-	make BUILD_MODE=$(BUILD_MODE) PLATFORM=$(PLATFORM) CONFIGURATION=$@ build_api
+	$(MAKE) BUILD_MODE=$(BUILD_MODE) PLATFORM=$(PLATFORM) CONFIGURATION=$@ build_api
 
 # This middleware target is needed because the parent make does not know the
 # name to give to the core binary yet.
