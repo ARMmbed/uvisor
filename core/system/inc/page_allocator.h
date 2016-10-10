@@ -59,6 +59,6 @@ extern uint32_t g_page_size;
 /* Points to the beginning of the page heap. */
 extern const void * g_page_heap_start;
 /* Contains the page usage mapped by owner. */
-extern uint32_t g_page_owner_map[UVISOR_MAX_BOXES][(UVISOR_PAGE_MAX_COUNT + 31) / 32];
+extern uint32_t g_page_owner_map[UVISOR_MAX_BOXES][UVISOR_PAGE_MAP_COUNT];
 
 #endif /* __PAGE_ALLOCATOR_H__ */
