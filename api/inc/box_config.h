@@ -109,6 +109,9 @@ UVISOR_EXTERN void const * const main_cfg_ptr;
     \
     UVISOR_EXTERN const __attribute__((section(".keep.uvisor.cfgtbl_ptr"), aligned(4))) void * const box_name ## _cfg_ptr = &box_name ## _cfg;
 
+#define UVISOR_BOX_EXTERN(box_name) \
+    UVISOR_EXTERN const __attribute__((section(".keep.uvisor.cfgtbl_ptr"), aligned(4))) void * const box_name ## _cfg_ptr;
+
 #define __UVISOR_BOX_CONFIG_NOCONTEXT(box_name, acl_list, stack_size) \
     __UVISOR_BOX_CONFIG(box_name, acl_list, UVISOR_ARRAY_COUNT(acl_list), stack_size, 0) \
 
