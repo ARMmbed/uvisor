@@ -141,7 +141,7 @@ PROGRAM_VERSION:='unknown'
 endif
 
 ifeq ("$(ARCH_MPU)","ARMv8M")
-FLAGS_CM4:=-march=armv8-m.main -mthumb
+FLAGS_CM4:=-march=armv8-m.main -mcmse -mthumb
 else
 FLAGS_CM4:=-mcpu=cortex-m3 -march=armv7-m -mthumb
 endif
