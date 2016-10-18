@@ -16,6 +16,7 @@
  */
 #include <uvisor.h>
 #include "context.h"
+#include "vmpu.h"
 
 uint32_t vmpu_fault_find_acl(uint32_t fault_addr, uint32_t size)
 {
@@ -61,10 +62,62 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
 
 void vmpu_arch_init(void)
 {
-    /* FIXME: This function must be implemented for the vMPU port to be complete. */
+    /* AIRCR needs to be unlocked with this key on every write. */
+    const uint32_t SCB_AIRCR_VECTKEY = 0x5FAUL;
+
+    /* AIRCR configurations:
+     *      - Non-secure exceptions are de-prioritized.
+     *      - BusFault, HardFault, and NMI are Secure.
+     */
+    /* TODO: Setup a sensible priority grouping. */
+    uint32_t aircr = SCB->AIRCR;
+    SCB->AIRCR = (SCB_AIRCR_VECTKEY << SCB_AIRCR_VECTKEY_Pos) |
+                 (aircr & SCB_AIRCR_ENDIANESS_Msk) |   /* Keep unchanged */
+                 (SCB_AIRCR_PRIS_Msk) |
+                 (0 << SCB_AIRCR_BFHFNMINS_Pos) |
+                 (aircr & SCB_AIRCR_PRIGROUP_Msk) |    /* Keep unchanged */
+                 (0 << SCB_AIRCR_SYSRESETREQ_Pos) |
+                 (0 << SCB_AIRCR_VECTCLRACTIVE_Pos);
+
+    /* SHCSR configurations:
+     *      - SecureFault exception enabled.
+     *      - UsageFault exception enabled for the selected Security state.
+     *      - BusFault exception enabled.
+     *      - MemManage exception enabled for the selected Security state.
+     */
+    SCB->SHCSR |= (SCB_SHCSR_SECUREFAULTENA_Msk) |
+                  (SCB_SHCSR_USGFAULTENA_Msk) |
+                  (SCB_SHCSR_BUSFAULTENA_Msk) |
+                  (SCB_SHCSR_MEMFAULTENA_Msk);
+
+    /* Initialize static SAU regions. */
+    vmpu_arch_init_hw();
 }
 
 void vmpu_arch_init_hw(void)
 {
-    /* FIXME: This function must be implemented for the vMPU port to be complete. */
+    /* FIXME: This function must use the vMPU APIs to be complete. */
+
+    /* Disable the SAU and configure all code to run in S mode. */
+    SAU->CTRL = 0;
+    uint32_t rnr = 0;
+
+    /* Configure User interrupt table in NS mode. */
+    SAU->RNR = rnr++;
+    SAU->RBAR = ((uint32_t) __uvisor_config.flash_start) & 0xFFFFFFE0;
+    SAU->RLAR = (((uint32_t) __uvisor_config.flash_end - 31) & 0xFFFFFFE0) | SAU_RLAR_ENABLE_Msk;
+
+    /* Configure the public SRAM to be accessible in NS mode. */
+    SAU->RNR = rnr++;
+    SAU->RBAR = ((uint32_t) __uvisor_config.page_end) & 0xFFFFFFE0;
+    SAU->RLAR = (((uint32_t) __uvisor_config.sram_end - 31) & 0xFFFFFFE0) | SAU_RLAR_ENABLE_Msk;
+
+    /* Configure the public peripherals to be accessible in NS mode. */
+    SAU->RNR = rnr++;
+    SAU->RBAR = ((uint32_t) 0x40000000) & 0xFFFFFFE0;
+    SAU->RLAR = (((uint32_t) 0x50000000 - 31) & 0xFFFFFFE0) | SAU_RLAR_ENABLE_Msk;
+
+    /* Enable the SAU. */
+    SAU->CTRL |= SAU_CTRL_ENABLE_Msk;
+
 }

@@ -37,7 +37,7 @@ typedef struct {
     uint32_t magic;
     uint32_t (*get_version)(uint32_t);
 
-    void (*init)(void);
+    void (*init)(uint32_t caller);
 
     void     (*irq_enable)(uint32_t irqn);
     void     (*irq_disable)(uint32_t irqn);
