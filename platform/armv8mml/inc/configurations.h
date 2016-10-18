@@ -37,10 +37,13 @@
  * depending on your requirements. See the porting guide for more details. */
 
 /* Memory boundaries */
-#define FLASH_ORIGIN 0x0
-#define FLASH_OFFSET 0x400
-#define SRAM_ORIGIN  0x20000000
-#define SRAM_OFFSET  0x400
+#define FLASH_ORIGIN   0x00000000
+#define FLASH_OFFSET   0x400
+#define SRAM_ORIGIN    0x20000000
+#define SRAM_OFFSET    0x400
+
+/* Memory aliasing as defined by the IDAU. */
+#define SECURE_ALIAS_OFFSET 0x10000000
 
 /*******************************************************************************
  * Hardware-specific configurations

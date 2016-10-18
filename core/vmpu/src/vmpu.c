@@ -112,12 +112,12 @@ static int vmpu_check_sanity(void)
     }
 
     /* Verify SRAM sections are within uVisor's own SRAM. */
-    assert(&__uvisor_bss_start__ >= __uvisor_config.bss_main_start);
-    assert(&__uvisor_bss_end__ <= __uvisor_config.bss_main_end);
-    assert(&__uvisor_data_start__ >= __uvisor_config.bss_main_start);
-    assert(&__uvisor_data_end__ <= __uvisor_config.bss_main_end);
-    assert(&__uvisor_stack_start__ >= __uvisor_config.bss_main_start);
-    assert(&__uvisor_stack_end__ <= __uvisor_config.bss_main_end);
+    assert(&__uvisor_bss_start__ >= UVISOR_GET_S_ALIAS(__uvisor_config.bss_main_start));
+    assert(&__uvisor_bss_end__ <= UVISOR_GET_S_ALIAS(__uvisor_config.bss_main_end));
+    assert(&__uvisor_data_start__ >= UVISOR_GET_S_ALIAS(__uvisor_config.bss_main_start));
+    assert(&__uvisor_data_end__ <= UVISOR_GET_S_ALIAS(__uvisor_config.bss_main_end));
+    assert(&__uvisor_stack_start__ >= UVISOR_GET_S_ALIAS(__uvisor_config.bss_main_start));
+    assert(&__uvisor_stack_end__ <= UVISOR_GET_S_ALIAS(__uvisor_config.bss_main_end));
 
     /* Verify that the secure flash area is accessible and after public code. */
     assert(!vmpu_public_flash_addr((uint32_t) __uvisor_config.secure_start));
