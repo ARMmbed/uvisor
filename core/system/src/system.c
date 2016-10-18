@@ -57,7 +57,7 @@ __attribute__((section(".isr"))) const TIsrVector g_isr_vector[ISR_VECTORS] =
     (TIsrVector) &__uvisor_stack_top__,
 
     /* System IRQs */
-    &main_entry,                           /* -15 */
+    (TIsrVector) &main_entry,              /* -15 */
     NonMaskableInt_IRQn_Handler,           /* -14 */
     HardFault_IRQn_Handler,                /* -13 */
     MemoryManagement_IRQn_Handler,         /* -12 */

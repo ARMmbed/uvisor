@@ -35,6 +35,9 @@ extern uint32_t const __uvisor_code_end__;
 extern uint32_t const __uvisor_stack_start__;
 extern uint32_t const __uvisor_stack_top__;
 extern uint32_t const __uvisor_stack_end__;
+extern uint32_t const __uvisor_stack_start_np__;
+extern uint32_t const __uvisor_stack_top_np__;
+extern uint32_t const __uvisor_stack_end_np__;
 
 extern uint32_t __uvisor_bss_start__;
 extern uint32_t __uvisor_bss_end__;
@@ -43,7 +46,7 @@ extern uint32_t __uvisor_data_start__;
 extern uint32_t __uvisor_data_end__;
 extern uint32_t const __uvisor_data_start_src__;
 
-extern void main_entry(void);
+extern void main_entry(uint32_t caller);
 extern void isr_default_sys_handler(void);
 extern void isr_default_handler(void);
 extern int isr_default(uint32_t isr_id);
