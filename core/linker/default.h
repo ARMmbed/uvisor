@@ -46,6 +46,15 @@ ENTRY(main_entry)
 #define SECURE_ALIAS_OFFSET 0
 #endif /* !defined(SECURE_ALIAS_OFFSET) */
 
+/* Default uVisor non-priviledged stack size for v8-M only. */
+#if !defined(STACK_SIZE_NP)
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+#define STACK_SIZE_NP 256 /* TODO: choose better default. */
+#else
+#define STACK_SIZE_NP 0
+#endif /* defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U) */
+#endif /* !defined(STACK_SIZE_NP) */
+
 /* Default uVisor own stack guard band
  * Note: Currently we do not actively use the stack guard to isolate the uVisor
  *       stack from the rest of the protected memories. For this reason the
@@ -60,7 +69,7 @@ MEMORY
   FLASH_S  (r x) : ORIGIN = (FLASH_ORIGIN + SECURE_ALIAS_OFFSET + FLASH_OFFSET),
                    LENGTH = UVISOR_FLASH_LENGTH_MAX
   RAM_S    (rwx) : ORIGIN = (SRAM_ORIGIN + SECURE_ALIAS_OFFSET + SRAM_OFFSET),
-                   LENGTH = UVISOR_SRAM_LENGTH_USED - STACK_SIZE - STACK_GUARD_BAND
+                   LENGTH = UVISOR_SRAM_LENGTH_USED - (STACK_SIZE + STACK_GUARD_BAND) - (STACK_SIZE_NP ? (STACK_SIZE_NP + STACK_GUARD_BAND) : 0)
   STACK_S  (rw ) : ORIGIN = ORIGIN(RAM_S) + LENGTH(RAM_S),
                    LENGTH = UVISOR_SRAM_LENGTH_PROTECTED - LENGTH(RAM_S)
 }
@@ -77,6 +86,13 @@ SECTIONS
         . = ALIGN(16);
         __uvisor_code_end__ = .;
     } > FLASH_S AT > FLASH_NS
+
+    .ns_text :
+    {
+        . = ALIGN(32);
+        *(.ns_text*)
+        . = ALIGN(32);
+    } > FLASH_NS
 
     .data :
     {
@@ -108,6 +124,14 @@ SECTIONS
     .stack (NOLOAD):
     {
         . = ALIGN(4);
+        /* Non-privileged stack for v8-M only. */
+        __uvisor_stack_start_np__ = .;
+        . += STACK_SIZE_NP;
+        __uvisor_stack_top_np__ = .;
+        . += STACK_SIZE_NP ? STACK_GUARD_BAND : 0;
+        __uvisor_stack_end_np__ = .;
+
+        /* Privileged stack for v7-M and v8-M. */
         __uvisor_stack_start__ = .;
         . += STACK_SIZE;
         __uvisor_stack_top__ = .;

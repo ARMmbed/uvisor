@@ -20,6 +20,7 @@
 #include "svc.h"
 #include "unvic.h"
 #include "vmpu.h"
+#include <stdbool.h>
 
 UVISOR_NOINLINE void uvisor_init_pre(uint32_t const * const user_vtor)
 {
@@ -124,41 +125,95 @@ UVISOR_NOINLINE void uvisor_init_post(void)
     DPRINTF("uvisor initialized\n");
 }
 
-void main_entry(void)
+UVISOR_NAKED void main_entry(uint32_t caller)
+{
+    asm volatile(
+        /* Disable all IRQs. They will be re-enabled before de-privileging. */
+        "cpsid i\n"
+        "isb\n"
+
+        /* Store the bootloader lr value. */
+        "push  {r0}\n"
+
+        /* Check for early exit. */
+        "bl    main_entry_early_exit\n"
+        "cmp   r0, #0\n"
+        "it    ne\n"
+        "popne {pc}\n"
+
+        /* Set the MSP. Since we are changing stacks we need to pop and re-push
+         * the lr value. */
+        "pop   {r0}\n"
+        "ldr   r1, =__uvisor_stack_top__\n"
+        "msr   MSP, r1\n"
+        "push  {r0}\n"
+
+        /* First initialization stage. */
+        "bl    main_init\n"
+
+        /* Re-enable all IRQs. */
+        "cpsie i\n"
+        "isb\n"
+
+        /* Pop the lr value. */
+        /* Note: This needs to be done now if we then de-privilege exeuction,
+         *       otherwise the stack will become unaccessible. */
+        "pop   {r0}\n"
+
+#if defined(ARCH_CORE_ARMv7M)
+        /* De-privilege execution (ARMv7-M only). */
+        "mrs   r1, CONTROL\n"
+        "orr   r1, r1, #3\n"
+        "msr   CONTROL, r1\n"
+#endif /* defined(ARCH_CORE_ARMv7M) */
+
+        /* Return to the caller. */
+#if defined(ARCH_CORE_ARMv8M)
+        "bic   r0, r0, #1\n"
+        "bxns  r0\n"
+#else /* defined(ARCH_CORE_ARMv8M) */
+        "bx    r0\n"
+#endif /* defined(ARCH_CORE_ARMv8M) */
+    );
+}
+
+bool main_entry_early_exit(void)
 {
     /* Return immediately if the magic is invalid or uVisor is disabled.
      * This ensures that no uVisor feature that could halt the system is
      * active in disabled mode (for example, printing debug messages to the
      * semihosting port). */
-    if (__uvisor_config.magic != UVISOR_MAGIC || !__uvisor_config.mode || *(__uvisor_config.mode) == 0) {
-        return;
-    }
+    return (__uvisor_config.magic != UVISOR_MAGIC || !__uvisor_config.mode || *(__uvisor_config.mode) == 0);
+}
 
+void main_init(void)
+{
     /* Early uVisor initialization. */
     uvisor_init_pre((uint32_t *) SCB->VTOR);
 
     /* Run basic sanity checks. */
-    if (vmpu_init_pre() == 0) {
-        /* Disable all IRQs to perform atomic pointers swaps. */
-        __disable_irq();
+    /* NOTE: This function halts if there is an error. */
+    vmpu_init_pre();
 
-        /* Swap the vector tables. */
-        SCB->VTOR = (uint32_t) &g_isr_vector;
+    /* Stack pointers */
+    /* Note: The uVisor stack pointer is assumed to be already correctly set. */
+    /* Note: We do not need to set the NS NP stack pointer (for the app and the
+     *       private boxes), as it is set during the vMPU initialization. */
+    uint32_t original_sp = ((uint32_t *) SCB->VTOR)[0] - 4;
+#if defined(ARCH_CORE_ARMv8M)
+    /* NS P stack pointer, for the RTOS and the uVisor-ns. */
+    __TZ_set_MSP_NS(original_sp);
 
-        /* Swap the stack pointers. */
-        __set_PSP(__get_MSP());
-        __set_MSP((uint32_t) &__uvisor_stack_top__);
+    /* S NP stack pointer, for the SDSs and the transition gateways. */
+    __set_PSP((uint32_t) &__uvisor_stack_top_np__);
+#else /* defined(ARCH_CORE_ARMv8M) */
+    /* NP stack pointer, for the RTOS and the uVisor lib. */
+    __set_PSP(original_sp);
+#endif /* defined(ARCH_CORE_ARMv8M) */
 
-        /* Re-enable all IRQs. */
-        __enable_irq();
+    /* Set the uVisor vector table */
+    SCB->VTOR = (uint32_t) &g_isr_vector;
 
-        /* Finish the uVisor initialization */
-        uvisor_init_post();
-
-        /* Switch to unprivileged mode.
-         * This is possible as the uVisor code is readable in unprivileged mode. */
-        __set_CONTROL(__get_CONTROL() | 3);
-        __ISB();
-        __DSB();
-    }
+    /* Finish the uVisor initialization */
+    uvisor_init_post();
 }

@@ -20,7 +20,9 @@
 
 void uvisor_init(void)
 {
-    uvisor_api.init();
+    uvisor_api.init((uint32_t) __builtin_return_address(0));
+    /* FIXME: Function return does not clean up the stack! */
+    __builtin_unreachable();
 }
 
 int uvisor_lib_init(void)
