@@ -42,6 +42,10 @@ ENTRY(main_entry)
 #define STACK_SIZE 2048
 #endif /* !defined(STACK_SIZE) */
 
+#if !defined(SECURE_ALIAS_OFFSET)
+#define SECURE_ALIAS_OFFSET 0
+#endif /* !defined(SECURE_ALIAS_OFFSET) */
+
 /* Default uVisor own stack guard band
  * Note: Currently we do not actively use the stack guard to isolate the uVisor
  *       stack from the rest of the protected memories. For this reason the
@@ -51,12 +55,14 @@ ENTRY(main_entry)
 
 MEMORY
 {
-  FLASH (rx) : ORIGIN = (FLASH_ORIGIN + FLASH_OFFSET),
-               LENGTH = UVISOR_FLASH_LENGTH_MAX
-  RAM   (rwx): ORIGIN = (SRAM_ORIGIN + SRAM_OFFSET),
-               LENGTH = UVISOR_SRAM_LENGTH_USED - STACK_SIZE - STACK_GUARD_BAND
-  STACK (rw) : ORIGIN = ORIGIN(RAM) + LENGTH(RAM),
-               LENGTH = UVISOR_SRAM_LENGTH_PROTECTED - LENGTH(RAM)
+  FLASH_NS (r x) : ORIGIN = (FLASH_ORIGIN + FLASH_OFFSET),
+                   LENGTH = UVISOR_FLASH_LENGTH_MAX
+  FLASH_S  (r x) : ORIGIN = (FLASH_ORIGIN + SECURE_ALIAS_OFFSET + FLASH_OFFSET),
+                   LENGTH = UVISOR_FLASH_LENGTH_MAX
+  RAM_S    (rwx) : ORIGIN = (SRAM_ORIGIN + SECURE_ALIAS_OFFSET + SRAM_OFFSET),
+                   LENGTH = UVISOR_SRAM_LENGTH_USED - STACK_SIZE - STACK_GUARD_BAND
+  STACK_S  (rw ) : ORIGIN = ORIGIN(RAM_S) + LENGTH(RAM_S),
+                   LENGTH = UVISOR_SRAM_LENGTH_PROTECTED - LENGTH(RAM_S)
 }
 
 SECTIONS
@@ -70,7 +76,7 @@ SECTIONS
         *(.isr*)
         . = ALIGN(16);
         __uvisor_code_end__ = .;
-    } > FLASH
+    } > FLASH_S AT > FLASH_NS
 
     .data :
     {
@@ -84,7 +90,7 @@ SECTIONS
         . = ALIGN(4);
         /* All data end */
         __uvisor_data_end__ = .;
-    } > RAM AT > FLASH
+    } > RAM_S AT > FLASH_NS
 
     PROVIDE(__uvisor_config = LOADADDR(.data) + SIZEOF(.data));
 
@@ -97,7 +103,7 @@ SECTIONS
         *(COMMON)
         . = ALIGN(4);
         __uvisor_bss_end__ = .;
-    } > RAM
+    } > RAM_S
 
     .stack (NOLOAD):
     {
@@ -107,5 +113,5 @@ SECTIONS
         __uvisor_stack_top__ = .;
         . += STACK_GUARD_BAND;
         __uvisor_stack_end__ = .;
-    } > STACK
+    } > STACK_S
 }
