@@ -124,8 +124,14 @@ UVISOR_NOINLINE void uvisor_init_post(void)
     DPRINTF("uvisor initialized\n");
 }
 
-void main_entry(void)
+UVISOR_NOINLINE
+void main_init(uint32_t caller);
+
+void main_entry(uint32_t caller)
 {
+    /* Force the compiler to store the caller in r0, not on the stack! */
+    register uint32_t r0 asm("r0") = caller;
+
     /* Return immediately if the magic is invalid or uVisor is disabled.
      * This ensures that no uVisor feature that could halt the system is
      * active in disabled mode (for example, printing debug messages to the
@@ -134,31 +140,61 @@ void main_entry(void)
         return;
     }
 
+    __set_MSP((uint32_t) &__stack_top__);
+    /* We've switched stacks, r0 still contains the caller though! */
+    main_init(r0);
+
+    /* FIXME: Function return does not clean up the stack! */
+    __builtin_unreachable();
+}
+
+void main_init(uint32_t caller)
+{
     /* Early uVisor initialization. */
     uvisor_init_pre();
 
     /* Run basic sanity checks. */
-    if (vmpu_init_pre() == 0) {
-        /* Disable all IRQs to perform atomic pointers swaps. */
-        __disable_irq();
-
-        /* Swap the vector tables. */
-        SCB->VTOR = (uint32_t) &g_isr_vector;
-
-        /* Swap the stack pointers. */
-        __set_PSP(__get_MSP());
-        __set_MSP((uint32_t) &__stack_top__);
-
-        /* Re-enable all IRQs. */
-        __enable_irq();
-
-        /* Finish the uVisor initialization */
-        uvisor_init_post();
-
-        /* Switch to unprivileged mode.
-         * This is possible as the uVisor code is readable in unprivileged mode. */
-        __set_CONTROL(__get_CONTROL() | 3);
-        __ISB();
-        __DSB();
+    if (vmpu_init_pre()) {
+        /* If uVisor is disabled, return immediately. */
+        asm volatile("bx  %[caller]\n" :: [caller] "r" (caller));
+        /* FIXME: Function return does not clean up the stack! */
+        __builtin_unreachable();
     }
+
+    /* Disable all IRQs to perform atomic pointers swaps. */
+    __disable_irq();
+
+    uint32_t msp = ((uint32_t *) SCB->VTOR)[0];
+#if defined(ARCH_MPU_ARMv8M)
+    /* Set the S and NS vector tables. */
+    SCB_NS->VTOR = SCB->VTOR;
+    __TZ_set_MSP_NS(msp);
+    __set_PSP((uint32_t)&__stack_top_np__);
+#endif /* defined(ARCH_MPU_ARMv8M) */
+    SCB->VTOR = (uint32_t) &g_isr_vector;
+
+    /* Re-enable all IRQs. */
+    __enable_irq();
+
+    /* Finish the uVisor initialization */
+    uvisor_init_post();
+
+#if defined(ARCH_MPU_ARMv8M)
+    /* Branch to the caller. This switches to NS mode, and is executed in
+     * privileged mode. */
+    caller &= ~(0x1UL);
+    asm volatile("bxns %[caller]\n" :: [caller] "r" (caller));
+#else /* defined(ARCH_MPU_ARMv8M) */
+    /* Switch to unprivileged mode.
+     * This is possible as the uVisor code is readable in unprivileged mode. */
+    __set_CONTROL(__get_CONTROL() | 3);
+    __ISB();
+    __DSB();
+    /* Branch to the caller. This will be executed in unprivileged mode. */
+    caller |= 1;
+    __set_MSP(msp);
+    asm volatile("bx  %[caller]\n" :: [caller] "r" (caller));
+#endif /* defined(ARCH_MPU_ARMv8M) */
+    /* FIXME: Function return does not clean up the stack! */
+    __builtin_unreachable();
 }
