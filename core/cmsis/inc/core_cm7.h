@@ -250,9 +250,9 @@
 
 #endif
 
-#include "core_cminstr.h"                /* Core Instruction Access */
-#include "core_cmfunc.h"                 /* Core Function Access */
-#include "core_cmsimd.h"                 /* Compiler specific SIMD Intrinsics */
+#include "core_cmInstr.h"                /* Core Instruction Access */
+#include "core_cmFunc.h"                 /* Core Function Access */
+#include "core_cmSimd.h"                 /* Compiler specific SIMD Intrinsics */
 
 #ifdef __cplusplus
 }
