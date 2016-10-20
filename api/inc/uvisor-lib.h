@@ -50,6 +50,9 @@
  * what to do with any failures. */
 UVISOR_EXTERN int uvisor_lib_init(void);
 
+/* Initialize all the boxes. */
+UVISOR_EXTERN void uvisor_boxes_init(void);
+
 #include "api/inc/page_allocator.h"
 
 /* Include all exported header files used by uVisor internally.

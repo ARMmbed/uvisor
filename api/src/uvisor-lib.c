@@ -33,8 +33,11 @@ int uvisor_lib_init(void)
      * allowed would be a backdoor). */
     osRegisterForOsEvents(&uvisor_api.os_event_observer);
 
-    extern void __uvisor_initialize_rpc_queues(void);
-    __uvisor_initialize_rpc_queues();
-
     return 0;
+}
+
+void uvisor_boxes_init(void)
+{
+    /* Initialize all the boxes. */
+    uvisor_api.boxes_init();
 }

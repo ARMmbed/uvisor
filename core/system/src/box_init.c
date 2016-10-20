@@ -37,6 +37,82 @@ static uint8_t g_box_init_counter;
  */
 static uint32_t g_box_init_box0_sp;
 
+#if defined (__ARM_FEATURE_CMSE)
+static void boxes_init_v8m(void)
+{
+    /* TODO refactor with v7m */
+    /* Check if this is the first time the box initialization procedure is
+     * requested. */
+    if (g_box_init_happened) {
+        HALT_ERROR(NOT_ALLOWED, "The box initialization routine can only be executed once.");
+    }
+
+    /* If there is only one box (which is box 0) return immediately. Box 0 is
+     * not allowed to have a box initialization function. */
+    if (g_vmpu_box_count == 1) {
+        g_box_init_happened = true;
+        return;
+    }
+
+    /* Get the default system-wide initialization handler from the uVisor
+     * configuration table. */
+    uint32_t const dst_fn = (uint32_t) __uvisor_config.lib_hooks->box_init;
+    if (dst_fn == 0) {
+        HALT_ERROR(NOT_ALLOWED, "The box initialization procedure requires an unprivileged handler to be specified.");
+    }
+    if (!vmpu_public_flash_addr(dst_fn)) {
+        HALT_ERROR(PERMISSION_DENIED, "The box initialization handler must be in public flash.");
+    }
+
+    /* Find the next box to switch to, if any.
+     * The box needs to have a box-specific configuration pointer. If it does
+     * not, the box is skipped. */
+    /* XXX New feature: box 0 is initialized as part of this as well. It has a
+     * NULL lib_config, but we still want to call __uvisor_lib_box_init on it
+     * (to initialize its RPC queues). */
+    uint8_t dst_id = g_box_init_counter;
+    UvisorBoxConfig const * * box_cfg = (UvisorBoxConfig const * *) __uvisor_config.cfgtbl_ptr_start;
+    void const * lib_config = NULL;
+
+    while (dst_id < g_vmpu_box_count) {
+        lib_config = box_cfg[dst_id]->lib_config;
+
+        /* XXX TODO Move this block to a function. */
+        {
+
+        /* We pass the box-specific configuration pointer to the default box
+         * initialization handler. The way this will be used is
+         * implementation-specific. */
+        if (!vmpu_public_flash_addr((uint32_t) lib_config)) {
+            HALT_ERROR(PERMISSION_DENIED, "The custom box configuration must point to data in public flash.");
+        }
+
+        /* Enter the box. */
+        /* XXX TODO Implement a "context.h" interface that works for both v8m and
+         * v8m */
+        context_switch_in(CONTEXT_SWITCH_UNBOUND_THREAD, dst_id, 0, 0);
+
+        /* XXX TODO Clear registers before switching to NS. */
+
+        /* XXX WHEEE! */
+        ///extern void debug_sau_config(void);
+        ///debug_sau_config();
+
+
+        /* Call the box init function with this box's lib_config. */
+        asm volatile(
+            "mov r0, %[lib_config] \n"
+            "blxns %[dst_fn]       \n"
+            :: [dst_fn] "r" (dst_fn & ~01UL), [lib_config] "r" (lib_config)
+        );
+        }
+
+        /* Continue to the next box. */
+        dst_id++;
+    }
+}
+#endif
+
 void boxes_init(void)
 {
     /* Tell uVisor to call the uVisor lib box_init function for each box with
@@ -44,7 +120,12 @@ void boxes_init(void)
 
     /* This must be called from unprivileged mode in order for the recursive
      * gateway chaining to work properly. */
+    /* FIXME: Disabled for v8-M */
+#if defined (__ARM_FEATURE_CMSE)
+    boxes_init_v8m();
+#else
     UVISOR_SVC(UVISOR_SVC_ID_BOX_INIT_FIRST, "");
+#endif
 }
 
 /** Thunk function for the box init initialization
