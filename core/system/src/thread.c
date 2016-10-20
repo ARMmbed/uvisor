@@ -107,8 +107,11 @@ static void thread_switch_nonatomic(void * c)
     UvisorBoxIndex * index;
 
     /* Drain any outgoing RPC queues */
+    /* FIXME: Disabled for v8-M */
+#if !defined (__ARM_FEATURE_CMSE)
     drain_message_queue();
     drain_result_queue();
+#endif
 
     if (context == NULL) {
         return;
