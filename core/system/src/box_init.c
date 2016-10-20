@@ -44,7 +44,10 @@ void boxes_init(void)
 
     /* This must be called from unprivileged mode in order for the recursive
      * gateway chaining to work properly. */
+    /* FIXME: Disabled for v8-M */
+#if !defined (__ARM_FEATURE_CMSE)
     UVISOR_SVC(UVISOR_SVC_ID_BOX_INIT_FIRST, "");
+#endif
 }
 
 /** Thunk function for the box init initialization
