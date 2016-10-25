@@ -216,6 +216,12 @@ all: $(foreach PLATFORM, $(PLATFORMS), platform-$(PLATFORM))
 # Same as "all", but clean first.
 fresh: clean all
 
+# Only build release mode for m451
+platform-m451:
+	@echo
+	@# 2nd-level make
+	$(MAKE) BUILD_MODE=release PLATFORM=$* configurations
+
 # This target builds the release and debug version of a platform.
 # The "all" target uses this target to iterate over all platforms.
 platform-%:
