@@ -1,6 +1,6 @@
 site_name: uVisor Guides
 
-docs_dir: Docs
+docs_dir: docs
 
 pages:
 - ['index.md','uVisor Documentation']
