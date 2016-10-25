@@ -294,8 +294,10 @@ $(CONFIGURATION_PREFIX).elf: $(CONFIGURATION_PREFIX)/$(CORE_DIR) $(OBJS) $(CONFI
 	$(OBJDUMP) -d $@ > $(CONFIGURATION_PREFIX).asm
 
 # Pre-process the core linker script.
-$(CONFIGURATION_PREFIX).linker: $(CORE_LINKER_DIR)/default.h
-	$(CPP) -w -P $(LINKER_CONFIG) $< -o $@
+$(CONFIGURATION_PREFIX).linker: $(CORE_LINKER_DIR)/default.h $(CORE_DIR)/uvisor-config.h
+	$(if $(findstring debug,$(BUILD_MODE)), \
+	  $(CPP) -w -P $(LINKER_CONFIG) $< -o $@, \
+	  $(CPP) -w -P -DNDEBUG $(LINKER_CONFIG) $< -o $@)
 
 # Pre-process and compile a core C file into an object file.
 $(CONFIGURATION_PREFIX)/$(CORE_DIR)/%.o: %.c
