@@ -38,7 +38,7 @@ void __svc_not_implemented(void)
 }
 
 /* SVC handlers */
-const void *g_svc_vtor_tbl[] = {
+const void * const g_svc_vtor_tbl[] = {
     __svc_not_implemented,      //  0
     unvic_isr_set,              //  1
     unvic_isr_get,              //  2
