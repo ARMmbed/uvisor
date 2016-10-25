@@ -1,0 +1,12 @@
+site_name: uVisor Guides
+
+docs_dir: Docs
+
+pages:
+- ['index.md','uVisor Documentation']
+- ['api/QUICKSTART.md', 'uVisor', 'Quick start guide']
+- ['core/DEVELOPING_LOCALLY.md', 'uVisor', 'Developing Locally']
+- ['api/DEBUGGING.md', 'uVisor', 'Debugging uVisor']
+- ['core/PORTING.md', 'Porting uVisor', 'Porting uVisor']
+
+copyright: © ARM Ltd. Copyright 2016 – ARM mbed IoT Device Platform
