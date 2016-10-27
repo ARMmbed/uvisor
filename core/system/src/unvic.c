@@ -579,15 +579,14 @@ void unvic_init(void)
     /* Verify that the priority bits read at runtime are realistic. */
     assert(g_nvic_prio_bits > 0 && g_nvic_prio_bits <= 8);
 
-    /* check that minimum priority is still in the range of possible priority
-     * levels */
+    /* Check that minimum priority is still in the range of possible priority
+     * levels. */
     assert(__UVISOR_NVIC_MIN_PRIORITY < UVISOR_VIRQ_MAX_PRIORITY);
 
-    /* by setting the priority group to 0 we make sure that all priority levels
+    /* By setting the priority group to 0 we make sure that all priority levels
      * are available for pre-emption and that interrupts with the same priority
      * level occurring at the same time are served in the default way, that is,
-     * by IRQ number
-     * for example, IRQ 0 has precedence over IRQ 1 if both have the same
-     * priority level */
+     * by IRQ number. For example, IRQ 0 has precedence over IRQ 1 if both have
+     * the same priority level. */
     NVIC_SetPriorityGrouping(0);
 }
