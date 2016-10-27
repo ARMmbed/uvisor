@@ -583,6 +583,21 @@ void unvic_init(void)
      * levels. */
     assert(__UVISOR_NVIC_MIN_PRIORITY < UVISOR_VIRQ_MAX_PRIORITY);
 
+    /* Set the priority of each exception. SVC is lower priority than
+     * MemManage, BusFault, and UsageFault, so that we can recover from
+     * stacking MemManage faults more simply. */
+    static const uint32_t priority_0 = __UVISOR_NVIC_MIN_PRIORITY - 2;
+    static const uint32_t priority_1 = __UVISOR_NVIC_MIN_PRIORITY - 1;
+    assert(priority_0 < __UVISOR_NVIC_MIN_PRIORITY);
+    assert(priority_1 < __UVISOR_NVIC_MIN_PRIORITY);
+    NVIC_SetPriority(MemoryManagement_IRQn, priority_0);
+    NVIC_SetPriority(BusFault_IRQn, priority_0);
+    NVIC_SetPriority(UsageFault_IRQn, priority_0);
+    NVIC_SetPriority(SVCall_IRQn, priority_1);
+    NVIC_SetPriority(DebugMonitor_IRQn, __UVISOR_NVIC_MIN_PRIORITY);
+    NVIC_SetPriority(PendSV_IRQn, UVISOR_VIRQ_MAX_PRIORITY);
+    NVIC_SetPriority(SysTick_IRQn, UVISOR_VIRQ_MAX_PRIORITY);
+
     /* By setting the priority group to 0 we make sure that all priority levels
      * are available for pre-emption and that interrupts with the same priority
      * level occurring at the same time are served in the default way, that is,
