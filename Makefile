@@ -40,6 +40,7 @@ CORE_DEBUG_DIR:=$(CORE_DIR)/debug
 CORE_LIB_DIR:=$(CORE_DIR)/lib
 CORE_LINKER_DIR:=$(CORE_DIR)/linker
 CORE_SYSTEM_DIR:=$(CORE_DIR)/system
+CORE_VMPU_DIR:=$(CORE_DIR)/vmpu
 
 # List of supported platforms
 # Note: One could do it in a simpler way but this prevents spurious files in
@@ -83,19 +84,19 @@ endif
 # ARMv7-M MPU driver
 ifeq ("$(ARCH_MPU)","ARMv7M")
 MPU_SRC:=\
-         $(CORE_SYSTEM_DIR)/src/mpu/vmpu_armv7m.c \
-         $(CORE_DEBUG_DIR)/src/debug_armv7m.c \
-         $(CORE_SYSTEM_DIR)/src/mpu/vmpu_armv7m_mpu.c
+         $(CORE_VMPU_DIR)/src/armv7m/vmpu_armv7m.c \
+         $(CORE_DEBUG_DIR)/src/armv7m/debug_armv7m.c \
+         $(CORE_VMPU_DIR)/src/armv7m/vmpu_armv7m_mpu.c
 endif
 
 # Freescale K64 MPU driver
 ifeq ("$(ARCH_MPU)","KINETIS")
 MPU_SRC:=\
-         $(CORE_SYSTEM_DIR)/src/mpu/vmpu_freescale_k64.c \
-         $(CORE_DEBUG_DIR)/src/debug_freescale_k64.c \
-         $(CORE_SYSTEM_DIR)/src/mpu/vmpu_freescale_k64_aips.c \
-         $(CORE_SYSTEM_DIR)/src/mpu/vmpu_freescale_k64_mem.c \
-         $(CORE_SYSTEM_DIR)/src/mpu/vmpu_freescale_k64_mpu.c
+         $(CORE_VMPU_DIR)/src/freescale_k64/vmpu_freescale_k64.c \
+         $(CORE_DEBUG_DIR)/src/freescale_k64/debug_freescale_k64.c \
+         $(CORE_VMPU_DIR)/src/freescale_k64/vmpu_freescale_k64_aips.c \
+         $(CORE_VMPU_DIR)/src/freescale_k64/vmpu_freescale_k64_mem.c \
+         $(CORE_VMPU_DIR)/src/freescale_k64/vmpu_freescale_k64_mpu.c
 endif
 
 # Core source files
@@ -116,7 +117,7 @@ SOURCES:=\
          $(CORE_SYSTEM_DIR)/src/svc.c \
          $(CORE_SYSTEM_DIR)/src/system.c \
          $(CORE_SYSTEM_DIR)/src/unvic.c \
-         $(CORE_SYSTEM_DIR)/src/mpu/vmpu.c \
+         $(CORE_VMPU_DIR)/src/vmpu.c \
          $(CORE_DEBUG_DIR)/src/debug.c \
          $(CORE_DEBUG_DIR)/src/memory_map.c \
          $(CORE_LIB_DIR)/printf/src/tfp_printf.c \
@@ -138,8 +139,13 @@ vpath %.c $(API_DIR)/src
 vpath %.s $(API_DIR)/src
 else
 vpath %.c $(CORE_SYSTEM_DIR)/src:\
-          $(CORE_SYSTEM_DIR)/src/mpu:\
+          $(CORE_SYSTEM_DIR)/src:\
+          $(CORE_VMPU_DIR)/src:\
+          $(CORE_VMPU_DIR)/src/armv7m:\
+          $(CORE_VMPU_DIR)/src/freescale_k64:\
           $(CORE_DEBUG_DIR)/src:\
+          $(CORE_DEBUG_DIR)/src/armv7m:\
+          $(CORE_DEBUG_DIR)/src/freescale_k64:\
           $(CORE_LIB_DIR)/printf/src:\
           $(PLATFORM_DIR)/$(PLATFORM)/src
 endif
@@ -188,7 +194,7 @@ CFLAGS_PRE:=\
         -I$(CORE_LIB_DIR)/printf/inc \
         -I$(PLATFORM_DIR)/$(PLATFORM)/inc \
         -I$(CORE_SYSTEM_DIR)/inc \
-        -I$(CORE_SYSTEM_DIR)/inc/mpu \
+        -I$(CORE_VMPU_DIR)/inc \
         -ffunction-sections \
         -fdata-sections
 
