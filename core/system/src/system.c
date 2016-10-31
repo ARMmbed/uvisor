@@ -23,6 +23,7 @@ void UVISOR_ALIAS(isr_default_sys_handler) HardFault_IRQn_Handler(void);
 void UVISOR_ALIAS(isr_default_sys_handler) MemoryManagement_IRQn_Handler(void);
 void UVISOR_ALIAS(isr_default_sys_handler) BusFault_IRQn_Handler(void);
 void UVISOR_ALIAS(isr_default_sys_handler) UsageFault_IRQn_Handler(void);
+void UVISOR_ALIAS(isr_default_sys_handler) SecureFault_IRQn_Handler(void);
 void UVISOR_ALIAS(isr_default_sys_handler) SVCall_IRQn_Handler(void);
 void UVISOR_ALIAS(isr_default_sys_handler) DebugMonitor_IRQn_Handler(void);
 
@@ -62,7 +63,11 @@ __attribute__((section(".isr"))) const TIsrVector g_isr_vector[ISR_VECTORS] =
     MemoryManagement_IRQn_Handler,         /* -12 */
     BusFault_IRQn_Handler,                 /* -11 */
     UsageFault_IRQn_Handler,               /* -10 */
+#if defined(ARCH_MPU_ARMv8M)
+    SecureFault_IRQn_Handler,              /* - 9 */
+#else /* defined(ARCH_MPU_ARMv8M) */
     isr_default_sys_handler,               /* - 9 */
+#endif /* defined(ARCH_MPU_ARMv8M) */
     isr_default_sys_handler,               /* - 8 */
     isr_default_sys_handler,               /* - 7 */
     isr_default_sys_handler,               /* - 6 */
