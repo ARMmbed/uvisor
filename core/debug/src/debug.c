@@ -22,25 +22,33 @@
 #include "svc.h"
 #include "vmpu.h"
 
-#ifndef DEBUG_MAX_BUFFER
-#define DEBUG_MAX_BUFFER 128
-#endif/*DEBUG_MAX_BUFFER*/
+#define DEBUG_PRINT_HEAD(x) {\
+    DPRINTF("\n***********************************************************\n");\
+    DPRINTF("                    "x"\n");\
+    DPRINTF("***********************************************************\n\n");\
+}
+#define DEBUG_PRINT_END()   {\
+    DPRINTF("***********************************************************\n\n");\
+}
 
+/* During the porting process the implementation of this function can be
+ * overwritten to provide a different mechanism for printing messages (e.g. the
+ * UART port instead of semihosting). */
+#define DEBUG_MAX_BUFFER 128
 uint8_t g_buffer[DEBUG_MAX_BUFFER];
 int g_buffer_pos;
 
-#ifndef CHANNEL_DEBUG
-void default_putc(uint8_t data)
+UVISOR_WEAK void default_putc(uint8_t data)
 {
-    if(g_buffer_pos<(DEBUG_MAX_BUFFER-1))
+    if (g_buffer_pos < (DEBUG_MAX_BUFFER - 1)) {
         g_buffer[g_buffer_pos++] = data;
-    else
+    } else {
         data = '\n';
+    }
 
-    if(data == '\n')
-    {
+    if (data == '\n') {
         g_buffer[g_buffer_pos] = 0;
-        asm(
+        asm volatile(
             "mov r0, #4\n"
             "mov r1, %[data]\n"
             "bkpt #0xAB\n"
@@ -51,16 +59,8 @@ void default_putc(uint8_t data)
         g_buffer_pos = 0;
     }
 }
-#endif/*CHANNEL_DEBUG*/
 
-void debug_init(void)
-{
-    /* debugging bus faults requires them to be precise, so write buffering is
-     * disabled; note: it slows down execution */
-    SCnSCB->ACTLR |= 0x2;
-}
-
-void debug_exception_frame(uint32_t lr, uint32_t sp)
+static void debug_exception_stack_frame(uint32_t lr, uint32_t sp)
 {
     int i;
     int mode = lr & 0x4;
@@ -75,38 +75,23 @@ void debug_exception_frame(uint32_t lr, uint32_t sp)
     dprintf("    %csp:     0x%08X\n\r", mode ? 'p' : 'm', sp);
     dprintf("    lr:      0x%08X\n\r", lr);
 
-    /* print exception stack frame */
+    /* Print the exception stack frame. */
     dprintf("  Exception stack frame:\n");
     i = CONTEXT_SWITCH_EXC_SF_WORDS;
-    if(((uint32_t *) sp)[8] & (1 << 9))
-    {
+    if (((uint32_t *) sp)[8] & (1 << 9)) {
         dprintf("    %csp[%02d]: 0x%08X | %s\n", mode ? 'p' : 'm', i, ((uint32_t *) sp)[i], exc_sf_verbose[i]);
     }
-    for(i = CONTEXT_SWITCH_EXC_SF_WORDS - 1; i >= 0; --i)
-    {
+    for (i = CONTEXT_SWITCH_EXC_SF_WORDS - 1; i >= 0; --i) {
         dprintf("    %csp[%02d]: 0x%08X | %s\n", mode ? 'p' : 'm', i, ((uint32_t *) sp)[i], exc_sf_verbose[i]);
     }
     dprintf("\n");
 }
 
-void UVISOR_WEAK debug_fault_memmanage(void)
-{
-    dprintf("* CFSR  : 0x%08X\n\r\n\r", SCB->CFSR);
-    dprintf("* MMFAR : 0x%08X\n\r\n\r", SCB->MMFAR);
-}
+/* Specific architectures/ports can provide additional debug handlers. */
+UVISOR_WEAK void debug_fault_memmanage_hw(void) {}
+UVISOR_WEAK void debug_fault_bus_hw(void) {}
 
-void UVISOR_WEAK debug_fault_bus(void)
-{
-    dprintf("* CFSR  : 0x%08X\n\r\n\r", SCB->CFSR);
-    dprintf("* BFAR  : 0x%08X\n\r\n\r", SCB->BFAR);
-}
-
-void UVISOR_WEAK debug_fault_usage(void)
-{
-    dprintf("* CFSR  : 0x%08X\n\r\n\r", SCB->CFSR);
-}
-
-void UVISOR_WEAK debug_fault_hard(void)
+static void debug_fault_hard(void)
 {
     dprintf("* HFSR  : 0x%08X\n\r\n\r", SCB->HFSR);
     dprintf("* CFSR  : 0x%08X\n\r\n\r", SCB->CFSR);
@@ -115,16 +100,50 @@ void UVISOR_WEAK debug_fault_hard(void)
     dprintf("* MMFAR : 0x%08X\n\r\n\r", SCB->MMFAR);
 }
 
-void UVISOR_WEAK debug_fault_debug(void)
+static void debug_fault_memmanage(void)
+{
+    dprintf("* CFSR  : 0x%08X\n\r\n\r", SCB->CFSR);
+    dprintf("* MMFAR : 0x%08X\n\r\n\r", SCB->MMFAR);
+
+    /* Call the MPU-specific debug handler. */
+    debug_fault_memmanage_hw();
+}
+
+static void debug_fault_bus(void)
+{
+    dprintf("* CFSR  : 0x%08X\n\r\n\r", SCB->CFSR);
+    dprintf("* BFAR  : 0x%08X\n\r\n\r", SCB->BFAR);
+
+    /* Call the MPU-specific debug handler. */
+    debug_fault_bus_hw();
+}
+
+static void debug_fault_usage(void)
+{
+    dprintf("* CFSR  : 0x%08X\n\r\n\r", SCB->CFSR);
+}
+
+static void debug_fault_debug(void)
 {
     dprintf("* DFSR  : 0x%08X\n\r\n\r", SCB->DFSR);
 }
 
+void debug_init(void)
+{
+    /* Debugging bus faults requires them to be precise, so write buffering is
+     * disabled when debug is enabled. */
+    /* Note: This slows down execution. */
+    SCnSCB->ACTLR |= 0x2;
+}
+
 void debug_fault(THaltError reason, uint32_t lr, uint32_t sp)
 {
-    /* fault-specific code */
-    switch(reason)
-    {
+    /* Fault-specific blue screen */
+    switch (reason) {
+        case FAULT_HARD:
+            DEBUG_PRINT_HEAD("HARD FAULT");
+            debug_fault_hard();
+            break;
         case FAULT_MEMMANAGE:
             DEBUG_PRINT_HEAD("MEMMANAGE FAULT");
             debug_fault_memmanage();
@@ -137,10 +156,6 @@ void debug_fault(THaltError reason, uint32_t lr, uint32_t sp)
             DEBUG_PRINT_HEAD("USAGE FAULT");
             debug_fault_usage();
             break;
-        case FAULT_HARD:
-            DEBUG_PRINT_HEAD("HARD FAULT");
-            debug_fault_hard();
-            break;
         case FAULT_DEBUG:
             DEBUG_PRINT_HEAD("DEBUG FAULT");
             debug_fault_debug();
@@ -150,8 +165,8 @@ void debug_fault(THaltError reason, uint32_t lr, uint32_t sp)
             break;
     }
 
-    /* blue screen */
-    debug_exception_frame(lr, sp);
+    /* Blue screen messages shared by all faults */
+    debug_exception_stack_frame(lr, sp);
     debug_mpu_config();
     DEBUG_PRINT_END();
 }

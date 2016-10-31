@@ -45,47 +45,7 @@ static uint32_t debug_aips_addr_from_alias(uint32_t alias)
     return aips_addr;
 }
 
-void debug_fault_bus(void)
-{
-    dprintf("* CFSR : 0x%08X\n\r\n\r", SCB->CFSR);
-    dprintf("* BFAR : 0x%08X\n\r\n\r", SCB->BFAR);
-    debug_fault_mpu();
-    debug_map_addr_to_periph(SCB->BFAR);
-}
-
-void debug_mpu_config(void)
-{
-    int i, j;
-
-    dprintf("* MPU CONFIGURATION\n");
-
-    /* CESR */
-    dprintf("  CESR: 0x%08X\n", MPU->CESR);
-    /* EAR, EDR */
-    dprintf("       Slave 0    Slave 1    Slave 2    Slave 3    Slave 4\n");
-    dprintf("  EAR:");
-    for (i = 0; i < 5; i++) {
-        dprintf(" 0x%08X", MPU->SP[i].EAR);
-    }
-    dprintf("\n  EDR:");
-    for (i = 0; i < 5; i++) {
-        dprintf(" 0x%08X", MPU->SP[i].EDR);
-    }
-    dprintf("\n");
-    /* region descriptors */
-    dprintf("       Start      End        Perm.      Valid\n");
-    for (i = 0; i < 12; i++) {
-        dprintf("  R%02d:", i);
-        for (j = 0; j < 4; j++) {
-            dprintf(" 0x%08X", MPU->WORD[i][j]);
-        }
-        dprintf("\n");
-    }
-    dprintf("\n");
-    /* the alternate view is not printed */
-}
-
-void debug_fault_mpu(void)
+static void debug_fault_mpu(void)
 {
     uint32_t cesr = MPU->CESR;
     uint32_t sperr = cesr >> 27;
@@ -177,4 +137,42 @@ void debug_map_addr_to_periph(uint32_t address)
 
         dprintf("\n");
     }
+}
+
+void debug_mpu_config(void)
+{
+    int i, j;
+
+    dprintf("* MPU CONFIGURATION\n");
+
+    /* CESR */
+    dprintf("  CESR: 0x%08X\n", MPU->CESR);
+    /* EAR, EDR */
+    dprintf("       Slave 0    Slave 1    Slave 2    Slave 3    Slave 4\n");
+    dprintf("  EAR:");
+    for (i = 0; i < 5; i++) {
+        dprintf(" 0x%08X", MPU->SP[i].EAR);
+    }
+    dprintf("\n  EDR:");
+    for (i = 0; i < 5; i++) {
+        dprintf(" 0x%08X", MPU->SP[i].EDR);
+    }
+    dprintf("\n");
+    /* region descriptors */
+    dprintf("       Start      End        Perm.      Valid\n");
+    for (i = 0; i < 12; i++) {
+        dprintf("  R%02d:", i);
+        for (j = 0; j < 4; j++) {
+            dprintf(" 0x%08X", MPU->WORD[i][j]);
+        }
+        dprintf("\n");
+    }
+    dprintf("\n");
+    /* the alternate view is not printed */
+}
+
+void debug_fault_bus_hw(void)
+{
+    debug_fault_mpu();
+    debug_map_addr_to_periph(SCB->BFAR);
 }

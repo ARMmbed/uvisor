@@ -20,7 +20,7 @@
 #include "halt.h"
 #include "vmpu.h"
 
-void debug_fault_mpu(void)
+static void debug_fault_mpu(void)
 {
     if (VMPU_SCB_MMFSR & 0x80) {
         dprintf("* MPU FAULT\n\r");
@@ -31,12 +31,48 @@ void debug_fault_mpu(void)
     dprintf("\n\r");
 }
 
-void debug_fault_memmanage(void)
+void debug_map_addr_to_periph(uint32_t address)
 {
-    dprintf("* CFSR  : 0x%08X\n\r\n\r", SCB->CFSR);
-    dprintf("* MMFAR : 0x%08X\n\r\n\r", SCB->MMFAR);
-    debug_fault_mpu();
-    debug_map_addr_to_periph(SCB->MMFAR);
+    uint32_t physical_addr, physical_bit;
+    int is_bitbanded;
+    const MemMap *map;
+
+    dprintf("* MEMORY MAP\n\r");
+    is_bitbanded = 0;
+    if ((map = memory_map_name(address)) != NULL) {
+        dprintf("  Address:           0x%08X\n\r", address);
+        dprintf("  Region/Peripheral: %s\n\r", map->name);
+        dprintf("    Base address:    0x%08X\n\r", map->base);
+        dprintf("    End address:     0x%08X\n\r", map->end);
+
+        if (address >= VMPU_PERIPH_BITBAND_START && address <= VMPU_PERIPH_BITBAND_END) {
+            physical_addr = VMPU_PERIPH_BITBAND_ALIAS_TO_ADDR(address);
+            physical_bit = VMPU_PERIPH_BITBAND_ALIAS_TO_BIT(address);
+            is_bitbanded = 1;
+            map = memory_map_name(physical_addr);
+        }
+        else if (address >= VMPU_SRAM_BITBAND_START && address <= VMPU_SRAM_BITBAND_END) {
+            physical_addr = VMPU_SRAM_BITBAND_ALIAS_TO_ADDR(address);
+            physical_bit = VMPU_SRAM_BITBAND_ALIAS_TO_BIT(address);
+            is_bitbanded = 1;
+            map = memory_map_name(physical_addr);
+        }
+
+        if (map != NULL && is_bitbanded) {
+            dprintf("    Before bitband:  0x%08X\n\r", physical_addr);
+            dprintf("    Alias:           %s\n\r", map->name);
+            dprintf("      Base address:  0x%08X\n\r", map->base);
+            dprintf("      End address:   0x%08X\n\r", map->end);
+            dprintf("    Accessed bit:    %d\n\r", physical_bit);
+        }
+        else {
+            dprintf("    Before bitband:  [invalid]\n\r");
+        }
+    }
+    else {
+        dprintf("  Address:           [invalid]\n\r");
+    }
+    dprintf("\n\r");
 }
 
 void debug_mpu_config(void)
@@ -99,46 +135,8 @@ void debug_mpu_config(void)
     dprintf("\n\r");
 }
 
-void debug_map_addr_to_periph(uint32_t address)
+void debug_fault_memmanage_hw(void)
 {
-    uint32_t physical_addr, physical_bit;
-    int is_bitbanded;
-    const MemMap *map;
-
-    dprintf("* MEMORY MAP\n\r");
-    is_bitbanded = 0;
-    if ((map = memory_map_name(address)) != NULL) {
-        dprintf("  Address:           0x%08X\n\r", address);
-        dprintf("  Region/Peripheral: %s\n\r", map->name);
-        dprintf("    Base address:    0x%08X\n\r", map->base);
-        dprintf("    End address:     0x%08X\n\r", map->end);
-
-        if (address >= VMPU_PERIPH_BITBAND_START && address <= VMPU_PERIPH_BITBAND_END) {
-            physical_addr = VMPU_PERIPH_BITBAND_ALIAS_TO_ADDR(address);
-            physical_bit = VMPU_PERIPH_BITBAND_ALIAS_TO_BIT(address);
-            is_bitbanded = 1;
-            map = memory_map_name(physical_addr);
-        }
-        else if (address >= VMPU_SRAM_BITBAND_START && address <= VMPU_SRAM_BITBAND_END) {
-            physical_addr = VMPU_SRAM_BITBAND_ALIAS_TO_ADDR(address);
-            physical_bit = VMPU_SRAM_BITBAND_ALIAS_TO_BIT(address);
-            is_bitbanded = 1;
-            map = memory_map_name(physical_addr);
-        }
-
-        if (map != NULL && is_bitbanded) {
-            dprintf("    Before bitband:  0x%08X\n\r", physical_addr);
-            dprintf("    Alias:           %s\n\r", map->name);
-            dprintf("      Base address:  0x%08X\n\r", map->base);
-            dprintf("      End address:   0x%08X\n\r", map->end);
-            dprintf("    Accessed bit:    %d\n\r", physical_bit);
-        }
-        else {
-            dprintf("    Before bitband:  [invalid]\n\r");
-        }
-    }
-    else {
-        dprintf("  Address:           [invalid]\n\r");
-    }
-    dprintf("\n\r");
+    debug_fault_mpu();
+    debug_map_addr_to_periph(SCB->MMFAR);
 }
