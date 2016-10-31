@@ -90,6 +90,9 @@ static void debug_exception_stack_frame(uint32_t lr, uint32_t sp)
 /* Specific architectures/ports can provide additional debug handlers. */
 UVISOR_WEAK void debug_fault_memmanage_hw(void) {}
 UVISOR_WEAK void debug_fault_bus_hw(void) {}
+#if defined(ARCH_MPU_ARMv8M)
+UVISOR_WEAK void debug_fault_secure_hw(void) {}
+#endif /* defined(ARCH_MPU_ARMv8M) */
 
 static void debug_fault_hard(void)
 {
@@ -219,6 +222,49 @@ static void debug_fault_usage(void)
     dprintf("\r\n");
 }
 
+#if defined(ARCH_MPU_ARMv8M)
+static void debug_fault_secure(void)
+{
+    dprintf("* FAULT SYNDROME REGISTERS\r\n");
+    dprintf("\r\n");
+
+    uint32_t sfsr = SAU->SFSR;
+    dprintf("  SFSR: 0x%08X\r\n", sfsr);
+    if (sfsr & SAU_SFSR_SFARVALID_Msk) {
+        dprintf("  SFAR: 0x%08X\r\n", SAU->SFAR);
+    } else {
+        dprintf("  --> SFAR not valid.\r\n");
+    }
+    if (sfsr & SAU_SFSR_LSERR_Msk) {
+        dprintf("  --> LSERR: lazy state preservation.\r\n");
+    }
+#if defined(__FPU_PRESENT) && (__FPU_PRESENT == 1)
+    if (sfsr & SAU_SFSR_LSPERR_Msk) {
+        dprintf("  --> LSPERR: lazy FP state preservation.\r\n");
+    }
+#endif /* defined(__FPU_PRESENT) && __FPU_PRESENT == 1 */
+    if (sfsr & SAU_SFSR_INVTRAN_Msk) {
+        dprintf("  --> INVTRAN: invalid transition (branch not flagged for transition).\r\n");
+    }
+    if (sfsr & SAU_SFSR_AUVIOL_Msk) {
+        dprintf("  --> AUVIOL: attribution unit violation.\r\n");
+    }
+    if (sfsr & SAU_SFSR_INVER_Msk) {
+        dprintf("  --> INVER: invalid EXC_RETURN (S/NS state bit).\r\n");
+    }
+    if (sfsr & SAU_SFSR_INVIS_Msk) {
+        dprintf("  --> INVIS: invalid integrity signature in exception stack frame.\r\n");
+    }
+    if (sfsr & SAU_SFSR_INVEP_Msk) {
+        dprintf("  --> INVEP: invalid entry point NS->S (no SG or no matching SAU/IDAU region found).\r\n");
+    }
+    dprintf("\r\n");
+
+    /* Call the MPU-specific debug handler. */
+    debug_fault_secure_hw();
+}
+#endif /* defined(ARCH_MPU_ARMv8M) */
+
 static void debug_fault_debug(void)
 {
     dprintf("* FAULT SYNDROME REGISTERS\r\n");
@@ -255,6 +301,12 @@ void debug_fault(THaltError reason, uint32_t lr, uint32_t sp)
             DEBUG_PRINT_HEAD("USAGE FAULT");
             debug_fault_usage();
             break;
+#if defined(ARCH_MPU_ARMv8M)
+        case FAULT_SECURE:
+            DEBUG_PRINT_HEAD("SECURE FAULT");
+            debug_fault_secure();
+            break;
+#endif /* defined(ARCH_MPU_ARMv8M) */
         case FAULT_DEBUG:
             DEBUG_PRINT_HEAD("DEBUG FAULT");
             debug_fault_debug();
@@ -267,5 +319,8 @@ void debug_fault(THaltError reason, uint32_t lr, uint32_t sp)
     /* Blue screen messages shared by all faults */
     debug_exception_stack_frame(lr, sp);
     debug_mpu_config();
+#if defined(ARCH_MPU_ARMv8M)
+    debug_sau_config();
+#endif /* defined(ARCH_MPU_ARMv8M) */
     DEBUG_PRINT_END();
 }
