@@ -27,7 +27,13 @@
  * link failure, so it can be used to track down a rough estimation of the
  * uVisor flash usage upper bound.
  */
-#define UVISOR_FLASH_LENGTH_MAX 0x9C00
+#ifdef NDEBUG
+/* Release builds can be up to this big. */
+#define UVISOR_FLASH_LENGTH_MAX 0x4000
+#else
+/* Debug builds can be up to this big. */
+#define UVISOR_FLASH_LENGTH_MAX 0xC000
+#endif
 
 /** Size of the SRAM space protected by uVisor for its own SRAM sections
  * The actual SRAM space used by uVisor depends on the SRAM_OFFSET symbol, which

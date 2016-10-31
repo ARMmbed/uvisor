@@ -216,15 +216,21 @@ all: $(foreach PLATFORM, $(PLATFORMS), platform-$(PLATFORM))
 # Same as "all", but clean first.
 fresh: clean all
 
+# Only build release mode for m451
+platform-m451:
+	@echo
+	@# 2nd-level make
+	$(MAKE) BUILD_MODE=release PLATFORM=$* configurations
+
 # This target builds the release and debug version of a platform.
 # The "all" target uses this target to iterate over all platforms.
 platform-%:
 	@echo
 	@# 2nd-level make
-	make BUILD_MODE=debug PLATFORM=$* configurations
+	$(MAKE) BUILD_MODE=debug PLATFORM=$* configurations
 	@echo
 	@# 2nd-level make
-	make BUILD_MODE=release PLATFORM=$* configurations
+	$(MAKE) BUILD_MODE=release PLATFORM=$* configurations
 
 # This middleware target is needed because the 1st-level make does not know the
 # configurations yet.
@@ -244,9 +250,9 @@ ifndef BUILD_MODE
 	$(error "Missing build mode. Use PLATFORM=<platform> BUILD_MODE=<build_mode> make CONFIGURATION_<configuration>")
 endif
 	@# 3rd-level make
-	make BUILD_MODE=$(BUILD_MODE) PLATFORM=$(PLATFORM) CONFIGURATION=$@ build_core
+	$(MAKE) BUILD_MODE=$(BUILD_MODE) PLATFORM=$(PLATFORM) CONFIGURATION=$@ build_core
 	@# 3rd-level make
-	make BUILD_MODE=$(BUILD_MODE) PLATFORM=$(PLATFORM) CONFIGURATION=$@ build_api
+	$(MAKE) BUILD_MODE=$(BUILD_MODE) PLATFORM=$(PLATFORM) CONFIGURATION=$@ build_api
 
 # This middleware target is needed because the parent make does not know the
 # name to give to the core binary yet.
@@ -288,8 +294,10 @@ $(CONFIGURATION_PREFIX).elf: $(CONFIGURATION_PREFIX)/$(CORE_DIR) $(OBJS) $(CONFI
 	$(OBJDUMP) -d $@ > $(CONFIGURATION_PREFIX).asm
 
 # Pre-process the core linker script.
-$(CONFIGURATION_PREFIX).linker: $(CORE_LINKER_DIR)/default.h
-	$(CPP) -w -P $(LINKER_CONFIG) $< -o $@
+$(CONFIGURATION_PREFIX).linker: $(CORE_LINKER_DIR)/default.h $(CORE_DIR)/uvisor-config.h
+	$(if $(findstring debug,$(BUILD_MODE)), \
+	  $(CPP) -w -P $(LINKER_CONFIG) $< -o $@, \
+	  $(CPP) -w -P -DNDEBUG $(LINKER_CONFIG) $< -o $@)
 
 # Pre-process and compile a core C file into an object file.
 $(CONFIGURATION_PREFIX)/$(CORE_DIR)/%.o: %.c

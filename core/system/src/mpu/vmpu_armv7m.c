@@ -157,6 +157,7 @@ void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
                 DEBUG_FAULT(FAULT_MEMMANAGE, lr, msp);
                 HALT_ERROR(FAULT_MEMMANAGE, "Cannot recover from privileged MemManage fault");
             }
+            break;
 
         case BusFault_IRQn:
             /* bus faults can be used in a "managed" way, triggered to let uVisor
