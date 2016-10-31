@@ -33,6 +33,9 @@ TDebugBox g_debug_box;
 
 void debug_init(void);
 void debug_mpu_config(void);
+#if defined(ARCH_MPU_ARMv8M)
+void debug_sau_config(void);
+#endif /* defined(ARCH_MPU_ARMv8M) */
 void debug_fault(THaltError reason, uint32_t lr, uint32_t sp);
 void debug_map_addr_to_periph(uint32_t address);
 
