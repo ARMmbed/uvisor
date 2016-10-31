@@ -45,15 +45,12 @@ CORE_VMPU_DIR:=$(CORE_DIR)/vmpu
 # List of supported platforms
 # Note: One could do it in a simpler way but this prevents spurious files in
 #       $(PLATFORM_DIR) from getting picked.
-PLATFORMS = $(notdir $(realpath $(dir $(wildcard $(PLATFORM_DIR)/*/))))
+PLATFORMS:=$(notdir $(realpath $(dir $(wildcard $(PLATFORM_DIR)/*/))))
 
 # List of uVisor configurations for the given platform
 ifdef PLATFORM
 include $(PLATFORM_DIR)/$(PLATFORM)/Makefile.configurations
 endif
-
-# Platform-specific source files
-PLATFORM_SRC:=$(wildcard $(PLATFORM_DIR)/$(PLATFORM)/src/*.c)
 
 # Configuration-specific paths
 CONFIGURATION_LOWER:=$(shell echo $(CONFIGURATION) | tr '[:upper:]' '[:lower:]')
@@ -76,56 +73,41 @@ API_SOURCES:=$(filter-out $(API_DIR)/src/unsupported.c, $(API_SOURCES))
 API_OBJS:=$(foreach API_SOURCE, $(API_SOURCES), $(CONFIGURATION_PREFIX)/$(API_DIR)/$(notdir $(API_SOURCE:.c=.o))) \
           $(API_ASM_OUTPUT:.s=.o)
 
-# Make the ARMv7-M MPU driver the default.
+# Select the MPU driver.
+# If not set, the ARMv7-M driver is selected by default.
 ifeq ("$(ARCH_MPU)","")
 ARCH_MPU:=ARMv7M
 endif
+ARCH_MPU_LOWER:=$(shell echo $(ARCH_MPU) | tr '[:upper:]' '[:lower:]')
 
-# ARMv7-M MPU driver
-ifeq ("$(ARCH_MPU)","ARMv7M")
-MPU_SRC:=\
-         $(CORE_VMPU_DIR)/src/armv7m/vmpu_armv7m.c \
-         $(CORE_DEBUG_DIR)/src/armv7m/debug_armv7m.c \
-         $(CORE_VMPU_DIR)/src/armv7m/vmpu_armv7m_mpu.c
-endif
+# List of core libraries
+# Note: One could do it in a simpler way but this prevents spurious files in
+#       $(CORE_LIB_DIR) from getting picked.
+CORE_LIBS:=$(notdir $(realpath $(dir $(wildcard $(CORE_LIB_DIR)/*/))))
 
-# Freescale K64 MPU driver
-ifeq ("$(ARCH_MPU)","KINETIS")
-MPU_SRC:=\
-         $(CORE_VMPU_DIR)/src/kinetis/vmpu_kinetis.c \
-         $(CORE_DEBUG_DIR)/src/kinetis/debug_kinetis.c \
-         $(CORE_VMPU_DIR)/src/kinetis/vmpu_kinetis_aips.c \
-         $(CORE_VMPU_DIR)/src/kinetis/vmpu_kinetis_mem.c \
-         $(CORE_VMPU_DIR)/src/kinetis/vmpu_kinetis_mpu.c
-endif
+# Core source files directories.
+# Change this list every time a folder is added or removed.
+# Note: We assume that the all source files directories follow the src/inc
+#       directory structure, including optional MPU-specific folders.
+CORE_DIRS:=\
+	$(CORE_CMSIS_DIR) \
+	$(CORE_DEBUG_DIR) \
+	$(foreach LIB, $(CORE_LIBS), $(CORE_LIB_DIR)/$(LIB)) \
+	$(CORE_SYSTEM_DIR) \
+	$(CORE_VMPU_DIR) \
+	$(PLATFORM_DIR)/$(PLATFORM)
+CORE_INC_DIRS:=\
+	$(foreach DIR, $(CORE_DIRS), $(DIR)/inc)
+CORE_SRC_DIRS:=\
+	$(foreach DIR, $(CORE_DIRS), $(DIR)/src) \
+	$(foreach DIR, $(CORE_DIRS), $(DIR)/src/$(ARCH_MPU_LOWER))
 
 # Core source files
-SOURCES:=\
-         $(CORE_SYSTEM_DIR)/src/benchmark.c \
-         $(CORE_SYSTEM_DIR)/src/box_init.c \
-         $(CORE_SYSTEM_DIR)/src/context.c \
-         $(CORE_SYSTEM_DIR)/src/export_table.c \
-         $(CORE_SYSTEM_DIR)/src/halt.c \
-         $(CORE_SYSTEM_DIR)/src/main.c \
-         $(CORE_SYSTEM_DIR)/src/page_allocator.c \
-         $(CORE_SYSTEM_DIR)/src/page_allocator_faults.c \
-         $(CORE_SYSTEM_DIR)/src/pool_queue.c \
-         $(CORE_SYSTEM_DIR)/src/register_gateway.c \
-         $(CORE_SYSTEM_DIR)/src/semaphore.c \
-         $(CORE_SYSTEM_DIR)/src/spinlock.c \
-         $(CORE_SYSTEM_DIR)/src/stdlib.c \
-         $(CORE_SYSTEM_DIR)/src/svc.c \
-         $(CORE_SYSTEM_DIR)/src/system.c \
-         $(CORE_SYSTEM_DIR)/src/unvic.c \
-         $(CORE_VMPU_DIR)/src/vmpu.c \
-         $(CORE_DEBUG_DIR)/src/debug.c \
-         $(CORE_DEBUG_DIR)/src/memory_map.c \
-         $(CORE_LIB_DIR)/printf/src/tfp_printf.c \
-         $(MPU_SRC) \
-         $(PLATFORM_SRC)
+CORE_SOURCES:=\
+	$(foreach DIR, $(CORE_SRC_DIRS), $(wildcard $(DIR)/*.c))
 
 # Core object files
-OBJS:=$(foreach SOURCE, $(SOURCES), $(CONFIGURATION_PREFIX)/$(CORE_DIR)/$(notdir $(SOURCE:.c=.o)))
+CORE_OBJS:=$(foreach SOURCE, $(CORE_SOURCES), $(CONFIGURATION_PREFIX)/$(CORE_DIR)/$(notdir $(SOURCE:.c=.o)))
 
 # Source files search path
 # The vpath command allows us to look for source files by only using their
@@ -138,16 +120,7 @@ ifneq ($(MAKECMDGOALS),build_core)
 vpath %.c $(API_DIR)/src
 vpath %.s $(API_DIR)/src
 else
-vpath %.c $(CORE_SYSTEM_DIR)/src:\
-          $(CORE_SYSTEM_DIR)/src:\
-          $(CORE_VMPU_DIR)/src:\
-          $(CORE_VMPU_DIR)/src/armv7m:\
-          $(CORE_VMPU_DIR)/src/kinetis:\
-          $(CORE_DEBUG_DIR)/src:\
-          $(CORE_DEBUG_DIR)/src/armv7m:\
-          $(CORE_DEBUG_DIR)/src/kinetis:\
-          $(CORE_LIB_DIR)/printf/src:\
-          $(PLATFORM_DIR)/$(PLATFORM)/src
+vpath %.c $(CORE_SRC_DIRS)
 endif
 
 SYSLIBS:=-lgcc -lc -lnosys
@@ -189,12 +162,7 @@ CFLAGS_PRE:=\
         $(APP_CFLAGS) \
         -I$(ROOT_DIR) \
         -I$(CORE_DIR) \
-        -I$(CORE_CMSIS_DIR)/inc \
-        -I$(CORE_DEBUG_DIR)/inc \
-        -I$(CORE_LIB_DIR)/printf/inc \
-        -I$(PLATFORM_DIR)/$(PLATFORM)/inc \
-        -I$(CORE_SYSTEM_DIR)/inc \
-        -I$(CORE_VMPU_DIR)/inc \
+        $(foreach DIR, $(CORE_INC_DIRS), -I$(DIR)) \
         -ffunction-sections \
         -fdata-sections
 
@@ -295,8 +263,8 @@ $(CONFIGURATION_PREFIX).bin: $(CONFIGURATION_PREFIX).elf
 	$(OBJCOPY) $< -O binary $@
 
 # Link all the core object files into the core ELF.
-$(CONFIGURATION_PREFIX).elf: $(CONFIGURATION_PREFIX)/$(CORE_DIR) $(OBJS) $(CONFIGURATION_PREFIX).linker
-	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(SYSLIBS)
+$(CONFIGURATION_PREFIX).elf: $(CONFIGURATION_PREFIX)/$(CORE_DIR) $(CORE_OBJS) $(CONFIGURATION_PREFIX).linker
+	$(CC) $(LDFLAGS) -o $@ $(CORE_OBJS) $(SYSLIBS)
 	$(OBJDUMP) -d $@ > $(CONFIGURATION_PREFIX).asm
 
 # Pre-process the core linker script.
@@ -321,7 +289,7 @@ $(API_ASM_OUTPUT:.s=.o): $(CONFIGURATION_PREFIX).bin $(API_ASM_INPUT)
 
 ctags: source.c.tags
 
-source.c.tags: $(SOURCES)
+source.c.tags: $(CORE_SOURCES)
 	CFLAGS="$(CFLAGS_PRE)" geany -g $@ $^
 
 # Clean everything.
