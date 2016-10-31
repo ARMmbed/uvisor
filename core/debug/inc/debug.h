@@ -32,8 +32,6 @@ typedef struct TDebugBox {
 TDebugBox g_debug_box;
 
 void debug_init(void);
-void debug_cx_switch_in(void);
-void debug_cx_switch_out(void);
 void debug_exception_frame(uint32_t lr, uint32_t sp);
 void debug_fault_memmanage(void);
 void debug_fault_bus(void);
@@ -62,15 +60,11 @@ void debug_reboot(TResetReason reason);
 
 #define DEBUG_INIT(...)          {}
 #define DEBUG_FAULT(...)         {}
-#define DEBUG_CX_SWITCH_IN(...)  {}
-#define DEBUG_CX_SWITCH_OUT(...) {}
 
 #else /*NDEBUG*/
 
 #define DEBUG_INIT          debug_init
 #define DEBUG_FAULT         debug_fault
-#define DEBUG_CX_SWITCH_IN  debug_cx_switch_in
-#define DEBUG_CX_SWITCH_OUT debug_cx_switch_out
 
 #endif/*NDEBUG*/
 
