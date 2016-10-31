@@ -84,7 +84,7 @@ endif
 ifeq ("$(ARCH_MPU)","ARMv7M")
 MPU_SRC:=\
          $(CORE_SYSTEM_DIR)/src/mpu/vmpu_armv7m.c \
-         $(CORE_SYSTEM_DIR)/src/mpu/vmpu_armv7m_debug.c \
+         $(CORE_DEBUG_DIR)/src/debug_armv7m.c \
          $(CORE_SYSTEM_DIR)/src/mpu/vmpu_armv7m_mpu.c
 endif
 
@@ -92,7 +92,7 @@ endif
 ifeq ("$(ARCH_MPU)","KINETIS")
 MPU_SRC:=\
          $(CORE_SYSTEM_DIR)/src/mpu/vmpu_freescale_k64.c \
-         $(CORE_SYSTEM_DIR)/src/mpu/vmpu_freescale_k64_debug.c \
+         $(CORE_DEBUG_DIR)/src/debug_freescale_k64.c \
          $(CORE_SYSTEM_DIR)/src/mpu/vmpu_freescale_k64_aips.c \
          $(CORE_SYSTEM_DIR)/src/mpu/vmpu_freescale_k64_mem.c \
          $(CORE_SYSTEM_DIR)/src/mpu/vmpu_freescale_k64_mpu.c
