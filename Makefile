@@ -119,7 +119,7 @@ SOURCES:=\
          $(CORE_SYSTEM_DIR)/src/mpu/vmpu.c \
          $(CORE_DEBUG_DIR)/src/debug.c \
          $(CORE_DEBUG_DIR)/src/memory_map.c \
-         $(CORE_LIB_DIR)/printf/tfp_printf.c \
+         $(CORE_LIB_DIR)/printf/src/tfp_printf.c \
          $(MPU_SRC) \
          $(PLATFORM_SRC)
 
@@ -140,7 +140,7 @@ else
 vpath %.c $(CORE_SYSTEM_DIR)/src:\
           $(CORE_SYSTEM_DIR)/src/mpu:\
           $(CORE_DEBUG_DIR)/src:\
-          $(CORE_LIB_DIR)/printf:\
+          $(CORE_LIB_DIR)/printf/src:\
           $(PLATFORM_DIR)/$(PLATFORM)/src
 endif
 
@@ -185,7 +185,7 @@ CFLAGS_PRE:=\
         -I$(CORE_DIR) \
         -I$(CORE_CMSIS_DIR)/inc \
         -I$(CORE_DEBUG_DIR)/inc \
-        -I$(CORE_LIB_DIR)/printf \
+        -I$(CORE_LIB_DIR)/printf/inc \
         -I$(PLATFORM_DIR)/$(PLATFORM)/inc \
         -I$(CORE_SYSTEM_DIR)/inc \
         -I$(CORE_SYSTEM_DIR)/inc/mpu \
