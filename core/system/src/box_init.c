@@ -37,6 +37,16 @@ static uint8_t g_box_init_counter;
  */
 static uint32_t g_box_init_box0_sp;
 
+void boxes_init(void)
+{
+    /* Tell uVisor to call the uVisor lib box_init function for each box with
+     * each box's uVisor lib config. */
+
+    /* This must be called from unprivileged mode in order for the recursive
+     * gateway chaining to work properly. */
+    UVISOR_SVC(UVISOR_SVC_ID_BOX_INIT_FIRST, "");
+}
+
 /** Thunk function for the box init initialization
  * @internal
  * Since the box initialization is implemented as a recursive gateway that

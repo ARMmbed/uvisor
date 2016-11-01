@@ -19,6 +19,8 @@
 
 #include <stdint.h>
 
+void boxes_init(void);
+
 /** Start the recursion for the box initialization routine.
  * @warning This function trusts the SVCall parameters that are passed to it.
  * @param src_svc_sp[in]    Unprivileged stack pointer at the time of the SVCall
