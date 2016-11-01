@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 #include <uvisor.h>
-#include "benchmark.h"
 #include "box_init.h"
 #include "debug.h"
 #include "halt.h"
@@ -49,9 +48,9 @@ const void * const g_svc_vtor_tbl[] = {
     unvic_irq_pending_get,      //  7
     unvic_irq_priority_set,     //  8
     unvic_irq_priority_get,     //  9
-    benchmark_configure,        // 10
-    benchmark_start,            // 11
-    benchmark_stop,             // 12
+    __svc_not_implemented,      // 10 Deprecated: benchmark_configure
+    __svc_not_implemented,      // 11 Deprecated: benchmark_start
+    __svc_not_implemented,      // 12 Deprecated: benchmark_stop
     halt_user_error,            // 13
     unvic_irq_level_get,        // 14
     __svc_not_implemented,      // 15 Deprecated: vmpu_box_id_self

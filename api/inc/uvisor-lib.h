@@ -25,7 +25,6 @@
 #if defined(UVISOR_PRESENT) && UVISOR_PRESENT == 1
 
 /* Library header files */
-#include "api/inc/benchmark.h"
 #include "api/inc/box_config.h"
 #include "api/inc/box_id.h"
 #include "api/inc/debug.h"
