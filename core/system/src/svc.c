@@ -37,33 +37,30 @@ void __svc_not_implemented(void)
 }
 
 /* SVC handlers */
-const void * const g_svc_vtor_tbl[] = {
-    __svc_not_implemented,      //  0
-    unvic_isr_set,              //  1
-    unvic_isr_get,              //  2
-    unvic_irq_enable,           //  3
-    unvic_irq_disable,          //  4
-    unvic_irq_pending_clr,      //  5
-    unvic_irq_pending_set,      //  6
-    unvic_irq_pending_get,      //  7
-    unvic_irq_priority_set,     //  8
-    unvic_irq_priority_get,     //  9
-    __svc_not_implemented,      // 10 Deprecated: benchmark_configure
-    __svc_not_implemented,      // 11 Deprecated: benchmark_start
-    __svc_not_implemented,      // 12 Deprecated: benchmark_stop
-    halt_user_error,            // 13
-    unvic_irq_level_get,        // 14
-    __svc_not_implemented,      // 15 Deprecated: vmpu_box_id_self
-    __svc_not_implemented,      // 16 Deprecated: vmpu_box_id_caller
-    vmpu_box_namespace_from_id, // 17
-    debug_reboot,               // 18
-    /* FIXME: This function will be made automatic when the debug box ACL is
-     *        introduced. The initialization will happen at uVisor boot time. */
-    debug_register_driver,      // 19
-    unvic_irq_disable_all,      // 20
-    unvic_irq_enable_all,       // 21
-    page_allocator_malloc,      // 22
-    page_allocator_free,        // 23
+const UvisorSvcTarget g_svc_vtor_tbl = {
+    .not_implemented = __svc_not_implemented,
+
+    .irq_enable = unvic_irq_enable,
+    .irq_disable = unvic_irq_disable,
+    .irq_disable_all = unvic_irq_disable_all,
+    .irq_enable_all = unvic_irq_enable_all,
+    .irq_set_vector = unvic_isr_set,
+    .irq_get_vector = unvic_isr_get,
+    .irq_set_pending = unvic_irq_pending_set,
+    .irq_get_pending = unvic_irq_pending_get,
+    .irq_clear_pending = unvic_irq_pending_clr,
+    .irq_set_priority = unvic_irq_priority_set,
+    .irq_get_priority = unvic_irq_priority_get,
+    .irq_get_level = unvic_irq_level_get,
+    .irq_system_reset = debug_reboot,
+
+    .page_malloc = page_allocator_malloc,
+    .page_free = page_allocator_free,
+
+    .box_namespace = vmpu_box_namespace_from_id,
+
+    .debug_init = debug_register_driver,
+    .error = halt_user_error,
 };
 
 /*******************************************************************************
@@ -246,7 +243,7 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
 
         :: [svc_mode_mask]       "I" ((UVISOR_SVC_MODE_MASK) & 0xFF),
            [svc_fast_index_mask] "I" ((UVISOR_SVC_FAST_INDEX_MASK) & 0xFF),
-           [svc_vtor_tbl_count]  "i" (UVISOR_ARRAY_COUNT(g_svc_vtor_tbl) - 1),
+           [svc_vtor_tbl_count]  "i" (sizeof(g_svc_vtor_tbl) / sizeof(uint32_t) - 1),
            [priv_svc_0]          "m" (g_priv_sys_hooks.priv_svc_0)
     );
 }
@@ -262,5 +259,5 @@ void svc_init(void)
     /* sanity checks */
     assert((&jump_table_unpriv_end - &jump_table_unpriv) == UVISOR_SVC_FAST_INDEX_MAX);
     assert((&jump_table_priv_end - &jump_table_priv) == UVISOR_SVC_FAST_INDEX_MAX);
-    assert(UVISOR_ARRAY_COUNT(g_svc_vtor_tbl) <= UVISOR_SVC_SLOW_INDEX_MAX);
+    assert(sizeof(g_svc_vtor_tbl) / sizeof(uint32_t) <= UVISOR_SVC_SLOW_INDEX_MAX);
 }

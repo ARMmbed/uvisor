@@ -87,28 +87,6 @@
                                                          UVISOR_SVC_FAST_INDEX(index) | \
                                                          UVISOR_SVC_FAST_NARGS_SET(nargs)))
 
-/* SVC immediate values for custom table */
-#define UVISOR_SVC_ID_ISR_SET               UVISOR_SVC_CUSTOM_TABLE(1)
-#define UVISOR_SVC_ID_ISR_GET               UVISOR_SVC_CUSTOM_TABLE(2)
-#define UVISOR_SVC_ID_IRQ_ENABLE            UVISOR_SVC_CUSTOM_TABLE(3)
-#define UVISOR_SVC_ID_IRQ_DISABLE           UVISOR_SVC_CUSTOM_TABLE(4)
-#define UVISOR_SVC_ID_IRQ_PEND_CLR          UVISOR_SVC_CUSTOM_TABLE(5)
-#define UVISOR_SVC_ID_IRQ_PEND_SET          UVISOR_SVC_CUSTOM_TABLE(6)
-#define UVISOR_SVC_ID_IRQ_PEND_GET          UVISOR_SVC_CUSTOM_TABLE(7)
-#define UVISOR_SVC_ID_IRQ_PRIO_SET          UVISOR_SVC_CUSTOM_TABLE(8)
-#define UVISOR_SVC_ID_IRQ_PRIO_GET          UVISOR_SVC_CUSTOM_TABLE(9)
-#define UVISOR_SVC_ID_HALT_USER_ERR         UVISOR_SVC_CUSTOM_TABLE(13)
-#define UVISOR_SVC_ID_IRQ_LEVEL_GET         UVISOR_SVC_CUSTOM_TABLE(14)
-#define UVISOR_SVC_ID_BOX_ID_SELF           UVISOR_SVC_CUSTOM_TABLE(15)
-#define UVISOR_SVC_ID_BOX_ID_CALLER         UVISOR_SVC_CUSTOM_TABLE(16)
-#define UVISOR_SVC_ID_BOX_NAMESPACE_FROM_ID UVISOR_SVC_CUSTOM_TABLE(17)
-#define UVISOR_SVC_ID_DEBUG_REBOOT          UVISOR_SVC_CUSTOM_TABLE(18)
-#define UVISOR_SVC_ID_DEBUG_REGISTER_BOX    UVISOR_SVC_CUSTOM_TABLE(19)
-#define UVISOR_SVC_ID_IRQ_DISABLE_ALL       UVISOR_SVC_CUSTOM_TABLE(20)
-#define UVISOR_SVC_ID_IRQ_ENABLE_ALL        UVISOR_SVC_CUSTOM_TABLE(21)
-#define UVISOR_SVC_ID_PAGE_MALLOC           UVISOR_SVC_CUSTOM_TABLE(22)
-#define UVISOR_SVC_ID_PAGE_FREE             UVISOR_SVC_CUSTOM_TABLE(23)
-
 /* SVC immediate values for hardcoded table (call from unprivileged) */
 #define UVISOR_SVC_ID_UNVIC_OUT           UVISOR_SVC_FIXED_TABLE(0, 0)
 /* Deprecated: UVISOR_SVC_ID_CX_IN(nargs) UVISOR_SVC_FIXED_TABLE(1, nargs) */
@@ -122,6 +100,34 @@
 
 /** Generate the SVCall opcode from the SVC ID. */
 #define UVISOR_SVC_OPCODE(id) ((uint16_t) 0xDF00 | (uint8_t) ((id) & 0xFF))
+
+#define UVISOR_SVC_ID_GET(target) UVISOR_SVC_CUSTOM_TABLE(offsetof(UvisorSvcTarget, target) / sizeof(uint32_t))
+
+typedef struct {
+    void (*not_implemented)(void);
+
+    void     (*irq_enable)(uint32_t irqn);
+    void     (*irq_disable)(uint32_t irqn);
+    void     (*irq_disable_all)(void);
+    void     (*irq_enable_all)(void);
+    void     (*irq_set_vector)(uint32_t irqn, uint32_t vector);
+    uint32_t (*irq_get_vector)(uint32_t irqn);
+    void     (*irq_set_priority)(uint32_t irqn, uint32_t priority);
+    uint32_t (*irq_get_priority)(uint32_t irqn);
+    void     (*irq_set_pending)(uint32_t irqn);
+    uint32_t (*irq_get_pending)(uint32_t irqn);
+    void     (*irq_clear_pending)(uint32_t irqn);
+    int      (*irq_get_level)(void);
+    void     (*irq_system_reset)(TResetReason reason);
+
+    int (*page_malloc)(UvisorPageTable * const table);
+    int (*page_free)(const UvisorPageTable * const table);
+
+    int (*box_namespace)(int box_id, char *box_namespace, size_t length);
+
+    void (*debug_init)(const TUvisorDebugDriver * const driver);
+    void (*error)(THaltUserError reason);
+} UVISOR_PACKED UvisorSvcTarget;
 
 /* macro to execute an SVCall; additional metadata can be provided, which will
  * be appended right after the svc instruction */

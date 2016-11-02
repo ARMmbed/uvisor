@@ -32,7 +32,7 @@
         asm volatile( \
             "svc %[svc_id] \n" \
             "bx lr         \n" \
-            :: [svc_id] "I" (UVISOR_SVC_ID_ ## fn_name & 0xFF) \
+            :: [svc_id] "I" (UVISOR_SVC_ID_GET(fn_target)) \
         ); \
         __builtin_unreachable(); \
     }
@@ -47,25 +47,6 @@
         __builtin_unreachable(); \
     }
 
-/* Use this one weird trick to map functions to SVC IDs. */
-#define UVISOR_SVC_ID_debug_register_driver         UVISOR_SVC_ID_DEBUG_REGISTER_BOX
-#define UVISOR_SVC_ID_halt_user_error               UVISOR_SVC_ID_HALT_USER_ERR
-#define UVISOR_SVC_ID_vmpu_box_namespace_from_id    UVISOR_SVC_ID_BOX_NAMESPACE_FROM_ID
-#define UVISOR_SVC_ID_page_allocator_malloc         UVISOR_SVC_ID_PAGE_MALLOC
-#define UVISOR_SVC_ID_page_allocator_free           UVISOR_SVC_ID_PAGE_FREE
-#define UVISOR_SVC_ID_unvic_isr_set                 UVISOR_SVC_ID_ISR_SET
-#define UVISOR_SVC_ID_unvic_isr_get                 UVISOR_SVC_ID_ISR_GET
-#define UVISOR_SVC_ID_unvic_irq_enable              UVISOR_SVC_ID_IRQ_ENABLE
-#define UVISOR_SVC_ID_unvic_irq_disable             UVISOR_SVC_ID_IRQ_DISABLE
-#define UVISOR_SVC_ID_unvic_irq_pending_clr         UVISOR_SVC_ID_IRQ_PEND_CLR
-#define UVISOR_SVC_ID_unvic_irq_pending_set         UVISOR_SVC_ID_IRQ_PEND_SET
-#define UVISOR_SVC_ID_unvic_irq_pending_get         UVISOR_SVC_ID_IRQ_PEND_GET
-#define UVISOR_SVC_ID_unvic_irq_priority_set        UVISOR_SVC_ID_IRQ_PRIO_SET
-#define UVISOR_SVC_ID_unvic_irq_priority_get        UVISOR_SVC_ID_IRQ_PRIO_GET
-#define UVISOR_SVC_ID_unvic_irq_level_get           UVISOR_SVC_ID_IRQ_LEVEL_GET
-#define UVISOR_SVC_ID_unvic_irq_disable_all         UVISOR_SVC_ID_IRQ_DISABLE_ALL
-#define UVISOR_SVC_ID_unvic_irq_enable_all          UVISOR_SVC_ID_IRQ_ENABLE_ALL
-#define UVISOR_SVC_ID_debug_reboot                  UVISOR_SVC_ID_DEBUG_REBOOT
 
 transition_np_to_p(debug_init,       void, debug_register_driver, const TUvisorDebugDriver * const driver);
 transition_np_to_p(irq_system_reset, void, debug_reboot,          TResetReason reason);
