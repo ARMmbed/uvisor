@@ -17,10 +17,14 @@
 #ifndef __UVISOR_CONTEX_EXPORTS_H__
 #define __UVISOR_CONTEX_EXPORTS_H__
 
+/** @cond UVISOR_INTERNAL */
+
 /** Maximum number of nested context switches.
  *
  * The same state stack is kept for all kinds of context switches that are bound
  * to a function, for which uVisor keeps an internal state. */
 #define UVISOR_CONTEXT_MAX_DEPTH 16
+
+/** @endcond */
 
 #endif /* __UVISOR_CONTEX_EXPORTS_H__ */

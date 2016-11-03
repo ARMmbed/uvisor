@@ -19,11 +19,17 @@
 
 #include <stdint.h>
 
-/* maximum number of boxes allowed: 1 is the minimum (unprivileged box) */
+/** @addtogroup box_config
+ * @{
+ */
+
+/** @brief Maximum number of boxes allowed: 1 is the minimum (unprivileged box) */
 #define UVISOR_MAX_BOXES 5U
+/** @} */
 
 #define UVISOR_WAIT_FOREVER (0xFFFFFFFFUL)
 
+/** @cond UVISOR_INTERNAL */
 /* extern keyword */
 #ifdef  __cplusplus
 #define UVISOR_EXTERN extern "C"
@@ -189,5 +195,7 @@
     );
 
 #endif /* defined(__CC_ARM) || defined(__GNUC__) */
+
+/** @endcond */
 
 #endif /* __UVISOR_API_UVISOR_EXPORTS_H__ */

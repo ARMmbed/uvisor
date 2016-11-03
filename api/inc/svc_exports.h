@@ -20,6 +20,8 @@
 #include "api/inc/uvisor_exports.h"
 #include <stdint.h>
 
+/** @cond UVISOR_INTERNAL */
+
 /* An SVCall takes a 8bit immediate, which is used as follows:
  *
  * For fast APIs:
@@ -161,5 +163,7 @@
     })
 
 #endif /* defined(__CC_ARM) || defined(__GNUC__) */
+
+/** @endcond */
 
 #endif /* __UVISOR_API_SVC_EXPORTS_H__ */

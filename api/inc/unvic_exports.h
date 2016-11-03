@@ -19,23 +19,31 @@
 
 #include <stdint.h>
 
-/* this value refers to the minimum allowable priority in the physical NVIC
+/** @cond UVISOR_INTERNAL */
+/** @addtogroup interrupt
+ * @{
+ */
+
+/** @brief This value refers to the minimum allowable priority in the physical NVIC
  * module, but not in the virtualised one (vIRQ) */
 #define __UVISOR_NVIC_MIN_PRIORITY ((uint32_t) 1)
 
-/* this is the maximum priority allowed for the vIRQ module */
-/* users of uVisor APIs can use this to determine the maximum level of
+/** @brief This is the maximum priority allowed for the vIRQ module
+ * Users of uVisor APIs can use this to determine the maximum level of
  * priorities available to them */
 #define UVISOR_VIRQ_MAX_PRIORITY ((uint32_t) (1 << __NVIC_PRIO_BITS) - 1 - __UVISOR_NVIC_MIN_PRIORITY)
 
-/* Reasons for rebooting */
+/** @brief Reasons for rebooting */
 typedef enum {
     RESET_REASON_NO_REASON = 0,
     RESET_REASON_HALT,
     __TRESETREASON_MAX /* Always keep the last element of the enum. */
 } TResetReason;
 
-/* Offset of NVIC interrupts with respect to handler 0 */
+/** @brief Offset of NVIC interrupts with respect to handler 0 */
 #define NVIC_OFFSET 16
+
+/** @} */
+/** @endcond */
 
 #endif /* __UVISOR_API_UNVIC_EXPORTS_H__ */

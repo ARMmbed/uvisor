@@ -17,7 +17,12 @@
 #ifndef __UVISOR_API_REGISTER_GATEWAY_EXPORTS_H__
 #define __UVISOR_API_REGISTER_GATEWAY_EXPORTS_H__
 
-/** Register gateway magic
+/** @addtogroup register_gateway
+ * @{
+ */
+
+/** @cond UVISOR_INTERNAL */
+/** @brief Register gateway magic
  *
  * The following magic is used to verify a register gateway structure. It has
  * been generated starting from the ARM Thumb/Thumb-2 invalid opcode.
@@ -32,7 +37,7 @@
 #error "Unsupported instruction set. The ARM Thumb-2 instruction set must be supported."
 #endif /* __thumb__ && __thumb2__ */
 
-/** Register gateway structure
+/** @brief Register gateway structure
  *
  * This struct is packed because we must ensure that the `svc_opcode` field has
  * no padding before itself, and that the `bxlr` field is at a pre-determined
@@ -49,8 +54,8 @@ typedef struct {
     uint16_t bxlr;
 } UVISOR_PACKED UVISOR_ALIGN(4) TRegisterGateway;
 
-/** Register gateway operation - Masks
- * @internal
+/** @brief Register gateway operation - Masks
+ *
  * These are used to extract the operation fields.
  */
 #define __UVISOR_RGW_OP_TYPE_MASK   ((uint16_t) 0x00FF)
@@ -59,18 +64,20 @@ typedef struct {
 #define __UVISOR_RGW_OP_WIDTH_POS   8
 #define __UVISOR_RGW_OP_SHARED_MASK ((uint16_t) 0x8000)
 #define __UVISOR_RGW_OP_SHARED_POS  15
+/** @endcond */
 
-/** Register gateway operations
+/** @brief Register gateway operations
  * The user can specify the following properties:
  *   - Access type: read/write, and-, or-, xor-, replac-ed.
  *   - Access width: 8, 16, 32 bits.
  *   - Access shared: Whether the gateway can be shared with other boxes.
  * These parameters are stored in a 16-bit value as follows:
- *
- *   15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0
- *   |  |__________________|  |____________________|
- *   |           |                       |
- *   shared      width                   type
+ @verbatim
+    15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0
+    |  |__________________|  |____________________|
+    |           |                       |
+    shared      width                   type
+ @endverbatim
  *
  * @note The operation value must be hardcoded.
  */
@@ -79,17 +86,30 @@ typedef struct {
                  (((uint16_t) (width) << __UVISOR_RGW_OP_WIDTH_POS) & __UVISOR_RGW_OP_WIDTH_MASK) | \
                  (((uint16_t) (shared) << __UVISOR_RGW_OP_SHARED_POS) & __UVISOR_RGW_OP_SHARED_MASK)))
 
-/** Register gateway operation - Shared */
+/** @name Register gateway operation - Shared
+ * @{ */
 #define UVISOR_RGW_SHARED    1
 #define UVISOR_RGW_EXCLUSIVE 0
+/** @} */
 
-/** Register gateway operation - Type */
-#define UVISOR_RGW_OP_READ          0 /**< value = *address */
-#define UVISOR_RGW_OP_READ_AND      1 /**< value = *address & mask */
-#define UVISOR_RGW_OP_WRITE         2 /**< *address = value */
-#define UVISOR_RGW_OP_WRITE_AND     3 /**< *address &= value | mask */
-#define UVISOR_RGW_OP_WRITE_OR      4 /**< *address |= value & ~mask */
-#define UVISOR_RGW_OP_WRITE_XOR     5 /**< *address ^= value & mask */
-#define UVISOR_RGW_OP_WRITE_REPLACE 6 /**< *address = (*address & ~mask) | (value & mask) */
+/** @name Register gateway operation - Type
+ * @{ */
+/** @brief `value = *address` */
+#define UVISOR_RGW_OP_READ          0
+/** @brief `value = *address & mask` */
+#define UVISOR_RGW_OP_READ_AND      1
+/** @brief `*address = value` */
+#define UVISOR_RGW_OP_WRITE         2
+/** @brief `*address &= value | mask` */
+#define UVISOR_RGW_OP_WRITE_AND     3
+/** @brief `*address |= value & ~mask` */
+#define UVISOR_RGW_OP_WRITE_OR      4
+/** @brief `*address ^= value & mask` */
+#define UVISOR_RGW_OP_WRITE_XOR     5
+/** @brief `*address = (*address & ~mask) | (value & mask)` */
+#define UVISOR_RGW_OP_WRITE_REPLACE 6
+/** @} */
+
+/** @} */
 
 #endif /* __UVISOR_API_REGISTER_GATEWAY_EXPORTS_H__ */

@@ -23,12 +23,18 @@
 extern "C" {
 #endif
 
-/* Allocate memory on the process heap. */
+/** @addtogroup secure_allocator
+ * @{
+ */
+
+/** @brief Allocate memory on the process heap. */
 void * malloc_p(size_t size);
-/* Reallocate memory on the process heap. */
+/** @brief Reallocate memory on the process heap. */
 void * realloc_p(void * ptr, size_t size);
-/* Free memory on the process heap. */
+/** @brief Free memory on the process heap. */
 void free_p(void * ptr);
+
+/** @} */
 
 #ifdef __cplusplus
 }   /* extern "C" */

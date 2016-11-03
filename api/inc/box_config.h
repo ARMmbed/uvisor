@@ -26,6 +26,12 @@
 UVISOR_EXTERN const uint32_t __uvisor_mode;
 UVISOR_EXTERN void const * const main_cfg_ptr;
 
+/** @defgroup box_config Box configuration
+ *
+ * @brief Creating and configuring secure boxes
+ * @{
+ */
+
 #define UVISOR_DISABLED   0
 #define UVISOR_PERMISSIVE 1
 #define UVISOR_ENABLED    2
@@ -61,7 +67,7 @@ UVISOR_EXTERN void const * const main_cfg_ptr;
     \
     UVISOR_EXTERN const __attribute__((section(".keep.uvisor.cfgtbl_ptr_first"), aligned(4))) void * const main_cfg_ptr = &main_cfg;
 
-/* Creates a global page heap with at least `minimum_number_of_pages` each of size `page_size` in bytes.
+/** Creates a global page heap with at least `minimum_number_of_pages` each of size `page_size` in bytes.
  * The total page heap size is at least `minimum_number_of_pages * page_size`. */
 #define UVISOR_SET_PAGE_HEAP(page_size, minimum_number_of_pages) \
     const uint32_t __uvisor_page_size = (page_size); \
@@ -69,6 +75,7 @@ UVISOR_EXTERN void const * const main_cfg_ptr;
         main_page_heap_reserved[ (page_size) * (minimum_number_of_pages) ]
 
 
+/** @cond UVISOR_INTERNAL */
 /* this macro selects an overloaded macro (variable number of arguments) */
 #define __UVISOR_BOX_MACRO(_1, _2, _3, _4, NAME, ...) NAME
 
@@ -139,13 +146,15 @@ UVISOR_EXTERN void const * const main_cfg_ptr;
 #define UVISOR_BOX_CONFIG(...) \
     UVISOR_BOX_CONFIG_ACL(__VA_ARGS__)
 
-/* Use this macro before box defintion (for example, UVISOR_BOX_CONFIG) to
+/** @endcond */
+
+/** Use this macro before box defintion (for example, `UVISOR_BOX_CONFIG`) to
  * define the name of your box. If you don't want a name, use this macro with
- * box_namespace as NULL. */
+ * box_namespace as `NULL`. */
 #define UVISOR_BOX_NAMESPACE(box_namespace) \
     static const char *const __uvisor_box_namespace = box_namespace
 
-/* Use this macro before UVISOR_BOX_CONFIG to define the function the main
+/** Use this macro before `UVISOR_BOX_CONFIG` to define the function the main
  * thread of your box will use for its body. If you don't want a main thread,
  * too bad: you have to have one. */
 #define UVISOR_BOX_MAIN(function, priority, stack_size) \
@@ -157,13 +166,21 @@ UVISOR_EXTERN void const * const main_cfg_ptr;
 
 #define uvisor_ctx (*__uvisor_ps)
 
-/* Copy the box namespace of the specified box ID to the memory provided by
+/** @} */
+
+/** @addtogroup box_info
+ * @{
+ */
+
+/** Copy the box namespace of the specified box ID to the memory provided by
  * box_namespace. The box_namespace's length must be at least
- * MAX_BOX_NAMESPACE_LENGTH bytes. Return how many bytes were copied into
- * box_namespace. Return UVISOR_ERROR_INVALID_BOX_ID if the provided box ID is
- * invalid. Return UVISOR_ERROR_BUFFER_TOO_SMALL if the provided box_namespace
- * is too small to hold MAX_BOX_NAMESPACE_LENGTH bytes. Return
- * UVISOR_ERROR_BOX_NAMESPACE_ANONYMOUS if the box is anonymous. */
+ * `UVISOR_MAX_BOX_NAMESPACE_LENGTH` bytes. Return how many bytes were copied into
+ * box_namespace. Return `UVISOR_ERROR_INVALID_BOX_ID` if the provided box ID is
+ * invalid. Return `UVISOR_ERROR_BUFFER_TOO_SMALL` if the provided box_namespace
+ * is too small to hold `MAX_BOX_NAMESPACE_LENGTH` bytes. Return
+ * `UVISOR_ERROR_BOX_NAMESPACE_ANONYMOUS` if the box is anonymous. */
 UVISOR_EXTERN int uvisor_box_namespace(int box_id, char *box_namespace, size_t length);
+
+/** @} */
 
 #endif /* __UVISOR_API_BOX_CONFIG_H__ */

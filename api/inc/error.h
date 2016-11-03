@@ -20,6 +20,12 @@
 #include "api/inc/halt_exports.h"
 #include "api/inc/uvisor_exports.h"
 
+/** @defgroup error Error
+ * @{
+ */
+
 UVISOR_EXTERN void uvisor_error(THaltUserError reason);
+
+/** @} */
 
 #endif /* __UVISOR_API_ERROR_H__ */

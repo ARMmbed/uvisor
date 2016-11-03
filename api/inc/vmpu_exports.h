@@ -22,10 +22,18 @@
 #include "api/inc/rpc_exports.h"
 #include <stdint.h>
 
-/* The maximum box namespace length is 37 so that it is exactly big enough for
+/** @addtogroup box_info
+ * @{
+ */
+
+/** The maximum box namespace length is 37 so that it is exactly big enough for
  * a human-readable hex string GUID (as formatted by RFC 4122) followed by a
- * terminating NULL. */
+ * terminating NULL.
+ */
 #define UVISOR_MAX_BOX_NAMESPACE_LENGTH 37
+/** @} */
+
+/** @cond UVISOR_INTERNAL */
 
 /* supervisor user access modes */
 #define UVISOR_TACL_UEXECUTE        0x0001UL
@@ -130,10 +138,17 @@
 
 #endif
 
+/** @endcond */
+
+/** @addtogroup box_config
+ * @{
+ */
+
 #ifndef UVISOR_BOX_STACK_SIZE
 #define UVISOR_BOX_STACK_SIZE UVISOR_MIN_STACK_SIZE
 #endif/*UVISOR_BOX_STACK*/
 
+/** @cond UVISOR_INTERNAL */
 /* NOPs added for write buffering synchronization (2 are for dsb. 16bits) */
 #define UVISOR_NOP_CNT   (2 + 3)
 #define UVISOR_NOP_GROUP \
@@ -223,6 +238,11 @@ typedef struct {
     const UvisorBoxConfig * config;
 } UVISOR_PACKED UvisorBoxIndex;
 
+/** @endcond */
+
+/** @} */
+
+/** @cond UVISOR_INTERNAL */
 /*
  * only use this macro for rounding const values during compile time:
  * for variables please use uvisor_region_bits(x) instead
@@ -243,6 +263,9 @@ static UVISOR_FORCEINLINE int vmpu_bits(uint32_t size)
 {
     return 32 - __builtin_clz(size);
 }
+
 #endif /* defined(UVISOR_PRESENT) && UVISOR_PRESENT == 1 */
+
+/** @endcond */
 
 #endif /* __UVISOR_API_VMPU_EXPORTS_H__ */

@@ -22,6 +22,10 @@
 #include "api/inc/uvisor_exports.h"
 #include <stdint.h>
 
+/** @addtogroup rpc
+ * @{
+ */
+
 /** Synchronous RPC Gateway
  *
  * This macro declares a new function pointer (with no name mangling) named
@@ -38,7 +42,7 @@
  * @param fn_name[in]  The function that will run in the callee's box as an RPC target
  * @param fn_ret[in]   The return type of the function being designated as an
  *                     RPC target
- * @param __VA_ARGS__  The type of each parameter passed to the target
+ * @param ...          The type of each parameter passed to the target
  *                     function. There can be up to 4 parameters in a target
  *                     function. Each parameter must be no more than uint32_t
  *                     in size. If the RPC target function accepts no
@@ -85,7 +89,7 @@
  * @param fn_name[in]  The function that will run in the callee's box as an RPC target
  * @param fn_ret[in]   The return type of the function being designated as an
  *                     RPC target
- * @param __VA_ARGS__  The type of each parameter passed to the target
+ * @param ...          The type of each parameter passed to the target
  *                     function. There can be up to 4 parameters in a target
  *                     function. Each parameter must be no more than uint32_t
  *                     in size. If the RPC target function accepts no
@@ -116,6 +120,7 @@
         uvisor_rpc_result_t (*gw_name)(__VA_ARGS__) __attribute__((section(".rodata"))) = (uvisor_rpc_result_t (*)(__VA_ARGS__)) ((uint32_t) &gw_name ## _rpc_gateway + 1); \
     UVISOR_EXTERN_C_END
 
+/** @cond UVISOR_INTERNAL */
 #define _UVISOR_BOX_RPC_GATEWAY_ARG_CHECK(gw_name, ...) \
     __UVISOR_BOX_MACRO(__VA_ARGS__, _UVISOR_BOX_RPC_GATEWAY_ARG_CHECK_4, \
                                     _UVISOR_BOX_RPC_GATEWAY_ARG_CHECK_3, \
@@ -268,5 +273,8 @@ UVISOR_EXTERN uint32_t rpc_fncall_sync(uint32_t p0, uint32_t p1, uint32_t p2, ui
 /* This function is private to uvisor-lib, but needs to be publicly visible for
  * the RPC gateway creation macros to work. */
 UVISOR_EXTERN uvisor_rpc_result_t rpc_fncall_async(uint32_t p0, uint32_t p1, uint32_t p2, uint32_t p3, const TRPCGateway * gateway);
+/** @endcond */
+
+/** @} */
 
 #endif /* __UVISOR_API_RPC_GATEWAY_H__ */

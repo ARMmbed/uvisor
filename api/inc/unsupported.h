@@ -21,6 +21,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/** @cond UVISOR_INTERNAL */
+
 /* uVisor hook for unsupported platforms */
 UVISOR_EXTERN void uvisor_init(void);
 
@@ -199,5 +201,7 @@ static UVISOR_FORCEINLINE void __address_write(size_t sizeof_type, volatile uint
 /* uvisor-lib/secure_gateway.h */
 
 #define secure_gateway(dst_box, dst_fn, ...) dst_fn(__VA_ARGS__)
+
+/** @endcond */
 
 #endif /* __UVISOR_API_UNSUPPORTED_H__ */

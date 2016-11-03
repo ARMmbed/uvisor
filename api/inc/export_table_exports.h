@@ -21,6 +21,11 @@
 #include "api/inc/pool_queue_exports.h"
 #include <stdint.h>
 
+/** @cond UVISOR_INTERNAL */
+/** @addtogroup box_config
+ * @{
+ */
+
 /* If this magic doesn't match what you get in a TUvisorExportTable, then you
  * didn't find a TUvisorExportTable and all bets are off as to what will be
  * contained in what you found. */
@@ -56,5 +61,8 @@ static inline TUvisorExportTable const * uvisor_export_table(void)
     uintptr_t uvisor_config_addr = (uintptr_t) &uvisor_config;
     return (TUvisorExportTable *) (uvisor_config_addr - uvisor_export_table_size);
 }
+
+/** @} */
+/** @endcond */
 
 #endif

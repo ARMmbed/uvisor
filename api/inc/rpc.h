@@ -22,6 +22,11 @@
 #include <stdint.h>
 #include <stddef.h>
 
+/** @defgroup rpc Remote Procedure Call
+ *
+ * @brief Secure communications between boxes
+ * @{
+ */
 
 /** Wait for incoming RPC.
  *
@@ -52,5 +57,7 @@ UVISOR_EXTERN int rpc_fncall_waitfor(const TFN_Ptr fn_ptr_array[], size_t fn_cou
  * @returns              Non-zero on error or timeout, zero on successful wait
  */
 UVISOR_EXTERN int rpc_fncall_wait(uvisor_rpc_result_t result, uint32_t timeout_ms, uint32_t * ret);
+
+/** @} */
 
 #endif /* __UVISOR_API_RPC_H__ */

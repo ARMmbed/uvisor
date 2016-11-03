@@ -21,7 +21,14 @@
 #include "api/inc/page_allocator_exports.h"
 #include <stdint.h>
 
-/* Allocate a number of requested pages with the requested page size.
+/** @defgroup page_allocator Page allocator
+ *
+ * @brief Allocate and free memory on the page heap.
+ * @{
+ */
+
+/** @brief Allocate a number of requested pages with the requested page size.
+ *
  * @param table.page_size[in]     Must be equal to the current page size
  * @param table.page_count[in]    The number of pages to be allocated
  * @param table.page_origins[out] Pointers to the page origins. The table must be large enough to hold page_count entries.
@@ -29,12 +36,18 @@
  */
 UVISOR_EXTERN int uvisor_page_malloc(UvisorPageTable * const table);
 
-/* Free the pages associated with the table, only if it passes validation.
+/** @brief Free the pages associated with the table, only if it passes validation.
+ *
  * @returns Non-zero on failure with failure class `UVISOR_ERROR_CLASS_PAGE`. See `UVISOR_ERROR_PAGE_*`.
  */
 UVISOR_EXTERN int uvisor_page_free(const UvisorPageTable * const table);
 
-/* @returns the active page size for one page. */
+/** @brief Retrieve the active page size for one page.
+ *
+ * @returns active page size for one page.
+ */
 UVISOR_EXTERN uint32_t uvisor_get_page_size(void);
+
+/** @} */
 
 #endif /* __UVISOR_API_PAGE_ALLOCATOR_H__ */

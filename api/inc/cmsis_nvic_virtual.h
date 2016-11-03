@@ -20,16 +20,22 @@
 #include "api/inc/interrupts.h"
 #include "api/inc/unvic_exports.h"
 
-#define NVIC_SetPriorityGrouping    __NVIC_SetPriorityGrouping
-#define NVIC_GetPriorityGrouping    __NVIC_GetPriorityGrouping
-#define NVIC_EnableIRQ              vIRQ_EnableIRQ
-#define NVIC_DisableIRQ             vIRQ_DisableIRQ
-#define NVIC_GetPendingIRQ          vIRQ_GetPendingIRQ
-#define NVIC_SetPendingIRQ          vIRQ_SetPendingIRQ
-#define NVIC_ClearPendingIRQ        vIRQ_ClearPendingIRQ
-#define NVIC_GetActive              __NVIC_GetActive
-#define NVIC_SetPriority            vIRQ_SetPriority
-#define NVIC_GetPriority            vIRQ_GetPriority
-#define NVIC_SystemReset()          vIRQ_SystemReset(RESET_REASON_NO_REASON)
+/** @addtogroup interrupt
+ * @{
+ */
+
+#define NVIC_SetPriorityGrouping    __NVIC_SetPriorityGrouping                  /**< @showinitializer */
+#define NVIC_GetPriorityGrouping    __NVIC_GetPriorityGrouping                  /**< @showinitializer */
+#define NVIC_EnableIRQ              vIRQ_EnableIRQ                              /**< @showinitializer */
+#define NVIC_DisableIRQ             vIRQ_DisableIRQ                             /**< @showinitializer */
+#define NVIC_GetPendingIRQ          vIRQ_GetPendingIRQ                          /**< @showinitializer */
+#define NVIC_SetPendingIRQ          vIRQ_SetPendingIRQ                          /**< @showinitializer */
+#define NVIC_ClearPendingIRQ        vIRQ_ClearPendingIRQ                        /**< @showinitializer */
+#define NVIC_GetActive              __NVIC_GetActive                            /**< @showinitializer */
+#define NVIC_SetPriority            vIRQ_SetPriority                            /**< @showinitializer */
+#define NVIC_GetPriority            vIRQ_GetPriority                            /**< @showinitializer */
+#define NVIC_SystemReset()          vIRQ_SystemReset(RESET_REASON_NO_REASON)    /**< @showinitializer */
+
+/** @} */
 
 #endif /* __UVISOR_API_NVIC_VIRTUAL_H__ */

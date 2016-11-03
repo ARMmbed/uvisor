@@ -17,6 +17,12 @@
 #ifndef __UVISOR_API_HALT_EXPORTS_H__
 #define __UVISOR_API_HALT_EXPORTS_H__
 
+/** @addtogroup error
+ * @{
+ */
+
+/** @name Global errors
+ * @{ */
 #define UVISOR_ERROR_INVALID_BOX_ID             (-2)
 #define UVISOR_ERROR_BUFFER_TOO_SMALL           (-3)
 #define UVISOR_ERROR_BOX_NAMESPACE_ANONYMOUS    (-4)
@@ -25,13 +31,19 @@
 #define UVISOR_ERROR_OUT_OF_STRUCTURES          (-7)
 #define UVISOR_ERROR_INVALID_PARAMETERS         (-8)
 #define UVISOR_ERROR_NOT_IMPLEMENTED            (-9)
+/** @} */
 
-
+/** @name Global error classes
+ * @{ */
 #define UVISOR_ERROR_CLASS_MASK     (0xFFFF0000UL)
 #define UVISOR_ERROR_MASK           (0x0000FFFFUL)
 
 #define UVISOR_ERROR_CLASS_PAGE     (1UL << 16)
+/** @} */
 
+
+/** @name Global halt errors
+ * @{ */
 typedef enum {
     USER_NOT_ALLOWED = 1,
     DEBUG_BOX_HALT,
@@ -50,5 +62,8 @@ typedef enum {
     FAULT_DEBUG,
     __THALTERROR_MAX /* always keep as the last element of the enum */
 } THaltError;
+/** @} */
+
+/** @} */
 
 #endif /* __UVISOR_API_HALT_EXPORTS_H__ */

@@ -19,7 +19,13 @@
 
 #include "api/inc/interrupts.h"
 
-#define NVIC_SetVector              vIRQ_SetVector
-#define NVIC_GetVector              vIRQ_GetVector
+/** @addtogroup interrupt
+ * @{
+ */
+
+#define NVIC_SetVector              vIRQ_SetVector  /**< @showinitializer */
+#define NVIC_GetVector              vIRQ_GetVector  /**< @showinitializer */
+
+/** @} */
 
 #endif /* __UVISOR_API_VECTAB_VIRTUAL_H__ */

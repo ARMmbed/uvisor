@@ -20,6 +20,12 @@
 #include "api/inc/debug_exports.h"
 #include "api/inc/uvisor_exports.h"
 
+/** @defgroup debug Debug Box
+ * @{
+ */
+
 UVISOR_EXTERN void uvisor_debug_init(const TUvisorDebugDriver * const driver);
+
+/** @} */
 
 #endif /* __UVISOR_API_DEBUG_H__ */

@@ -24,10 +24,17 @@
 extern "C" {
 #endif
 
-/** Contains the allocator data and backing page table. */
+/** @defgroup secure_allocator Secure Allocator
+ *
+ * @brief Securely allocating memory on page heap.
+ * @{
+ */
+
+/** @brief Contains the allocator data and backing page table. */
 typedef void * SecureAllocator;
 
-/** Create an allocator in-place in an existing pool without using pages.
+/** @brief Create an allocator in-place in an existing pool without using pages.
+ *
  * Use this to turn statically allocated memory into a heap.
  * Or allocate a large piece of memory and then turn that into a heap.
  *
@@ -39,7 +46,8 @@ SecureAllocator secure_allocator_create_with_pool(
     void * mem,
     size_t bytes);
 
-/** Create an allocator using pages from the page heap.
+/** @brief Create an allocator using pages from the page heap.
+ *
  * Use this to request secure dynamic memory for your process.
  * Note that this memory is not guaranteed to be consecutive, therefore you
  * must specify the maximum allocation size that you plan to use in this
@@ -55,9 +63,10 @@ SecureAllocator secure_allocator_create_with_pages(
     size_t total_size,
     size_t maximum_malloc_size);
 
-/** Destroy the allocator and free the backing pages.
- * An attempt to destroy a memory-pool backed allocator will fail and return
- * with an error code.
+/** @brief Destroy the allocator and free the backing pages.
+ *
+ * @warning An attempt to destroy a memory-pool backed allocator will fail and
+ * return with an error code.
  *
  * @retval 0  Allocator successfully destroyed.
  * @retval -1 Allocator is static (memory-pool), or freeing memory pages failed.
@@ -65,21 +74,23 @@ SecureAllocator secure_allocator_create_with_pages(
 int secure_allocator_destroy(
     SecureAllocator allocator);
 
-/** Drop-in for `malloc`. */
+/** @brief Drop-in for `malloc`. */
 void * secure_malloc(
     SecureAllocator allocator,
     size_t size);
 
-/** Drop-in for `realloc`. */
+/** @brief Drop-in for `realloc`. */
 void * secure_realloc(
     SecureAllocator allocator,
     void * ptr,
     size_t size);
 
-/** Drop-in for `free`. */
+/** @brief Drop-in for `free`. */
 void secure_free(
     SecureAllocator allocator,
     void * ptr);
+
+/** @} */
 
 #ifdef __cplusplus
 }   /* extern "C" */

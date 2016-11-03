@@ -19,7 +19,11 @@
 
 #include <stdint.h>
 
-/* Debug box driver -- Version 0
+/** @addtogroup debug
+ * @{
+ */
+
+/** @brief Debug box driver -- Version 0
  * A constant instance of this struct must be instantiated by the unprivileged
  * code to setup a debug box.*/
 typedef struct TUvisorDebugDriver {
@@ -27,7 +31,9 @@ typedef struct TUvisorDebugDriver {
     void (*halt_error)(int);
 } TUvisorDebugDriver;
 
-/* Number of handlers in the debug box driver */
+/** @brief Number of handlers in the debug box driver */
 #define DEBUG_BOX_HANDLERS_NUMBER (sizeof(TUvisorDebugDriver) / sizeof(void *))
+
+/** @} */
 
 #endif /* __UVISOR_API_DEBUG_EXPORTS_H__ */

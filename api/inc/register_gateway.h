@@ -21,8 +21,12 @@
 #include "api/inc/uvisor_exports.h"
 #include <stdint.h>
 
+/** @defgroup register_gateway Register Gateway
+ * @{
+ */
+
+/** @cond UVISOR_INTERNAL */
 /** Get the offset of a struct member.
- * @internal
  */
 #define __UVISOR_OFFSETOF(type, member) ((uint32_t) (&(((type *)(0))->member)))
 
@@ -44,10 +48,11 @@
 #define BRANCH_OPCODE(instr, label) \
     (uint16_t) (0xE000 | (uint8_t) ((((uint32_t) (label) - ((uint32_t) (instr) + 4)) / 2) & 0xFF))
 
+
 /** `BX LR` encoding
- * @internal
  */
 #define BXLR                           ((uint16_t) 0x4770)
+/** @endcond */
 
 /** Register Gateway - Read operation
  *
@@ -68,7 +73,7 @@
  *                      is chosen among the `UVISOR_RGW_OP_*` macros.
  * @param mask[in]      The mask to apply for the read operation.
  * @returns The value read from address using the operation and mask provided
- * (or their respective defaults if they have not been provided).
+ *          (or their respective defaults if they have not been provided).
  */
 #define uvisor_read(box_name, shared, addr, op, msk) \
     ({ \
@@ -235,5 +240,7 @@
     /* Register gateway implementation:
      * *address ^= (0xFFFFFFFF & mask) */ \
     uvisor_write(box_name, shared, address, 0xFFFFFFFF, UVISOR_RGW_OP_WRITE_XOR, mask)
+
+/** @} */
 
 #endif /* __UVISOR_API_REGISTER_GATEWAY_H__ */

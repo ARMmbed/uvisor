@@ -22,6 +22,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/** @cond UVISOR_INTERNAL */
+
 static UVISOR_FORCEINLINE void uvisor_write32(uint32_t volatile * volatile addr, uint32_t val)
 {
     UVISOR_ASM_MEMORY_ACCESS(str, uint32_t, addr, val);
@@ -87,5 +89,7 @@ static UVISOR_FORCEINLINE void __address_write(size_t sizeof_type, volatile uint
         res.fieldU = ADDRESS_READ(type, addr); \
         res.fieldB; \
     })
+
+/** @endcond */
 
 #endif /* __UVISOR_API_SECURE_ACCESS_H__ */

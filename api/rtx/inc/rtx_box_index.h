@@ -23,6 +23,8 @@
 extern "C" {
 #endif
 
+/** @cond UVISOR_INTERNAL */
+
 typedef struct
 {
     /* The uvisor box index must be placed at the beginning */
@@ -35,6 +37,8 @@ typedef struct
     /* Internal data of the mutex */
     int32_t mutex_data[4];
 } RtxBoxIndex;
+
+/** @endcond */
 
 #ifdef __cplusplus
 }   /* extern "C" */

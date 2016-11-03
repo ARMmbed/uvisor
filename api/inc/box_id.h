@@ -19,11 +19,19 @@
 
 #include "api/inc/uvisor_exports.h"
 
+/** @defgroup box_info Box Information
+ *
+ * @brief Accessing information about own box and other boxes
+ * @{
+ */
+
 /* Return the numeric box ID of the current box. */
 UVISOR_EXTERN int uvisor_box_id_self(void);
 
 /* Return the numeric box ID of the box that is calling through the most recent
  * secure gateway. Return -1 if there is no secure gateway calling box. */
 UVISOR_EXTERN int uvisor_box_id_caller(void) UVISOR_DEPRECATED;
+
+/** @} */
 
 #endif /* __UVISOR_API_BOX_ID_H__ */
