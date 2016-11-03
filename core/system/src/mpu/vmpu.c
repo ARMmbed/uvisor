@@ -191,7 +191,7 @@ static void vmpu_box_index_init(uint8_t box_id, const UvisorBoxConfig * const co
 {
     uint8_t * box_bss;
     UvisorBoxIndex * index;
-    uint32_t heap_size = config->heap_size;
+    uint32_t heap_size = config->heap_size, bss_size;
     int i;
 
     if (box_id == 0) {
@@ -212,10 +212,11 @@ static void vmpu_box_index_init(uint8_t box_id, const UvisorBoxConfig * const co
     box_bss += config->index_size;
 
     for (i = 0; i < UVISOR_BOX_INDEX_SIZE_COUNT; i++) {
-        index->bss_ptr[i] = (void *) (config->bss_size[i] ? box_bss : NULL);
-        box_bss += config->bss_size[i];
+        bss_size = (config->bss_size[i] + 3U) & ~3U;
+        index->bss_ptr[i] = (void *) (bss_size ? box_bss : NULL);
+        box_bss += bss_size;
         if (box_id == 0) {
-            heap_size -= config->bss_size[i];
+            heap_size -= bss_size;
         }
     }
 

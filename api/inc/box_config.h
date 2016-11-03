@@ -22,6 +22,7 @@
 #include "api/inc/rpc_exports.h"
 #include <stddef.h>
 #include <stdint.h>
+#include <sys/reent.h>
 
 UVISOR_EXTERN const uint32_t __uvisor_mode;
 UVISOR_EXTERN void const * const main_cfg_ptr;
@@ -35,6 +36,9 @@ UVISOR_EXTERN void const * const main_cfg_ptr;
 
 #define UVISOR_SET_MODE_ACL(mode, acl_list) \
     UVISOR_SET_MODE_ACL_COUNT(mode, acl_list, UVISOR_ARRAY_COUNT(acl_list))
+
+#define UVISOR_ROUND_4(size) \
+    (((size) + 3UL) & ~3UL)
 
 #define UVISOR_SET_MODE_ACL_COUNT(mode, acl_list, acl_list_count) \
     uint8_t __attribute__((section(".keep.uvisor.bss.boxes"), aligned(32))) __reserved_stack[UVISOR_STACK_BAND_SIZE]; \
@@ -52,6 +56,7 @@ UVISOR_EXTERN void const * const main_cfg_ptr;
             sizeof(uvisor_rpc_outgoing_message_queue_t), \
             sizeof(uvisor_rpc_incoming_message_queue_t), \
             sizeof(uvisor_rpc_fn_group_queue_t), \
+            0, \
         }, \
         NULL, \
         NULL, \
@@ -79,12 +84,13 @@ UVISOR_EXTERN void const * const main_cfg_ptr;
             UVISOR_STACK_SIZE_ROUND( \
                 ( \
                     (UVISOR_MIN_STACK(stack_size) + \
-                    (context_size) + \
-                    (__uvisor_box_heapsize) + \
-                    sizeof(RtxBoxIndex) + \
-                    sizeof(uvisor_rpc_outgoing_message_queue_t) + \
-                    sizeof(uvisor_rpc_incoming_message_queue_t) + \
-                    sizeof(uvisor_rpc_fn_group_queue_t) \
+                    UVISOR_ROUND_4(context_size) + \
+                    UVISOR_ROUND_4(__uvisor_box_heapsize) + \
+                    UVISOR_ROUND_4(sizeof(RtxBoxIndex)) + \
+                    UVISOR_ROUND_4(sizeof(uvisor_rpc_outgoing_message_queue_t)) + \
+                    UVISOR_ROUND_4(sizeof(uvisor_rpc_incoming_message_queue_t)) + \
+                    UVISOR_ROUND_4(sizeof(uvisor_rpc_fn_group_queue_t)) + \
+                    UVISOR_ROUND_4(sizeof(struct _reent)) \
                 ) \
             * 8) \
         / 6)]; \
@@ -100,6 +106,7 @@ UVISOR_EXTERN void const * const main_cfg_ptr;
             sizeof(uvisor_rpc_outgoing_message_queue_t), \
             sizeof(uvisor_rpc_incoming_message_queue_t), \
             sizeof(uvisor_rpc_fn_group_queue_t), \
+            sizeof(struct _reent), \
         }, \
         __uvisor_box_lib_config, \
         __uvisor_box_namespace, \

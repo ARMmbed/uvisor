@@ -21,6 +21,7 @@
 #include "api/inc/pool_queue_exports.h"
 #include "api/inc/rpc_exports.h"
 #include <stdint.h>
+#include <sys/reent.h>
 
 /* The maximum box namespace length is 37 so that it is exactly big enough for
  * a human-readable hex string GUID (as formatted by RFC 4122) followed by a
@@ -157,6 +158,7 @@ typedef struct {
     uint32_t rpc_outgoing_message_size;
     uint32_t rpc_incoming_message_size;
     uint32_t rpc_fn_group_size;
+    uint32_t newlib_reent_size;
 } UVISOR_PACKED uvisor_sizes_t;
 
 /* The number of additional bss sections per box bss.
@@ -201,6 +203,7 @@ typedef struct {
             uvisor_rpc_outgoing_message_queue_t * rpc_outgoing_message_queue;
             uvisor_rpc_incoming_message_queue_t * rpc_incoming_message_queue;
             uvisor_rpc_fn_group_queue_t * rpc_fn_group_queue;
+            struct _reent * newlib_reent;
         };
     };
     /* Pointer to the box heap */

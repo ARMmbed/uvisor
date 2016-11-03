@@ -94,6 +94,8 @@ typedef struct {
     uint32_t * sram_start;
     uint32_t * sram_end;
 
+    uint32_t * * newlib_impure_ptr;
+
     /* Privileged system hooks */
     UvisorPrivSystemHooks const * const priv_sys_hooks;
 

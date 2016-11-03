@@ -104,6 +104,9 @@ uvisor_config:
     .long __uvisor_sram_start;
     .long __uvisor_sram_end;
 
+    /* The impure pointer from newlib points to the _reent structure. */
+    .long _impure_ptr
+
     /* Privileged system hooks */
     .long __uvisor_priv_sys_hooks
 

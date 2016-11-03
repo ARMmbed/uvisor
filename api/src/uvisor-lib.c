@@ -18,6 +18,8 @@
 #include "api/inc/halt_exports.h"
 #include "rt_OsEventObserver.h"
 
+extern void __uvisor_initialize_public_box(void);
+
 int uvisor_lib_init(void)
 {
     TUvisorExportTable const * const export_table = uvisor_export_table();
@@ -38,8 +40,7 @@ int uvisor_lib_init(void)
      * allowed would be a backdoor). */
     osRegisterForOsEvents(&export_table->os_event_observer);
 
-    extern void __uvisor_initialize_rpc_queues(void);
-    __uvisor_initialize_rpc_queues();
+    __uvisor_initialize_public_box();
 
     return 0;
 }

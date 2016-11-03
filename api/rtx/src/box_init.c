@@ -22,6 +22,7 @@
 #include "cmsis_os.h"
 #include <stdint.h>
 #include <string.h>
+#include <sys/reent.h>
 
 /* Register the OS with uVisor */
 extern void SVC_Handler(void);
@@ -32,6 +33,7 @@ extern uint32_t rt_suspend(void);
 UVISOR_SET_PRIV_SYS_HOOKS(SVC_Handler, PendSV_Handler, SysTick_Handler, rt_suspend, __uvisor_semaphore_post);
 
 extern RtxBoxIndex * const __uvisor_ps;
+extern struct _reent * const _global_impure_ptr;
 
 void __uvisor_initialize_rpc_queues(void)
 {
@@ -116,6 +118,14 @@ void __uvisor_initialize_rpc_queues(void)
     }
 }
 
+void __uvisor_initialize_public_box(void)
+{
+    /* Remember the global impure pointer. */
+    __uvisor_ps->index.newlib_reent = _global_impure_ptr;
+
+    __uvisor_initialize_rpc_queues();
+}
+
 /* This function is called by uVisor in unprivileged mode. On this OS, we
  * create box main threads for the box. */
 void __uvisor_lib_box_init(void * lib_config)
@@ -123,6 +133,9 @@ void __uvisor_lib_box_init(void * lib_config)
     osThreadId thread_id;
     osThreadDef_t * flash_thread_def = lib_config;
     osThreadDef_t thread_def;
+
+    /* Initialize this boxes reent structure for newlib. */
+    _REENT_INIT_PTR(__uvisor_ps->index.newlib_reent);
 
     __uvisor_initialize_rpc_queues();
 

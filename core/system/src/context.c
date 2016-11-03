@@ -190,6 +190,8 @@ void context_switch_in(TContextSwitchType context_type, uint8_t dst_id, uint32_t
         g_active_box = dst_id;
         UvisorBoxIndex * index = (UvisorBoxIndex *) *(__uvisor_config.uvisor_box_context);
         index->box_id_self = dst_id;
+        /* Update newlib's _impure_ptr. */
+        *(__uvisor_config.newlib_impure_ptr) = (uint32_t *) index->newlib_reent;
 
         /* Switch MPU configurations. */
         /* This function halts if it finds an error. */
@@ -256,6 +258,9 @@ TContextPreviousState * context_switch_out(TContextSwitchType context_type)
 
         /* Update the context pointer to the one of the source box. */
         *(__uvisor_config.uvisor_box_context) = (uint32_t *) g_context_current_states[src_id].bss;
+        /* Update newlib's _impure_ptr. */
+        UvisorBoxIndex * index = (UvisorBoxIndex *) *(__uvisor_config.uvisor_box_context);
+        *(__uvisor_config.newlib_impure_ptr) = (uint32_t *) index->newlib_reent;
 
         /* Switch MPU configurations. */
         /* This function halts if it finds an error. */
