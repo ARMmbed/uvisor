@@ -26,6 +26,27 @@
 #include "thread.h"
 #include "box_init.h"
 
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+/* FIXME: Blank all registers before returning! */
+#define transition_np_to_p(fn_target, fn_ret, fn_name, ...) \
+    __attribute__((section(".entry_points"), naked)) \
+    fn_ret fn_target ## _transition(__VA_ARGS__) { \
+        asm volatile( \
+            "sg                  \n" \
+            "push {lr}           \n" \
+            "ldr r3,=" #fn_name "\n" \
+            "blx r3              \n" \
+            "pop {lr}            \n" \
+            "bxns lr             \n" \
+        ); \
+        __builtin_unreachable(); \
+    }
+
+#define transition_p_to_p(fn_target, fn_ret, fn_name, ...) \
+    transition_np_to_p(fn_target, fn_ret, fn_name, ##__VA_ARGS__)
+
+#else
+
 #define transition_np_to_p(fn_target, fn_ret, fn_name, ...) \
     UVISOR_NAKED static \
     fn_ret fn_target ## _transition(__VA_ARGS__) { \
@@ -47,6 +68,7 @@
         __builtin_unreachable(); \
     }
 
+#endif
 
 transition_np_to_p(debug_init,       void, debug_register_driver, const TUvisorDebugDriver * const driver);
 transition_np_to_p(irq_system_reset, void, debug_reboot,          TResetReason reason);
