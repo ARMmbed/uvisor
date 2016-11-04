@@ -19,7 +19,7 @@
 #include "vmpu.h"
 #include "vmpu_mpu.h"
 #include "context.h"
-#include "vmpu_freescale_k64_mem.h"
+#include "vmpu_kinetis_mem.h"
 #include "page_allocator_faults.h"
 
 /* This is the iterator callback for inserting all page heap ACLs into to the

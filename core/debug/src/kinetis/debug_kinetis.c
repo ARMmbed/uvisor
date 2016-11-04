@@ -18,7 +18,7 @@
 #include "debug.h"
 #include "halt.h"
 #include "memory_map.h"
-#include "vmpu_freescale_k64_map.h"
+#include "vmpu_kinetis_map.h"
 
 static uint32_t debug_aips_slot_from_addr(uint32_t aips_addr)
 {

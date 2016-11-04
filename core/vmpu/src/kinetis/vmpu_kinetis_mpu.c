@@ -21,8 +21,8 @@
 #include "memory_map.h"
 #include "vmpu.h"
 #include "vmpu_mpu.h"
-#include "vmpu_freescale_k64_aips.h"
-#include "vmpu_freescale_k64_mem.h"
+#include "vmpu_kinetis_aips.h"
+#include "vmpu_kinetis_mem.h"
 
 /* This file contains the configuration-specific symbols. */
 #include "configurations.h"

@@ -92,11 +92,11 @@ endif
 # Freescale K64 MPU driver
 ifeq ("$(ARCH_MPU)","KINETIS")
 MPU_SRC:=\
-         $(CORE_VMPU_DIR)/src/freescale_k64/vmpu_freescale_k64.c \
-         $(CORE_DEBUG_DIR)/src/freescale_k64/debug_freescale_k64.c \
-         $(CORE_VMPU_DIR)/src/freescale_k64/vmpu_freescale_k64_aips.c \
-         $(CORE_VMPU_DIR)/src/freescale_k64/vmpu_freescale_k64_mem.c \
-         $(CORE_VMPU_DIR)/src/freescale_k64/vmpu_freescale_k64_mpu.c
+         $(CORE_VMPU_DIR)/src/kinetis/vmpu_kinetis.c \
+         $(CORE_DEBUG_DIR)/src/kinetis/debug_kinetis.c \
+         $(CORE_VMPU_DIR)/src/kinetis/vmpu_kinetis_aips.c \
+         $(CORE_VMPU_DIR)/src/kinetis/vmpu_kinetis_mem.c \
+         $(CORE_VMPU_DIR)/src/kinetis/vmpu_kinetis_mpu.c
 endif
 
 # Core source files
@@ -142,10 +142,10 @@ vpath %.c $(CORE_SYSTEM_DIR)/src:\
           $(CORE_SYSTEM_DIR)/src:\
           $(CORE_VMPU_DIR)/src:\
           $(CORE_VMPU_DIR)/src/armv7m:\
-          $(CORE_VMPU_DIR)/src/freescale_k64:\
+          $(CORE_VMPU_DIR)/src/kinetis:\
           $(CORE_DEBUG_DIR)/src:\
           $(CORE_DEBUG_DIR)/src/armv7m:\
-          $(CORE_DEBUG_DIR)/src/freescale_k64:\
+          $(CORE_DEBUG_DIR)/src/kinetis:\
           $(CORE_LIB_DIR)/printf/src:\
           $(PLATFORM_DIR)/$(PLATFORM)/src
 endif
