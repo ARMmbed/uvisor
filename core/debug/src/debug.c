@@ -72,8 +72,8 @@ static void debug_exception_stack_frame(uint32_t lr, uint32_t sp)
 
     dprintf("* EXCEPTION STACK FRAME\n");
     dprintf("  Exception from %s code\n", mode ? "unprivileged" : "privileged");
-    dprintf("    %csp:     0x%08X\n\r", mode ? 'p' : 'm', sp);
-    dprintf("    lr:      0x%08X\n\r", lr);
+    dprintf("    %csp:     0x%08X\r\n", mode ? 'p' : 'm', sp);
+    dprintf("    lr:      0x%08X\r\n", lr);
 
     /* Print the exception stack frame. */
     dprintf("  Exception stack frame:\n");
@@ -93,17 +93,17 @@ UVISOR_WEAK void debug_fault_bus_hw(void) {}
 
 static void debug_fault_hard(void)
 {
-    dprintf("* HFSR  : 0x%08X\n\r\n\r", SCB->HFSR);
-    dprintf("* CFSR  : 0x%08X\n\r\n\r", SCB->CFSR);
-    dprintf("* DFSR  : 0x%08X\n\r\n\r", SCB->DFSR);
-    dprintf("* BFAR  : 0x%08X\n\r\n\r", SCB->BFAR);
-    dprintf("* MMFAR : 0x%08X\n\r\n\r", SCB->MMFAR);
+    dprintf("* HFSR  : 0x%08X\r\n\r\n", SCB->HFSR);
+    dprintf("* CFSR  : 0x%08X\r\n\r\n", SCB->CFSR);
+    dprintf("* DFSR  : 0x%08X\r\n\r\n", SCB->DFSR);
+    dprintf("* BFAR  : 0x%08X\r\n\r\n", SCB->BFAR);
+    dprintf("* MMFAR : 0x%08X\r\n\r\n", SCB->MMFAR);
 }
 
 static void debug_fault_memmanage(void)
 {
-    dprintf("* CFSR  : 0x%08X\n\r\n\r", SCB->CFSR);
-    dprintf("* MMFAR : 0x%08X\n\r\n\r", SCB->MMFAR);
+    dprintf("* CFSR  : 0x%08X\r\n\r\n", SCB->CFSR);
+    dprintf("* MMFAR : 0x%08X\r\n\r\n", SCB->MMFAR);
 
     /* Call the MPU-specific debug handler. */
     debug_fault_memmanage_hw();
@@ -111,8 +111,8 @@ static void debug_fault_memmanage(void)
 
 static void debug_fault_bus(void)
 {
-    dprintf("* CFSR  : 0x%08X\n\r\n\r", SCB->CFSR);
-    dprintf("* BFAR  : 0x%08X\n\r\n\r", SCB->BFAR);
+    dprintf("* CFSR  : 0x%08X\r\n\r\n", SCB->CFSR);
+    dprintf("* BFAR  : 0x%08X\r\n\r\n", SCB->BFAR);
 
     /* Call the MPU-specific debug handler. */
     debug_fault_bus_hw();
@@ -120,12 +120,12 @@ static void debug_fault_bus(void)
 
 static void debug_fault_usage(void)
 {
-    dprintf("* CFSR  : 0x%08X\n\r\n\r", SCB->CFSR);
+    dprintf("* CFSR  : 0x%08X\r\n\r\n", SCB->CFSR);
 }
 
 static void debug_fault_debug(void)
 {
-    dprintf("* DFSR  : 0x%08X\n\r\n\r", SCB->DFSR);
+    dprintf("* DFSR  : 0x%08X\r\n\r\n", SCB->DFSR);
 }
 
 void debug_init(void)
