@@ -39,17 +39,17 @@ static const MpuRegion* vmpu_fault_find_region(uint32_t fault_addr)
 {
     const MpuRegion *region;
 
-    /* check current box if not base */
+    /* Check current box if not base. */
     if ((g_active_box) && ((region = vmpu_region_find_for_address(g_active_box, fault_addr)) != NULL)) {
         return region;
     }
 
-    /* check base-box */
+    /* Check base-box. */
     if ((region = vmpu_region_find_for_address(0, fault_addr)) != NULL) {
         return region;
     }
 
-    /* If no region was found. */
+    /* If no region was found */
     return NULL;
 }
 
@@ -57,27 +57,26 @@ uint32_t vmpu_fault_find_acl(uint32_t fault_addr, uint32_t size)
 {
     const MpuRegion *region;
 
-    /* return ACL if available */
+    /* Return ACL if available. */
     /* FIXME: Use SECURE_ACCESS for SCR! */
     if (fault_addr == (uint32_t) &SCB->SCR) {
         return UVISOR_TACL_UWRITE | UVISOR_TACL_UREAD;
     }
 
-    /* translate fault_addr into its physical address if it is in the bit-banding region */
+    /* Translate fault_addr into its physical address if it is in the bit-banding region. */
     if (fault_addr >= VMPU_PERIPH_BITBAND_START && fault_addr <= VMPU_PERIPH_BITBAND_END) {
         fault_addr = VMPU_PERIPH_BITBAND_ALIAS_TO_ADDR(fault_addr);
-    }
-    else if (fault_addr >= VMPU_SRAM_BITBAND_START && fault_addr <= VMPU_SRAM_BITBAND_END) {
+    } else if (fault_addr >= VMPU_SRAM_BITBAND_START && fault_addr <= VMPU_SRAM_BITBAND_END) {
         fault_addr = VMPU_SRAM_BITBAND_ALIAS_TO_ADDR(fault_addr);
     }
 
-    /* search base box and active box ACLs */
+    /* Search base box and active box ACLs. */
     if (!(region = vmpu_fault_find_region(fault_addr))) {
         return 0;
     }
 
-    /* ensure that data fits in selected region */
-    if((fault_addr + size) > region->end) {
+    /* Ensure that data fits in selected region. */
+    if ((fault_addr + size) > region->end) {
         return 0;
     }
 
@@ -91,20 +90,18 @@ static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr
     const MpuRegion *region;
     uint8_t mask, index, page;
 
-    /* no recovery possible if the MPU syndrome register is not valid */
+    /* No recovery is possible if the MPU syndrome register is not valid. */
     if (fault_status != 0x82) {
         return 0;
     }
 
-    if (page_allocator_get_active_mask_for_address(fault_addr, &mask, &index, &page) == UVISOR_ERROR_PAGE_OK)
-    {
+    if (page_allocator_get_active_mask_for_address(fault_addr, &mask, &index, &page) == UVISOR_ERROR_PAGE_OK) {
         /* Remember this fault. */
         page_allocator_register_fault(page);
 
         vmpu_mem_push_page_acl_iterator(mask, UVISOR_PAGE_MAP_COUNT * 4 - 1 - index);
-    }
-    else {
-        /* find region for faulting address */
+    } else {
+        /* Find region for faulting address. */
         if ((region = vmpu_fault_find_region(fault_addr)) == NULL) {
             return 0;
         }
@@ -120,76 +117,69 @@ void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
     uint32_t psp, pc;
     uint32_t fault_addr, fault_status;
 
-    /* the IPSR enumerates interrupt numbers from 0 up, while *_IRQn numbers are
-     * both positive (hardware IRQn) and negative (system IRQn); here we convert
-     * the IPSR value to this latter encoding */
+    /* The IPSR enumerates interrupt numbers from 0 up, while *_IRQn numbers
+     * are both positive (hardware IRQn) and negative (system IRQn); here we
+     * convert the IPSR value to this latter encoding. */
     int ipsr = ((int) (__get_IPSR() & 0x1FF)) - NVIC_OFFSET;
 
     /* PSP at fault */
     psp = __get_PSP();
 
-    switch(ipsr)
-    {
+    switch (ipsr) {
         case MemoryManagement_IRQn:
-            /* currently we only support recovery from unprivileged mode */
-            if(lr & 0x4)
-            {
+            /* Currently we only support recovery from unprivileged mode. */
+            if (lr & 0x4) {
                 /* pc at fault */
                 pc = vmpu_unpriv_uint32_read(psp + (6 * 4));
 
-                /* backup fault address and status */
+                /* Backup fault address and status */
                 fault_addr = SCB->MMFAR;
                 fault_status = VMPU_SCB_MMFSR;
 
-                /* check if the fault is an MPU fault */
+                /* Check if the fault is an MPU fault. */
                 if (vmpu_fault_recovery_mpu(pc, psp, fault_addr, fault_status)) {
                     VMPU_SCB_MMFSR = fault_status;
                     return;
                 }
 
-                /* if recovery was not successful, throw an error and halt */
+                /* If recovery was not successful, throw an error and halt. */
                 DEBUG_FAULT(FAULT_MEMMANAGE, lr, psp);
                 VMPU_SCB_MMFSR = fault_status;
                 HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied");
-            }
-            else
-            {
+            } else {
                 DEBUG_FAULT(FAULT_MEMMANAGE, lr, msp);
                 HALT_ERROR(FAULT_MEMMANAGE, "Cannot recover from privileged MemManage fault");
             }
             break;
 
         case BusFault_IRQn:
-            /* bus faults can be used in a "managed" way, triggered to let uVisor
-             * handle some restricted registers
-             * note: this feature will not be needed anymore when the register-level
-             * will be implemented */
+            /* Bus faults can be used in a "managed" way, triggered to let
+             * uVisor handle some restricted registers.
+             * Note: This feature will not be needed anymore when the
+             * register-level will be implemented. */
 
-            /* note: all recovery functions update the stacked stack pointer so
-             * that exception return points to the correct instruction */
+            /* Note: All recovery functions update the stacked stack pointer so
+             * that exception return points to the correct instruction. */
 
-            /* currently we only support recovery from unprivileged mode */
-            if(lr & 0x4)
-            {
+            /* Currently we only support recovery from unprivileged mode. */
+            if (lr & 0x4) {
                 /* pc at fault */
                 pc = vmpu_unpriv_uint32_read(psp + (6 * 4));
 
-                /* backup fault address and status */
+                /* Backup fault address and status */
                 fault_addr = SCB->BFAR;
                 fault_status = VMPU_SCB_BFSR;
 
-                /* check if the fault is the special register corner case */
+                /* Check if the fault is the special register corner case. */
                 if (!vmpu_fault_recovery_bus(pc, psp, fault_addr, fault_status)) {
                     VMPU_SCB_BFSR = fault_status;
                     return;
                 }
 
-                /* if recovery was not successful, throw an error and halt */
+                /* If recovery was not successful, throw an error and halt. */
                 DEBUG_FAULT(FAULT_BUS, lr, psp);
                 HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied");
-            }
-            else
-            {
+            } else {
                 DEBUG_FAULT(FAULT_BUS, lr, msp);
                 HALT_ERROR(FAULT_BUS, "Cannot recover from privileged bus fault");
             }
@@ -240,7 +230,7 @@ static int vmpu_mem_push_page_acl_iterator(uint8_t mask, uint8_t index)
     return 0;
 }
 
-/* FIXME: added very simple MPU region switching - optimize! */
+/* FIXME: We've added very simple MPU region switching. - Optimize! */
 void vmpu_switch(uint8_t src_box, uint8_t dst_box)
 {
     uint32_t dst_count;
@@ -258,8 +248,7 @@ void vmpu_switch(uint8_t src_box, uint8_t dst_box)
     vmpu_region_get_for_box(dst_box, &region, &dst_count);
 
     /* Only write stack and context ACL for secure boxes. */
-    if (dst_box)
-    {
+    if (dst_box) {
         assert(dst_count);
         /* Push the stack and context protection ACL into ARMv7M_MPU_REGIONS_STATIC. */
         vmpu_mpu_push(region, 255);
@@ -271,24 +260,23 @@ void vmpu_switch(uint8_t src_box, uint8_t dst_box)
     page_allocator_iterate_active_page_masks(vmpu_mem_push_page_acl_iterator, PAGE_ALLOCATOR_ITERATOR_DIRECTION_BACKWARD);
     /* g_mpu_slot may now have been incremented by one, if page heap is used by this box. */
 
-    while (dst_count-- && vmpu_mpu_push(region++, 2)) ;
+    while (dst_count-- && vmpu_mpu_push(region++, 2));
 
-    if (!dst_box)
-    {
+    if (!dst_box) {
         /* Handle main box ACLs last. */
         vmpu_region_get_for_box(0, &region, &dst_count);
 
-        while (dst_count-- && vmpu_mpu_push(region++, 1)) ;
+        while (dst_count-- && vmpu_mpu_push(region++, 1));
     }
-
 }
 
 void vmpu_load_box(uint8_t box_id)
 {
-    if(box_id == 0)
+    if (box_id == 0) {
         vmpu_switch(0, 0);
-    else
+    } else {
         HALT_ERROR(NOT_IMPLEMENTED, "currently only box 0 can be loaded");
+    }
 }
 
 extern int vmpu_region_bits(uint32_t size);
@@ -303,31 +291,30 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
         box_mem_pos = (uint32_t) __uvisor_config.bss_boxes_start;
     }
 
-    /* handle main box */
+    /* Handle main box. */
     if (box_id == 0)
     {
         DPRINTF("ctx=%i stack=%i\n\r", bss_size, stack_size);
-        /* non-important sanity checks */
+        /* Non-important sanity checks */
         assert(stack_size == 0);
 
-        /* assign main box stack pointer to existing
-         * unprivileged stack pointer */
+        /* Assign main box stack pointer to existing unprivileged stack
+         * pointer. */
         g_context_current_states[0].sp = __get_PSP();
         /* Box 0 still uses the main heap to be backwards compatible. */
         g_context_current_states[0].bss = (uint32_t) __uvisor_config.heap_start;
         return;
     }
 
-    /* ensure that box stack is at least UVISOR_MIN_STACK_SIZE */
+    /* Ensure that box stack is at least UVISOR_MIN_STACK_SIZE. */
     stack_size = UVISOR_MIN_STACK(stack_size);
 
-    /* ensure that 2/8th are available for protecting stack from
-     * context - include rounding error margin */
+    /* Ensure that 2/8th are available for protecting stack from context -
+     * include rounding error margin. */
     bits = vmpu_region_bits(((stack_size + bss_size) * 8) / 6);
 
-    /* ensure MPU region size of at least 256 bytes for
-     * subregion support */
-    if(bits < 8) {
+    /* Ensure MPU region size of at least 256 bytes for subregion support. */
+    if (bits < 8) {
         bits = 8;
     }
     size = 1UL << bits;
@@ -335,30 +322,30 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
 
     DPRINTF("\tbox[%i] stack=%i bss=%i rounded=%i\n\r", box_id, stack_size, bss_size, size);
 
-    /* check for correct context address alignment:
-     * alignment needs to be a muiltiple of the size */
-    if( (box_mem_pos & (size - 1)) != 0 ) {
+    /* Check for correct context address alignment. Alignment needs to be a
+     * muiltiple of the size. */
+    if ((box_mem_pos & (size - 1)) != 0) {
         box_mem_pos = (box_mem_pos & ~(size - 1)) + size;
     }
 
-    /* check if we have enough memory left */
-    if((box_mem_pos + size) > ((uint32_t) __uvisor_config.bss_boxes_end)) {
+    /* Check if we have enough memory left. */
+    if ((box_mem_pos + size) > ((uint32_t) __uvisor_config.bss_boxes_end)) {
         HALT_ERROR(SANITY_CHECK_FAILED, "memory overflow - increase uvisor memory allocation\n\r");
     }
 
-    /* round context sizes, leave one free slot */
+    /* Round context sizes. Leave one free slot. */
     slots_ctx = (bss_size + block_size - 1) / block_size;
     slots_stack = slots_ctx ? (8 - slots_ctx - 1) : 8;
 
-    /* final sanity checks */
-    if( (slots_ctx * block_size) < bss_size ) {
+    /* Final sanity checks */
+    if ((slots_ctx * block_size) < bss_size) {
         HALT_ERROR(SANITY_CHECK_FAILED, "slots_ctx underrun\n\r");
     }
-    if( (slots_stack * block_size) < stack_size ) {
+    if ((slots_stack * block_size) < stack_size) {
         HALT_ERROR(SANITY_CHECK_FAILED, "slots_stack underrun\n\r");
     }
 
-    /* allocate context pointer */
+    /* Allocate context pointer. */
     g_context_current_states[box_id].bss = slots_ctx ? box_mem_pos : (uint32_t) NULL;
     /* `(box_mem_pos + size)` is already outside the memory protected by the
      * MPU region, so a pointer 8B below stack top is chosen (8B due to stack
@@ -370,7 +357,7 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
         memset((void *) box_mem_pos, 0, bss_size);
     }
 
-    /* create stack protection region */
+    /* Create stack protection region. */
     size = vmpu_region_add_static_acl(
         box_id,
         box_mem_pos,
@@ -379,7 +366,7 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
         slots_ctx ? 1UL << slots_ctx : 0
     );
 
-    /* move on to the next memory block */
+    /* Move on to the next memory block. */
     box_mem_pos += size;
 }
 
@@ -417,13 +404,13 @@ void vmpu_arch_init_hw(void)
     /* Enable the public SRAM:
      *
      * We use one region for this, which start at SRAM origin (which is always
-     * aligned) and has a power-of-two size that is equal or _larger_ than SRAM.
-     * This means the region may end _behind_ the end of SRAM!
+     * aligned) and has a power-of-two size that is equal or _larger_ than
+     * SRAM. This means the region may end _behind_ the end of SRAM!
      *
-     * At the beginning of SRAM uVisor places its private BSS section and behind
-     * that the page heap. In order to use only one region, we require the end of
-     * the page heap to align with 1/8th of the region size, so that we can use
-     * the subregion mask.
+     * At the beginning of SRAM uVisor places its private BSS section and
+     * behind that the page heap. In order to use only one region, we require
+     * the end of the page heap to align with 1/8th of the region size, so that
+     * we can use the subregion mask.
      * The page heap reduces the memory wastage to less than one page size, by
      * "growing" the page heap downwards from the subregion alignment towards
      * the uVisor bss.
@@ -484,10 +471,10 @@ void vmpu_arch_init_hw(void)
 
     /* On page heap alignments:
      *
-     * Individual pages in the page heap are protected by subregions.
-     * A page of size 2^N must have its start address aligned to 2^N.
-     * However, for page sizes > 1/8th region size, the start address is
-     * not guaranteed to be aligned to 2^N.
+     * Individual pages in the page heap are protected by subregions. A page of
+     * size 2^N must have its start address aligned to 2^N. However, for page
+     * sizes > 1/8th region size, the start address is not guaranteed to be
+     * aligned to 2^N.
      *
      * Example: 2^N = page size, 2^(N-1) = 1/8th SRAM (32kB page size in a 128kB SRAM).
      *
@@ -497,8 +484,8 @@ void vmpu_arch_init_hw(void)
      * +-----------+ <-- page start address: 0x30000 - 32kB = 0x10000 is not aligned to 32kB!!
      * |           |
      *
-     * Due to these contradicting alignment requirements, it is not possible
-     * to have a page size larger than 1/8th region size.
+     * Due to these contradicting alignment requirements, it is not possible to
+     * have a page size larger than 1/8th region size.
      */
     if (subregions_size < *__uvisor_config.page_size) {
         HALT_ERROR(SANITY_CHECK_FAILED,
