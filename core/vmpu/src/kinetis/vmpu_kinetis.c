@@ -66,6 +66,7 @@ void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
     switch (ipsr) {
         case MemoryManagement_IRQn:
             DEBUG_FAULT(FAULT_MEMMANAGE, lr, lr & 0x4 ? psp : msp);
+            HALT_ERROR(FAULT_MEMMANAGE, "Cannot recover from a memmanage fault");
             break;
 
         case BusFault_IRQn:
@@ -130,14 +131,17 @@ void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
 
         case UsageFault_IRQn:
             DEBUG_FAULT(FAULT_USAGE, lr, lr & 0x4 ? psp : msp);
+            HALT_ERROR(FAULT_USAGE, "Cannot recover from a usage fault.");
             break;
 
         case HardFault_IRQn:
             DEBUG_FAULT(FAULT_HARD, lr, lr & 0x4 ? psp : msp);
+            HALT_ERROR(FAULT_HARD, "Cannot recover from a hard fault.");
             break;
 
         case DebugMonitor_IRQn:
             DEBUG_FAULT(FAULT_DEBUG, lr, lr & 0x4 ? psp : msp);
+            HALT_ERROR(FAULT_DEBUG, "Cannot recover from a debug fault.");
             break;
 
         case PendSV_IRQn:
