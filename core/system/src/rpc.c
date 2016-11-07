@@ -19,7 +19,6 @@
 #include "api/inc/rpc_gateway_exports.h"
 #include "api/inc/pool_queue_exports.h"
 #include "api/inc/rpc_exports.h"
-#include "api/inc/svc_exports.h"
 #include "api/inc/vmpu_exports.h"
 #include "api/inc/register_gateway.h"
 #include "context.h"

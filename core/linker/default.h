@@ -63,7 +63,7 @@ SECTIONS
 {
     .text :
     {
-        *(.text.main_entry)
+        KEEP(*(.uvisor_api))
         *(.text*)
         *(.rodata*)
         . = ALIGN(512);
@@ -86,13 +86,7 @@ SECTIONS
         __data_end__ = .;
     } > RAM AT > FLASH
 
-    .export_table :
-    {
-        /* The __uvisor_export_table must be placed at the very end of the
-         * uVisor binary to work correctly. */
-        KEEP(*(.export_table))
-    } > FLASH
-    PROVIDE(__uvisor_config = LOADADDR(.export_table) + SIZEOF(.export_table));
+    PROVIDE(__uvisor_config = LOADADDR(.data) + SIZEOF(.data));
 
     .bss (NOLOAD):
     {

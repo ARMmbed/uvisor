@@ -157,13 +157,4 @@ UVISOR_EXTERN void const * const main_cfg_ptr;
 
 #define uvisor_ctx (*__uvisor_ps)
 
-/* Copy the box namespace of the specified box ID to the memory provided by
- * box_namespace. The box_namespace's length must be at least
- * MAX_BOX_NAMESPACE_LENGTH bytes. Return how many bytes were copied into
- * box_namespace. Return UVISOR_ERROR_INVALID_BOX_ID if the provided box ID is
- * invalid. Return UVISOR_ERROR_BUFFER_TOO_SMALL if the provided box_namespace
- * is too small to hold MAX_BOX_NAMESPACE_LENGTH bytes. Return
- * UVISOR_ERROR_BOX_NAMESPACE_ANONYMOUS if the box is anonymous. */
-UVISOR_EXTERN int uvisor_box_namespace(int box_id, char *box_namespace, size_t length);
-
 #endif /* __UVISOR_API_BOX_CONFIG_H__ */

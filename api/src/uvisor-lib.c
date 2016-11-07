@@ -14,29 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "api/inc/export_table_exports.h"
+#include "api/inc/api.h"
 #include "api/inc/halt_exports.h"
 #include "rt_OsEventObserver.h"
 
 int uvisor_lib_init(void)
 {
-    TUvisorExportTable const * const export_table = uvisor_export_table();
-
-    if (export_table->magic != UVISOR_EXPORT_MAGIC) {
-        /* We couldn't find the magic. */
-        return UVISOR_ERROR_BAD_MAGIC;
-    }
-
-    if (export_table->version != UVISOR_EXPORT_VERSION) {
-        /* The version we understand is not the version we found. */
-        return UVISOR_ERROR_BAD_VERSION;
-    }
-
     /* osRegisterForOsEvents won't allow a second call. For systems that don't
      * make use of osRegisterForOsEvents we recommend to
      * osRegisterForOsEvents(NULL) to disable further registrations (which if
      * allowed would be a backdoor). */
-    osRegisterForOsEvents(&export_table->os_event_observer);
+    osRegisterForOsEvents(&uvisor_api.os_event_observer);
 
     extern void __uvisor_initialize_rpc_queues(void);
     __uvisor_initialize_rpc_queues();

@@ -14,31 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-.globl uvisor_init
-.globl uvisor_export_table_size
+.globl uvisor_api
 .globl uvisor_config
 .globl __uvisor_ps
-.type  uvisor_init, %function
 .weak  __uvisor_mode
 .weak  __uvisor_page_size
 .globl __uvisor_priv_sys_hooks
 
 .section .uvisor.main, "x"
-    .thumb
-    .thumb_func
 
-/* This is the unique uVisor entry point from the point of view of the host OS.
+/* This is the uVisor API function table from the point of view of the host OS.
  * This symbol corresponds to:
- *      extern "C" void uvisor_init(void); */
-uvisor_init:
+ *      extern "C" UvisorApi uvisor_api; */
+uvisor_api:
     /* uVisor pre-compiled binary blob */
     .incbin UVISOR_BIN
-
-/* The size of the uVisor export table is a uint32_t located at the end of the
- * uVisor binary. The uVisor export table is located at size number of bytes
- * before the end of the uVisor binary. Size includes the 4 bytes for size
- * itself. */
-.set uvisor_export_table_size, uvisor_config - 4
 
 uvisor_config:
     /* uVisor expects its configuration section right after itself in flash. If

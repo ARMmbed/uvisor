@@ -101,7 +101,7 @@ void thread_destroy(void * c)
     }
 }
 
-void thread_switch_nonatomic(void * c)
+static void thread_switch_nonatomic(void * c)
 {
     UvisorThreadContext * context = c;
     UvisorBoxIndex * index;
