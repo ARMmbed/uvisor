@@ -22,25 +22,33 @@
 #include "svc.h"
 #include "vmpu.h"
 
-#ifndef DEBUG_MAX_BUFFER
-#define DEBUG_MAX_BUFFER 128
-#endif/*DEBUG_MAX_BUFFER*/
+#define DEBUG_PRINT_HEAD(x) {\
+    DPRINTF("\n***********************************************************\n");\
+    DPRINTF("                    "x"\n");\
+    DPRINTF("***********************************************************\n\n");\
+}
+#define DEBUG_PRINT_END()   {\
+    DPRINTF("***********************************************************\n\n");\
+}
 
+/* During the porting process the implementation of this function can be
+ * overwritten to provide a different mechanism for printing messages (e.g. the
+ * UART port instead of semihosting). */
+#define DEBUG_MAX_BUFFER 128
 uint8_t g_buffer[DEBUG_MAX_BUFFER];
 int g_buffer_pos;
 
-#ifndef CHANNEL_DEBUG
-void default_putc(uint8_t data)
+UVISOR_WEAK void default_putc(uint8_t data)
 {
-    if(g_buffer_pos<(DEBUG_MAX_BUFFER-1))
+    if (g_buffer_pos < (DEBUG_MAX_BUFFER - 1)) {
         g_buffer[g_buffer_pos++] = data;
-    else
+    } else {
         data = '\n';
+    }
 
-    if(data == '\n')
-    {
+    if (data == '\n') {
         g_buffer[g_buffer_pos] = 0;
-        asm(
+        asm volatile(
             "mov r0, #4\n"
             "mov r1, %[data]\n"
             "bkpt #0xAB\n"
@@ -51,16 +59,8 @@ void default_putc(uint8_t data)
         g_buffer_pos = 0;
     }
 }
-#endif/*CHANNEL_DEBUG*/
 
-void debug_init(void)
-{
-    /* debugging bus faults requires them to be precise, so write buffering is
-     * disabled; note: it slows down execution */
-    SCnSCB->ACTLR |= 0x2;
-}
-
-void debug_exception_frame(uint32_t lr, uint32_t sp)
+static void debug_exception_stack_frame(uint32_t lr, uint32_t sp)
 {
     int i;
     int mode = lr & 0x4;
@@ -75,38 +75,23 @@ void debug_exception_frame(uint32_t lr, uint32_t sp)
     dprintf("    %csp:     0x%08X\n\r", mode ? 'p' : 'm', sp);
     dprintf("    lr:      0x%08X\n\r", lr);
 
-    /* print exception stack frame */
+    /* Print the exception stack frame. */
     dprintf("  Exception stack frame:\n");
     i = CONTEXT_SWITCH_EXC_SF_WORDS;
-    if(((uint32_t *) sp)[8] & (1 << 9))
-    {
+    if (((uint32_t *) sp)[8] & (1 << 9)) {
         dprintf("    %csp[%02d]: 0x%08X | %s\n", mode ? 'p' : 'm', i, ((uint32_t *) sp)[i], exc_sf_verbose[i]);
     }
-    for(i = CONTEXT_SWITCH_EXC_SF_WORDS - 1; i >= 0; --i)
-    {
+    for (i = CONTEXT_SWITCH_EXC_SF_WORDS - 1; i >= 0; --i) {
         dprintf("    %csp[%02d]: 0x%08X | %s\n", mode ? 'p' : 'm', i, ((uint32_t *) sp)[i], exc_sf_verbose[i]);
     }
     dprintf("\n");
 }
 
-void UVISOR_WEAK debug_fault_memmanage(void)
-{
-    dprintf("* CFSR  : 0x%08X\n\r\n\r", SCB->CFSR);
-    dprintf("* MMFAR : 0x%08X\n\r\n\r", SCB->MMFAR);
-}
+/* Specific architectures/ports can provide additional debug handlers. */
+UVISOR_WEAK void debug_fault_memmanage_hw(void) {}
+UVISOR_WEAK void debug_fault_bus_hw(void) {}
 
-void UVISOR_WEAK debug_fault_bus(void)
-{
-    dprintf("* CFSR  : 0x%08X\n\r\n\r", SCB->CFSR);
-    dprintf("* BFAR  : 0x%08X\n\r\n\r", SCB->BFAR);
-}
-
-void UVISOR_WEAK debug_fault_usage(void)
-{
-    dprintf("* CFSR  : 0x%08X\n\r\n\r", SCB->CFSR);
-}
-
-void UVISOR_WEAK debug_fault_hard(void)
+static void debug_fault_hard(void)
 {
     dprintf("* HFSR  : 0x%08X\n\r\n\r", SCB->HFSR);
     dprintf("* CFSR  : 0x%08X\n\r\n\r", SCB->CFSR);
@@ -115,16 +100,50 @@ void UVISOR_WEAK debug_fault_hard(void)
     dprintf("* MMFAR : 0x%08X\n\r\n\r", SCB->MMFAR);
 }
 
-void UVISOR_WEAK debug_fault_debug(void)
+static void debug_fault_memmanage(void)
+{
+    dprintf("* CFSR  : 0x%08X\n\r\n\r", SCB->CFSR);
+    dprintf("* MMFAR : 0x%08X\n\r\n\r", SCB->MMFAR);
+
+    /* Call the MPU-specific debug handler. */
+    debug_fault_memmanage_hw();
+}
+
+static void debug_fault_bus(void)
+{
+    dprintf("* CFSR  : 0x%08X\n\r\n\r", SCB->CFSR);
+    dprintf("* BFAR  : 0x%08X\n\r\n\r", SCB->BFAR);
+
+    /* Call the MPU-specific debug handler. */
+    debug_fault_bus_hw();
+}
+
+static void debug_fault_usage(void)
+{
+    dprintf("* CFSR  : 0x%08X\n\r\n\r", SCB->CFSR);
+}
+
+static void debug_fault_debug(void)
 {
     dprintf("* DFSR  : 0x%08X\n\r\n\r", SCB->DFSR);
 }
 
+void debug_init(void)
+{
+    /* Debugging bus faults requires them to be precise, so write buffering is
+     * disabled when debug is enabled. */
+    /* Note: This slows down execution. */
+    SCnSCB->ACTLR |= 0x2;
+}
+
 void debug_fault(THaltError reason, uint32_t lr, uint32_t sp)
 {
-    /* fault-specific code */
-    switch(reason)
-    {
+    /* Fault-specific blue screen */
+    switch (reason) {
+        case FAULT_HARD:
+            DEBUG_PRINT_HEAD("HARD FAULT");
+            debug_fault_hard();
+            break;
         case FAULT_MEMMANAGE:
             DEBUG_PRINT_HEAD("MEMMANAGE FAULT");
             debug_fault_memmanage();
@@ -137,10 +156,6 @@ void debug_fault(THaltError reason, uint32_t lr, uint32_t sp)
             DEBUG_PRINT_HEAD("USAGE FAULT");
             debug_fault_usage();
             break;
-        case FAULT_HARD:
-            DEBUG_PRINT_HEAD("HARD FAULT");
-            debug_fault_hard();
-            break;
         case FAULT_DEBUG:
             DEBUG_PRINT_HEAD("DEBUG FAULT");
             debug_fault_debug();
@@ -150,129 +165,8 @@ void debug_fault(THaltError reason, uint32_t lr, uint32_t sp)
             break;
     }
 
-    /* blue screen */
-    debug_exception_frame(lr, sp);
+    /* Blue screen messages shared by all faults */
+    debug_exception_stack_frame(lr, sp);
     debug_mpu_config();
     DEBUG_PRINT_END();
-}
-
-static void debug_die(void)
-{
-    UVISOR_SVC(UVISOR_SVC_ID_HALT_USER_ERR, "", DEBUG_BOX_HALT);
-}
-
-void debug_reboot(TResetReason reason)
-{
-    if (!g_debug_box.initialized || g_active_box != g_debug_box.box_id || reason >= __TRESETREASON_MAX) {
-        halt(NOT_ALLOWED);
-    }
-
-    /* Note: Currently we do not act differently based on the reset reason. */
-
-    /* Reboot.
-     * If called from unprivileged code, NVIC_SystemReset causes a fault. */
-    NVIC_SystemReset();
-}
-
-/* FIXME: Currently it is not possible to return to a regular execution flow
- *        after the execution of the debug box handler. */
-static void debug_deprivilege_and_return(void * debug_handler, void * return_handler,
-                                         uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3)
-{
-    /* Source box: Get the current stack pointer. */
-    /* Note: The source stack pointer is only used to assess the stack
-     *       alignment. */
-    uint32_t src_sp = context_validate_exc_sf(__get_PSP());
-
-    /* Destination box: The debug box. */
-    uint8_t dst_id = g_debug_box.box_id;
-
-    /* Copy the xPSR from the source exception stack frame. */
-    uint32_t xpsr = ((uint32_t *) src_sp)[7];
-
-    /* Destination box: Forge the destination stack frame. */
-    /* Note: We manually have to set the 4 parameters on the destination stack,
-     *       so we will set the API to have nargs=0. */
-    uint32_t dst_sp = context_forge_exc_sf(src_sp, dst_id, (uint32_t) debug_handler, (uint32_t) return_handler, xpsr, 0);
-    ((uint32_t *) dst_sp)[0] = a0;
-    ((uint32_t *) dst_sp)[1] = a1;
-    ((uint32_t *) dst_sp)[2] = a2;
-    ((uint32_t *) dst_sp)[3] = a3;
-
-    /* Suspend the OS. */
-    g_priv_sys_hooks.priv_os_suspend();
-
-    context_switch_in(CONTEXT_SWITCH_FUNCTION_DEBUG, dst_id, src_sp, dst_sp);
-
-    /* Upon execution return debug_handler will be executed. Upon return from
-     * debug_handler, return_handler will be executed. */
-    return;
-}
-
-uint32_t debug_get_version(void)
-{
-    /* TODO: This function cannot be implemented without a mechanism for
-     *       de-privilege, execute, return, and re-privilege. */
-    HALT_ERROR(NOT_IMPLEMENTED, "This handler is not implemented yet. Only version 0 is supported.\n\r");
-    return 0;
-}
-
-void debug_halt_error(THaltError reason)
-{
-    static int debugged_once_before = 0;
-
-    /* If the debug box does not exist (or it has not been initialized yet), or
-     * the debug box was already called once, just loop forever. */
-    if (!g_debug_box.initialized || debugged_once_before) {
-        while (1);
-    } else {
-        /* Remember that debug_deprivilege_and_return() has been called once.
-         * We'll reboot after the debug handler is run, so this will go back to
-         * zero after the reboot. */
-        debugged_once_before = 1;
-
-        /* The following arguments are passed to the destination function:
-         *   1. reason
-         * Upon return from the debug handler, the system will die. */
-        debug_deprivilege_and_return(g_debug_box.driver->halt_error, debug_die, reason, 0, 0, 0);
-    }
-}
-
-void debug_register_driver(const TUvisorDebugDriver * const driver)
-{
-    int i;
-
-    /* Check if already initialized. */
-    if (g_debug_box.initialized) {
-        HALT_ERROR(NOT_ALLOWED, "The debug box has already been initialized.\n\r");
-    }
-
-    /* Check the driver version. */
-    /* FIXME: Currently we cannot de-privilege, execute, and return to a
-     *        user-provided handler, so we are not calling the get_version()
-     *        handler. The version of the driver will be assumed to be 0. */
-
-    /* Check that the debug driver table and all its entries are in public
-     * flash. */
-    if (!vmpu_public_flash_addr((uint32_t) driver) ||
-        !vmpu_public_flash_addr((uint32_t) driver + sizeof(TUvisorDebugDriver))) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "The debug box driver struct must be stored in public flash.\n\r");
-    }
-    if (!driver) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "The debug box driver cannot be initialized with a NULL pointer.\r\n");
-    }
-    for (i = 0; i < DEBUG_BOX_HANDLERS_NUMBER; i++) {
-        if (!vmpu_public_flash_addr(*((uint32_t *) driver + i))) {
-            HALT_ERROR(SANITY_CHECK_FAILED, "Each handler in the debug box driver struct must be stored in public flash.\n\r");
-        }
-        if (!*((uint32_t *) driver + i)) {
-            HALT_ERROR(SANITY_CHECK_FAILED, "Handlers in the debug box driver cannot be initialized with a NULL pointer.\r\n");
-        }
-    }
-
-    /* Register the debug box.
-     * The caller of this function is considered the owner of the debug box. */
-    g_debug_box.driver = driver;
-    g_debug_box.box_id = g_active_box;
-    g_debug_box.initialized = 1;
 }

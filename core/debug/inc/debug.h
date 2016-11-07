@@ -32,45 +32,25 @@ typedef struct TDebugBox {
 TDebugBox g_debug_box;
 
 void debug_init(void);
-void debug_cx_switch_in(void);
-void debug_cx_switch_out(void);
-void debug_exception_frame(uint32_t lr, uint32_t sp);
-void debug_fault_memmanage(void);
-void debug_fault_bus(void);
-void debug_fault_usage(void);
-void debug_fault_hard(void);
-void debug_fault_debug(void);
-void debug_fault_mpu(void);
-void debug_fault(THaltError reason, uint32_t lr, uint32_t sp);
 void debug_mpu_config(void);
+void debug_fault(THaltError reason, uint32_t lr, uint32_t sp);
 void debug_map_addr_to_periph(uint32_t address);
+
+/* Debug box */
 void debug_register_driver(const TUvisorDebugDriver * const driver);
 uint32_t debug_get_version(void);
 void debug_halt_error(THaltError reason);
 void debug_reboot(TResetReason reason);
 
-#define DEBUG_PRINT_HEAD(x) {\
-    DPRINTF("\n***********************************************************\n");\
-    DPRINTF("                    "x"\n");\
-    DPRINTF("***********************************************************\n\n");\
-}
-#define DEBUG_PRINT_END()   {\
-    DPRINTF("***********************************************************\n\n");\
-}
-
 #ifdef  NDEBUG
 
 #define DEBUG_INIT(...)          {}
 #define DEBUG_FAULT(...)         {}
-#define DEBUG_CX_SWITCH_IN(...)  {}
-#define DEBUG_CX_SWITCH_OUT(...) {}
 
 #else /*NDEBUG*/
 
 #define DEBUG_INIT          debug_init
 #define DEBUG_FAULT         debug_fault
-#define DEBUG_CX_SWITCH_IN  debug_cx_switch_in
-#define DEBUG_CX_SWITCH_OUT debug_cx_switch_out
 
 #endif/*NDEBUG*/
 

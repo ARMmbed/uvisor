@@ -17,7 +17,7 @@
 #include <uvisor.h>
 #include "svc.h"
 #include "vmpu.h"
-#include "vmpu_freescale_k64_aips.h"
+#include "vmpu_kinetis_aips.h"
 
 #define AIPSx_DWORDS       ((AIPSx_SLOT_MAX+31)/32)
 #define PACRx_DEFAULT_MASK 0x44444444UL

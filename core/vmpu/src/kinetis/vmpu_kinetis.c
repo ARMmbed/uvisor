@@ -23,9 +23,9 @@
 #include "unvic.h"
 #include "vmpu.h"
 #include "vmpu_mpu.h"
-#include "vmpu_freescale_k64.h"
-#include "vmpu_freescale_k64_aips.h"
-#include "vmpu_freescale_k64_mem.h"
+#include "vmpu_kinetis.h"
+#include "vmpu_kinetis_aips.h"
+#include "vmpu_kinetis_mem.h"
 #include "page_allocator_faults.h"
 
 uint32_t g_box_mem_pos;
