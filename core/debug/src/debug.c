@@ -93,17 +93,56 @@ UVISOR_WEAK void debug_fault_bus_hw(void) {}
 
 static void debug_fault_hard(void)
 {
-    dprintf("* HFSR  : 0x%08X\r\n\r\n", SCB->HFSR);
-    dprintf("* CFSR  : 0x%08X\r\n\r\n", SCB->CFSR);
-    dprintf("* DFSR  : 0x%08X\r\n\r\n", SCB->DFSR);
-    dprintf("* BFAR  : 0x%08X\r\n\r\n", SCB->BFAR);
-    dprintf("* MMFAR : 0x%08X\r\n\r\n", SCB->MMFAR);
+    dprintf("* FAULT SYNDROME REGISTERS\r\n");
+    dprintf("\r\n");
+
+    uint32_t hfsr = SCB->HFSR;
+    dprintf("  HFSR: 0x%08X\r\n", hfsr);
+    if (hfsr & SCB_HFSR_DEBUGEVT_Msk) {
+        dprintf("  --> DEBUGEVT: debug event occurred.\r\n");
+    }
+    if (hfsr & SCB_HFSR_FORCED_Msk) {
+        dprintf("  --> FORCED: another priority escalated to hard fault.\r\n");
+    }
+    if (hfsr & SCB_HFSR_VECTTBL_Msk) {
+        dprintf("  --> VECTTBL: vector table read fault on exception processing.\r\n");
+    }
+    dprintf("\r\n");
 }
 
 static void debug_fault_memmanage(void)
 {
-    dprintf("* CFSR  : 0x%08X\r\n\r\n", SCB->CFSR);
-    dprintf("* MMFAR : 0x%08X\r\n\r\n", SCB->MMFAR);
+    dprintf("* FAULT SYNDROME REGISTERS\r\n");
+    dprintf("\r\n");
+
+    uint32_t mmfsr = SCB->CFSR;
+    dprintf("  CFSR: 0x%08X\r\n", mmfsr);
+    if (mmfsr & SCB_CFSR_MMARVALID_Msk) {
+        dprintf("  MMFAR: 0x%08X\r\n", SCB->MMFAR);
+    } else {
+        dprintf("  --> MMFAR not valid.\r\n");
+    }
+#if defined(__FPU_PRESENT) && (__FPU_PRESENT == 1)
+    if (mmfsr & SCB_CFSR_MLSPERR_Msk) {
+        dprintf("  --> MLSPERR: lazy FP state preservation.\r\n");
+    }
+#endif /* defined(__FPU_PRESENT) && __FPU_PRESENT == 1 */
+    if (mmfsr & SCB_CFSR_MSTKERR_Msk) {
+        dprintf("  --> MSTKERR: exception entry.\r\n");
+    }
+    if (mmfsr & SCB_CFSR_MUNSTKERR_Msk) {
+        dprintf("  --> MUNSTKERR: exception exit.\r\n");
+    }
+    if (mmfsr & SCB_CFSR_DACCVIOL_Msk) {
+        dprintf("  --> DACCVIOL: data access violation.\r\n");
+    }
+    if (mmfsr & SCB_CFSR_IACCVIOL_Msk) {
+        dprintf("  --> IACCVIOL: precise data access.\r\n");
+    }
+    if (mmfsr & SCB_CFSR_IBUSERR_Msk) {
+        dprintf("  --> IBUSERR: MPU fault/XN default map violation at instruction fetch (instruction has been issued).\r\n");
+    }
+    dprintf("\r\n");
 
     /* Call the MPU-specific debug handler. */
     debug_fault_memmanage_hw();
@@ -111,8 +150,37 @@ static void debug_fault_memmanage(void)
 
 static void debug_fault_bus(void)
 {
-    dprintf("* CFSR  : 0x%08X\r\n\r\n", SCB->CFSR);
-    dprintf("* BFAR  : 0x%08X\r\n\r\n", SCB->BFAR);
+    dprintf("* FAULT SYNDROME REGISTERS\r\n");
+    dprintf("\r\n");
+
+    uint32_t bfsr = SCB->CFSR;
+    dprintf("  CFSR: 0x%08X\r\n", bfsr);
+    if (bfsr & SCB_CFSR_BFARVALID_Msk) {
+        dprintf("  BFAR: 0x%08X\r\n", SCB->BFAR);
+    } else {
+        dprintf("  --> BFAR not valid.\r\n");
+    }
+#if defined(__FPU_PRESENT) && (__FPU_PRESENT == 1)
+    if (bfsr & SCB_CFSR_LSPERR_Msk) {
+        dprintf("  --> LSPERR: lazy FP state preservation.\r\n");
+    }
+#endif /* defined(__FPU_PRESENT) && __FPU_PRESENT == 1 */
+    if (bfsr & SCB_CFSR_STKERR_Msk) {
+        dprintf("  --> STKERR: exception entry.\r\n");
+    }
+    if (bfsr & SCB_CFSR_UNSTKERR_Msk) {
+        dprintf("  --> UNSTKERR: exception exit.\r\n");
+    }
+    if (bfsr & SCB_CFSR_IMPRECISERR_Msk) {
+        dprintf("  --> IMPRECISERR: imprecise data access.\r\n");
+    }
+    if (bfsr & SCB_CFSR_PRECISERR_Msk) {
+        dprintf("  --> PRECISERR: precise data access.\r\n");
+    }
+    if (bfsr & SCB_CFSR_IBUSERR_Msk) {
+        dprintf("  --> IBUSERR: instruction prefetch (instruction has been issued).\r\n");
+    }
+    dprintf("\r\n");
 
     /* Call the MPU-specific debug handler. */
     debug_fault_bus_hw();
@@ -120,12 +188,43 @@ static void debug_fault_bus(void)
 
 static void debug_fault_usage(void)
 {
-    dprintf("* CFSR  : 0x%08X\r\n\r\n", SCB->CFSR);
+    dprintf("* FAULT SYNDROME REGISTERS\r\n");
+    dprintf("\r\n");
+
+    uint32_t ufsr = SCB->CFSR;
+    dprintf("  CFSR: 0x%08X\r\n", ufsr);
+    if (ufsr & SCB_CFSR_DIVBYZERO_Msk) {
+        dprintf("  --> DIVBYZERO: divide by zero.\r\n");
+    }
+    if (ufsr & SCB_CFSR_UNALIGNED_Msk) {
+        dprintf("  --> UNALIGNED: unaligned access.\r\n");
+    }
+#if defined(ARCH_MPU_ARMv8M)
+    if (ufsr & SCB_CFSR_STKOF_Msk) {
+        dprintf("  --> STKOF: stack overflow.\r\n");
+    }
+#endif /* defined(ARCH_MPU_ARMv8M) */
+    if (ufsr & SCB_CFSR_NOCP_Msk) {
+        dprintf("  --> NOCP: coprocessor access (disabled/absent).\r\n");
+    }
+    if (ufsr & SCB_CFSR_INVPC_Msk) {
+        dprintf("  --> INVPC: integrity checks on EXC_RETURN.\r\n");
+    }
+    if (ufsr & SCB_CFSR_INVSTATE_Msk) {
+        dprintf("  --> INVSTATE: instruction executed with invalid EPSR.T/.IT field.\r\n");
+    }
+    if (ufsr & SCB_CFSR_UNDEFINSTR_Msk) {
+        dprintf("  --> UNDEFINSTR: undefined instruction.\r\n");
+    }
+    dprintf("\r\n");
 }
 
 static void debug_fault_debug(void)
 {
-    dprintf("* DFSR  : 0x%08X\r\n\r\n", SCB->DFSR);
+    dprintf("* FAULT SYNDROME REGISTERS\r\n");
+    dprintf("\r\n");
+
+    dprintf("  DFSR  : 0x%08X\r\n\r\n", SCB->DFSR);
 }
 
 void debug_init(void)
