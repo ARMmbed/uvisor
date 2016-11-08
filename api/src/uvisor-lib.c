@@ -18,6 +18,11 @@
 #include "api/inc/halt_exports.h"
 #include "rt_OsEventObserver.h"
 
+void uvisor_init(void)
+{
+    uvisor_api.init();
+}
+
 int uvisor_lib_init(void)
 {
     /* osRegisterForOsEvents won't allow a second call. For systems that don't
