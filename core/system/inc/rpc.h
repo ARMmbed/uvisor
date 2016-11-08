@@ -14,11 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "api/inc/uvisor-lib.h"
-#include "core/uvisor.h"
-#include <stdint.h>
+#ifndef __RPC_H__
+#define __RPC_H__
 
-UVISOR_EXTERN void uvisor_debug_init(const TUvisorDebugDriver * const driver)
-{
-    UVISOR_SVC(UVISOR_SVC_ID_DEBUG_REGISTER_BOX, "", (uint32_t) driver);
-}
+void drain_message_queue(void);
+void drain_result_queue(void);
+
+#endif/*__RPC_H__*/

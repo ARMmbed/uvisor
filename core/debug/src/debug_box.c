@@ -24,7 +24,7 @@
 
 static void debug_die(void)
 {
-    UVISOR_SVC(UVISOR_SVC_ID_HALT_USER_ERR, "", DEBUG_BOX_HALT);
+    UVISOR_SVC(UVISOR_SVC_ID_GET(error), "", DEBUG_BOX_HALT);
 }
 
 void debug_reboot(TResetReason reason)

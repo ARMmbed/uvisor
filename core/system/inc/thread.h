@@ -14,12 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "api/inc/uvisor-lib.h"
-#include "core/uvisor.h"
-#include <stddef.h>
-#include <stdint.h>
+#ifndef __THREAD_H__
+#define __THREAD_H__
 
-int uvisor_box_namespace(int box_id, char *box_namespace, size_t length)
-{
-    return UVISOR_SVC(UVISOR_SVC_ID_BOX_NAMESPACE_FROM_ID, "", box_id, box_namespace, length);
-}
+void * thread_create(int id, void * c);
+void thread_destroy(void * c);
+void thread_switch(void * c);
+
+#endif/*__THREAD_H__*/

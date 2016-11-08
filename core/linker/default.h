@@ -54,39 +54,28 @@ MEMORY
   FLASH (rx) : ORIGIN = (FLASH_ORIGIN + FLASH_OFFSET),
                LENGTH = UVISOR_FLASH_LENGTH_MAX
   RAM   (rwx): ORIGIN = (SRAM_ORIGIN + SRAM_OFFSET),
-               LENGTH = UVISOR_SRAM_LENGTH_USED - STACK_SIZE
-  STACK (rw) : ORIGIN = (SRAM_ORIGIN + SRAM_OFFSET + UVISOR_SRAM_LENGTH_USED - STACK_SIZE),
-               LENGTH = STACK_SIZE
+               LENGTH = UVISOR_SRAM_LENGTH_USED - STACK_SIZE - STACK_GUARD_BAND
+  STACK (rw) : ORIGIN = ORIGIN(RAM) + LENGTH(RAM),
+               LENGTH = UVISOR_SRAM_LENGTH_PROTECTED - LENGTH(RAM)
 }
 
 SECTIONS
 {
     .text :
     {
-        *(.text.main_entry)
+        KEEP(*(.uvisor_api))
         *(.text*)
         *(.rodata*)
         . = ALIGN(512);
         *(.isr*)
-        PROVIDE(__data_start_src__ = LOADADDR(.data));
-        PROVIDE(__uvisor_config = LOADADDR(.export_table) + SIZEOF(.export_table));
-        PROVIDE(__stack_start__ = ORIGIN(STACK));
-        PROVIDE(__stack_top__ = ORIGIN(STACK) + LENGTH(STACK) - STACK_GUARD_BAND);
-        PROVIDE(__stack_end__ = ORIGIN(STACK) + LENGTH(STACK));
         . = ALIGN(16);
         __code_end__ = .;
     } > FLASH
 
-    __exidx_start = .;
-    .ARM.exidx :
-    {
-        *(.ARM.exidx* .gnu.linkonce.armexidx.*)
-    } > FLASH
-    __exidx_end = .;
-
     .data :
     {
         . = ALIGN(4);
+        PROVIDE(__data_start_src__ = LOADADDR(.data));
         __data_start__ = .;
         *(.ramfunc)
         *(.ramfunc.*)
@@ -95,14 +84,9 @@ SECTIONS
         . = ALIGN(4);
         /* All data end */
         __data_end__ = .;
-    } > RAM AT>FLASH
+    } > RAM AT > FLASH
 
-    .export_table :
-    {
-        /* The __uvisor_export_table must be placed at the very end of the
-         * uVisor binary to work correctly. */
-        KEEP(*(.export_table))
-    } > FLASH
+    PROVIDE(__uvisor_config = LOADADDR(.data) + SIZEOF(.data));
 
     .bss (NOLOAD):
     {
@@ -113,10 +97,15 @@ SECTIONS
         *(COMMON)
         . = ALIGN(4);
         __bss_end__ = .;
-        __heap_start__ = .;
-        *(.heap)
-        *(.heap.*)
-        __heap_end__ = ALIGN(32);
-        __stack_start__ = .;
     } > RAM
+
+    .stack (NOLOAD):
+    {
+        . = ALIGN(4);
+        __stack_start__ = .;
+        . += STACK_SIZE;
+        __stack_top__ = .;
+        . += STACK_GUARD_BAND;
+        __stack_end__ = .;
+    } > STACK
 }
