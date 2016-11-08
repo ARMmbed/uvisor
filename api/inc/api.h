@@ -31,6 +31,8 @@
 
 UVISOR_EXTERN_C_BEGIN
 
+extern void uvisor_init(void);
+
 typedef struct {
     uint32_t magic;
     uint32_t (*get_version)(uint32_t);

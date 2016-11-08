@@ -31,7 +31,7 @@ Although uVisor is highly self-contained, it still requires some support from th
 
 1. **Library glue layer**. The [ARMmbed/uvisor](https://github.com/ARMmbed/uvisor) `Makefile` allows you to build both release and debug libraries for all family configurations. The logic to generate this libraries, publish them, and then pick the right library for the right target at build time is OS-specific. This logic must be provided by a glue layer.
 1. **Linker script**. It contains specific memory regions and symbols that uVisor relies on.
-1. **Start-up script**. uVisor boots right after the system basic initialization, and before the C/C++ library initialization. The start-up script needs to call `uvisor_api.init()` in between those two.
+1. **Start-up script**. uVisor boots right after the system basic initialization, and before the C/C++ library initialization. The start-up script needs to call `uvisor_init()` in between those two.
 
 If you are porting uVisor to mbed OS, you will find that the library glue layer is already embedded in the [mbed OS code-base](https://github.com/ARMmbed/uvisor-lib). The linker script and start-up code also live in the same repository. We will guide you through the modifications needed in those files later in this guide.
 
@@ -297,7 +297,7 @@ The build process generates as many static libraries (`*.a` files) as your famil
 
 You now need to integrate uVisor in the mbed OS code-base for your target. This requires the following steps, which we will cover in detail:
 
-* Add a hook to `uvisor_api.init()` in your start-up script.
+* Add a hook to `uvisor_init()` in your start-up script.
 * Add the uVisor-specific sections to your platforms' linker scripts.
 * Deploy the uVisor libraries for your target platforms.
 * Enable uVisor in your targets.
@@ -313,7 +313,7 @@ Assuming that you already ported your platform to mbed, the start-up script usua
 hal/targets/cmsis/TARGET_${vendor}/TARGET_${family}/TARGET_${device}/TOOLCHAIN_${toolchain}
 ```
 
-The start-up code must call the function `uvisor_api.init()` right after system initialization (usually called `SystemInit()`) and right before the C/C++ library initialization.
+The start-up code must call the function `uvisor_init()` right after system initialization (usually called `SystemInit()`) and right before the C/C++ library initialization.
 
 ```C
 ResetHandler:
@@ -321,8 +321,7 @@ ResetHandler:
     ldr r0, =SystemInit
     blx r0
 #if defined(FEATURE_UVISOR) && defined(TARGET_UVISOR_SUPPORTED)
-    ldr r0, =uvisor_api     /* [*] Insert this. */
-    ldr r0, [r0, #8]        /* [*] Insert this. */
+    ldr r0, =uvisor_init    /* [*] Insert this. */
     blx r0                  /* [*] Insert this. */
 #endif /* defined(FEATURE_UVISOR) && defined(TARGET_UVISOR_SUPPORTED) */
     ldr r0, =__start
@@ -330,7 +329,7 @@ ResetHandler:
     ...
 ```
 
-Make sure that no static initialization (zeroing the BSS section, loading data from flash to SRAM) happens before the uVisor initialization. Even setting a single global variable before `uvisor_api.init()` and then referring to it later on might result in data corruption.
+Make sure that no static initialization (zeroing the BSS section, loading data from flash to SRAM) happens before the uVisor initialization. Even setting a single global variable before `uvisor_init()` and then referring to it later on might result in data corruption.
 
 The conditional guards that we used in the example above rely on the `FEATURE_UVISOR` and `UVISOR_SUPPORTED` symbols, which will be covered shortly.
 
