@@ -105,6 +105,16 @@ void vmpu_arch_init_hw(void)
     /* Configure User interrupt table in NS mode. */
     SAU->RNR = rnr++;
     SAU->RBAR = ((uint32_t) __uvisor_config.flash_start) & 0xFFFFFFE0;
+    SAU->RLAR = (((uint32_t) &__entry_points_start__ - 31) & 0xFFFFFFE0) | SAU_RLAR_ENABLE_Msk;
+
+    /* Configure the gateways in NSC mode. */
+    SAU->RNR = rnr++;
+    SAU->RBAR = ((uint32_t) &__entry_points_start__) & 0xFFFFFFE0;
+    SAU->RLAR = (((uint32_t) &__entry_points_end__ - 31) & 0xFFFFFFE0) | SAU_RLAR_NSC_Msk | SAU_RLAR_ENABLE_Msk;
+
+    /* Configure the remainder of the flash to be accessible in NS mode. */
+    SAU->RNR = rnr++;
+    SAU->RBAR = ((uint32_t) &__entry_points_end__) & 0xFFFFFFE0;
     SAU->RLAR = (((uint32_t) __uvisor_config.flash_end - 31) & 0xFFFFFFE0) | SAU_RLAR_ENABLE_Msk;
 
     /* Configure the public SRAM to be accessible in NS mode. */
