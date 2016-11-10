@@ -99,7 +99,7 @@
 #define UVISOR_SVC_ID_UNVIC_IN         UVISOR_SVC_FIXED_TABLE(0, 0)
 
 /** Generate the SVCall opcode from the SVC ID. */
-#define UVISOR_SVC_OPCODE(id) ((uint16_t) 0xDF00 | (uint8_t) ((id) & 0xFF))
+#define UVISOR_SVC_OPCODE(id) ((uint16_t) (0xDF00 | ((id) & 0xFF)))
 
 #define UVISOR_SVC_ID_GET(target) UVISOR_SVC_CUSTOM_TABLE(offsetof(UvisorSvcTarget, target) / sizeof(uint32_t))
 
