@@ -91,7 +91,7 @@ static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr
     uint8_t mask, index, page;
 
     /* No recovery is possible if the MPU syndrome register is not valid. */
-    if (fault_status != 0x82) {
+    if (fault_status == (SCB_CFSR_MMARVALID_Msk | SCB_CFSR_DACCVIOL_Msk)) {
         return 0;
     }
 

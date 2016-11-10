@@ -368,18 +368,25 @@ int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint3
        HALT_ERROR(NOT_ALLOWED, "This is not the PC (0x%08X) your were searching for", pc);
     }
 
-    /* Check fault register; the following two configurations are allowed:
-     *   0x04 - imprecise data bus fault, no stacking/unstacking errors.
-     *   0x82 - precise data bus fault, no stacking/unstacking errors. */
+    /* Check fault register; the following two configurations are allowed.
+     *   - Precise data bus fault, no stacking/unstacking errors
+     *   - Imprecise data bus fault, no stacking/unstacking errors */
     /* Note: Currently the faulting address argument is not used, since it
      * is saved in r0 for managed bus faults. */
     switch (fault_status) {
-        case 0x82:
+        case (SCB_CFSR_MMARVALID_Msk | SCB_CFSR_DACCVIOL_Msk):
+            /* Precise data bus fault, no stacking/unstacking errors */
             cnt_max = 0;
             break;
-        case 0x04:
+
+        /* Shift right by a byte because our BFSR (read into fault_status) is
+         * already shifted relative to CFSR. The CMSIS masks are CFSR relative,
+         * so we need to shift the mask to align with our BFSR. */
+        case (SCB_CFSR_IMPRECISERR_Msk >> 8):
+            /* Imprecise data bus fault, no stacking/unstacking errors */
             cnt_max = UVISOR_NOP_CNT;
             break;
+
         default:
             return -1;
     }
