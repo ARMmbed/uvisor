@@ -15,8 +15,64 @@
  * limitations under the License.
  */
 #include <uvisor.h>
+#include "debug.h"
+#include "context.h"
+#include "halt.h"
+#include "memory_map.h"
 #include "vmpu.h"
 #include "vmpu_mpu.h"
+
+/* This file contains the configuration-specific symbols. */
+#include "configurations.h"
+
+/* SAU region count */
+#ifndef SAU_ACL_COUNT
+#define SAU_ACL_COUNT 64
+#endif/*SAU_ACL_COUNT*/
+
+/* set default SAU region count */
+#ifndef ARMv8M_SAU_REGIONS
+#define ARMv8M_SAU_REGIONS 8
+#endif/*ARMv8M_SAU_REGIONS*/
+
+/* The v8-M SAU has 8 regions.
+ * Region 0, 1, 2, 3 are used to unlock Application SRAM and Flash.
+ * Therefore 4 SAU regions are available for user ACLs.
+ * Region 4 and 4 are used to protect the current box stack and context.
+ * This leaves 6 SAU regions for round robin scheduling:
+ *
+ *      8      <-- End of SAU regions, V8M_SAU_REGIONS_MAX
+ * .---------.
+ * |    7    |
+ * |    6    |
+ * |    5    | <-- Box Pages, V8M_SAU_REGIONS_USER
+ * +---------+
+ * |    4    | <-- Box Context
+ * +---------+
+ * |    3    | <-- Application SRAM unlock
+ * |    2    | <-- Application Flash after uVisor unlock
+ * |    1    | <-- Application Flash Non-Secure-Callable in uVisor
+ * |    0    | <-- Application Flash before uVisor unlock
+ * '---------'
+ */
+#define ARMv8M_SAU_REGIONS_STATIC 4
+#define ARMv8M_SAU_REGIONS_MAX (ARMv8M_SAU_REGIONS)
+
+/* SAU helper macros */
+#define SAU_RLAR(config,addr)   ((config) | (((addr) - 1UL) & ~(32UL - 1UL)))
+
+typedef struct
+{
+    MpuRegion * regions;
+    uint32_t count;
+} MpuRegionSlice;
+
+static uint16_t g_mpu_region_count;
+static MpuRegion g_mpu_region[SAU_ACL_COUNT];
+static MpuRegionSlice g_mpu_box_region[UVISOR_MAX_BOXES];
+
+static uint8_t g_mpu_slot = ARMv8M_SAU_REGIONS_STATIC;
+static uint8_t g_mpu_priority[ARMv8M_SAU_REGIONS_MAX];
 
 int vmpu_is_region_size_valid(uint32_t size)
 {
@@ -51,53 +107,203 @@ uint32_t vmpu_round_up_region(uint32_t addr, uint32_t size)
     return (rounded_addr & ~mask);
 }
 
+static uint32_t vmpu_map_acl(UvisorBoxAcl acl)
+{
+    uint32_t flags = 0;
+
+    if (acl & UVISOR_TACL_UACL) {
+        /* If any user access is required, enable the NS region. */
+        flags = SAU_RLAR_ENABLE_Msk;
+    }
+    /* Every other kind of access is not supported by hardware. */
+    return flags;
+}
+
 uint32_t vmpu_region_translate_acl(MpuRegion * const region, uint32_t start, uint32_t size, UvisorBoxAcl acl, uint32_t acl_hw_spec)
 {
-    /* FIXME: This function must be implemented for the vMPU port to be complete. */
-    return 0;
+    /* ensure that ACL size can be rounded up to slot size */
+    if(size % 32)
+    {
+        if(acl & UVISOR_TACL_SIZE_ROUND_DOWN) {
+            size = UVISOR_REGION_ROUND_DOWN(size);
+        }
+        else if(acl & UVISOR_TACL_SIZE_ROUND_UP) {
+            size = UVISOR_REGION_ROUND_UP(size);
+        }
+        else {
+            DPRINTF("use UVISOR_TACL_SIZE_ROUND_UP/*_DOWN to round ACL size\n");
+            return 0;
+        }
+    }
+
+    /* ensure that ACL base is a multiple of 32 */
+    if(start % 32) {
+        DPRINTF("start address needs to be aligned on a 32 bytes border\n");
+        return 0;
+    }
+
+    region->config = vmpu_map_acl(acl) | (acl_hw_spec & SAU_RLAR_NSC_Msk);
+    region->start = start;
+    region->end = start + size;
+    region->acl = acl;
+
+    return size;
 }
 
 uint32_t vmpu_region_add_static_acl(uint8_t box_id, uint32_t start, uint32_t size, UvisorBoxAcl acl, uint32_t acl_hw_spec)
 {
-    /* FIXME: This function must be implemented for the vMPU port to be complete. */
-    return 0;
+    MpuRegion * region;
+    MpuRegionSlice * box;
+    uint32_t rounded_size;
+
+    if(g_mpu_region_count >= SAU_ACL_COUNT) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "vmpu_add_static_acl: No more regions to allocate!\n");
+    }
+
+    if (!vmpu_is_box_id_valid(box_id)) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "vmpu_add_static_acl: The box id (%u) is out of range.\n", box_id);
+    }
+
+    box = &g_mpu_box_region[box_id];
+    if (!box->regions) {
+        box->regions = &g_mpu_region[g_mpu_region_count];
+    }
+
+    region = &box->regions[box->count];
+    if (region->config) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "unordered region allocation\n");
+    }
+
+    rounded_size = vmpu_region_translate_acl(region, start, size,
+        acl, acl_hw_spec);
+
+    box->count++;
+    g_mpu_region_count++;
+
+    return rounded_size;
 }
 
 bool vmpu_region_get_for_box(uint8_t box_id, const MpuRegion * * const region, uint32_t * const count)
 {
-    /* FIXME: This function must be implemented for the vMPU port to be complete. */
+    if (!g_mpu_region_count) {
+        *count = 0;
+        return false;
+        // HALT_ERROR(SANITY_CHECK_FAILED, "No available SAU regions.\r\n");
+    }
+
+    if (box_id < UVISOR_MAX_BOXES) {
+        *count = g_mpu_box_region[box_id].count;
+        *region = *count ? g_mpu_box_region[box_id].regions : NULL;
+        return true;
+    }
     return false;
 }
 
 MpuRegion * vmpu_region_find_for_address(uint8_t box_id, uint32_t address)
 {
-    /* FIXME: This function must be implemented for the vMPU port to be complete. */
+    int count;
+    MpuRegion * region;
+
+    count = g_mpu_box_region[box_id].count;
+    region = g_mpu_box_region[box_id].regions;
+    for (; count-- > 0; region++) {
+        if ((region->start <= address) && (address < region->end)) {
+            return region;
+        }
+    }
+
     return NULL;
 }
 
+/* SAU access */
+
 void vmpu_mpu_init(void)
 {
-    /* FIXME: This function must be implemented for the vMPU port to be complete. */
+    SAU->CTRL = 0;
+
+    if (ARMv8M_SAU_REGIONS != ((SAU->TYPE >> SAU_TYPE_SREGION_Pos) & 0xFF)) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "ARMv8M_SAU_REGIONS is inconsistent with actual region count.\n\r");
+    }
 }
 
 void vmpu_mpu_lock(void)
 {
-    /* FIXME: This function must be implemented for the vMPU port to be complete. */
+    SAU->CTRL = SAU_CTRL_ENABLE_Msk;
 }
 
 uint32_t vmpu_mpu_set_static_acl(uint8_t index, uint32_t start, uint32_t size, UvisorBoxAcl acl, uint32_t acl_hw_spec)
 {
-    /* FIXME: This function must be implemented for the vMPU port to be complete. */
-    return 0;
+    MpuRegion region;
+    uint32_t rounded_size;
+
+    if (index >= ARMv8M_SAU_REGIONS_STATIC) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "vmpu_mpu_set_static_region: Invalid region index (%u)!\n", index);
+        return 0;
+    }
+
+    rounded_size = vmpu_region_translate_acl(&region, start, size, acl, acl_hw_spec);
+
+    SAU->RNR = index;
+    SAU->RBAR = region.start;
+    SAU->RLAR = SAU_RLAR(region.config, region.end);
+
+    g_mpu_priority[index] = 255;
+
+    return rounded_size;
 }
 
 void vmpu_mpu_invalidate(void)
 {
-    /* FIXME: This function must be implemented for the vMPU port to be complete. */
+    g_mpu_slot = ARMv8M_SAU_REGIONS_STATIC;
+    uint8_t slot = ARMv8M_SAU_REGIONS_STATIC;
+    while (slot < ARMv8M_SAU_REGIONS_MAX) {
+        /* We need to make sure that we disable an enabled SAU region before any
+         * other modification, hence we cannot select the SAU region using the
+         * region number field in the RBAR register. */
+        SAU->RNR = slot;
+        SAU->RBAR = 0;
+        SAU->RLAR = 0;
+        g_mpu_priority[slot] = 0;
+        slot++;
+    }
+}
+
+static void vmpu_sau_add_region(const MpuRegion * const region, uint8_t slot, uint8_t priority)
+{
+    SAU->RNR = slot;
+    SAU->RBAR = region->start;
+    SAU->RLAR = SAU_RLAR(region->config, region->end);
+    g_mpu_priority[slot] = priority;
 }
 
 bool vmpu_mpu_push(const MpuRegion * const region, uint8_t priority)
 {
-    /* FIXME: This function must be implemented for the vMPU port to be complete. */
-    return false;
+    if (!priority) priority = 1;
+
+    const uint8_t start_slot = g_mpu_slot;
+
+    do {
+        g_mpu_slot++;
+        if (g_mpu_slot >= ARMv8M_SAU_REGIONS_MAX) {
+            g_mpu_slot = ARMv8M_SAU_REGIONS_STATIC;
+        }
+
+        if (g_mpu_priority[g_mpu_slot] < priority) {
+            /* We can place this region in here. */
+            vmpu_sau_add_region(region, g_mpu_slot, priority);
+            return true;
+        }
+    }
+    while (g_mpu_slot != start_slot);
+
+    g_mpu_slot++;
+    if (g_mpu_slot >= ARMv8M_SAU_REGIONS_MAX) {
+        g_mpu_slot = ARMv8M_SAU_REGIONS_STATIC;
+    }
+
+    /* We did not find a slot with a lower priority, so just take the next
+     * position that does not have the highest priority. */
+    vmpu_sau_add_region(region, g_mpu_slot, priority);
+
+    return true;
 }
