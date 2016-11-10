@@ -101,7 +101,16 @@ SECTIONS
         __data_end__ = .;
     } > RAM_S AT > FLASH_NS
 
-    PROVIDE(__uvisor_config = LOADADDR(.data) + SIZEOF(.data));
+    .entry_points :
+    {
+        . = ALIGN(32);
+        __entry_points_start__ = .;
+        KEEP(*(.entry_points))
+        . = ALIGN(32);
+        __entry_points_end__ = .;
+    } > FLASH_NS
+
+    PROVIDE(__uvisor_config = LOADADDR(.entry_points) + SIZEOF(.entry_points));
 
     .bss (NOLOAD):
     {

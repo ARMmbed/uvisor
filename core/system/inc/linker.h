@@ -46,6 +46,9 @@ extern uint32_t __data_start__;
 extern uint32_t __data_end__;
 extern uint32_t const __data_start_src__;
 
+extern uint32_t const __entry_points_start__;
+extern uint32_t const __entry_points_end__;
+
 extern void main_entry(uint32_t caller);
 extern void isr_default_sys_handler(void);
 extern void isr_default_handler(void);
