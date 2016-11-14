@@ -47,14 +47,14 @@ static void debug_deprivilege_and_return(void * debug_handler, void * return_han
 {
     /* Source box: Get the current stack pointer. */
     /* Note: The source stack pointer is only used to assess the stack
-     *       alignment. */
+     *       alignment and to read the xpsr. */
     uint32_t src_sp = context_validate_exc_sf(__get_PSP());
 
     /* Destination box: The debug box. */
     uint8_t dst_id = g_debug_box.box_id;
 
     /* Copy the xPSR from the source exception stack frame. */
-    uint32_t xpsr = ((uint32_t *) src_sp)[7];
+    uint32_t xpsr = vmpu_unpriv_uint32_read((uint32_t) &((uint32_t *) src_sp)[7]);
 
     /* Destination box: Forge the destination stack frame. */
     /* Note: We manually have to set the 4 parameters on the destination stack,
@@ -141,4 +141,32 @@ void debug_register_driver(const TUvisorDebugDriver * const driver)
     g_debug_box.driver = driver;
     g_debug_box.box_id = g_active_box;
     g_debug_box.initialized = 1;
+}
+
+/* FIXME This is a bit platform specific. Consider moving to a platform
+ * specific location. */
+uint32_t debug_box_enter_from_priv(uint32_t lr) {
+    uint32_t shcsr;
+    uint32_t from_priv = !(lr & 0x4);
+
+    /* If we are not handling an exception caused from privileged mode, return
+     * the original lr. */
+    if (!from_priv) {
+        return lr;
+    }
+
+    shcsr = SCB->SHCSR;
+
+    /* Make sure SVC is active. */
+    assert(shcsr & SCB_SHCSR_SVCALLACT_Msk);
+
+    /* We had a fault (from SVC), so clear the SVC fault before returning. SVC
+     * and all other exceptions must be no longer active after the EXC RETURN,
+     * or else we cause usage faults when doing SVCs later (for example, to
+     * reboot via the debug_reboot SVC). */
+    SCB->SHCSR = shcsr & ~SCB_SHCSR_SVCALLACT_Msk;
+
+    /* Return to Thread mode and use the Process Stack for return. The PSP will
+     * have been changed already. */
+    return 0xFFFFFFFD;
 }

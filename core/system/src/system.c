@@ -91,9 +91,8 @@ void UVISOR_NAKED UVISOR_NORETURN isr_default_sys_handler(void)
     asm volatile(
         "mov r0, lr\n"
         "mrs r1, MSP\n"
-        "push {lr}\n"
-        "blx vmpu_sys_mux_handler\n"
-        "pop {pc}\n"
+        "bl vmpu_sys_mux_handler\n"
+        "bx r0\n"
     );
 }
 

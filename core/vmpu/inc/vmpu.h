@@ -155,7 +155,9 @@ extern void vmpu_arch_init_hw(void);
 extern int  vmpu_init_pre(void);
 extern void vmpu_init_post(void);
 
-extern void vmpu_sys_mux_handler(uint32_t lr, uint32_t msp);
+/* Handle system exceptions and interrupts. Return the EXC_RETURN desired for
+ * returning from exception mode. */
+extern uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp);
 
 /* contains the total number of boxes
  * boxes are enumerated from 0 to (g_vmpu_box_count - 1) and the following
