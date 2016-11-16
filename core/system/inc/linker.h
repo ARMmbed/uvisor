@@ -20,17 +20,17 @@
 #include "api/inc/priv_sys_hook_exports.h"
 #include "api/inc/lib_hook_exports.h"
 
-extern uint32_t const __code_end__;
-extern uint32_t const __stack_start__;
-extern uint32_t const __stack_top__;
-extern uint32_t const __stack_end__;
+extern uint32_t const __uvisor_code_end__;
+extern uint32_t const __uvisor_stack_start__;
+extern uint32_t const __uvisor_stack_top__;
+extern uint32_t const __uvisor_stack_end__;
 
-extern uint32_t __bss_start__;
-extern uint32_t __bss_end__;
+extern uint32_t __uvisor_bss_start__;
+extern uint32_t __uvisor_bss_end__;
 
-extern uint32_t __data_start__;
-extern uint32_t __data_end__;
-extern uint32_t const __data_start_src__;
+extern uint32_t __uvisor_data_start__;
+extern uint32_t __uvisor_data_end__;
+extern uint32_t const __uvisor_data_start_src__;
 
 extern void main_entry(void);
 extern void isr_default_sys_handler(void);
