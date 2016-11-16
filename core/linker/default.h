@@ -69,21 +69,21 @@ SECTIONS
         . = ALIGN(512);
         *(.isr*)
         . = ALIGN(16);
-        __code_end__ = .;
+        __uvisor_code_end__ = .;
     } > FLASH
 
     .data :
     {
         . = ALIGN(4);
-        PROVIDE(__data_start_src__ = LOADADDR(.data));
-        __data_start__ = .;
+        PROVIDE(__uvisor_data_start_src__ = LOADADDR(.data));
+        __uvisor_data_start__ = .;
         *(.ramfunc)
         *(.ramfunc.*)
         *(.data)
         *(.data.*)
         . = ALIGN(4);
         /* All data end */
-        __data_end__ = .;
+        __uvisor_data_end__ = .;
     } > RAM AT > FLASH
 
     PROVIDE(__uvisor_config = LOADADDR(.data) + SIZEOF(.data));
@@ -91,21 +91,21 @@ SECTIONS
     .bss (NOLOAD):
     {
         . = ALIGN(4);
-        __bss_start__ = .;
+        __uvisor_bss_start__ = .;
         *(.bss)
         *(.bss.*)
         *(COMMON)
         . = ALIGN(4);
-        __bss_end__ = .;
+        __uvisor_bss_end__ = .;
     } > RAM
 
     .stack (NOLOAD):
     {
         . = ALIGN(4);
-        __stack_start__ = .;
+        __uvisor_stack_start__ = .;
         . += STACK_SIZE;
-        __stack_top__ = .;
+        __uvisor_stack_top__ = .;
         . += STACK_GUARD_BAND;
-        __stack_end__ = .;
+        __uvisor_stack_end__ = .;
     } > STACK
 }
