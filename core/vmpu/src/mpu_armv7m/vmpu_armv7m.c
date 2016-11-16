@@ -17,6 +17,7 @@
 #include <uvisor.h>
 #include "debug.h"
 #include "context.h"
+#include "exc_return.h"
 #include "halt.h"
 #include "memory_map.h"
 #include "svc.h"
@@ -25,6 +26,7 @@
 #include "vmpu_mpu.h"
 #include "page_allocator_faults.h"
 #include "page_allocator.h"
+#include <stdbool.h>
 
 /* This file contains the configuration-specific symbols. */
 #include "configurations.h"
@@ -118,7 +120,7 @@ static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr
 
 uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
 {
-    uint32_t psp, pc;
+    uint32_t pc;
     uint32_t fault_addr, fault_status;
 
     /* The IPSR enumerates interrupt numbers from 0 up, while *_IRQn numbers
@@ -126,8 +128,9 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
      * convert the IPSR value to this latter encoding. */
     int ipsr = ((int) (__get_IPSR() & 0x1FF)) - NVIC_OFFSET;
 
-    /* PSP at fault */
-    psp = __get_PSP();
+    /* Determine the origin of the exception. */
+    bool from_psp = EXC_FROM_PSP(lr);
+    uint32_t sp = from_psp ? __get_PSP() : msp;
 
     switch (ipsr) {
         case MemoryManagement_IRQn:
@@ -141,11 +144,11 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
 
                 /* The stack pointer is at fault. MMFAR doesn't contain a
                  * valid fault address. */
-                fault_addr = lr & 0x4 ? psp : msp;
+                fault_addr = sp;
             } else {
                 /* pc at fault */
-                if (lr & 0x4) {
-                    pc = vmpu_unpriv_uint32_read(psp + (6 * 4));
+                if (from_psp) {
+                    pc = vmpu_unpriv_uint32_read(sp + (6 * 4));
                 } else {
                     /* We can be privileged here if we tried doing an ldrt or
                      * strt to a region not currently loaded in the MPU. In
@@ -160,13 +163,13 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
             }
 
             /* Check if the fault is an MPU fault. */
-            if (vmpu_fault_recovery_mpu(pc, psp, fault_addr, fault_status)) {
+            if (vmpu_fault_recovery_mpu(pc, sp, fault_addr, fault_status)) {
                 VMPU_SCB_MMFSR = fault_status;
                 return lr;
             }
 
             /* If recovery was not successful, throw an error and halt. */
-            DEBUG_FAULT(FAULT_MEMMANAGE, lr, lr & 0x4 ? psp : msp);
+            DEBUG_FAULT(FAULT_MEMMANAGE, lr, sp);
             VMPU_SCB_MMFSR = fault_status;
             HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied");
             lr = debug_box_enter_from_priv(lr);
@@ -182,39 +185,39 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
              * that exception return points to the correct instruction. */
 
             /* Currently we only support recovery from unprivileged mode. */
-            if (lr & 0x4) {
+            if (from_psp) {
                 /* pc at fault */
-                pc = vmpu_unpriv_uint32_read(psp + (6 * 4));
+                pc = vmpu_unpriv_uint32_read(sp + (6 * 4));
 
                 /* Backup fault address and status */
                 fault_addr = SCB->BFAR;
                 fault_status = VMPU_SCB_BFSR;
 
                 /* Check if the fault is the special register corner case. */
-                if (!vmpu_fault_recovery_bus(pc, psp, fault_addr, fault_status)) {
+                if (!vmpu_fault_recovery_bus(pc, sp, fault_addr, fault_status)) {
                     VMPU_SCB_BFSR = fault_status;
                     return lr;
                 }
             }
 
             /* If recovery was not successful, throw an error and halt. */
-            DEBUG_FAULT(FAULT_BUS, lr, lr & 0x4 ? psp : msp);
+            DEBUG_FAULT(FAULT_BUS, lr, sp);
             HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied");
             break;
 
         case UsageFault_IRQn:
-            DEBUG_FAULT(FAULT_USAGE, lr, lr & 0x4 ? psp : msp);
+            DEBUG_FAULT(FAULT_USAGE, lr, sp);
             HALT_ERROR(FAULT_USAGE, "Cannot recover from a usage fault.");
             break;
 
         case HardFault_IRQn:
-            DEBUG_FAULT(FAULT_HARD, lr, lr & 0x4 ? psp : msp);
+            DEBUG_FAULT(FAULT_HARD, lr, sp);
             HALT_ERROR(FAULT_HARD, "Cannot recover from a hard fault.");
             lr = debug_box_enter_from_priv(lr);
             break;
 
         case DebugMonitor_IRQn:
-            DEBUG_FAULT(FAULT_DEBUG, lr, lr & 0x4 ? psp : msp);
+            DEBUG_FAULT(FAULT_DEBUG, lr, sp);
             HALT_ERROR(FAULT_DEBUG, "Cannot recover from a debug fault.");
             break;
 
