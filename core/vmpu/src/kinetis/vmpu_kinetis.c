@@ -17,6 +17,7 @@
 #include <uvisor.h>
 #include "debug.h"
 #include "context.h"
+#include "exc_return.h"
 #include "halt.h"
 #include "memory_map.h"
 #include "svc.h"
@@ -27,6 +28,7 @@
 #include "vmpu_kinetis_aips.h"
 #include "vmpu_kinetis_mem.h"
 #include "page_allocator_faults.h"
+#include <stdbool.h>
 
 uint32_t g_box_mem_pos;
 
@@ -52,7 +54,7 @@ static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr
 
 uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
 {
-    uint32_t psp, pc;
+    uint32_t pc;
     uint32_t fault_addr, fault_status;
 
     /* The IPSR enumerates interrupt numbers from 0 up, while *_IRQn numbers
@@ -60,12 +62,14 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
      * convert the IPSR value to this latter encoding */
     int ipsr = ((int) (__get_IPSR() & 0x1FF)) - NVIC_OFFSET;
 
-    /* PSP at fault */
-    psp = __get_PSP();
+    /* Determine the origin of the exception. */
+    bool from_np = EXC_FROM_NP(lr);
+    bool from_psp = EXC_FROM_PSP(lr);
+    uint32_t sp = from_np ? (from_psp ? __get_PSP() : msp) : msp;
 
     switch (ipsr) {
         case MemoryManagement_IRQn:
-            DEBUG_FAULT(FAULT_MEMMANAGE, lr, lr & 0x4 ? psp : msp);
+            DEBUG_FAULT(FAULT_MEMMANAGE, lr, sp);
             HALT_ERROR(FAULT_MEMMANAGE, "Cannot recover from a memmanage fault");
             break;
 
@@ -92,11 +96,11 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
 
                 /* The stack pointer is at fault. BFAR doesn't contain a
                  * valid fault address. */
-                fault_addr = psp;
+                fault_addr = sp;
             } else {
                 /* pc at fault */
-                if (lr & 0x4) {
-                    pc = vmpu_unpriv_uint32_read(psp + (6 * 4));
+                if (from_np) {
+                    pc = vmpu_unpriv_uint32_read(sp + (6 * 4));
                 } else {
                     /* We can be privileged here if we tried doing an ldrt or
                      * strt to a region not currently loaded in the MPU. In
@@ -118,7 +122,7 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
                 fault_addr = MPU->SP[slave_port].EAR;
 
                 /* Check if we can recover from the MPU fault. */
-                if (!vmpu_fault_recovery_mpu(pc, psp, fault_addr)) {
+                if (!vmpu_fault_recovery_mpu(pc, sp, fault_addr)) {
                     /* We clear the bus fault status anyway. */
                     VMPU_SCB_BFSR = fault_status;
 
@@ -133,31 +137,31 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
             }
 
             /* Check if the fault is the special register corner case. */
-            if (!vmpu_fault_recovery_bus(pc, psp, fault_addr, fault_status)) {
+            if (!vmpu_fault_recovery_bus(pc, sp, fault_addr, fault_status)) {
                 VMPU_SCB_BFSR = fault_status;
                 return lr;
             }
 
             /* If recovery was not successful, throw an error and halt. */
-            DEBUG_FAULT(FAULT_BUS, lr, lr & 0x4 ? psp : msp);
+            DEBUG_FAULT(FAULT_BUS, lr, sp);
             VMPU_SCB_BFSR = fault_status;
             HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied");
             lr = debug_box_enter_from_priv(lr);
             break;
 
         case UsageFault_IRQn:
-            DEBUG_FAULT(FAULT_USAGE, lr, lr & 0x4 ? psp : msp);
+            DEBUG_FAULT(FAULT_USAGE, lr, sp);
             HALT_ERROR(FAULT_USAGE, "Cannot recover from a usage fault.");
             break;
 
         case HardFault_IRQn:
-            DEBUG_FAULT(FAULT_HARD, lr, lr & 0x4 ? psp : msp);
+            DEBUG_FAULT(FAULT_HARD, lr, sp);
             HALT_ERROR(FAULT_HARD, "Cannot recover from a hard fault.");
             lr = debug_box_enter_from_priv(lr);
             break;
 
         case DebugMonitor_IRQn:
-            DEBUG_FAULT(FAULT_DEBUG, lr, lr & 0x4 ? psp : msp);
+            DEBUG_FAULT(FAULT_DEBUG, lr, sp);
             HALT_ERROR(FAULT_DEBUG, "Cannot recover from a debug fault.");
             break;
 

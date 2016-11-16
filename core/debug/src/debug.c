@@ -17,10 +17,12 @@
 #include <uvisor.h>
 #include "debug.h"
 #include "context.h"
+#include "exc_return.h"
 #include "halt.h"
 #include "memory_map.h"
 #include "svc.h"
 #include "vmpu.h"
+#include <stdbool.h>
 
 #define DEBUG_PRINT_HEAD(x) {\
     DPRINTF("\n***********************************************************\n");\
@@ -63,7 +65,7 @@ UVISOR_WEAK void default_putc(uint8_t data)
 static void debug_exception_stack_frame(uint32_t lr, uint32_t sp)
 {
     int i;
-    int mode = lr & 0x4;
+    bool from_np = EXC_FROM_NP(lr);
 
     char exc_sf_verbose[CONTEXT_SWITCH_EXC_SF_WORDS + 1][6] = {
         "r0", "r1", "r2", "r3", "r12",
@@ -71,18 +73,18 @@ static void debug_exception_stack_frame(uint32_t lr, uint32_t sp)
     };
 
     dprintf("* EXCEPTION STACK FRAME\n");
-    dprintf("  Exception from %s code\n", mode ? "unprivileged" : "privileged");
-    dprintf("    %csp:     0x%08X\r\n", mode ? 'p' : 'm', sp);
+    dprintf("  Exception from %s code\n", from_np ? "unprivileged" : "privileged");
+    dprintf("    %csp:     0x%08X\r\n", from_np ? 'p' : 'm', sp);
     dprintf("    lr:      0x%08X\r\n", lr);
 
     /* Print the exception stack frame. */
     dprintf("  Exception stack frame:\n");
     i = CONTEXT_SWITCH_EXC_SF_WORDS;
     if (((uint32_t *) sp)[8] & (1 << 9)) {
-        dprintf("    %csp[%02d]: 0x%08X | %s\n", mode ? 'p' : 'm', i, ((uint32_t *) sp)[i], exc_sf_verbose[i]);
+        dprintf("    %csp[%02d]: 0x%08X | %s\n", from_np ? 'p' : 'm', i, ((uint32_t *) sp)[i], exc_sf_verbose[i]);
     }
     for (i = CONTEXT_SWITCH_EXC_SF_WORDS - 1; i >= 0; --i) {
-        dprintf("    %csp[%02d]: 0x%08X | %s\n", mode ? 'p' : 'm', i, ((uint32_t *) sp)[i], exc_sf_verbose[i]);
+        dprintf("    %csp[%02d]: 0x%08X | %s\n", from_np ? 'p' : 'm', i, ((uint32_t *) sp)[i], exc_sf_verbose[i]);
     }
     dprintf("\n");
 }
