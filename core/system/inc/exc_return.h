@@ -28,6 +28,20 @@
 #define EXC_RETURN_SPSEL_Pos    2U
 #define EXC_RETURN_SPSEL_Msk    (0x1UL << EXC_RETURN_SPSEL_Pos)
 
+#if defined(ARCH_MPU_ARMv8M)
+
+#define EXC_RETURN_S_Pos        6U
+#define EXC_RETURN_S_Msk        (0x1UL << EXC_RETURN_S_Pos)
+#define EXC_RETURN_DCRS_Pos     5U
+#define EXC_RETURN_DCRS_Msk     (0x1UL << EXC_RETURN_DCRS_Pos)
+#define EXC_RETURN_ES_Pos       0U
+#define EXC_RETURN_ES_Msk       (0x1UL << EXC_RETURN_ES_Pos)
+
+#define EXC_FROM_S(lr)  (lr & EXC_RETURN_S_Msk)
+#define EXC_TO_S(lr)    (lr & EXC_RETURN_ES_Msk)
+
+#endif /* defined(ARCH_MPU_ARMv8M) */
+
 #define EXC_FROM_NP(lr)     (lr & EXC_RETURN_Mode_Msk)
 #define EXC_FROM_PSP(lr)    (lr & EXC_RETURN_SPSEL_Msk)
 
