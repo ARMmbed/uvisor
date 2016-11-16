@@ -84,30 +84,30 @@ SECTIONS
         . = ALIGN(512);
         *(.isr*)
         . = ALIGN(16);
-        __code_end__ = .;
+        __uvisor_code_end__ = .;
     } > FLASH_S AT > FLASH_NS
 
     .data :
     {
         . = ALIGN(4);
-        PROVIDE(__data_start_src__ = LOADADDR(.data));
-        __data_start__ = .;
+        PROVIDE(__uvisor_data_start_src__ = LOADADDR(.data));
+        __uvisor_data_start__ = .;
         *(.ramfunc)
         *(.ramfunc.*)
         *(.data)
         *(.data.*)
         . = ALIGN(4);
         /* All data end */
-        __data_end__ = .;
+        __uvisor_data_end__ = .;
     } > RAM_S AT > FLASH_NS
 
     .entry_points :
     {
         . = ALIGN(32);
-        __entry_points_start__ = .;
+        __uvisor_entry_points_start__ = .;
         KEEP(*(.entry_points))
         . = ALIGN(32);
-        __entry_points_end__ = .;
+        __uvisor_entry_points_end__ = .;
     } > FLASH_NS
 
     PROVIDE(__uvisor_config = LOADADDR(.entry_points) + SIZEOF(.entry_points));
@@ -115,29 +115,29 @@ SECTIONS
     .bss (NOLOAD):
     {
         . = ALIGN(4);
-        __bss_start__ = .;
+        __uvisor_bss_start__ = .;
         *(.bss)
         *(.bss.*)
         *(COMMON)
         . = ALIGN(4);
-        __bss_end__ = .;
+        __uvisor_bss_end__ = .;
     } > RAM_S
 
     .stack (NOLOAD):
     {
         . = ALIGN(4);
         /* Non-privileged stack for v8-M only. */
-        __stack_start_np__ = .;
+        __uvisor_stack_start_np__ = .;
         . += STACK_SIZE_NP;
-        __stack_top_np__ = .;
+        __uvisor_stack_top_np__ = .;
         . += STACK_SIZE_NP ? STACK_GUARD_BAND : 0;
-        __stack_end_np__ = .;
+        __uvisor_stack_end_np__ = .;
 
         /* Privileged stack for v7-M and v8-M. */
-        __stack_start__ = .;
+        __uvisor_stack_start__ = .;
         . += STACK_SIZE;
-        __stack_top__ = .;
+        __uvisor_stack_top__ = .;
         . += STACK_GUARD_BAND;
-        __stack_end__ = .;
+        __uvisor_stack_end__ = .;
     } > STACK_S
 }

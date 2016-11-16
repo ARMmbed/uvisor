@@ -24,10 +24,10 @@
 UVISOR_NOINLINE void uvisor_init_pre(void)
 {
     /* Reset the uVisor own BSS section. */
-    memset(&__bss_start__, 0, VMPU_REGION_SIZE(&__bss_start__, &__bss_end__));
+    memset(&__uvisor_bss_start__, 0, VMPU_REGION_SIZE(&__uvisor_bss_start__, &__uvisor_bss_end__));
 
     /* Initialize the uVisor own data. */
-    memcpy(&__data_start__, &__data_start_src__, VMPU_REGION_SIZE(&__data_start__, &__data_end__));
+    memcpy(&__uvisor_data_start__, &__uvisor_data_start_src__, VMPU_REGION_SIZE(&__uvisor_data_start__, &__uvisor_data_end__));
 
     /* Initialize the unprivileged NVIC module. */
     unvic_init();
@@ -140,7 +140,7 @@ void main_entry(uint32_t caller)
         return;
     }
 
-    __set_MSP((uint32_t) &__stack_top__);
+    __set_MSP((uint32_t) &__uvisor_stack_top__);
     /* We've switched stacks, r0 still contains the caller though! */
     main_init(r0);
 
@@ -169,7 +169,7 @@ void main_init(uint32_t caller)
     /* Set the S and NS vector tables. */
     SCB_NS->VTOR = SCB->VTOR;
     __TZ_set_MSP_NS(msp);
-    __set_PSP((uint32_t)&__stack_top_np__);
+    __set_PSP((uint32_t)&__uvisor_stack_top_np__);
 #endif /* defined(ARCH_MPU_ARMv8M) */
     SCB->VTOR = (uint32_t) &g_isr_vector;
 
