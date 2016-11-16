@@ -17,6 +17,7 @@
 #include <uvisor.h>
 #include "debug.h"
 #include "context.h"
+#include "exc_return.h"
 #include "halt.h"
 #include "memory_map.h"
 #include "svc.h"
@@ -147,7 +148,7 @@ void debug_register_driver(const TUvisorDebugDriver * const driver)
  * specific location. */
 uint32_t debug_box_enter_from_priv(uint32_t lr) {
     uint32_t shcsr;
-    uint32_t from_priv = !(lr & 0x4);
+    uint32_t from_priv = !EXC_FROM_NP(lr);
 
     /* If we are not handling an exception caused from privileged mode, return
      * the original lr. */
