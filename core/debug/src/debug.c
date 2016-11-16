@@ -64,29 +64,84 @@ UVISOR_WEAK void default_putc(uint8_t data)
 
 static void debug_exception_stack_frame(uint32_t lr, uint32_t sp)
 {
-    int i;
-    bool from_np = EXC_FROM_NP(lr);
+    dprintf("* EXCEPTION STACK FRAME\r\n");
+    dprintf("\r\n");
 
+    /* Determine the exception origin. */
+    bool from_np = EXC_FROM_NP(lr);
+    bool from_psp = EXC_FROM_PSP(lr);
+#if defined(ARCH_MPU_ARMv8M)
+    bool from_s = EXC_FROM_S(lr);
+    bool to_s = EXC_TO_S(lr);
+#endif /* defined(ARCH_MPU_ARMv8M) */
+
+    /* Debug the value of EXC_RETURN. */
+    dprintf("  lr: 0x%08X\r\n", lr);
+#if defined(ARCH_MPU_ARMv8M)
+    dprintf("  --> Exception from %s mode, handled in %s mode.\r\n", from_s ? "S" : "NS", to_s ? "S" : "NS");
+    dprintf("  --> R4-R11 %sstacked.\r\n", (lr & EXC_RETURN_DCRS_Msk) ? "" : "not ");
+#endif /* defined(ARCH_MPU_ARMv8M) */
+    dprintf("  --> FP stack frame %ssaved.\r\n", (lr & EXC_RETURN_FType_Msk) ? "not " : "");
+    dprintf("  --> Exception from %s mode.\r\n", from_np ? "NP" : "P");
+    dprintf("  --> Return to %cSP.\r\n", from_psp ? 'P' : 'M');
+    dprintf("\r\n");
+
+    /* Debug the exception stack frame. */
+
+    /* Names of the default stack frame elements. */
     char exc_sf_verbose[CONTEXT_SWITCH_EXC_SF_WORDS + 1][6] = {
         "r0", "r1", "r2", "r3", "r12",
         "lr", "pc", "xPSR", "align"
     };
+    dprintf("  sp: 0x%08X\r\n", sp);
 
-    dprintf("* EXCEPTION STACK FRAME\n");
-    dprintf("  Exception from %s code\n", from_np ? "unprivileged" : "privileged");
-    dprintf("    %csp:     0x%08X\r\n", from_np ? 'p' : 'm', sp);
-    dprintf("    lr:      0x%08X\r\n", lr);
+    /* The regular exception stack frame might be preceded by an additional one
+     * on ARMv8-M. */
+#if defined(ARCH_MPU_ARMv8M)
+    int offset = ((lr & EXC_RETURN_DCRS_Msk) ? CONTEXT_SWITCH_EXC_SF_ADDITIONAL_WORDS : 0);
+#else
+    int offset = 0;
+#endif /* defined(ARCH_MPU_ARMv8M) */
 
-    /* Print the exception stack frame. */
-    dprintf("  Exception stack frame:\n");
-    i = CONTEXT_SWITCH_EXC_SF_WORDS;
-    if (((uint32_t *) sp)[8] & (1 << 9)) {
-        dprintf("    %csp[%02d]: 0x%08X | %s\n", from_np ? 'p' : 'm', i, ((uint32_t *) sp)[i], exc_sf_verbose[i]);
+    /* Print the alignment field, if required. */
+    if (((uint32_t *) sp)[offset + CONTEXT_SWITCH_EXC_SF_WORDS - 1] & (1 << 9)) {
+        dprintf("      sp[%02d]: 0x%08X | %s\r\n",
+                offset + CONTEXT_SWITCH_EXC_SF_WORDS,
+                ((uint32_t *) sp)[offset + CONTEXT_SWITCH_EXC_SF_WORDS],
+                exc_sf_verbose[CONTEXT_SWITCH_EXC_SF_WORDS]
+        );
     }
-    for (i = CONTEXT_SWITCH_EXC_SF_WORDS - 1; i >= 0; --i) {
-        dprintf("    %csp[%02d]: 0x%08X | %s\n", from_np ? 'p' : 'm', i, ((uint32_t *) sp)[i], exc_sf_verbose[i]);
+
+    /* Dump the regular exception stack frame. */
+    int i = CONTEXT_SWITCH_EXC_SF_WORDS - 1;
+    for (; i >= 0; --i) {
+        dprintf("      sp[%02d]: 0x%08X | %s\r\n",
+                offset + i,
+                ((uint32_t *) sp)[offset + i],
+                exc_sf_verbose[i]
+        );
     }
-    dprintf("\n");
+
+    /* On ARMv8-M, dump an additional stack frame when needed. */
+#if defined(ARCH_MPU_ARMv8M)
+    if (lr & EXC_RETURN_DCRS_Msk) {
+        char exc_sf_additional_verbose[CONTEXT_SWITCH_EXC_SF_ADDITIONAL_WORDS+ 1][6] = {
+            "sign", "align",
+            "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        };
+        for (i = CONTEXT_SWITCH_EXC_SF_ADDITIONAL_WORDS - 1; i >= 0; --i) {
+            dprintf("      sp[%02d]: 0x%08X | %s\n",
+                    i,
+                    ((uint32_t *) sp)[i],
+                    exc_sf_additional_verbose[i]
+            );
+        }
+    }
+#endif /* defined(ARCH_MPU_ARMv8M) */
+
+    dprintf("\r\n");
+
+    dprintf("\r\n");
 }
 
 /* Specific architectures/ports can provide additional debug handlers. */
