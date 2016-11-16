@@ -17,6 +17,9 @@
 #include <uvisor.h>
 #include "context.h"
 #include "vmpu.h"
+#include "debug.h"
+#include "exc_return.h"
+#include <stdbool.h>
 
 uint32_t vmpu_fault_find_acl(uint32_t fault_addr, uint32_t size)
 {
@@ -24,11 +27,68 @@ uint32_t vmpu_fault_find_acl(uint32_t fault_addr, uint32_t size)
     return 0;
 }
 
-uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
+uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp_s)
 {
-    /* FIXME: This function must be implemented for the vMPU port to be complete. */
-    while(1);
-    return 0;
+    /* The IPSR enumerates interrupt numbers from 0 up, while *_IRQn numbers are
+     * both positive (hardware IRQn) and negative (system IRQn). Here we convert
+     * the IPSR value to this latter encoding. */
+    int ipsr = ((int) (__get_IPSR() & 0x1FF)) - NVIC_OFFSET;
+
+    /* Determine the exception origin. */
+    bool from_s = EXC_FROM_S(lr);
+    bool from_np = EXC_FROM_NP(lr);
+    bool from_psp = EXC_FROM_PSP(lr);
+    uint32_t sp = from_s ? (from_np ? (from_psp ? __get_PSP() : msp_s) : msp_s) :
+                           (from_np ? (from_psp ? __TZ_get_PSP_NS() : __TZ_get_MSP_NS()) : __TZ_get_MSP_NS());
+
+    /* FIXME: Remove once sp is actually used. */
+    (void) sp;
+
+    switch(ipsr) {
+        case MemoryManagement_IRQn:
+            DEBUG_FAULT(FAULT_MEMMANAGE, lr, sp);
+            HALT_ERROR(FAULT_MEMMANAGE, "Cannot recover from a memory management fault.");
+            break;
+
+        case BusFault_IRQn:
+            DEBUG_FAULT(FAULT_BUS, lr, sp);
+            HALT_ERROR(FAULT_BUS, "Cannot recover from a bus fault.");
+            break;
+
+        case UsageFault_IRQn:
+            DEBUG_FAULT(FAULT_USAGE, lr, sp);
+            HALT_ERROR(FAULT_USAGE, "Cannot recover from a usage fault.");
+            break;
+
+        case SecureFault_IRQn:
+            DEBUG_FAULT(FAULT_SECURE, lr, sp);
+            HALT_ERROR(FAULT_USAGE, "Cannot recover from a secure fault.");
+            break;
+
+        case HardFault_IRQn:
+            DEBUG_FAULT(FAULT_HARD, lr, sp);
+            HALT_ERROR(FAULT_HARD, "Cannot recover from a hard fault.");
+            break;
+
+        case DebugMonitor_IRQn:
+            DEBUG_FAULT(FAULT_DEBUG, lr, sp);
+            HALT_ERROR(FAULT_DEBUG, "Cannot recover from a debug fault.");
+            break;
+
+        case PendSV_IRQn:
+            HALT_ERROR(NOT_IMPLEMENTED, "No PendSV IRQ hook registered.");
+            break;
+
+        case SysTick_IRQn:
+            HALT_ERROR(NOT_IMPLEMENTED, "No SysTick IRQ hook registered.");
+            break;
+
+        default:
+            HALT_ERROR(NOT_ALLOWED, "Active IRQn is not a system interrupt: %d.", ipsr);
+            break;
+    }
+
+    return lr;
 }
 
 void vmpu_switch(uint8_t src_box, uint8_t dst_box)
