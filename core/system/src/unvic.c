@@ -591,8 +591,8 @@ void unvic_init(void)
     assert(__UVISOR_NVIC_MIN_PRIORITY < UVISOR_VIRQ_MAX_PRIORITY);
 
     /* Set the priority of each exception. SVC is lower priority than
-     * MemManage, BusFault, and UsageFault, so that we can recover from
-     * stacking MemManage faults more simply. */
+     * MemManage, BusFault, UsageFault, and SecureFault_IRQn, so that we can
+     * recover from security violations more simply. */
     static const uint32_t priority_0 = __UVISOR_NVIC_MIN_PRIORITY - 2;
     static const uint32_t priority_1 = __UVISOR_NVIC_MIN_PRIORITY - 1;
     assert(priority_0 < __UVISOR_NVIC_MIN_PRIORITY);
@@ -600,6 +600,9 @@ void unvic_init(void)
     NVIC_SetPriority(MemoryManagement_IRQn, priority_0);
     NVIC_SetPriority(BusFault_IRQn, priority_0);
     NVIC_SetPriority(UsageFault_IRQn, priority_0);
+#if defined(ARCH_MPU_ARMv8M)
+    NVIC_SetPriority(SecureFault_IRQn, priority_0);
+#endif
     NVIC_SetPriority(SVCall_IRQn, priority_1);
     NVIC_SetPriority(DebugMonitor_IRQn, __UVISOR_NVIC_MIN_PRIORITY);
     NVIC_SetPriority(PendSV_IRQn, UVISOR_VIRQ_MAX_PRIORITY);
