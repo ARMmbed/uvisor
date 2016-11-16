@@ -25,10 +25,10 @@
 UVISOR_NOINLINE void uvisor_init_pre(void)
 {
     /* Reset the uVisor own BSS section. */
-    memset(&__bss_start__, 0, VMPU_REGION_SIZE(&__bss_start__, &__bss_end__));
+    memset(&__uvisor_bss_start__, 0, VMPU_REGION_SIZE(&__uvisor_bss_start__, &__uvisor_bss_end__));
 
     /* Initialize the uVisor own data. */
-    memcpy(&__data_start__, &__data_start_src__, VMPU_REGION_SIZE(&__data_start__, &__data_end__));
+    memcpy(&__uvisor_data_start__, &__uvisor_data_start_src__, VMPU_REGION_SIZE(&__uvisor_data_start__, &__uvisor_data_end__));
 
     /* Initialize the unprivileged NVIC module. */
     unvic_init();

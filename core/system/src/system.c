@@ -54,7 +54,7 @@ void UVISOR_NAKED SysTick_IRQn_Handler(void)
 __attribute__((section(".isr"))) const TIsrVector g_isr_vector[ISR_VECTORS] =
 {
     /* Initial stack pointer */
-    (TIsrVector) &__stack_top__,
+    (TIsrVector) &__uvisor_stack_top__,
 
     /* System IRQs */
     (TIsrVector) &main_entry,              /* -15 */
