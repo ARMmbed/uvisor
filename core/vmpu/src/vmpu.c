@@ -364,7 +364,11 @@ static void vmpu_configure_box_sram(uint8_t box_id, UvisorBoxConfig const * box_
         /* Note: This relies on the assumption that all supported MPU
          *       architectures allow us to setup a background region somehow. */
         bss_start = (uint32_t) __uvisor_config.heap_start;
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+        stack_pointer = __TZ_get_PSP_NS();
+#else
         stack_pointer = __get_PSP();
+#endif
     } else {
         uint32_t stack_size = box_cfgtbl->stack_size;
         vmpu_acl_sram(box_id, bss_size, stack_size, &bss_start, &stack_pointer);
