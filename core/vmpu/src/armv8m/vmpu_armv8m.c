@@ -16,19 +16,101 @@
  */
 #include <uvisor.h>
 #include "context.h"
-#include "vmpu.h"
 #include "debug.h"
 #include "exc_return.h"
+#include "page_allocator_faults.h"
+#include "vmpu.h"
+#include "vmpu_mpu.h"
 #include <stdbool.h>
+
+static const MpuRegion* vmpu_fault_find_region(uint32_t fault_addr)
+{
+    const MpuRegion *region;
+
+    /* Check current box if not base. */
+    if ((g_active_box) && ((region = vmpu_region_find_for_address(g_active_box, fault_addr)) != NULL)) {
+        return region;
+    }
+
+    /* Check base-box. */
+    if ((region = vmpu_region_find_for_address(0, fault_addr)) != NULL) {
+        return region;
+    }
+
+    /* If no region was found */
+    return NULL;
+}
 
 uint32_t vmpu_fault_find_acl(uint32_t fault_addr, uint32_t size)
 {
-    /* FIXME: This function must be implemented for the vMPU port to be complete. */
-    return 0;
+    const MpuRegion *region;
+
+    /* Return ACL if available. */
+    /* FIXME: Use SECURE_ACCESS for SCR! */
+    if (fault_addr == (uint32_t) &SCB->SCR) {
+        return UVISOR_TACL_UWRITE | UVISOR_TACL_UREAD;
+    }
+
+    /* Translate fault_addr into its physical address if it is in the bit-banding region. */
+    if (fault_addr >= VMPU_PERIPH_BITBAND_START && fault_addr <= VMPU_PERIPH_BITBAND_END) {
+        fault_addr = VMPU_PERIPH_BITBAND_ALIAS_TO_ADDR(fault_addr);
+    } else if (fault_addr >= VMPU_SRAM_BITBAND_START && fault_addr <= VMPU_SRAM_BITBAND_END) {
+        fault_addr = VMPU_SRAM_BITBAND_ALIAS_TO_ADDR(fault_addr);
+    }
+
+    /* Search base box and active box ACLs. */
+    if (!(region = vmpu_fault_find_region(fault_addr))) {
+        return 0;
+    }
+
+    /* Ensure that data fits in selected region. */
+    if ((fault_addr + size) > region->end) {
+        return 0;
+    }
+
+    return region->acl;
+}
+
+static int vmpu_mem_push_page_acl_iterator(uint32_t start_addr, uint32_t end_addr, uint8_t page)
+{
+    (void) page;
+    MpuRegion region = {.start = start_addr, .end = end_addr, .config = 1};
+    /* We only continue if we have not wrapped around the end of the MPU regions yet. */
+    return vmpu_mpu_push(&region, 100);
+}
+
+int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint32_t fault_status)
+{
+    const MpuRegion *region;
+    uint32_t start_addr, end_addr;
+    uint8_t page;
+
+    if (page_allocator_get_active_region_for_address(fault_addr, &start_addr, &end_addr, &page) == UVISOR_ERROR_PAGE_OK) {
+        /* Remember this fault. */
+        page_allocator_register_fault(page);
+
+        vmpu_mem_push_page_acl_iterator(start_addr, end_addr, g_active_box);
+    } else {
+        /* Find region for faulting address. */
+        if ((region = vmpu_fault_find_region(fault_addr)) == NULL) {
+            return 0;
+        }
+
+        vmpu_mpu_push(region, 3);
+    }
+
+    return 1;
 }
 
 uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp_s)
 {
+    uint32_t pc;
+    uint32_t fault_addr, fault_status;
+    int recovered = 0;
+
+    (void)pc;
+    (void)fault_addr;
+
     /* The IPSR enumerates interrupt numbers from 0 up, while *_IRQn numbers are
      * both positive (hardware IRQn) and negative (system IRQn). Here we convert
      * the IPSR value to this latter encoding. */
@@ -61,8 +143,24 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp_s)
             break;
 
         case SecureFault_IRQn:
+            fault_status = SAU->SFSR;
+            if ((fault_status & (SAU_SFSR_AUVIOL_Msk | SAU_SFSR_SFARVALID_Msk)) ==
+                                (SAU_SFSR_AUVIOL_Msk | SAU_SFSR_SFARVALID_Msk)) {
+                pc = vmpu_unpriv_uint32_read(sp + (6 * 4));
+                fault_addr = SAU->SFAR;
+
+                // DPRINTF("fault_addr=0x%08x from 0x%08x\n", fault_addr, pc);
+
+                recovered = vmpu_fault_recovery_mpu(pc, sp, fault_addr, fault_status);
+                // debug_sau_config();
+                if (recovered) {
+                    SAU->SFSR = fault_status;
+                    return lr;
+                }
+            }
             DEBUG_FAULT(FAULT_SECURE, lr, sp);
-            HALT_ERROR(FAULT_USAGE, "Cannot recover from a secure fault.");
+            SAU->SFSR = fault_status;
+            HALT_ERROR(PERMISSION_DENIED, "Cannot recover from a secure fault.");
             break;
 
         case HardFault_IRQn:
@@ -91,18 +189,58 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp_s)
     return lr;
 }
 
+/* FIXME: We've added very simple MPU region switching. - Optimize! */
 void vmpu_switch(uint8_t src_box, uint8_t dst_box)
 {
-    /* FIXME: This function must be implemented for the vMPU port to be complete. */
+    uint32_t dst_count = 0;
+    const MpuRegion * region;
+
+    /* DPRINTF("switching from %i to %i\n\r", src_box, dst_box); */
+    /* Sanity checks */
+    if (!vmpu_is_box_id_valid(dst_box)) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "ACL add: The destination box ID is out of range (%u).\r\n", dst_box);
+    }
+
+    vmpu_mpu_invalidate();
+
+    /* Only write stack and context ACL for secure boxes. */
+    if (dst_box) {
+        /* Update target box first to make target stack available. */
+        vmpu_region_get_for_box(dst_box, &region, &dst_count);
+        /* Push the stack and context protection ACL into ARMv8M_SAU_REGIONS_STATIC. */
+        vmpu_mpu_push(region, 255);
+        region++;
+        dst_count--;
+    }
+
+    /* Push one ACL for the page heap into place. */
+    page_allocator_iterate_active_pages(vmpu_mem_push_page_acl_iterator, PAGE_ALLOCATOR_ITERATOR_DIRECTION_FORWARD);
+    /* g_mpu_slot may now have been incremented by one, if page heap is used by this box. */
+
+    while (dst_count-- && vmpu_mpu_push(region++, 2));
+
+    if (!dst_box) {
+        /* Handle main box ACLs last. */
+        vmpu_region_get_for_box(0, &region, &dst_count);
+
+        while (dst_count-- && vmpu_mpu_push(region++, 1));
+    }
 }
 
 void vmpu_load_box(uint8_t box_id)
 {
-    /* FIXME: This function must be implemented for the vMPU port to be complete. */
+    if (box_id == 0) {
+        vmpu_switch(0, 0);
+    } else {
+        HALT_ERROR(NOT_IMPLEMENTED, "currently only box 0 can be loaded");
+    }
 }
+
+uint32_t g_box_mem_pos = 0;
 
 void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
 {
+
     /* The public box is handled separately. */
     if (box_id == 0) {
         /* Non-important sanity checks */
@@ -116,8 +254,58 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
         return;
     }
 
-    /* FIXME: The non-public box behavior of this function must be implemented
-     *        for the vMPU port to be complete. */
+    if (!g_box_mem_pos) {
+        /* Initialize box memories. Leave stack-band sized gap. */
+        g_box_mem_pos = UVISOR_REGION_ROUND_UP(
+            (uint32_t)__uvisor_config.bss_boxes_start) +
+            UVISOR_STACK_BAND_SIZE;
+    }
+
+    /* Ensure stack & context alignment. */
+    stack_size = UVISOR_REGION_ROUND_UP(UVISOR_MIN_STACK(stack_size));
+
+    /* Add stack ACL. */
+    vmpu_region_add_static_acl(
+        box_id,
+        g_box_mem_pos,
+        stack_size,
+        UVISOR_TACLDEF_STACK,
+        0
+    );
+
+    /* Set stack pointer to box stack size minus guard band. */
+    g_box_mem_pos += stack_size;
+    g_context_current_states[box_id].sp = g_box_mem_pos;
+    /* Add stack protection band. */
+    g_box_mem_pos += UVISOR_STACK_BAND_SIZE;
+
+    /* Add context ACL. */
+    assert(bss_size != 0);
+    bss_size = UVISOR_REGION_ROUND_UP(bss_size);
+    g_context_current_states[box_id].bss = g_box_mem_pos;
+
+    DPRINTF("erasing box context at 0x%08X (%u bytes)\n",
+        g_box_mem_pos,
+        bss_size
+    );
+
+    /* Reset uninitialized secured box context. */
+    memset(
+        (void *) g_box_mem_pos,
+        0,
+        bss_size
+    );
+
+    /* Add context ACL. */
+    vmpu_region_add_static_acl(
+        box_id,
+        g_box_mem_pos,
+        bss_size,
+        UVISOR_TACLDEF_DATA,
+        0
+    );
+
+    g_box_mem_pos += bss_size + UVISOR_STACK_BAND_SIZE;
 }
 
 void vmpu_arch_init(void)
@@ -150,44 +338,28 @@ void vmpu_arch_init(void)
                   (SCB_SHCSR_BUSFAULTENA_Msk) |
                   (SCB_SHCSR_MEMFAULTENA_Msk);
 
-    /* Initialize static SAU regions. */
-    vmpu_arch_init_hw();
-}
+    vmpu_mpu_init();
 
-void vmpu_arch_init_hw(void)
-{
-    /* FIXME: This function must use the vMPU APIs to be complete. */
+    vmpu_mpu_set_static_acl(0, (uint32_t) __uvisor_config.flash_start,
+        ((uint32_t) &__uvisor_entry_points_start__) - ((uint32_t) __uvisor_config.flash_start),
+        UVISOR_TACL_UEXECUTE | UVISOR_TACL_UREAD | UVISOR_TACL_UWRITE,
+        0
+    );
+    vmpu_mpu_set_static_acl(1, (uint32_t) &__uvisor_entry_points_start__,
+        ((uint32_t) &__uvisor_entry_points_end__) - ((uint32_t) &__uvisor_entry_points_start__),
+        UVISOR_TACL_SEXECUTE | UVISOR_TACL_UEXECUTE,
+        2
+    );
+    vmpu_mpu_set_static_acl(2, (uint32_t) &__uvisor_entry_points_end__,
+        (uint32_t) __uvisor_config.flash_end - (uint32_t) &__uvisor_entry_points_end__,
+        UVISOR_TACL_UEXECUTE | UVISOR_TACL_UREAD | UVISOR_TACL_UWRITE,
+        0
+    );
+    vmpu_mpu_set_static_acl(3, (uint32_t) __uvisor_config.page_end,
+        (uint32_t) __uvisor_config.sram_end - (uint32_t) __uvisor_config.page_end,
+        UVISOR_TACL_UEXECUTE | UVISOR_TACL_UREAD | UVISOR_TACL_UWRITE,
+        0
+    );
 
-    /* Disable the SAU and configure all code to run in S mode. */
-    SAU->CTRL = 0;
-    uint32_t rnr = 0;
-
-    /* Configure User interrupt table in NS mode. */
-    SAU->RNR = rnr++;
-    SAU->RBAR = ((uint32_t) __uvisor_config.flash_start) & 0xFFFFFFE0;
-    SAU->RLAR = (((uint32_t) &__uvisor_entry_points_start__ - 31) & 0xFFFFFFE0) | SAU_RLAR_ENABLE_Msk;
-
-    /* Configure the gateways in NSC mode. */
-    SAU->RNR = rnr++;
-    SAU->RBAR = ((uint32_t) &__uvisor_entry_points_start__) & 0xFFFFFFE0;
-    SAU->RLAR = (((uint32_t) &__uvisor_entry_points_end__ - 31) & 0xFFFFFFE0) | SAU_RLAR_NSC_Msk | SAU_RLAR_ENABLE_Msk;
-
-    /* Configure the remainder of the flash to be accessible in NS mode. */
-    SAU->RNR = rnr++;
-    SAU->RBAR = ((uint32_t) &__uvisor_entry_points_end__) & 0xFFFFFFE0;
-    SAU->RLAR = (((uint32_t) __uvisor_config.flash_end - 31) & 0xFFFFFFE0) | SAU_RLAR_ENABLE_Msk;
-
-    /* Configure the public SRAM to be accessible in NS mode. */
-    SAU->RNR = rnr++;
-    SAU->RBAR = ((uint32_t) __uvisor_config.page_end) & 0xFFFFFFE0;
-    SAU->RLAR = (((uint32_t) __uvisor_config.sram_end - 31) & 0xFFFFFFE0) | SAU_RLAR_ENABLE_Msk;
-
-    /* Configure the public peripherals to be accessible in NS mode. */
-    SAU->RNR = rnr++;
-    SAU->RBAR = ((uint32_t) 0x40000000) & 0xFFFFFFE0;
-    SAU->RLAR = (((uint32_t) 0x50000000 - 31) & 0xFFFFFFE0) | SAU_RLAR_ENABLE_Msk;
-
-    /* Enable the SAU. */
-    SAU->CTRL |= SAU_CTRL_ENABLE_Msk;
-
+    vmpu_mpu_lock();
 }
