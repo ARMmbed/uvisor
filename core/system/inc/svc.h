@@ -45,6 +45,7 @@ typedef struct {
 
     void (*debug_init)(const TUvisorDebugDriver * const driver);
     void (*error)(THaltUserError reason);
+    void (*vmpu_mem_invalidate)(void);
 } UVISOR_PACKED UvisorSvcTarget;
 
 /* macro to execute an SVCall; additional metadata can be provided, which will

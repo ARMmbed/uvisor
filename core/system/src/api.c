@@ -52,6 +52,8 @@ transition_np_to_p(debug_init,       void, debug_register_driver, const TUvisorD
 transition_np_to_p(irq_system_reset, void, debug_reboot,          TResetReason reason);
 transition_np_to_p(error,            void, halt_user_error,       THaltUserError reason);
 
+transition_np_to_p(vmpu_mem_invalidate, void, vmpu_mem_invalidate, void);
+
 transition_np_to_p(box_namespace, int,  vmpu_box_namespace_from_id, int box_id, char * box_namespace, size_t length);
 
 transition_np_to_p(page_malloc, int,  page_allocator_malloc,       UvisorPageTable * const table);
@@ -110,6 +112,8 @@ const UvisorApi __uvisor_api = {
 
     .debug_init = debug_init_transition,
     .error = error_transition,
+
+    .vmpu_mem_invalidate = vmpu_mem_invalidate_transition,
 
     .pool_init = uvisor_pool_init,
     .pool_queue_init = uvisor_pool_queue_init,

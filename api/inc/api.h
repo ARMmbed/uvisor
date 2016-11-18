@@ -60,6 +60,7 @@ typedef struct {
 
     void (*debug_init)(const TUvisorDebugDriver * const driver);
     void (*error)(THaltUserError reason);
+    void (*vmpu_mem_invalidate)(void);
 
     int                (*pool_init)(uvisor_pool_t *, void *, size_t, size_t, int);
     int                (*pool_queue_init)(uvisor_pool_queue_t *, uvisor_pool_t *, void *, size_t, size_t, int);

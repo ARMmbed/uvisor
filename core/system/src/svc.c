@@ -21,6 +21,7 @@
 #include "svc.h"
 #include "unvic.h"
 #include "vmpu.h"
+#include "vmpu_mpu.h"
 #include "page_allocator.h"
 
 /* these symbols are linked in this scope from the ASM code in __svc_irq and
@@ -61,6 +62,8 @@ const UvisorSvcTarget g_svc_vtor_tbl = {
 
     .debug_init = debug_register_driver,
     .error = halt_user_error,
+
+    .vmpu_mem_invalidate = vmpu_mpu_invalidate,
 };
 
 /*******************************************************************************

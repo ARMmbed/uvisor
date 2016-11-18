@@ -37,6 +37,7 @@
 #include "api/inc/rpc_gateway.h"
 #include "api/inc/secure_access.h"
 #include "api/inc/uvisor_semaphore.h"
+#include "api/inc/vmpu.h"
 
 #else /* defined(UVISOR_PRESENT) && UVISOR_PRESENT == 1 */
 
