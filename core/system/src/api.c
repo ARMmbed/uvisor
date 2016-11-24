@@ -52,7 +52,7 @@ transition_np_to_p(debug_init,       void, debug_register_driver, const TUvisorD
 transition_np_to_p(irq_system_reset, void, debug_reboot,          TResetReason reason);
 transition_np_to_p(error,            void, halt_user_error,       THaltUserError reason);
 
-transition_np_to_p(vmpu_mem_invalidate, void, vmpu_mem_invalidate, void);
+transition_np_to_p(vmpu_mem_invalidate, void, vmpu_mpu_invalidate, void);
 
 transition_np_to_p(box_namespace, int,  vmpu_box_namespace_from_id, int box_id, char * box_namespace, size_t length);
 
