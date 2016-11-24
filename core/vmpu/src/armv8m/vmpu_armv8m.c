@@ -158,6 +158,12 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp_s)
             DEBUG_FAULT(FAULT_SECURE, lr, sp);
             SAU->SFSR = fault_status;
             HALT_ERROR(PERMISSION_DENIED, "Cannot recover from a secure fault.");
+            uint32_t caller = (uint32_t) g_debug_box.driver->halt_error & ~1UL;
+            asm volatile (
+                "mov r0, %[error]\n"
+                "bxns %[caller]\n"
+                :: [caller] "r" (caller), [error] "r" (PERMISSION_DENIED)
+            );
             break;
 
         case HardFault_IRQn:
