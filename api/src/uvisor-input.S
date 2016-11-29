@@ -30,6 +30,7 @@ uvisor_api:
     /* uVisor pre-compiled binary blob */
     .incbin UVISOR_BIN
 
+    .balign 32
 uvisor_config:
     /* uVisor expects its configuration section right after itself in flash. If
      * the configuration magic is not found, uVisor will intentionally freeze to
