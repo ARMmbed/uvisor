@@ -105,6 +105,10 @@ static uint32_t vmpu_unpriv_test_range(uint32_t addr, uint32_t size)
 #define UVISOR_UNPRIV_FORCEINLINE UVISOR_FORCEINLINE
 #endif
 
+#if ARCH_MPU_ARMv8M
+extern int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint32_t fault_status);
+#endif
+
 /** Write an 8-bit value to an address as if in unprivileged mode.
  *
  * This function can be used even if the MPU is disabled, but the architectural
@@ -120,10 +124,16 @@ static UVISOR_UNPRIV_FORCEINLINE void vmpu_unpriv_uint8_write(uint32_t addr, uin
 #if defined(ARCH_MPU_ARMv8M)
     if (vmpu_unpriv_test_range(addr, sizeof(uint8_t)) & TT_RESP_NSRW_Msk) {
         *((uint8_t *) addr) = data;
-    }
-    else {
-        HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied");
-        halt_user_error(PERMISSION_DENIED);
+    } else {
+        int recovered = vmpu_fault_recovery_mpu(0, 0, addr, 0);
+        if (!recovered) {
+            if (vmpu_unpriv_test_range(addr, sizeof(uint8_t)) & TT_RESP_NSRW_Msk) {
+                *((uint8_t *) addr) = data;
+            } else {
+                HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied");
+                halt_user_error(PERMISSION_DENIED);
+            }
+        }
     }
 #else
     asm volatile (

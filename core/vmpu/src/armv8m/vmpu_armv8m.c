@@ -79,7 +79,7 @@ static int vmpu_mem_push_page_acl_iterator(uint32_t start_addr, uint32_t end_add
     return vmpu_mpu_push(&region, 100);
 }
 
-static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint32_t fault_status)
+int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint32_t fault_status)
 {
     const MpuRegion *region;
     uint32_t start_addr, end_addr;
@@ -107,6 +107,9 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp_s)
     uint32_t pc;
     uint32_t fault_addr, fault_status;
     int recovered = 0;
+
+    (void)pc;
+    (void)fault_addr;
 
     /* The IPSR enumerates interrupt numbers from 0 up, while *_IRQn numbers are
      * both positive (hardware IRQn) and negative (system IRQn). Here we convert
@@ -239,9 +242,10 @@ void vmpu_load_box(uint8_t box_id)
     }
 }
 
+uint32_t g_box_mem_pos = 0;
+
 void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
 {
-    static uint32_t g_box_mem_pos = 0;
 
     /* The public box is handled separately. */
     if (box_id == 0) {
@@ -251,7 +255,7 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
         /* For backwards-compatibility, the public box uses the legacy stack and
          * heap. */
         DPRINTF("[box 0] BSS size: %i. Stack size: %i\r\n", bss_size, stack_size);
-        g_context_current_states[0].sp = __get_PSP();
+        g_context_current_states[0].sp = __TZ_get_PSP_NS();
         g_context_current_states[0].bss = (uint32_t) __uvisor_config.heap_start;
         return;
     }

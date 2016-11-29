@@ -231,6 +231,10 @@ static void vmpu_box_index_init(uint8_t box_id, const UvisorBoxConfig * const co
     index->config = config;
 }
 
+#if (__ARM_FEATURE_CMSE == 3U)
+///extern uint32_t g_box_mem_pos;
+#endif
+
 static void vmpu_load_boxes(void)
 {
     int i, count;
@@ -265,6 +269,9 @@ static void vmpu_load_boxes(void)
     for (box_cfgtbl = (const UvisorBoxConfig * *) __uvisor_config.cfgtbl_ptr_start;
          box_cfgtbl < (const UvisorBoxConfig * *) __uvisor_config.cfgtbl_ptr_end;
          box_cfgtbl++) {
+#if (__ARM_FEATURE_CMSE == 3U)
+        ///DPRINTF("XXX g_box_mem_pos: 0x%08x\n", g_box_mem_pos);
+#endif
         /* Ensure that the configuration table resides in flash. */
         if (!(vmpu_flash_addr((uint32_t) *box_cfgtbl) &&
             vmpu_flash_addr((uint32_t) ((uint8_t *) (*box_cfgtbl)) + (sizeof(**box_cfgtbl) - 1)))) {
@@ -347,6 +354,9 @@ static void vmpu_load_boxes(void)
 
         /* Proceed to the next box. */
         box_id++;
+#if (__ARM_FEATURE_CMSE == 3U)
+        ///DPRINTF("XXX end of box g_box_mem_pos: 0x%08x\n", g_box_mem_pos);
+#endif
     }
 
     /* Load box 0. */

@@ -168,8 +168,23 @@ void main_init(uint32_t caller)
 #if defined(ARCH_MPU_ARMv8M)
     /* Set the S and NS vector tables. */
     SCB_NS->VTOR = SCB->VTOR;
+    __TZ_set_PSP_NS(msp);
+    msp -= 0x200; /* XXX Reserve 128 bytes for the NS PSP stack from the MSP NS
+    stack. RTOS will use thread stacks for PSP soon. NS PSP must be valid for
+    RTOS SVC to work. We need RTOS SVC to work in order to call
+    osSemaphoreWait. We need to call osSemaphoreWait in order to initialize a
+    semaphore as having no availability. We need to initialize semaphores as
+    part of box initialization. We initialize the boxes before the scheduler
+    runs to avoid conflicts between the scheduler and uVisor. We don't want the
+    RTOS to change threads or boxes while we are in the middle of initializing
+    the boxes. */
     __TZ_set_MSP_NS(msp);
+
+    __TZ_set_CONTROL_NS(__TZ_get_CONTROL_NS() | 2);
+
     __set_PSP((uint32_t)&__uvisor_stack_top_np__);
+#else
+    __set_PSP(msp);
 #endif /* defined(ARCH_MPU_ARMv8M) */
     SCB->VTOR = (uint32_t) &g_isr_vector;
 
@@ -185,15 +200,18 @@ void main_init(uint32_t caller)
     caller &= ~(0x1UL);
     asm volatile("bxns %[caller]\n" :: [caller] "r" (caller));
 #else /* defined(ARCH_MPU_ARMv8M) */
+
+    /* Save caller into a register so we can still access it after we
+     * deprivilege. */
+    register uint32_t r0 asm("r0") = caller | 1;
+
     /* Switch to unprivileged mode.
      * This is possible as the uVisor code is readable in unprivileged mode. */
     __set_CONTROL(__get_CONTROL() | 3);
     __ISB();
     __DSB();
     /* Branch to the caller. This will be executed in unprivileged mode. */
-    caller |= 1;
-    __set_MSP(msp);
-    asm volatile("bx  %[caller]\n" :: [caller] "r" (caller));
+    asm volatile("bx  %[r0]\n" :: [r0] "r" (r0));
 #endif /* defined(ARCH_MPU_ARMv8M) */
     /* FIXME: Function return does not clean up the stack! */
     __builtin_unreachable();

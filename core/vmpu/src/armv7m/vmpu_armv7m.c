@@ -128,9 +128,8 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
     int ipsr = ((int) (__get_IPSR() & 0x1FF)) - NVIC_OFFSET;
 
     /* Determine the origin of the exception. */
-    bool from_np = EXC_FROM_NP(lr);
     bool from_psp = EXC_FROM_PSP(lr);
-    uint32_t sp = from_np ? (from_psp ? __get_PSP() : msp) : msp;
+    uint32_t sp = from_psp ? __get_PSP() : msp;
 
     switch (ipsr) {
         case MemoryManagement_IRQn:
@@ -147,7 +146,7 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
                 fault_addr = sp;
             } else {
                 /* pc at fault */
-                if (from_np) {
+                if (from_psp) {
                     pc = vmpu_unpriv_uint32_read(sp + (6 * 4));
                 } else {
                     /* We can be privileged here if we tried doing an ldrt or
@@ -185,7 +184,7 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
              * that exception return points to the correct instruction. */
 
             /* Currently we only support recovery from unprivileged mode. */
-            if (from_np) {
+            if (from_psp) {
                 /* pc at fault */
                 pc = vmpu_unpriv_uint32_read(sp + (6 * 4));
 

@@ -126,6 +126,12 @@ void __uvisor_lib_box_init(void * lib_config)
 
     __uvisor_initialize_rpc_queues();
 
+    /* Box 0 provides a NULL lib_config. Box 0 also doesn't need the
+     * thread definition copied, as it runs the application main thread. */
+    if (lib_config == NULL) {
+        return;
+    }
+
     /* Copy thread definition from flash to RAM. The thread definition is most
      * likely in flash, so we need to copy it to box-local RAM before we can
      * modify it. */

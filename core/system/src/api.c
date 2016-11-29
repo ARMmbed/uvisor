@@ -25,6 +25,7 @@
 #include "page_allocator.h"
 #include "thread.h"
 #include "box_init.h"
+#include "api/inc/uvisor-lib.h"
 
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
 /* FIXME: Blank all registers before returning! */
@@ -78,8 +79,7 @@ transition_np_to_p(vmpu_mem_invalidate, void, vmpu_mpu_invalidate, void);
 
 transition_np_to_p(box_namespace, int,  vmpu_box_namespace_from_id, int box_id, char * box_namespace, size_t length);
 
-transition_np_to_p(page_malloc, int,  page_allocator_malloc,       UvisorPageTable * const table);
-transition_np_to_p(page_free,   int,  page_allocator_free,   const UvisorPageTable * const table);
+transition_np_to_p(page_malloc, int,  page_allocator_malloc,       UvisorPageTable * const table); transition_np_to_p(page_free,   int,  page_allocator_free,   const UvisorPageTable * const table);
 
 transition_np_to_p(irq_set_vector,    void,     unvic_isr_set,          uint32_t irqn, uint32_t vector);
 transition_np_to_p(irq_get_vector,    uint32_t, unvic_isr_get,          uint32_t irqn);
@@ -94,10 +94,13 @@ transition_np_to_p(irq_get_level,     int,      unvic_irq_level_get,    void);
 transition_np_to_p(irq_disable_all,   void,     unvic_irq_disable_all,  void);
 transition_np_to_p(irq_enable_all,    void,     unvic_irq_enable_all,   void);
 
-transition_p_to_p(pre_start,       void,   boxes_init, void);
 transition_p_to_p(thread_create,   void *, thread_create, int id, void * c);
 transition_p_to_p(thread_destroy,  void,   thread_destroy, void * c);
 transition_p_to_p(thread_switch,   void,   thread_switch, void * c);
+
+/* XXX LOL NOOOOO Use NP to P, but not on v7-M because we are using hardcoded
+ * SVC for now. */
+transition_p_to_p(boxes_init, void, boxes_init, void);
 
 static uint32_t get_api_version(uint32_t version)
 {
@@ -131,6 +134,7 @@ const UvisorApi __uvisor_api = {
     .page_free = page_free_transition,
 
     .box_namespace = box_namespace_transition,
+    .boxes_init = boxes_init_transition,
 
     .debug_init = debug_init_transition,
     .error = error_transition,
@@ -148,7 +152,7 @@ const UvisorApi __uvisor_api = {
 
     .os_event_observer = {
         .version = 0,
-        .pre_start = pre_start_transition,
+        .pre_start = 0,
         .thread_create = thread_create_transition,
         .thread_destroy = thread_destroy_transition,
         .thread_switch = thread_switch_transition,
