@@ -461,11 +461,13 @@ void vmpu_arch_init_hw(void)
      *       the same considerations apply. Therefore the uVisor bss section
      *       location has no impact on this.
      */
+
     /* Calculate the region size by rounding up the SRAM size to the next power-of-two. */
-    const uint32_t total_size = (1 << vmpu_region_bits((uint32_t) __uvisor_config.sram_end - (uint32_t) __uvisor_config.sram_start));
+    const uint32_t total_size = (1 << vmpu_region_bits((uint32_t) __uvisor_config.public_sram_end -
+                                                       (uint32_t) __uvisor_config.public_sram_start));
     /* The alignment is 1/8th of the region size = rounded up SRAM size. */
     const uint32_t subregions_size = total_size / 8;
-    const uint32_t protected_size = (uint32_t) __uvisor_config.page_end - (uint32_t) __uvisor_config.sram_start;
+    const uint32_t protected_size = (uint32_t) __uvisor_config.page_end - (uint32_t) __uvisor_config.public_sram_start;
     /* The protected size must be aligned to the subregion size. */
     if (protected_size % subregions_size != 0) {
         HALT_ERROR(SANITY_CHECK_FAILED,
@@ -482,7 +484,7 @@ void vmpu_arch_init_hw(void)
      *       distinguish between the two. */
     vmpu_mpu_set_static_acl(
         1,
-        (uint32_t) __uvisor_config.sram_start,
+        (uint32_t) __uvisor_config.public_sram_start,
         total_size,
         UVISOR_TACLDEF_DATA | UVISOR_TACL_EXECUTE,
         subregions_disable_mask

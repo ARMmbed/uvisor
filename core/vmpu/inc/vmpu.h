@@ -21,34 +21,48 @@
 #include "api/inc/vmpu_exports.h"
 #include <stdint.h>
 
-/* Check if the address is in public flash/physical flash/physical SRAM. */
+/* Check if the address is in public/physical flash/SRAM. */
 /* Note: Instead of using the '<' check on
  *          __uvisor_config.{flash, sram}_end
  *       we use the '<=' check on
  *          __uvisor_config.{flash, sram}_end - 4
  *       because unaligned accesses at a physical memory boundary have undefined
  *       behavior and must be avoided. */
-/* Note: From the point of view of uVisor the flash finishes right before the
- *       uVisor secure section starts in flash. The portion of memory that goes
- *       from the flash origin to this symbol contains the uVisor and
- *       main box code and data and excludes the configuration tables. */
 
+/* Public flash
+ * This portion of memory includes the physical flash up to where the private
+ * boxes configuration table starts. */
+/* Note: At the moment we assume uVisor RO code and data must be in the same
+ *       memory as the rest of the OS/app. */
 static UVISOR_FORCEINLINE int vmpu_public_flash_addr(uint32_t addr)
 {
-    return (((uint32_t) addr >= FLASH_ORIGIN) &&
-            ((uint32_t) addr <= ((uint32_t) __uvisor_config.secure_start - 4)));
+    return ((addr >= (uint32_t) __uvisor_config.flash_start) &&
+            (addr <= ((uint32_t) __uvisor_config.secure_start - 4)));
 }
 
+/* Physical flash */
 static UVISOR_FORCEINLINE int vmpu_flash_addr(uint32_t addr)
 {
-    return (((uint32_t) addr >= FLASH_ORIGIN) &&
-            ((uint32_t) addr <= ((uint32_t) __uvisor_config.flash_end - 4)));
+    return ((addr >= (uint32_t) __uvisor_config.flash_start) &&
+            (addr <= ((uint32_t) __uvisor_config.flash_end - 4)));
 }
 
+/* Public SRAM
+ * This portion of memory includes the physical SRAM where the public box
+ * memories and the page heap section are. */
+/* Note: This check is consistent both if uVisor shares the SRAM with the
+ *       OS/app and if uVisor uses a separate memory (e.g. a TCM). */
+static UVISOR_FORCEINLINE int vmpu_public_sram_addr(uint32_t addr)
+{
+    return ((addr >= (uint32_t) __uvisor_config.public_sram_start) &&
+            (addr <= ((uint32_t) __uvisor_config.public_sram_end - 4)));
+}
+
+/* Physical SRAM */
 static UVISOR_FORCEINLINE int vmpu_sram_addr(uint32_t addr)
 {
-    return (((uint32_t) addr >= SRAM_ORIGIN) &&
-            ((uint32_t) addr <= ((uint32_t) __uvisor_config.sram_end - 4)));
+    return ((addr >= (uint32_t) __uvisor_config.sram_start) &&
+            (addr <= ((uint32_t) __uvisor_config.sram_end - 4)));
 }
 
 #define VMPU_REGION_SIZE(p1, p2) ((p1 >= p2) ? 0 : \
