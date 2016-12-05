@@ -31,6 +31,28 @@ static int wake_up_handlers_for_target(const TFN_Ptr function, int box_id)
 {
     int num_posted = 0;
 
+#if  (__ARM_FEATURE_CMSE == 3U)
+    /* XXX */
+    /* Switch into the box so we can post. We don't have to do this
+     * on v7-M, because the RTOS can access any semaphore it wants
+     * to. On v8-M, the RTOS can only access box 0 and active box
+     * objects. */
+
+    /* How to determine which box the semaphore is for? Actually,
+     * multiple boxes can be waiting on the same semaphore, so it's
+     * going to have to be box 0 for these semaphores: not created
+     * in first box lazy load. */
+    /* But, each box has a bunch of fn_groups... We probably only have trouble
+     * if we try sharing these semaphores between boxes. This shouldn't be a
+     * problem as we don't allow multiple different boxes to wait on the same
+     * target function. */
+
+    int source_box = g_active_box;
+    if (box_id != g_active_box) {
+        context_switch_in(CONTEXT_SWITCH_UNBOUND_THREAD, box_id, 0, 0);
+    }
+#endif
+
     UvisorBoxIndex * index = (UvisorBoxIndex *) g_context_current_states[box_id].bss;
     uvisor_pool_queue_t * fn_group_queue = &index->rpc_fn_group_queue->queue;
     uvisor_rpc_fn_group_t * fn_group_array = index->rpc_fn_group_queue->fn_groups;
@@ -61,6 +83,12 @@ static int wake_up_handlers_for_target(const TFN_Ptr function, int box_id)
 
         slot = fn_group_queue->pool->management_array[slot].queued.next;
     }
+
+#if  (__ARM_FEATURE_CMSE == 3U)
+    if (source_box != g_active_box) {
+        context_switch_in(CONTEXT_SWITCH_UNBOUND_THREAD, source_box, 0, 0);
+    }
+#endif
 
     return num_posted;
 }
