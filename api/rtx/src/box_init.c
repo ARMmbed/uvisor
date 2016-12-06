@@ -22,6 +22,7 @@
 #include "cmsis_os.h"
 #include <stdint.h>
 #include <string.h>
+#include <stdlib.h>
 
 /* Register the OS with uVisor */
 extern void SVC_Handler(void);
@@ -33,11 +34,33 @@ UVISOR_SET_PRIV_SYS_HOOKS(SVC_Handler, PendSV_Handler, SysTick_Handler, rt_suspe
 
 extern RtxBoxIndex * const __uvisor_ps;
 
+#if (__ARM_FEATURE_CMSE == 3)
+extern uint32_t __uvisor_heap_start;
+
+static void * malloc0(size_t size)
+{
+    UvisorBoxIndex * const index = (UvisorBoxIndex * const) &__uvisor_heap_start;
+    void * mem = secure_malloc(index->box_heap, size);
+    return memset(mem, 0, size);
+}
+#endif
+
 void __uvisor_initialize_rpc_queues(void)
 {
     UvisorBoxIndex * const index = &__uvisor_ps->index;
 
     uvisor_pool_slot_t i;
+
+#if (__ARM_FEATURE_CMSE == 3)
+    /* Allocate queues in box 0 for now. We do this because RTX can't post to
+     * semaphores from, for instance (with fn_groups), box 1 to wake up box 1
+     * from box 2 (box 2 sending the RPC message, box 1 waiting for incoming
+     * RPC messages). */
+
+    index->rpc_outgoing_message_queue = malloc0(sizeof(*index->rpc_outgoing_message_queue));
+    index->rpc_incoming_message_queue = malloc0(sizeof(*index->rpc_incoming_message_queue));
+    index->rpc_fn_group_queue = malloc0(sizeof(*index->rpc_fn_group_queue));
+#endif
 
     uvisor_rpc_outgoing_message_queue_t * rpc_outgoing_msg_queue = index->rpc_outgoing_message_queue;
     uvisor_rpc_incoming_message_queue_t * rpc_incoming_msg_queue = index->rpc_incoming_message_queue;
@@ -116,6 +139,7 @@ void __uvisor_initialize_rpc_queues(void)
     }
 }
 
+
 /* This function is called by uVisor in unprivileged mode. On this OS, we
  * create box main threads for the box. */
 void __uvisor_lib_box_init(void * lib_config)
@@ -123,6 +147,17 @@ void __uvisor_lib_box_init(void * lib_config)
     osThreadId thread_id;
     osThreadDef_t * flash_thread_def = lib_config;
     osThreadDef_t thread_def;
+
+#if (__ARM_FEATURE_CMSE == 3)
+    /* This depends on box 0 being the first box to have __uvisor_lib_box_init
+     * called on it. */
+    static int box0_allocated = 0;
+    if (!box0_allocated) {
+        void * bum = malloc(1);
+        box0_allocated = 1;
+        free(bum);
+    }
+#endif
 
     __uvisor_initialize_rpc_queues();
 

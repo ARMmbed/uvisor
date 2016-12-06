@@ -174,6 +174,11 @@ static int is_valid_rpc_gateway(const TRPCGateway * const gateway)
  * the provided box_id. */
 static int is_valid_queue(uvisor_pool_queue_t * queue, int box_id)
 {
+#if  (__ARM_FEATURE_CMSE == 3U)
+    /* Because we have moved the queues into box 0 memory for all boxes, weaken
+     * this check to only validate magic. */
+    return queue->magic == UVISOR_POOL_QUEUE_MAGIC;
+#endif
     uint32_t bss_start = g_context_current_states[box_id].bss;
     uint32_t bss_end = bss_start + g_context_current_states[box_id].bss_size;
 
