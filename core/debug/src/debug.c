@@ -21,6 +21,7 @@
 #include "memory_map.h"
 #include "svc.h"
 #include "vmpu.h"
+#include <stdbool.h>
 
 #define DEBUG_PRINT_HEAD(x) {\
     DPRINTF("\n***********************************************************\n");\
@@ -90,25 +91,6 @@ static void debug_exception_stack_frame(uint32_t lr, uint32_t sp)
 /* Specific architectures/ports can provide additional debug handlers. */
 UVISOR_WEAK void debug_fault_memmanage_hw(void) {}
 UVISOR_WEAK void debug_fault_bus_hw(void) {}
-
-static void debug_fault_hard(void)
-{
-    dprintf("* FAULT SYNDROME REGISTERS\r\n");
-    dprintf("\r\n");
-
-    uint32_t hfsr = SCB->HFSR;
-    dprintf("  HFSR: 0x%08X\r\n", hfsr);
-    if (hfsr & SCB_HFSR_DEBUGEVT_Msk) {
-        dprintf("  --> DEBUGEVT: debug event occurred.\r\n");
-    }
-    if (hfsr & SCB_HFSR_FORCED_Msk) {
-        dprintf("  --> FORCED: another priority escalated to hard fault.\r\n");
-    }
-    if (hfsr & SCB_HFSR_VECTTBL_Msk) {
-        dprintf("  --> VECTTBL: vector table read fault on exception processing.\r\n");
-    }
-    dprintf("\r\n");
-}
 
 static void debug_fault_memmanage(void)
 {
@@ -225,6 +207,55 @@ static void debug_fault_debug(void)
     dprintf("\r\n");
 
     dprintf("  DFSR  : 0x%08X\r\n\r\n", SCB->DFSR);
+}
+
+static void debug_fault_hard(void)
+{
+    dprintf("* FAULT SYNDROME REGISTERS\r\n");
+    dprintf("\r\n");
+
+    uint32_t hfsr = SCB->HFSR;
+    bool forced = false;
+    dprintf("  HFSR: 0x%08X\r\n", hfsr);
+    if (hfsr & SCB_HFSR_DEBUGEVT_Msk) {
+        dprintf("  --> DEBUGEVT: debug event occurred.\r\n");
+    }
+    if (hfsr & SCB_HFSR_FORCED_Msk) {
+        dprintf("  --> FORCED: another priority escalated to hard fault.\r\n");
+        forced = true;
+    }
+    if (hfsr & SCB_HFSR_VECTTBL_Msk) {
+        dprintf("  --> VECTTBL: vector table read fault on exception processing.\r\n");
+    }
+
+    if (forced) {
+        uint32_t shcsr = SCB->SHCSR;
+        if (shcsr & SCB_SHCSR_USGFAULTPENDED_Msk) {
+            dprintf("  --> Escalated from Usage fault.\r\n");
+            dprintf("\r\n");
+            debug_fault_usage();
+            return;
+        }
+        if (shcsr & SCB_SHCSR_BUSFAULTPENDED_Msk) {
+            dprintf("  --> Escalated from Bus fault.\r\n");
+            dprintf("\r\n");
+            debug_fault_bus();
+            return;
+        }
+        if (shcsr & SCB_SHCSR_MEMFAULTPENDED_Msk) {
+            dprintf("  --> Escalated from MemManage fault.\r\n");
+            dprintf("\r\n");
+            debug_fault_memmanage();
+            return;
+        }
+        if (shcsr & SCB_SHCSR_SVCALLPENDED_Msk) {
+            dprintf("  --> Escalated from SVCall.\r\n");
+        }
+        if (((SCB->ICSR & SCB_ICSR_VECTPENDING_Msk) >> SCB_ICSR_VECTPENDING_Pos) == (SysTick_IRQn + NVIC_OFFSET)) {
+            dprintf("  --> Escalated from SysTick IRQ.\r\n");
+        }
+    }
+    dprintf("\r\n");
 }
 
 void debug_init(void)
