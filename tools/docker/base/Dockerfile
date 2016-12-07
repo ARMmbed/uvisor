@@ -39,6 +39,7 @@ RUN \
 ENV CCACHE_DIR=/usr/lib64/ccache
 ENV CCACHE_BIN=../../bin/ccache
 RUN \
+	ln -s `which arm-none-eabi-objcopy` ${CCACHE_DIR}/arm-none-eabi-objcopy &&\
 	ln -s ${CCACHE_BIN} ${CCACHE_DIR}/arm-none-eabi-g++ && \
 	ln -s ${CCACHE_BIN} ${CCACHE_DIR}/arm-none-eabi-c++
 
@@ -46,6 +47,6 @@ RUN \
 RUN useradd -c "mbed Developer" -m mbed
 
 # configure git
-COPY .gitconfig /home/mbed/
+COPY mbed-gitconfig /home/mbed/.gitconfig
 
 CMD ["/usr/bin/su","-l","mbed"]

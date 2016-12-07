@@ -1,0 +1,10 @@
+[credential]
+	helper = store
+[color]
+	ui = true
+[push]
+	default = matching
+[merge]
+	conflictstyle = merge
+[core]
+	editor = /usr/bin/vim
