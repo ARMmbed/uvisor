@@ -61,9 +61,11 @@ A single family of micro-controllers might trigger different releases of uVisor.
 | `FLASH_LENGTH_MIN` | min( [`FLASH_LENGTH(i)` for `i` in family's devices] )                     |
 | `SRAM_LENGTH_MIN`  | min( [`SRAM_LENGTH(i)` for `i` in family's devices] )                      |
 | `NVIC_VECTORS`     | max( [`NVIC_VECTORS(i)` for `i` in family's devices] )                     |
-| `CORE_*`           | Core version (e.g. `CORE_CORTEX_M3`)                                        |
+| `CORE_*`           | Core version (e.g. `CORE_CORTEX_M3`)                                       |
 
 **Table 1**. Hardware-specific features that differentiate uVisor builds
+
+> **Note**: What we here refer to as "SRAM" is the read/write-able memory that uVisor uses to put its own protected assets. On some platforms this may be a different memory from the physical SRAM, like a tightly-coupled memory (TCM).
 
 A uVisor *configuration* is defined as the unique combination of the parameters of Table 1. When porting your family to uVisor, you need to make sure that as many library releases as the possible configurations are generated. Let's use an example.
 
@@ -109,6 +111,8 @@ CONFIGURATION_0x1FFF0000_CORTEX_M3 = {0x0, 0x400, 0x1FFF0000, 0x400, 0x80000, 0x
 TODO.
 
 The uVisor expects a distinction between at least two memories: Flash and SRAM. If more than one memory fits this description, you should make an architectural decision about where to put uVisor. We suggest that if you have fast memories you should use those, provided that they offer security features at least equal to those of the regular memories.
+
+Using a separate read/write-able memory for uVisor (e.g. a TCM) has little impact on the porting process. When relevant, you will find different instructions for this case throughout this document.
 
 ### Platform-specific code
 [Go to top](#overview)
@@ -302,7 +306,7 @@ You now need to integrate uVisor in the mbed OS code-base for your target. This 
 * Deploy the uVisor libraries for your target platforms.
 * Enable uVisor in your targets.
 
-In the sections below, we refer to the mbed OS code-base as shown in the [mbedmicro/mbed](https://github.com/mbedmicro/mbed) repository.
+In the sections below, we refer to the mbed OS code-base as shown in the [ARMmbed/mbed-os](https://github.com/ARMmbed/mbed-os) repository.
 
 ### Start-up script
 [Go to top](#overview)
@@ -310,7 +314,7 @@ In the sections below, we refer to the mbed OS code-base as shown in the [mbedmi
 Assuming that you already ported your platform to mbed, the start-up script usually lives in:
 
 ```bash
-hal/targets/cmsis/TARGET_${vendor}/TARGET_${family}/TARGET_${device}/TOOLCHAIN_${toolchain}
+targets/TARGET_${vendor}/TARGET_${family}/TARGET_${device}/device/TOOLCHAIN_${toolchain}
 ```
 
 The start-up code must call the function `uvisor_init()` right after system initialization (usually called `SystemInit()`) and right before the C/C++ library initialization.
@@ -342,19 +346,25 @@ To enforce the security model, we need to place uVisor at a specific location in
 
 The snippet below can be used as a template for your `ld` linker script.
 
-Please note that every occurrence of `...` identifies parts of the existing linker script that have been omitted here for clarity. You will find details and requirements for each section in a table below. In addition, we assume that the linker script applies to a device that has one flash memory and one SRAM module, and that interrupt vectors are relocated in SRAM by the host OS (although this does not strictly influence uVisor).
+Please note that every occurrence of `...` identifies parts of the existing linker script that have been omitted here for clarity. You will find details and requirements for each section in a table below.
 
-> Note: After making the the necessary changes to your linker script, `HEAP_SIZE` becomes the minimum heap size. The heap will grow to fill all available RAM between the stack and data sections. If there is not enough room for the minimum heap size, the linker will generate an error. The reason for this change is to ease transitioning applications from the legacy heap to the [uVisor page heap](https://github.com/ARMmbed/uvisor/blob/master/docs/api/manual/UseCases.md#tier-1-page-allocator); after an application is fully transitioned to the [uVisor page heap](https://github.com/ARMmbed/uvisor/blob/master/docs/api/manual/UseCases.md#tier-1-page-allocator), the legacy heap is no longer required and can have a `HEAP_SIZE` size of 0.
+The linker script template below relies on the following assumptions:
 
-```
+* The device has one flash memory, which is shared between the uVisor and the rest of the OS/app.
+* The device has one SRAM memory.
+    * This can be shared between the uVisor and the OS/app.
+    * Alternatively, uVisor can be placed in a separate, faster memory (e.g. a TCM).
+
+```ld
 ...
 
 /* Specify the memory areas. */
 MEMORY
 {
-    m_interrupts          (RX)  : ORIGIN = 0x00000000, LENGTH = 0x00000400
-    m_text                (RX)  : ORIGIN = 0x00000400, LENGTH = 0x00100000
-    m_data                (RW)  : ORIGIN = 0x1FFF0000, LENGTH = 0x00040000
+    m_interrupts (RX)  : ORIGIN = 0x00000000, LENGTH = 0x00000400
+    m_text       (RX)  : ORIGIN = 0x00000400, LENGTH = 0x00100000
+    m_tcm        (RW)  : ORIGIN = 0x10000000, LENGTH = 0x00010000 /* Optional */
+    m_data       (RW)  : ORIGIN = 0x1FFF0000, LENGTH = 0x00040000
 }
 
 /* Define the output sections. */
@@ -370,9 +380,9 @@ SECTIONS
 
     /* Note: The uVisor expects this section at a fixed location, as specified
              by the porting process configuration parameter: FLASH_OFFSET. */
-    __UVISOR_TEXT_OFFSET = < your FLASH_OFFSET here >;
-    __UVISOR_TEXT_START = ORIGIN(m_interrupts) + __UVISOR_TEXT_OFFSET;
-    .text __UVISOR_TEXT_START :
+    __UVISOR_FLASH_OFFSET = < your FLASH_OFFSET here >;
+    __UVISOR_FLASH_START = ORIGIN(m_interrupts) + __UVISOR_FLASH_OFFSET;
+    .text __UVISOR_FLASH_START :
     {
         /* uVisor code and data */
         . = ALIGN(4);
@@ -383,7 +393,7 @@ SECTIONS
         ...
     } > m_text
 
-    /* Constuctors, destructors, etc. go here. */
+    /* Constuctors, destructors, etc. go here -- but not the data section! */
     ...
 
     /* The following SRAM sections are placed before .data, to ensure that their
@@ -394,27 +404,26 @@ SECTIONS
         ...
     } > m_data
 
-    /* Ensure that the uVisor BSS section is put first after the relocated
-     * interrupt table in SRAM. */
+    /* uVisor own memory and private box memories
+    /* If uVisor shares the SRAM with the OS/app, ensure that this section is
+     * the first one after the VTOR relocation section. */
     /* Note: The uVisor expects this section at a fixed location, as specified
              by the porting process configuration parameter: SRAM_OFFSET. */
     __UVISOR_SRAM_OFFSET = < your SRAM_OFFSET here >;
-    __UVISOR_BSS_START = ORIGIN(m_data) + __UVISOR_SRAM_OFFSET;
-    ASSERT(__interrupts_ram_end__ <= __UVISOR_BSS_START,
-           "The ISR relocation region overlaps with the uVisor BSS section.")
-    .uvisor.bss __UVISOR_BSS_START (NOLOAD):
+    __UVISOR_SRAM_START = ORIGIN(m_data/m_tcm) + __UVISOR_SRAM_OFFSET;
+    .uvisor.bss __UVISOR_SRAM_START (NOLOAD):
     {
         . = ALIGN(32);
         __uvisor_bss_start = .;
 
-        /* uVisor main BSS section */
+        /* Protected uVisor own BSS section */
         . = ALIGN(32);
         __uvisor_bss_main_start = .;
         KEEP(*(.keep.uvisor.bss.main))
         . = ALIGN(32);
         __uvisor_bss_main_end = .;
 
-        /* Secure boxes BSS section */
+        /* Protected uVisor boxes' static memories */
         . = ALIGN(32);
         __uvisor_bss_boxes_start = .;
         KEEP(*(.keep.uvisor.bss.boxes))
@@ -423,11 +432,16 @@ SECTIONS
 
         . = ALIGN(32);
         __uvisor_bss_end = .;
+    /*********************** SRAM shared with OS/app **************************/
     } > m_data
+    /*********************** uVisor in its own TCM ****************************/
+    } > m_tcm
+    /**************************************************************************/
 
-    /* Ensure that the page heap is put right after the uVisor BSS section in
-     * SRAM. */
-    /* Heap space for the page allocator */
+    /* Heap space for the page allocator
+    /* If uVisor shares the SRAM with the OS/app, ensure that this section is
+     * the first one after the uVisor BSS section. Otherwise, ensure it is the
+     * first one after the VTOR relocation section. */
     .page_heap (NOLOAD) :
     {
         . = ALIGN(32);
@@ -494,38 +508,52 @@ SECTIONS
         __uninitialized_end = .;
     } > m_data
 
-    /* Heap and stack go here. */
+    /* BSS, heap and stack go here.
+     * The one below is a sample implementation. */
 
-    /* Initialize the stack at the end of the memory block. */
-    __StackTop = ORIGIN(m_data) + LENGTH(m_data); /* <----- Move the stack
-    __StackLimit = __StackTop - STACK_SIZE;                 block before the
-    PROVIDE(__stack = __StackTop);                          heap. */
+    .bss (NOLOAD):
+    {
+        . = ALIGN(4);
+        __bss_start__ = .;
+        *(.bss*)
+        *(COMMON)
+        . = ALIGN(4);
+        __bss_end__ = .;
+    } > m_data
 
     /* Note: The uVisor requires the original heap start and end addresses to be
              provided. */
-
     .heap (NOLOAD):
     {
         . = ALIGN(8);
-        __uvisor_heap_start = .;  /* <----- Add this! */
         __end__ = .;
-        PROVIDE(end = .);
+        end = .;
+        __uvisor_heap_start = .;
         __HeapBase = .;
         . += HEAP_SIZE;
+        __HeapLimit = .;
+        __uvisor_heap_end = .;
     } > m_data
 
-    __HeapLimit = __StackLimit;       /* <----- Move this out of the heap
-                                                section and point it directly
-                                                at the __StackLimit. */
-    __uvisor_heap_end = __StackLimit; /* <----- Add this! */
-
-    ...
+    /* Initialize the stack at the end of the memory block. */
+    __StackTop = ORIGIN(m_data) + LENGTH(m_data);
+    __stack = __StackTop;
+    __StackLimit = __StackTop - STACK_SIZE;
 
     /* Provide physical memory boundaries for uVisor. */
     __uvisor_flash_start = ORIGIN(m_interrupts);
     __uvisor_flash_end = ORIGIN(m_text) + LENGTH(m_text);
+    /*********************** SRAM shared with OS/app **************************/
     __uvisor_sram_start = ORIGIN(m_data);
     __uvisor_sram_end = ORIGIN(m_data) + LENGTH(m_data);
+    __uvisor_public_sram_start = __uvisor_sram_start;
+    __uvisor_public_sram_end = __uvisor_sram_end;
+    /*********************** uVisor in its own TCM ****************************/
+    __uvisor_sram_start = ORIGIN(m_tcm);
+    __uvisor_sram_end = ORIGIN(m_tcm) + LENGTH(m_tcm);
+    __uvisor_public_sram_start = ORIGIN(m_data);
+    __uvisor_public_sram_end = ORIGIN(m_data) + LENGTH(m_data);
+    /**************************************************************************/
 }
 ```
 
@@ -542,7 +570,7 @@ As shown in the snippet above, the uVisor needs the following regions:
         <code>.uvisor.main</code>
       </td>
       <td>
-        It holds the monolithic uVisor core binary. Its location determines the API table of uVisor, since <code>uvisor_api</code> points to the first entry in this table. You should make sure that the linker script has this symbol at the same offset that you specified as <code>FLASH_OFFSET</code> in your configuration.
+        It holds the monolithic uVisor core binary. Its location determines the API table of uVisor, since <code>uvisor_api</code> points to the first entry in this table. This region must be located at the same offset that you specified as <code>FLASH_OFFSET</code> in your configuration.
       </td>
     </tr>
     <tr>
@@ -550,7 +578,15 @@ As shown in the snippet above, the uVisor needs the following regions:
         <code>.uvisor.bss</code>
       </td>
       <td>
-        It contains both uVisor's own memories (coming from the uVisor library, in <code>.keep.uvisor.bss.main</code>) and the secure boxes' protected memories (in <code>.keep.uvisor.bss.boxes</code>). You must make sure that this region (and hence its first sub-region, <code>.keep.uvisor.bss.boxes</code>) is positioned in SRAM at the same offset that you specified in <code>SRAM_OFFSET</code>. To avoid having data loaded from flash ending up before uVisor, we strongly suggest to put this section as soon as possible in the linker script, before any loaded section.
+        It contains both uVisor's own memories (coming from the uVisor library, in <code>.keep.uvisor.bss.main</code>) and the private boxes' protected memories (in <code>.keep.uvisor.bss.boxes</code>). This region must be located at the same offset that you specified in <code>SRAM_OFFSET</code>. If uVisor shares the SRAM with the OS/app, this region must be positioned right before the page heap section, and immediately after the VTOR relocation section. Otherwise, it spans the whole memory devoted to it (e.g. a TCM).
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <code>.page_heap</code>
+      </td>
+      <td>
+        It is needed to host pages allocated by the uVisor secure allocator. If the uVisor shares the SRAM with the OS/app, it must be placed right after the uVisor BSS section, otherwise it must be the first SRAM region after the VTOR relocation section.
       </td>
     </tr>
     <tr>
@@ -566,32 +602,26 @@ As shown in the snippet above, the uVisor needs the following regions:
         <code>.uninitialized</code>
       </td>
       <td>
-        It is not strictly speaking a uVisor region, but this should go in the linker script to make sure that data can be passed to the execution environment across soft reboots. This section is never touched by the C/C++ library initialization.
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <code>.page_heap</code>
-      </td>
-      <td>
-        It is needed to host pages allocated by the uVisor secure allocator.
+        It is not strictly speaking a uVisor region, but this should go in the linker script to make sure that data can be passed to the execution environment across soft reboots. This section is never touched by the C/C++ library initialization, and it's used by our testing framework.
       </td>
     </tr>
   </tbody>
 </table>
 
-All these sections and their sub-regions must be preceded and followed by symbols that describe their boundaries, as shown in the template. Note that all symbols prefixed with `.keep` must end up in the final memory map even if they are not explicitly used. Please make sure to use the correct `ld` commands (`KEEP(...)`).
+All these sections and their sub-regions must be preceded and followed by symbols that describe their boundaries, as shown in the template. Note that all symbols prefixed with `.keep` must end up in the final memory map even if they are not explicitly used.
 
 Once uVisor is active it maintains its own vector table, which the rest of the code can only interact with through uVisor APIs. As shown in the script above, we still suggest to leave the standard vector table in flash, so that if uVisor is disabled any legacy mechanism for interrupt management still works. This is the same reason why we need an `SRAM_OFFSET` as well, as it reserves the space for relocation of the original OS vector table.
 
 The heap boundaries need to be provided (`__uvisor_heap_start` and `__uvisor_heap_end`), as they are used by the uVisor allocator APIs. The uVisor allocator APIs are available even when uVisor is not strictly supported on a platform, although in that case no security feature is provided. See below for more information.
+
+> **Note**: After making the necessary changes to your linker script, `HEAP_SIZE` becomes the minimum heap size. The heap will grow to fill all available RAM between the stack and data sections. If there is not enough room for the minimum heap size, the linker will generate an error. The reason for this change is to ease transitioning applications from the legacy heap to the [uVisor page heap](https://github.com/ARMmbed/uvisor/blob/master/docs/api/manual/UseCases.md#tier-1-page-allocator); after an application is fully transitioned to the [uVisor page heap](https://github.com/ARMmbed/uvisor/blob/master/docs/api/manual/UseCases.md#tier-1-page-allocator), the legacy heap is no longer required and can have a `HEAP_SIZE` size of 0.
 
 Finally, note that at the end of the linker script the physical boundaries for the memories (flash/SRAM) populated by uVisor are also provided.
 
 ### Library deployment
 [Go to top](#overview)
 
-The uVisor code-base is embedded in [mbedmicro/mbed](https://github.com/mbedmicro/mbed), and can be found at `features/FEATURE_UVISOR`. This module is a glue layer library that translates the [ARMmbed/uvisor](https://github.com/ARMmbed/uvisor) core and APIs into a file structure that is compatible with mbed OS:
+The uVisor code-base is embedded in [ARMmbed/mbed-os](https://github.com/ARMmbed/mbed-os), and can be found at `features/FEATURE_UVISOR`. This module is a glue layer library that translates the [ARMmbed/uvisor](https://github.com/ARMmbed/uvisor) core and APIs into a file structure that is compatible with mbed OS:
 
 ```
 mbed

@@ -94,6 +94,12 @@ uvisor_config:
     .long __uvisor_sram_start;
     .long __uvisor_sram_end;
 
+    /* Physical memory boundaries of the public SRAM.
+     * This is usually the same as the other SRAM symbols above, but it's
+     * different when uVisor uses a TCM as its own SRAM. */
+    .long __uvisor_public_sram_start;
+    .long __uvisor_public_sram_end;
+
     /* Privileged system hooks */
     .long __uvisor_priv_sys_hooks
 

@@ -94,6 +94,13 @@ typedef struct {
     uint32_t * sram_start;
     uint32_t * sram_end;
 
+    /* Physical memory boundaries of the public SRAM, the one where the public
+     * box and the page heap space is. When a TCM is available, what uVisor
+     * regards as "SRAM" is the memory where its own memories and the
+     * compile-time defined memories for the private boxes are. */
+    uint32_t * public_sram_start;
+    uint32_t * public_sram_end;
+
     /* Privileged system hooks */
     UvisorPrivSystemHooks const * const priv_sys_hooks;
 

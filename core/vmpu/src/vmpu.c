@@ -97,6 +97,21 @@ static int vmpu_sanity_checks(void)
     assert((uint32_t) __uvisor_config.bss_main_end == (SRAM_ORIGIN + SRAM_OFFSET + UVISOR_SRAM_LENGTH_USED));
     assert((uint32_t) __uvisor_config.bss_main_end == (SRAM_ORIGIN + UVISOR_SRAM_LENGTH_PROTECTED));
 
+    /* Verify the position of the page heap section. */
+    assert(__uvisor_config.page_start >= __uvisor_config.public_sram_start);
+    assert(__uvisor_config.page_start <= __uvisor_config.page_end);
+    if (__uvisor_config.public_sram_start == __uvisor_config.sram_start) {
+        /* If uVisor shares the SRAM with the OS/app, "SRAM" and "public SRAM"
+         * must be the same thing for uVisor. */
+        assert(__uvisor_config.page_start >= __uvisor_config.bss_end);
+        assert(__uvisor_config.public_sram_end == __uvisor_config.sram_end);
+    } else {
+        /* If uVisor uses a separate memory (e.g. a TCM), "SRAM" and "public
+         * SRAM" must be disjoint. */
+        assert((__uvisor_config.public_sram_start >= __uvisor_config.sram_end) ||
+               (__uvisor_config.sram_start >= __uvisor_config.public_sram_end));
+    }
+
     /* Verify SRAM sections are within uVisor's own SRAM. */
     assert(&__bss_start__ >= __uvisor_config.bss_main_start);
     assert(&__bss_end__ <= __uvisor_config.bss_main_end);
@@ -240,11 +255,11 @@ static void vmpu_load_boxes(void)
     uint8_t box_id;
 
     /* Check heap start and end addresses. */
-    if (!__uvisor_config.heap_start || !vmpu_sram_addr((uint32_t) __uvisor_config.heap_start)) {
+    if (!__uvisor_config.heap_start || !vmpu_public_sram_addr((uint32_t) __uvisor_config.heap_start)) {
         HALT_ERROR(SANITY_CHECK_FAILED, "Heap start pointer (0x%08x) is not in SRAM memory.\n",
             (uint32_t) __uvisor_config.heap_start);
     }
-    if (!__uvisor_config.heap_end || !vmpu_sram_addr((uint32_t) __uvisor_config.heap_end)) {
+    if (!__uvisor_config.heap_end || !vmpu_public_sram_addr((uint32_t) __uvisor_config.heap_end)) {
         HALT_ERROR(SANITY_CHECK_FAILED, "Heap end pointer (0x%08x) is not in SRAM memory.\n",
             (uint32_t) __uvisor_config.heap_end);
     }
