@@ -46,6 +46,6 @@ RUN \
 RUN useradd -c "mbed Developer" -m mbed
 
 # configure git
-COPY .gitconfig /home/mbed/
+COPY mbed-gitconfig /home/mbed/.gitconfig
 
 CMD ["/usr/bin/su","-l","mbed"]
