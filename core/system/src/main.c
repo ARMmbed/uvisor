@@ -204,13 +204,27 @@ void main_init(void)
     /* Note: The uVisor stack pointer is assumed to be already correctly set. */
     /* Note: We do not need to set the NS NP stack pointer (for the app and the
      *       private boxes), as it is set during the vMPU initialization. */
-#if defined(ARCH_MPU_ARMv8M)
     /* NS P stack pointer, for the RTOS and the uVisor-ns. */
-    uint32_t msp_ns = ((uint32_t *) SCB->VTOR)[0] - 4;
-    __TZ_set_MSP_NS(msp_ns);
+    uint32_t psp_ns = ((uint32_t *) SCB->VTOR)[0] - 4;
+#if defined(ARCH_MPU_ARMv8M)
+    __TZ_set_PSP_NS(psp_ns);
+    psp_ns -= 0x200; /* XXX Reserve 512 bytes for the NS PSP stack from the MSP NS
+    stack. RTOS will use thread stacks for PSP soon. NS PSP must be valid for
+    RTOS SVC to work. We need RTOS SVC to work in order to call
+    osSemaphoreWait. We need to call osSemaphoreWait in order to initialize a
+    semaphore as having no availability. We need to initialize semaphores as
+    part of box initialization. We initialize the boxes before the scheduler
+    runs to avoid conflicts between the scheduler and uVisor. We don't want the
+    RTOS to change threads or boxes while we are in the middle of initializing
+    the boxes. */
+    __TZ_set_MSP_NS(psp_ns);
+
+    __TZ_set_CONTROL_NS(__TZ_get_CONTROL_NS() | 2);
 
     /* S NP stack pointer, for the SDSs and the transition gateways. */
-    __set_PSP((uint32_t) &__uvisor_stack_top_np__);
+    __set_PSP((uint32_t)&__uvisor_stack_top_np__);
+#else
+    __set_PSP(psp_ns);
 #endif /* defined(ARCH_MPU_ARMv8M) */
 
     /* Set the uVisor vector table */
