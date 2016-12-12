@@ -207,7 +207,7 @@ void drain_message_queue(void)
     {
         /* The caller's outgoing queue is not valid. This shouldn't happen in a
          * non-malicious system. */
-        assert(false);
+        //assert(false);
         return;
     }
 
@@ -361,7 +361,7 @@ void drain_result_queue(void)
     {
         /* The callee's done queue is not valid. This shouldn't happen in a
          * non-malicious system. */
-        assert(false);
+        //assert(false);
         return;
     }
 
