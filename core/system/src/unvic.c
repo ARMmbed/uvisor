@@ -140,6 +140,9 @@ void unvic_isr_set(uint32_t irqn, uint32_t vector)
 
     /* set default priority (SVC must always be higher) */
     NVIC_SetPriority(irqn, __UVISOR_NVIC_MIN_PRIORITY);
+#if defined(ARCH_MPU_ARMv8M)
+    NVIC_ClearTargetState(irqn);
+#endif /* defined(ARCH_MPU_ARMv8M) */
 
     DPRINTF("IRQ %d %s box %d\n\r",
             irqn,
@@ -402,15 +405,83 @@ int unvic_irq_level_get(void)
     return (int) NVIC_GetPriority(irqn) - __UVISOR_NVIC_MIN_PRIORITY;
 }
 
-/** Perform a context switch-in as a result of an interrupt request.
- *
- * @internal
- *
- * This function is implemented as a wrapper, needed to make sure that the lr
- * register doesn't get polluted and to provide context privacy during a context
- * switch. The actual function is ::unvic_gateway_context_switch_in. The wrapper
- * also changes the lr register so that we can return to a different privilege
- * level. */
+#if defined(ARCH_MPU_ARMv8M)
+
+/* Wrapper for ::unvic_gateway_context_switch_in. */
+void UVISOR_NAKED unvic_gateway_in(void)
+{
+    asm volatile(
+        "push  {r4 - r11}\n"                            /* Store the callee-saved registers on the S MSP. */
+        "push  {lr}\n"                                  /* Preserve the lr register. */
+        "bl    unvic_gateway_context_switch_in\n"       /* privacy = unvic_context_switch_in() */
+        "cmp   r0, #0\n"                                /* if (privacy)  */
+        "beq   unvic_gateway_no_regs_clearing\n"        /* {             */
+        "mov   r4,  #0\n"                               /*     Clear r4  */
+        "mov   r5,  #0\n"                               /*     Clear r5  */
+        "mov   r6,  #0\n"                               /*     Clear r6  */
+        "mov   r7,  #0\n"                               /*     Clear r7  */
+        "mov   r8,  #0\n"                               /*     Clear r8  */
+        "mov   r9,  #0\n"                               /*     Clear r9  */
+        "mov   r10, #0\n"                               /*     Clear r10 */
+        "mov   r11, #0\n"                               /*     Clear r11 */
+        "unvic_gateway_no_regs_clearing:\n"             /* } else { ; }  */
+        "pop  {pc}\n"                                   /* Return. Note: Callee-saved registers are not popped here. */
+    );
+}
+
+/* Perform a context switch-in as a result of an interrupt request. */
+uint32_t g_unvic_next_isr;
+uint32_t unvic_gateway_context_switch_in(void)
+{
+    /* No other exception happened since the NS IRQ, so we trust the xPSR. */
+    /* Note: Only default basic checks are performed, since the remaining
+     *       information is fetched from our trusted vector table. */
+    uint32_t irqn = (uint32_t) (((int) (__get_IPSR() & 0x1FF)) - NVIC_OFFSET);
+    unvic_default_check(irqn);
+
+    /* Check if the ISR is registered. */
+    uint32_t dst_fn = (uint32_t) g_unvic_vector[irqn].hdlr;
+    if(!dst_fn) {
+        HALT_ERROR(NOT_ALLOWED, "Unprivileged handler for IRQ %i not found\n\r", irqn);
+    }
+
+    /* Perform the context switch. */
+    /* Note: No need to forge a stack frame. The IRQ is handled in NS P mode as
+     *       a simple function call (blxns). */
+    uint8_t dst_id = g_unvic_vector[irqn].id;
+    uint32_t src_sp = context_validate_exc_sf(__TZ_get_MSP_NS());
+    context_switch_in(CONTEXT_SWITCH_FUNCTION_ISR, dst_id, src_sp, g_context_current_states[dst_id].sp);
+
+    /* Save the NS ISR as it will be called by the uVisor de-multiplexer. */
+    g_unvic_next_isr = dst_fn & ~0x1UL;
+
+    /* Return whether the destination box requires privacy or not. */
+    /* TODO: Context privacy is currently unsupported. */
+    return 0;
+}
+
+/* Wrapper for ::unvic_gateway_context_switch_out. */
+void UVISOR_NAKED unvic_gateway_out(void)
+{
+    asm volatile(
+        "push {lr}\n"                               /* Save the lr register for later. */
+        "bl   unvic_gateway_context_switch_out\n"   /* unvic_gateway_context_switch_out() */
+        "pop  {lr}\n"                               /* Restore the lr register. */
+        "pop  {r4-r11}\n"                           /* Restore the previously saved callee-saved registers. */
+        "bx   lr\n"                                 /* Return. */
+    );
+}
+
+/* Perform a context switch-out from a previous interrupt request. */
+void unvic_gateway_context_switch_out(void)
+{
+    /* Perform the context switch back to the previous state. */
+    context_switch_out(CONTEXT_SWITCH_FUNCTION_ISR);
+}
+
+#else /* defined(ARCH_MPU_ARMv8M) */
+
+/* Wrapper for ::unvic_gateway_context_switch_in. */
 void UVISOR_NAKED unvic_gateway_in(uint32_t svc_sp, uint32_t svc_pc)
 {
     /* According to the ARM ABI, r0 and r1 will have the following values when
@@ -441,57 +512,41 @@ void UVISOR_NAKED unvic_gateway_in(uint32_t svc_sp, uint32_t svc_pc)
 }
 
 /** Perform a context switch-in as a result of an interrupt request.
- *
- * @internal
- *
- * This function implements ::unvic_gateway_in, which is instead only a wrapper.
- *
  * @warning This function trusts the SVCall parameters that are passed to it.
- *
  * @param svc_sp[in]    Unprivileged stack pointer at the time of the interrupt
  * @param svc_pc[in]    Program counter at the time of the interrupt */
 uint32_t unvic_gateway_context_switch_in(uint32_t svc_sp, uint32_t svc_pc)
 {
-    uint8_t dst_id;
-    uint32_t dst_fn;
-    uint32_t src_sp, dst_sp, msp;
-    uint32_t ipsr, irqn, xpsr;
-    uint32_t unvic_thunk;
-
-    /* This handler is always executed from privileged code, so the SVCall stack
-     * pointer is the MSP. */
-    msp = svc_sp;
-
-    /* Destination box: Gather information from the IRQn. */
-    ipsr = ((uint32_t *) msp)[7];
-    irqn = (ipsr & 0x1FF) - NVIC_OFFSET;
-    dst_id = g_unvic_vector[irqn].id;
-    dst_fn = (uint32_t) g_unvic_vector[irqn].hdlr;
-
-    /* Verify the IRQn access privileges. */
+    /* The IRQn must be fetched from the stacked xPSR, not the current one,
+     * because technically we are in an SVCall exception. */
     /* Note: Only default basic checks are performed, since the remaining
      * information is fetched from our trusted vector table. */
+    uint32_t ipsr = ((uint32_t *) svc_sp)[7];
+    uint32_t irqn = (ipsr & 0x1FF) - NVIC_OFFSET;
     unvic_default_check(irqn);
 
     /* Check if the ISR is registered. */
+    uint32_t dst_fn = (uint32_t) g_unvic_vector[irqn].hdlr;
     if(!dst_fn) {
         HALT_ERROR(NOT_ALLOWED, "Unprivileged handler for IRQ %i not found\n\r", irqn);
     }
 
-    /* Source box: Get the current stack pointer. */
-    /* Note: We must use the current PSP as the SVCall can only give us the MSP
-     * register, since it was triggered from privileged mode. */
-    src_sp = context_validate_exc_sf(__get_PSP());
-
     /* The stacked xPSR register clears the IRQn. */
-    xpsr = ipsr & ~0x1FF;
+    uint32_t xpsr = ipsr & ~0x1FF;
+
+
+    /* Source box: Get the current stack pointer. */
 
     /* The stacked return value is the second SVCall in the uVisor default ISR
      * handler. */
-    unvic_thunk = (uint32_t) (svc_pc + 2);
+    uint32_t unvic_thunk = (uint32_t) (svc_pc + 2);
 
     /* Forge a stack frame for the destination box. */
-    dst_sp = context_forge_exc_sf(src_sp, dst_id, dst_fn, unvic_thunk, xpsr, 0);
+    /* Note: We must use the current PSP as the SVCall can only give us the MSP
+     *       register, since it was triggered from privileged mode. */
+    uint8_t dst_id = g_unvic_vector[irqn].id;
+    uint32_t src_sp = context_validate_exc_sf(__get_PSP());
+    uint32_t dst_sp = context_forge_exc_sf(src_sp, dst_id, dst_fn, unvic_thunk, xpsr, 0);
 
     /* Perform the context switch-in to the destination box. */
     /* This function halts if it finds an error. */
@@ -505,15 +560,7 @@ uint32_t unvic_gateway_context_switch_in(uint32_t svc_sp, uint32_t svc_pc)
     return 0;
 }
 
-/** Perform a context switch-out as a result of an interrupt request.
- *
- * @internal
- *
- * This function is implemented as a wrapper, needed to make sure that the lr
- * register doesn't get polluted and to provide context privacy during a context
- * switch. The actual function is ::unvic_gateway_context_switch_out. The
- * wrapper also changes the lr register so that we can return to a different
- * privilege level. */
+/** Wrapper for ::unvic_gateway_context_switch_out. */
 void UVISOR_NAKED unvic_gateway_out(uint32_t svc_sp)
 {
     /* According to the ARM ABI, r0 will have the following value when this
@@ -536,24 +583,15 @@ void UVISOR_NAKED unvic_gateway_out(uint32_t svc_sp)
 }
 
 /** Perform a context switch-out from a previous interrupt request.
- *
- * @internal
- *
- * This function implements ::unvic_gateway_out, which is instead only a
- * wrapper.
- *
  * @warning This function trusts the SVCall parameters that are passed to it.
- *
  * @param svc_sp[in]    Unprivileged stack pointer at the time of the interrupt
  *                      return handler (thunk)
  * @param msp[in]       Value of the MSP register at the time of the SVcall */
 void unvic_gateway_context_switch_out(uint32_t svc_sp, uint32_t msp)
 {
-    uint32_t dst_sp;
-
     /* Copy the return address of the previous stack frame to the privileged
      * one, which was kept idle after interrupt de-privileging */
-    dst_sp = context_validate_exc_sf(svc_sp);
+    uint32_t dst_sp = context_validate_exc_sf(svc_sp);
     ((uint32_t *) msp)[6] = ((uint32_t *) dst_sp)[6];
 
     /* Discard the unneeded exception stack frame from the destination box
@@ -561,11 +599,13 @@ void unvic_gateway_context_switch_out(uint32_t svc_sp, uint32_t msp)
     context_discard_exc_sf(g_active_box, dst_sp);
 
     /* Perform the context switch back to the previous state. */
-    context_switch_out(CONTEXT_SWITCH_FUNCTION_GATEWAY);
+    context_switch_out(CONTEXT_SWITCH_FUNCTION_ISR);
 
     /* Re-privilege execution. */
     __set_CONTROL(__get_CONTROL() & ~2);
 }
+
+#endif /* defined(ARCH_MPU_ARMv8M) */
 
 void unvic_init(void)
 {

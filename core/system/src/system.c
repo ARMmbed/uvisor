@@ -103,15 +103,43 @@ void UVISOR_NAKED UVISOR_NORETURN isr_default_sys_handler(void)
 
 void UVISOR_NAKED UVISOR_NORETURN isr_default_handler(void)
 {
-    /* Handle NVIC IRQ with an unprivileged handler.
-     * Serving an IRQn in unprivileged mode is achieved by mean of two SVCalls:
-     * The first one de-previliges execution, the second one re-privileges it. */
-    /* Note: NONBASETHRDENA (in SCB) must be set to 1 for this to work. */
+#if defined(ARCH_MPU_ARMv8M)
+    /* NS IRQ handling in ARMv8-M:
+     *     1. IRQ comes from NS mode.
+     *     2. The uVisor ISR calls the context switch-in function.
+     *     3. The uVisor ISR calls the NS P ISR via blxns.
+     *     4. The uVisor ISR calls the context switch-out function.
+     *     5. The IRQ has been handled. Execution returns to the NS P mode.
+     */
     asm volatile(
-        "svc  %[unvic_in]\n"
-        "svc  %[unvic_out]\n"
-        "bx   lr\n"
+        "push  {lr}\n"
+        "bl    unvic_gateway_in\n"
+        "ldr   r0, =g_unvic_next_isr\n"
+        "ldr   r0, [r0]\n"
+        "blxns r0\n"
+        "bl    unvic_gateway_out\n"
+        "pop   {pc}\n"
+    );
+#else /* defined(ARCH_MPU_ARMv8M) */
+    /* NP IRQ handling in ARMv7-M:
+     *     1. IRQ comes from NP mode.
+     *     2. The uVisor ISR performs the 1st SVCall to context switch-in.
+     *     3. The 1st SVCall de-privileges execution and returns automatically
+     *        to the NP ISR.
+     *     4. The NP ISR returns automatically back to the uVisor ISR, at the
+     *        opcode following the 1st SVCall.
+     *     5. The uVisor ISR performs the 2nd SVCall to context switch-out.
+     *     6. The 2nd SVCall re-privileges execution and returns automatically
+     *        to the uVisor ISR, at the opcode after the 2nd SVCall.
+     *     7. The IRQ has been handled. Execution returns to the NP mode.
+     */
+    /* Note: SCB->SCR.NONBASETHRDENA must be set to 1 for this to work. */
+    asm volatile(
+        "svc %[unvic_in]\n"
+        "svc %[unvic_out]\n"
+        "bx  lr\n"
         ::[unvic_in]  "i" ((UVISOR_SVC_ID_UNVIC_IN) & 0xFF),
           [unvic_out] "i" ((UVISOR_SVC_ID_UNVIC_OUT) & 0xFF)
     );
+#endif /* defined(ARCH_MPU_ARMv8M) */
 }

@@ -54,6 +54,24 @@ extern int      unvic_default(uint32_t isr_id);
 
 extern void unvic_init(void);
 
+#if defined(ARCH_MPU_ARMv8M)
+
+/** Perform a context switch-in as a result of an interrupt request.
+ *
+ * This function uses information from the incoming IRQ to retrieve an interrupt
+ * handler, validate it, and use its metadata to perform the context switch. It
+ * should not be called directly by new code. */
+void UVISOR_NAKED unvic_gateway_in(void);
+
+/** Perform a context switch-out as a result of an interrupt request.
+ *
+ * This function restores a previously pushed context and allows execution to
+ * return to the state prior to the IRQ. It should not be called directly by new
+ * code. */
+void UVISOR_NAKED unvic_gateway_out(void);
+
+#else /* defined(ARCH_MPU_ARMv8M) */
+
 /** Perform a context switch-in as a result of an interrupt request.
  *
  * This function uses information from an SVCall to retrieve an interrupt
@@ -79,6 +97,8 @@ void UVISOR_NAKED unvic_gateway_in(uint32_t svc_sp, uint32_t svc_pc);
  * @param svc_sp[in]    Unprivileged stack pointer at the time of the interrupt
  *                      return handler (thunk) */
 void UVISOR_NAKED unvic_gateway_out(uint32_t svc_sp);
+
+#endif /* defined(ARCH_MPU_ARMv8M) */
 
 /** Disable all interrupts for the currently active box.
  *

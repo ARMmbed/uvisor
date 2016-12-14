@@ -207,7 +207,11 @@ void context_switch_in(TContextSwitchType context_type, uint8_t dst_id, uint32_t
         context_type == CONTEXT_SWITCH_FUNCTION_ISR     ||
         context_type == CONTEXT_SWITCH_FUNCTION_DEBUG) {
         context_state_push(context_type, src_id, src_sp);
+#if defined(ARCH_MPU_ARMv8M)
+        __TZ_set_MSP_NS(dst_sp);
+#else /* defined(ARCH_MPU_ARMv8M) */
         __set_PSP(dst_sp);
+#endif /* defined(ARCH_MPU_ARMv8M) */
     }
 }
 
@@ -269,7 +273,11 @@ TContextPreviousState * context_switch_out(TContextSwitchType context_type)
     if (context_type == CONTEXT_SWITCH_FUNCTION_GATEWAY ||
         context_type == CONTEXT_SWITCH_FUNCTION_ISR     ||
         context_type == CONTEXT_SWITCH_FUNCTION_DEBUG) {
+#if defined(ARCH_MPU_ARMv8M)
+        __TZ_set_MSP_NS(src_sp);
+#else /* defined(ARCH_MPU_ARMv8M) */
         __set_PSP(src_sp);
+#endif /* defined(ARCH_MPU_ARMv8M) */
     }
 
     return previous_state;
