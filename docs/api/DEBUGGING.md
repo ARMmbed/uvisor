@@ -1,6 +1,6 @@
 # Debugging uVisor on mbed OS
 
-The uVisor is distributed as a pre-linked binary blob. Blobs for different mbed platforms are released in the mbed OS repository, [mbedmicro/mbed](https://github.com/mbedmicro/mbed), and are linked to your application when you build it. Two classes of binary blobs are released for each version — one for release and one for debug.
+The uVisor is distributed as a pre-linked binary blob. Blobs for different mbed platforms are released in the mbed OS repository, [ARMmbed/mbed-os](https://github.com/ARMmbed/mbed-os), and are linked to your application when you build it. Two classes of binary blobs are released for each version — one for release and one for debug.
 
 If you only want to use the uVisor debug features on an already supported platform, you do not need to clone it and build it locally. If you instead want to make modifications to uVisor (or port it to your platform) and test the modifications locally with your app, please follow the [Developing with uVisor Locally on mbed OS](../core/DEVELOPING_LOCALLY.md) guide first.
 
@@ -36,10 +36,10 @@ Of course any other application can be used, provided that it is correctly set u
 Runtime messages are silenced by default. In order to enable them, you need to build your application linking to the debug version of uVisor. The uVisor libraries that we publish in mbed OS provide both the release and debug builds of uVisor, so you only need to run the following command:
 
 ```bash
-$ mbed compile -m ${your_target} -t GCC_ARM -o "debug-info"
+$ mbed compile -m ${your_target} -t GCC_ARM -c --profile mbed-os/tools/profiles/debug.json
 ```
 
-The `-o "debug-info"` option ensures that the build system enables debug symbols and disables optimizations. In addition, it ensures that the debug build of uVisor is selected, which enables the uVisor runtime messages.
+The `--profile mbed-os/tools/profiles/debug.json` option ensures that the build system enables debug symbols and disables optimizations. In addition, it ensures that the debug build of uVisor is selected, which enables the uVisor runtime messages.
 
 Now start the GDB server. This step changes depending on which debugger you are using. In case you are using a J-Link debugger, run:
 
@@ -106,7 +106,7 @@ Currently the following messages are printed:
 
 ## The debug box
 
-> Warning: The debug box feature is an early prototype. The APIs and procedures described here might change several times in non-backwards-compatible ways.
+> **Warning**: The debug box feature is an early prototype. The APIs and procedures described here might change several times in non-backwards-compatible ways.
 
 The uVisor code is instrumented to output debug information when it is relevant. In order to keep the uVisor as simple and hardware-independent as possible, some of this information is not handled and interpreted directly by uVisor.
 

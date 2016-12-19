@@ -46,8 +46,8 @@ docker run -i -t meriac/mbed
 [mbed@c27efbccf7df ~]$ mbed import https://github.com/ARMmbed/example-mbed-mallocator
 
     [mbed] Importing program "example-mbed-mallocator" from "https://github.com/ARMmbed/example-mbed-mallocator/" at latest revision in the current branch
-    Username for 'https://github.com': meriac                                  
-    Password for 'https://meriac@github.com': 
+    Username for 'https://github.com': meriac
+    Password for 'https://meriac@github.com':
     [mbed] Adding library "mbed-os" from "https://github.com/ARMmbed/mbed-os/" at latest revision in the current branch
     [mbed] Adding library "mbed-os/mbed" from "https://github.com/mbedmicro/mbed/" at rev #52e93aebd083b679a8fe7b0e47039f138fa8c224
     [...]
@@ -86,7 +86,7 @@ Heap: 65540
 Stack: 32768
 Total RAM memory (data + bss + heap + stack): 105400
 Total Flash memory (text + data + misc): 50893
-Image: ./.build/K64F/GCC_ARM/example-mbed-mallocator.bin
+Image: ./BUILD/K64F/GCC_ARM/example-mbed-mallocator.bin
 
 [mbed@c27efbccf7df example-mbed-mallocator]$ _
 ```
