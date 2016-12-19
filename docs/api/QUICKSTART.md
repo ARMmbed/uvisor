@@ -69,7 +69,7 @@ $ mbed compile -m K64F -t GCC_ARM
 The resulting binary will be located at:
 
 ```bash
-~/code/uvisor-example/.build/K64F/GCC_ARM/uvisor-example.bin
+~/code/uvisor-example/BUILD/K64F/GCC_ARM/uvisor-example.bin
 ```
 
 Drag-and-drop it onto the USB device mounted on your computer in order to flash the device. When the flashing process is completed, press the reset button on the device. You should see the device LED blinking.
@@ -93,16 +93,6 @@ To enable the uVisor on the app, just add the following lines at the beginning o
 #include "rtos.h"
 #include "uvisor-lib/uvisor-lib.h"
 
-/* Register privleged system hooks.
- * This is a system-wide configuration and it is independent from the app, but
- * for the moment it needs to be specified in the app. This will change in a
- * later version: The configuration will be provided by the OS. */
-extern "C" void SVC_Handler(void);
-extern "C" void PendSV_Handler(void);
-extern "C" void SysTick_Handler(void);
-extern "C" uint32_t rt_suspend(void);
-UVISOR_SET_PRIV_SYS_HOOKS(SVC_Handler, PendSV_Handler, SysTick_Handler, rt_suspend);
-
 /* Main box Access Control Lists (ACLs). */
 /* Note: These are specific to the NXP FRDM-K64F board. See the section below
  *       for more information. */
@@ -124,9 +114,8 @@ UVISOR_SET_MODE_ACL(UVISOR_ENABLED, g_main_box_acls);
 ...
 ```
 
-In the code above we specified 3 elements:
+In the code above we specified 2 elements:
 
-1. System-wide uVisor configurations: `UVISOR_SET_PRIV_SYS_HOOKS`. Application authors currently need to specify the privileged system hooks at the application level with this macro, but in the future the operating system will register the privileged system hooks on its own.
 1. Main box Access Control Lists (ACLs). Since with uVisor enabled everything runs in unprivileged mode, we need to make sure that peripherals that are accessed by the OS and the main box are allowed. These peripherals are specified using a list like the one in the snippet above. For the purpose of this example we provide you the list of all the ACLs that we know you will need. For other platforms or other applications you need to determine those ACLs following a process that is described in a [section](#the-main-box-acls) below.
 1. App-specific uVisor configurations: `UVISOR_SET_MODE_ACL`. This macro sets the uVisor mode (enabled) and associates the list of ACLs we just created with the main box.
 
@@ -135,7 +124,7 @@ Before compiling, we need to override the original `K64F` target to enable the u
 ```JSON
 {
     "target_overrides": {
-        "K64F": {
+        "*": {
             "target.features_add": ["UVISOR"],
             "target.extra_labels_add": ["UVISOR_SUPPORTED"]
         }
@@ -162,7 +151,7 @@ $ mbed compile -m K64F -t GCC_ARM
 The binary will be located at:
 
 ```bash
-~/code/uvisor-example/.build/K64F/GCC_ARM/uvisor-example.bin
+~/code/uvisor-example/BUILD/K64F/GCC_ARM/uvisor-example.bin
 ```
 
 Re-flash the device and press the reset button. The device LED should be blinking as in the previous case.
@@ -386,7 +375,7 @@ static const UvisorBoxAclItem g_main_box_acls[] = {
 You now need to compile your application using uVisor in debug mode. This operation requires some more advanced steps, which are described in detail in the [Debugging uVisor on mbed OS](DEBUGGING.md) document. The main idea is that you compile the application in debug mode:
 
 ```bash
-$ mbed compile -m K64F -t GCC_ARM -o "debug-info"
+$ mbed compile -m K64F -t GCC_ARM --profile mbed-os/tools/profiles/debug.json
 ```
 
 and then use a GDB-compatible interface to flash the device, enable semihosting, and access the uVisor debug messages. Please read the [Debugging uVisor on mbed OS](DEBUGGING.md) document for the detailed instructions.
