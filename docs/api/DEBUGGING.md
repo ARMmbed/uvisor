@@ -65,16 +65,24 @@ The following is the minimum set of commands you need to send to the device to f
 
 ```bash
 (gdb) target remote localhost:2331
+(gdb) monitor endian little
 (gdb) monitor reset
 (gdb) monitor halt
 (gdb) monitor semihosting enable
-(gdb) monitor loadbin ./build/${target}/source/${your_app}.bin 0
+(gdb) monitor speed 1000
+(gdb) monitor loadbin BUILD/${target}/${your_app}.bin 0
 (gdb) monitor flash device = ${device_name}
-(gdb) load ./build/${target}/source/${your_app}
-(gdb) file ./build/${target}/source/${your_app}
+(gdb) load BUILD/${target}/${your_app}.elf
+(gdb) file BUILD/${target}/${your_app}.elf
 ```
 
 From here on if you send the `c` command the program will run indefinitely. Of course you can configure other addresses/ports for the target. Please refer to the [GDB documentation](http://www.gnu.org/software/gdb/documentation/) for details on the GDB commands.
+
+You can also group these commands in a script and pass it directly to `arm-none-eabi-gdb`:
+
+```bash
+$ arm-none-eabi-gdb -x gdb.script
+```
 
 You can observe the debug messages using `netcat` or any other equivalent program:
 
