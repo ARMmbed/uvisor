@@ -1,6 +1,6 @@
 # The uVisor
 
-The uVisor is a self-contained software hypervisor that creates independent secure domains on ARM Cortex-M3 and M4 micro-controllers. Its function is to increase resilience against malware and to protect secrets from leaking even among different modules of the same application. You can find a [high level overview here](http://www.slideshare.net/FoolsDelight/resilient-iot-security-the-end-of-flat-security-models).
+The uVisor is a self-contained software hypervisor that creates independent secure domains on ARM Cortex-M3 and M4 micro-controllers. Its function is to increase resilience against malware and to protect secrets from leaking even among different modules of the same application. You can find a [high level overview here](http://www.slideshare.net/FoolsDelight/practical-realtime-operating-system-security-for-the-masses) ([Download PDF](https://github.com/ARMmbed/uvisor/raw/docs/uVisorSecurity-TechCon2016.pdf)).
 
 To start using uVisor you will need to include it as a library in your design. We release the uVisor library periodically into the mbed OS repository, [ARMmbed/mbed-os](https://github.com/ARMmbed/mbed-os). If you want to learn more about the uVisor security model and get an overview of its features this is the right place. In this document you can read about:
 
@@ -31,7 +31,7 @@ Some of the open uVisor issues in progress are listed here:
 
 ### Further reading:
 
-* [Resilient IoT Security: The end of flat security models](http://www.slideshare.net/FoolsDelight/resilient-iot-security-the-end-of-flat-security-models): ARM TechCon 2015 PDF presentation of the uVisor design philosophy and technical overview.
+* [Practical real-time operating system security for the masses](https://github.com/ARMmbed/uvisor/raw/docs/uVisorSecurity-TechCon2016.pdf): ARM TechCon 2016 PDF presentation of the uVisor design philosophy and technical overview.
 * [mbed uVisor integration in mbed OS](https://github.com/ARMmbed/uvisor/raw/docs/uvisor-rtos-docs.pdf) in PDF format.
 * [Q&A with ARM](http://eecatalog.com/IoT/2015/08/18/qa-with-arm-securing-the-iot-using-arm-cortex-processors-and-a-growing-mbed-platform-suite/): Securing the IoT using ARM Cortex processors, and a growing mbed platform suite.
 
