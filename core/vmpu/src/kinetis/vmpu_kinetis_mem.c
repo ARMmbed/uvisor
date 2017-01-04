@@ -76,7 +76,7 @@ void vmpu_mem_init(void)
 
     /* rest of SRAM, accessible to mbed
      * - non-executable for uvisor
-     * - five read/write access to ENET DMA bus master */
+     * - give read/write access to ENET DMA bus master */
     vmpu_mpu_set_static_acl(2, (uint32_t) __uvisor_config.page_end,
         (uint32_t) __uvisor_config.sram_end - (uint32_t) __uvisor_config.page_end,
         UVISOR_TACL_SREAD |
