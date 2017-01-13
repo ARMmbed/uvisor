@@ -27,6 +27,7 @@ To create a new mbed application called `uvisor-example`, just run the following
 ```bash
 $ cd ~/code
 $ mbed new uvisor-example
+$ cd uvisor-example
 ```
 
 The mbed-cli tools will automatically fetch the mbed codebase for you. By default, git will be used to track your code changes, so your application will be ready to be pushed to a git server, if you want to.
@@ -101,7 +102,7 @@ static const UvisorBoxAclItem g_public_box_acls[] = {
     {SIM,   sizeof(*SIM),   UVISOR_TACLDEF_PERIPH},
     {PORTB, sizeof(*PORTB), UVISOR_TACLDEF_PERIPH},
 
-    /* For messages printed on the serial port. */
+    /* For messages printed on the serial port */
     {OSC,   sizeof(*OSC),   UVISOR_TACLDEF_PERIPH},
     {MCG,   sizeof(*MCG),   UVISOR_TACLDEF_PERIPH},
     {UART0, sizeof(*UART0), UVISOR_TACLDEF_PERIPH},
@@ -110,7 +111,7 @@ static const UvisorBoxAclItem g_public_box_acls[] = {
 /* Enable uVisor, using the ACLs we just created. */
 UVISOR_SET_MODE_ACL(UVISOR_ENABLED, g_public_box_acls);
 
-/* Rest of the existing app code */
+/* Rest of the existing code */
 ...
 ```
 
@@ -130,8 +131,8 @@ Before compiling, we need to override the original `K64F` target to enable the u
         }
     },
     "macros": [
-      "FEATURE_UVISOR",
-      "TARGET_UVISOR_SUPPORTED"
+      "FEATURE_UVISOR=1",
+      "TARGET_UVISOR_SUPPORTED=1"
     ]
 }
 ```
@@ -175,18 +176,18 @@ Instead, we provide specific APIs to instruct the uVisor to protect a private re
 
 ### Configure the secure box
 
-For this example, we want to create a secure box called `private_timer`. The `private_timer` box will be configured to have exclusive access to the PIT timer and to the GPIO PORT C on the NXP FRDM-K64F board, which means that other boxes will be prevented from accessing these peripherals.
+For this example, we want to create a secure box called `private_button`. The `private_button` box has exclusive access to the push-button on the NXP FRDM-K64F board, which means that other boxes cannot access its corresponding peripheral.
 
-Each secure box must have at least one thread, which we call the box's main thread. In our `private_timer` box we will only use this thread throughout the whole program. The thread will constantly save the current timer value in a private buffer. In addition, we want to print the content of the buffered timer values whenever we press the `SW2` button on the board.
+Each secure box must have at least one thread, which we call the box's main thread. In our `private_button` box we only use this thread throughout the whole program. The thread runs every second and counts the number of times it has been called between 2 button presses. The thread count is saved in a variable private to the box. Whenever we press the `SW2` button on the board the current thread count is stored into a private buffer and is restarted. For debug purposes, the program prints the content of the buffer every time it is filled up.
 
 We want the box to have exclusive access to the following resources:
 
-* The timer and push-button peripherals (as specified by a peripheral ACL). Nobody else should be able to read the timer values.
+* The push-button peripheral (as specified by a peripheral ACL). Nobody else should be able to access the push-button port.
 * The push-button interrupt (as specified by an IRQ ACL). We want the button IRQ to be rerouted to our box-specific ISR.
-* The buffer that holds the timer samples (as specified by a dynamic memory ACL).
-* The static memory that holds information about the timer buffer (as specified by a static memory ACL).
+* The private dynamically allocated buffer (as specified by a dynamic memory ACL).
+* The private variables (as specified by a static memory ACL).
 
-Create a new source file, `~/code/uvisor-example/source/secure_box.cpp`. We will configure the secure box inside this file. The secure box name for this example is `private_timer`.
+Create a new source file, `~/code/uvisor-example/source/secure_box.cpp`. We will configure the secure box inside this file. The secure box name for this example is `private_button`.
 
 ```C
 /* ~/code/uvisor-example/source/secure_box.cpp */
@@ -197,89 +198,98 @@ Create a new source file, `~/code/uvisor-example/source/secure_box.cpp`. We will
 
 /* Private static memory for the secure box */
 typedef struct {
-    uint32_t * buffer;
-    int index;
-} PrivateTimerStaticMemory;
+    uint32_t * buffer;          /* Static private memory, pointing to dynamically allocated private memory */
+    uint32_t counter;           /* Static private memory */
+    int index;                  /* Static private memory */
+} PrivateButtonStaticMemory;
 
 /* ACLs list for the secure box: Timer (PIT). */
-static const UvisorBoxAclItem g_private_timer_acls[] = {
-    {PIT,   sizeof(*PIT),   UVISOR_TACLDEF_PERIPH}
-    {PORTC, sizeof(*PORTC), UVISOR_TACLDEF_PERIPH},
+static const UvisorBoxAclItem g_private_button_acls[] = {
+    {PORTC, sizeof(*PORTC), UVISOR_TACLDEF_PERIPH},     /* Private peripheral */
 };
 
-static void private_timer_main_thread(const void *);
+static void private_button_main_thread(const void *);
 
 /* Secure box configuration */
 UVISOR_BOX_NAMESPACE(NULL);                   /* We won't specify a box namespace for this example. */
 UVISOR_BOX_HEAPSIZE(4096);                    /* Heap size for the secure box */
-UVISOR_BOX_MAIN(private_timer_main_thread,    /* Main thread for the secure box */
+UVISOR_BOX_MAIN(private_button_main_thread,   /* Main thread for the secure box */
                 osPriorityNormal,             /* Priority of the secure box's main thread */
                 1024);                        /* Stack size for the secure box's main thread */
-UVISOR_BOX_CONFIG(private_timer,              /* Name of the secure box */
-                  g_private_timer_acls,       /* ACLs list for the secure box */
+UVISOR_BOX_CONFIG(private_button,             /* Name of the secure box */
+                  g_private_button_acls,      /* ACLs list for the secure box */
                   1024,                       /* Stack size for the secure box */
-                  PrivateTimerStaticMemory);  /* Private static memory for the secure box. */
+                  PrivateButtonStaticMemory); /* Private static memory for the secure box. */
 ```
 
 ### Create the secure box's main thread function
 
-In general, you can decide what to do in your box's main thread. You can run it once and then stop it, or use it to configure memories or peripherals or to create other threads. In this app, the box's main thread is the only thread for the `private_timer` box, and it will run throughout the whole program.
+In general, you can decide what to do in your box's main thread. You can run it once and then stop it, or use it to configure memories or peripherals or to create other threads. In this app, the box's main thread is the only thread for the `private_button` box, and it runs throughout the whole program.
 
-The `private_timer_main_thread` function configures the PIT timer, allocates the dynamic buffer to hold the timer values and initializes its private static memory, `PrivateTimerStaticMemory`. A spinning loop is used to update the values in the buffer every time the thread is reactivated.
+The `private_button_main_thread` function configures the push-button to trigger an interrupt when pressed, allocates the dynamic buffer to hold the thread count values and initializes its private static memory, `PrivateButtonStaticMemory`. A spinning loop is used to update the counter value every second.
 
 ```C
-/* Number of timer samples we will use */
-#define PRIVATE_TIMER_BUFFER_COUNT 256
+/* ~/code/uvisor-example/source/secure_box.cpp */
 
-/* For debug purposes: print the buffer values when the SW2 button is pressed. */
-static void private_timer_button_on_press(void)
+/* The previous code goes here. */
+...
+
+#define PRIVATE_BUTTON_BUFFER_COUNT 8
+
+static void private_button_on_press(void)
 {
-    for (int i = 0; i < PRIVATE_TIMER_BUFFER_COUNT; i++) {
-        printf("buffer[%03d] = %lu\r\n", i, uvisor_ctx->buffer[i]);
+    /* Store the thread count into the buffer and reset it. */
+    uvisor_ctx->buffer[uvisor_ctx->index] = uvisor_ctx->counter;
+    uvisor_ctx->counter = 0;
+
+    /* Update the index. Behave as a circular buffer. */
+    if (uvisor_ctx->index < PRIVATE_BUTTON_BUFFER_COUNT - 1) {
+        uvisor_ctx->index++;
+    } else {
+        uvisor_ctx->index = 0;
+
+        /* For debug purposes: Print the content of the buffer. */
+        printf("Thread count between button presses: ");
+        for (int i = 0; i < PRIVATE_BUTTON_BUFFER_COUNT; ++i) {
+            printf("%lu ", uvisor_ctx->buffer[i]);
+        }
+        printf("\r\n");
     }
+
 }
 
 /* Main thread for the secure box */
-static void private_timer_main_thread(const void *)
+static void private_button_main_thread(const void *)
 {
     /* Create the buffer and cache its pointer to the private static memory. */
-    uvisor_ctx->buffer = (uint32_t *) malloc(PRIVATE_TIMER_BUFFER_COUNT * sizeof(uint32_t));
+    uvisor_ctx->buffer = (uint32_t *) malloc(PRIVATE_BUTTON_BUFFER_COUNT * sizeof(uint32_t));
     if (uvisor_ctx->buffer == NULL) {
         mbed_die();
     }
     uvisor_ctx->index = 0;
+    uvisor_ctx->counter = 0;
 
     /* Setup the push-button callback. */
-    InterruptIn button(SW2);
+    InterruptIn button(SW2);                        /* Private IRQ */
     button.mode(PullUp);
-    button.fall(&private_timer_button_on_press);
+    button.fall(&private_button_on_press);
 
-    /* Setup and start the timer. */
-    Timer timer;
-    timer.start();
-
+    /* Increment the private counter every second. */
     while (1) {
-        /* Store the timer value. */
-        uvisor_ctx->buffer[uvisor_ctx->index] = timer.read_us();
-
-        /* Update the index. Behave as a circular buffer. */
-        if (uvisor_ctx->index < PRIVATE_TIMER_BUFFER_COUNT - 1) {
-            uvisor_ctx->index++;
-        } else {
-            uvisor_ctx->index = 0;
-        }
+        uvisor_ctx->counter++;
+        wait(1.0);
     }
 }
 ```
 
 A few things to note in the code above:
 
-* If code is running in the context of `private_timer`, then any object instantiated inside that code will belong to the `private_timer` heap and stack. This means that in the example above, the `InterruptIn` and `Timer` objects are private to the `private_timer` box. The same applies to the dynamically allocated buffer `uvisor_ctx->buffer`.
-* You can access the content of the private memory `PrivateTimerStaticMemory` using the `PrivateTimerStaticMemory * uvisor_ctx` pointer, which uVisor maintains.
-* The `InterruptIn` object triggers the registration of an interrupt slot. Because that code is run in the context of the `private_timer` box, then the push-button IRQ belongs to that box. If you want to use the IRQ APIs directly, read the [section](#the-nvic-apis) below.
-* Even if the `private_timer_button_on_press` function runs in the context of `private_timer`, we can still use the `printf` function, which accesses the `UART0` peripheral, owned by the public box. This is because all ACLs declared in the public box are by default shared with all the other secure boxes. This also means that the messages we are printing on the serial port are not secure, because other boxes have access to that peripheral.
+* If code is running in the context of `private_button`, then any object instantiated inside that code will belong to the `private_button` heap and stack. This means that in the example above, the `InterruptIn` object is private to the `private_button` box. The same applies to the dynamically allocated buffer `uvisor_ctx->buffer`.
+* You can access the content of the private memory `PrivateButtonStaticMemory` using the `PrivateButtonStaticMemory volatile * volatile uvisor_ctx` pointer, which uVisor maintains.
+* The `InterruptIn` object triggers the registration of an interrupt slot. Because that code is run in the context of the `private_button` box, then the push-button IRQ belongs to that box. If you want to use the IRQ APIs directly, read the [section](#the-nvic-apis) below.
+* Even if the `private_button_on_press` function runs in the context of `private_button`, we can still use the `printf` function, which accesses the `UART0` peripheral, owned by the public box. This is because all ACLs declared in the public box are by default shared with all the other secure boxes. This also means that the messages we are printing on the serial port are not secure, because other boxes have access to that peripheral.
 
-> **Warning**: Instantiating an object in the `secure_box.cpp` global scope will automatically map it to the public box context, not the `private_timer` one. If you want an object to be private to a box, you need to instantiate it inside the code that will run in the context of that box (such as the `InterruptIn` and `Timer` objects), or alternatively statically initialize it in the box private static memory (such as the `buffer` and `index` variables in `PrivateTimerStaticMemory`).
+> **Warning**: Instantiating an object in the `secure_box.cpp` global scope will automatically map it to the public box context, not the `private_button` one. If you want an object to be private to a box, you need to instantiate it inside the code that runs in the context of that box (such as the `InterruptIn` object), or alternatively statically initialize it in the box private static memory (such as the `buffer`, `index` and `counter` variables in `PrivateButtonStaticMemory`).
 
 ---
 
@@ -295,7 +305,7 @@ Reflash the device, and press the reset button. The device LED should be blinkin
 
 If you don't see the LED blinking, it means that the application halted somewhere, probably because uVisor captured a fault. You can set up the uVisor debug messages to see if there is any problem. Follow the [Debugging uVisor on mbed OS](DEBUGGING.md) document for a step-by-step guide.
 
-If the LED is blinking, it means that the app is running fine. If you now press the `SW2` button on the NXP FRDM-K64F board, the `private_timer_button_on_press` function will be executed, printing the values in the timer buffer. You can observe these values by opening a serial port connection to the device, with a baud rate of 9600. When the print is completed, you should see the LED blinking again.
+If the LED is blinking, it means that the app is running fine. If you now press the `SW2` button on the NXP FRDM-K64F board, the `private_button_on_press` function will be executed, printing the values in the timer buffer after `PRIVATE_BUTTON_BUFFER_COUNT` presses. You can observe these values by opening a serial port connection to the device, with a baud rate of 9600.
 
 ### Expose public secure entry points to the secure box
 
