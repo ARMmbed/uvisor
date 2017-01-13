@@ -210,7 +210,7 @@ static void vmpu_box_index_init(uint8_t box_id, const UvisorBoxConfig * const co
     int i;
 
     if (box_id == 0) {
-        /* Box 0 still uses the main heap to be backwards compatible. */
+        /* Box 0 still uses the public heap to be backwards compatible. */
         const uint32_t heap_end = (uint32_t) __uvisor_config.heap_end;
         const uint32_t heap_start = (uint32_t) __uvisor_config.heap_start;
         heap_size = (heap_end - heap_start) - config->index_size;

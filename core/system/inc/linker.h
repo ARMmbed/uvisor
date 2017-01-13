@@ -77,7 +77,7 @@ typedef struct {
     /* Address of __uvisor_box_context */
     uint32_t * * uvisor_box_context;
 
-    /* Main heap for box 0 */
+    /* Public heap (used by the public box) */
     uint32_t * heap_start;
     uint32_t * heap_end;
 

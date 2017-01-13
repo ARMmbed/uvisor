@@ -24,7 +24,7 @@ Each process gets at compile-time a fixed memory pool assigned which will be use
 
 The uVisor secures two main memory blocks, in flash and SRAM respectively. In both cases, it protects its own data and the data of the secure boxes it manages for the unprivileged code.
 
-All the unprivileged code that is not protected in a secure domain is referred to as the *main process*.
+All the unprivileged code that is not protected in a secure domain is referred to as the *public box*.
 
 The main memory sections protected by uVisor are detailed in the following table:
 

@@ -396,7 +396,7 @@ Three new capabilities are added to uVisor to support RTOS integration.
 
 #### Ability for a box to specify a main thread
 
-A box's main thread is where code execution begins in that box. Each box has one main thread, with the exception of the main box (box 0). The box's "Box Config" specifies the function to use for that box's main thread.
+A box's main thread is where code execution begins in that box. Each box has one main thread, with the exception of the public box (box 0). The box's "Box Config" specifies the function to use for that box's main thread.
 
 The following is an example of box configuration. Note the use of the `UVISOR_BOX_MAIN` macro to specify the function to use as the body of the box's main thread.
 ```C
@@ -410,9 +410,9 @@ UVISOR_BOX_MAIN(example_box_main, osPriorityNormal);
 UVISOR_BOX_CONFIG(example_box, acl, UVISOR_BOX_STACK_SIZE, box_context);
 ```
 
-The main box's code execution starts the same way that it starts when uVisor is not present.
+The public box's code execution starts the same way that it starts when uVisor is not present.
 
-For all boxes other than the main box: after libc, the RTOS, and C++ statically constructed objects are initialized, and the RTOS is about to start, the RTOS asks uVisor to handle the "pre-start" event. uVisor then creates main threads for each box. The main threads use the box stack as their stack. These threads do not start until after the RTOS scheduler starts (which is after pre-start is finished).
+For all boxes other than the public box: after libc, the RTOS, and C++ statically constructed objects are initialized, and the RTOS is about to start, the RTOS asks uVisor to handle the "pre-start" event. uVisor then creates main threads for each box. The main threads use the box stack as their stack. These threads do not start until after the RTOS scheduler starts (which is after pre-start is finished).
 
 #### Ability for a privileged mode RTOS to call uVisor without an SVC
 

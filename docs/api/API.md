@@ -116,14 +116,14 @@ UVISOR_SET_MODE(UVISOR_ENABLED);
 ---
 
 ```C
-UVISOR_SET_MODE_ACL(uvisor_mode, const UvBoxAcl *main_box_acl_list);
+UVISOR_SET_MODE_ACL(uvisor_mode, const UvBoxAcl *public_box_acl_list);
 ```
 
 <table>
   <tr>
     <td>Description</td>
     <td colspan="2">[temporary] Set mode for the uVisor and provide background
-                    ACLs for the main box
+                    ACLs for the public box
     </td>
   </tr>
   <tr>
@@ -141,8 +141,8 @@ UVISOR_SET_MODE_ACL(uvisor_mode, const UvBoxAcl *main_box_acl_list);
   <tr>
     <td><pre>UVISOR_ENABLED<code> = enabled</td>
   <tr>
-    <td><pre>const UvBoxAclItem *main_box_acl_list<code></td>
-    <td>List of ACLs for the main box (background ACLs)</td>
+    <td><pre>const UvBoxAclItem *public_box_acl_list<code></td>
+    <td>List of ACLs for the public box (background ACLs)</td>
   </tr>
 </table>
 
@@ -150,7 +150,7 @@ Example:
 ```C
 #include "uvisor-lib/uvisor-lib.h"
 
-/* Create background ACLs for the main box. */
+/* Create background ACLs for the public box. */
 static const UvBoxAclItem g_background_acl[] = {
     {UART0,       sizeof(*UART0), UVISOR_TACL_PERIPHERAL},
     {UART1,       sizeof(*UART1), UVISOR_TACL_PERIPHERAL},

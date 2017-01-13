@@ -93,10 +93,10 @@ To enable the uVisor on the app, add the following lines at the beginning of the
 #include "rtos.h"
 #include "uvisor-lib/uvisor-lib.h"
 
-/* Main box Access Control Lists (ACLs). */
+/* Public box Access Control Lists (ACLs). */
 /* Note: These are specific to the NXP FRDM-K64F board. See the section below
  *       for more information. */
-static const UvisorBoxAclItem g_main_box_acls[] = {
+static const UvisorBoxAclItem g_public_box_acls[] = {
     /* For the LED */
     {SIM,   sizeof(*SIM),   UVISOR_TACLDEF_PERIPH},
     {PORTB, sizeof(*PORTB), UVISOR_TACLDEF_PERIPH},
@@ -108,7 +108,7 @@ static const UvisorBoxAclItem g_main_box_acls[] = {
 };
 
 /* Enable uVisor, using the ACLs we just created. */
-UVISOR_SET_MODE_ACL(UVISOR_ENABLED, g_main_box_acls);
+UVISOR_SET_MODE_ACL(UVISOR_ENABLED, g_public_box_acls);
 
 /* Rest of the existing app code */
 ...
@@ -116,8 +116,8 @@ UVISOR_SET_MODE_ACL(UVISOR_ENABLED, g_main_box_acls);
 
 In the code above we specified 2 elements:
 
-1. Main box Access Control Lists (ACLs). Since with uVisor enabled everything runs in unprivileged mode, we need to make sure that peripherals that are accessed by the OS and the main box are allowed. These peripherals are specified using a list like the one in the snippet above. For the purpose of this example we provide you the list of all the ACLs that we know you will need. For other platforms or other applications you need to determine those ACLs following a process that is described in a [section](#the-main-box-acls) below.
-1. App-specific uVisor configurations: `UVISOR_SET_MODE_ACL`. This macro sets the uVisor mode (enabled) and associates the list of ACLs we just created with the main box.
+1. Public box Access Control Lists (ACLs). Since with uVisor enabled everything runs in unprivileged mode, we need to make sure that peripherals that are accessed by the OS and the public box are allowed. These peripherals are specified using a list like the one in the snippet above. For the purpose of this example we provide you the list of all the ACLs that we know you will need. For other platforms or other applications you need to determine those ACLs following a process that is described in a [section](#the-main-box-acls) below.
+1. App-specific uVisor configurations: `UVISOR_SET_MODE_ACL`. This macro sets the uVisor mode (enabled) and associates the list of ACLs we just created with the public box.
 
 Before compiling, we need to override the original `K64F` target to enable the uVisor feature. To do so, add the file `~/code/uvisor-example/mbed_app.json` with the following content:
 
@@ -158,7 +158,7 @@ Reflash the device and press the reset button. The device LED should be blinking
 
 ---
 
-If you enable uVisor in the `blinky` app as it was written above, you will not get any particular security feature. All code and resources share the same security context, which we call the *main box*.
+If you enable uVisor in the `blinky` app as it was written above, you will not get any particular security feature. All code and resources share the same security context, which we call the *public box*.
 
 A lot happens unseen, though. All the user code now runs in unprivileged mode, and the systems services such as the `NVIC` APIs and the OS SVCalls are routed through the uVisor.
 
@@ -277,9 +277,9 @@ A few things to note in the code above:
 * If code is running in the context of `private_timer`, then any object instantiated inside that code will belong to the `private_timer` heap and stack. This means that in the example above, the `InterruptIn` and `Timer` objects are private to the `private_timer` box. The same applies to the dynamically allocated buffer `uvisor_ctx->buffer`.
 * You can access the content of the private memory `PrivateTimerStaticMemory` using the `PrivateTimerStaticMemory * uvisor_ctx` pointer, which uVisor maintains.
 * The `InterruptIn` object triggers the registration of an interrupt slot. Because that code is run in the context of the `private_timer` box, then the push-button IRQ belongs to that box. If you want to use the IRQ APIs directly, read the [section](#the-nvic-apis) below.
-* Even if the `private_timer_button_on_press` function runs in the context of `private_timer`, we can still use the `printf` function, which accesses the `UART0` peripheral, owned by the main box. This is because all ACLs declared in the main box are by default shared with all the other secure boxes. This also means that the messages we are printing on the serial port are not secure, because other boxes have access to that peripheral.
+* Even if the `private_timer_button_on_press` function runs in the context of `private_timer`, we can still use the `printf` function, which accesses the `UART0` peripheral, owned by the public box. This is because all ACLs declared in the public box are by default shared with all the other secure boxes. This also means that the messages we are printing on the serial port are not secure, because other boxes have access to that peripheral.
 
-> **Warning**: Instantiating an object in the `secure_box.cpp` global scope will automatically map it to the main box context, not the `private_timer` one. If you want an object to be private to a box, you need to instantiate it inside the code that will run in the context of that box (such as the `InterruptIn` and `Timer` objects), or alternatively statically initialize it in the box private static memory (such as the `buffer` and `index` variables in `PrivateTimerStaticMemory`).
+> **Warning**: Instantiating an object in the `secure_box.cpp` global scope will automatically map it to the public box context, not the `private_timer` one. If you want an object to be private to a box, you need to instantiate it inside the code that will run in the context of that box (such as the `InterruptIn` and `Timer` objects), or alternatively statically initialize it in the box private static memory (such as the `buffer` and `index` variables in `PrivateTimerStaticMemory`).
 
 ---
 
@@ -357,18 +357,18 @@ NVIC_EnableIRQ(MY_IRQ);
 
 For more information on the uVisor APIs, see the [uVisor API documentation](API.md) document.
 
-### The *main box* ACLs
+### The *public box* ACLs
 
-The code samples that we provide in this guide give you a ready-made list of ACLs for the main box. The list includes peripherals that we already know will be necessary to make the example app work, and it is specific to the NXP FRDM-K64F target.
+The code samples that we provide in this guide give you a ready-made list of ACLs for the public box. The list includes peripherals that we already know will be necessary to make the example app work, and it is specific to the NXP FRDM-K64F target.
 
-This section shows how to discover the needed ACLs for the main box. You might need to follow these instructions in case you want to generate the ACLs list for a different target or a different app.
+This section shows how to discover the needed ACLs for the public box. You might need to follow these instructions in case you want to generate the ACLs list for a different target or a different app.
 
 At the moment the uVisor does not provide a way to detect and list all the faulting ACLs for a given platform automatically. This is a planned feature that will be released in the future.
 
 In order to generate the list of ACLs, use the code provided in the [Enable uVisor](#enable-uvisor) section. In this case, though, start with an empty ACLs list:
 
 ```C
-static const UvisorBoxAclItem g_main_box_acls[] = {
+static const UvisorBoxAclItem g_public_box_acls[] = {
 }
 ```
 
@@ -380,7 +380,7 @@ $ mbed compile -m K64F -t GCC_ARM --profile mbed-os/tools/profiles/debug.json
 
 and then use a GDB-compatible interface to flash the device, enable semihosting and access the uVisor debug messages. Please read the [Debugging uVisor on mbed OS](DEBUGGING.md) document for the detailed instructions.
 
-Once the uVisor debug messages are enabled, you will see your application fail. The failure is due to the first missing ACL being hit by the main box code. The message will look like:
+Once the uVisor debug messages are enabled, you will see your application fail. The failure is due to the first missing ACL being hit by the public box code. The message will look like:
 
 ```
 ***********************************************************
@@ -402,7 +402,7 @@ Now that you know which peripheral is causing the fault (the `SIM` peripheral, i
 
 
 ```C
-static const UvisorBoxAclItem g_main_box_acls[] = {
+static const UvisorBoxAclItem g_public_box_acls[] = {
     {SIM, sizeof(*SIM), UVISOR_TACLDEF_PERIPH},
 };
 ```

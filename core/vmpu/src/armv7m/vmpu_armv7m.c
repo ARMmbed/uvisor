@@ -282,7 +282,7 @@ void vmpu_switch(uint8_t src_box, uint8_t dst_box)
     while (dst_count-- && vmpu_mpu_push(region++, 2));
 
     if (!dst_box) {
-        /* Handle main box ACLs last. */
+        /* Handle public box ACLs last. */
         vmpu_region_get_for_box(0, &region, &dst_count);
 
         while (dst_count-- && vmpu_mpu_push(region++, 1));
@@ -310,17 +310,17 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
         box_mem_pos = (uint32_t) __uvisor_config.bss_boxes_start;
     }
 
-    /* Handle main box. */
+    /* Handle public box. */
     if (box_id == 0)
     {
         DPRINTF("ctx=%i stack=%i\n\r", bss_size, stack_size);
         /* Non-important sanity checks */
         assert(stack_size == 0);
 
-        /* Assign main box stack pointer to existing unprivileged stack
+        /* Assign public box stack pointer to existing unprivileged stack
          * pointer. */
         g_context_current_states[0].sp = __get_PSP();
-        /* Box 0 still uses the main heap to be backwards compatible. */
+        /* Box 0 still uses the public heap to be backwards compatible. */
         g_context_current_states[0].bss = (uint32_t) __uvisor_config.heap_start;
         return;
     }
