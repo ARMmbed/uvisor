@@ -99,7 +99,7 @@ Different memory layouts can be used on different platforms, depending on the im
 
 The uVisor secures two main memory blocks, in flash and SRAM respectively. In both cases, it protects its own data and the data of the secure boxes it manages for the unprivileged code. For a more detailed view please refer to our interactive [linker section visualization](https://meriac.github.io/mbed-os-linker-report/)).
 
-All the unprivileged code that is not protected in a secure domain is referred to as the *main box*.
+All the unprivileged code that is not protected in a secure domain is referred to as the *public box*.
 
 The main memory sections that the uVisor protects are detailed in the following table:
 
@@ -151,7 +151,7 @@ The uVisor is initialised right after device start-up and takes ownership of its
 1. Privileged and unprivileged stack pointers are initialised.
 1. Execution is de-privileged and handed over to the unprivileged code.
 
-From this moment on, the operating system/application runs in unprivileged mode and in the default context, which is the one of the main box.
+From this moment on, the operating system/application runs in unprivileged mode and in the default context, which is the one of the public box.
 
 ### Context switching
 

@@ -77,7 +77,7 @@ uvisor_config:
     /* Address of __uvisor_box_context */
     .long __uvisor_box_context
 
-    /* Main heap for box 0 */
+    /* Public heap (used by the public box) */
     .long __uvisor_heap_start
     .long __uvisor_heap_end
 
