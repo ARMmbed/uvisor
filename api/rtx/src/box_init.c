@@ -56,15 +56,7 @@ void __uvisor_initialize_rpc_queues(void)
     /* Initialize all the result semaphores. */
     for (i = 0; i < UVISOR_RPC_OUTGOING_MESSAGE_SLOTS; i++) {
         UvisorSemaphore * semaphore = &rpc_outgoing_msg_queue->messages[i].semaphore;
-        if (__uvisor_semaphore_init(semaphore, 1)) {
-            uvisor_error(USER_NOT_ALLOWED);
-        }
-
-        /* Semaphores are created with their value initialized to count. We
-         * want the semaphore to start at zero. Decrement the semaphore, so it
-         * starts with a value of zero. This will allow the first pend to
-         * block. */
-        if (__uvisor_semaphore_pend(semaphore, 0)) {
+        if (__uvisor_semaphore_init(semaphore, 1, 0)) {
             uvisor_error(USER_NOT_ALLOWED);
         }
     }
@@ -102,15 +94,7 @@ void __uvisor_initialize_rpc_queues(void)
     /* Initialize all the function group semaphores. */
     for (i = 0; i < UVISOR_RPC_FN_GROUP_SLOTS; i++) {
         UvisorSemaphore * semaphore = &rpc_fn_group_queue->fn_groups[i].semaphore;
-        if (__uvisor_semaphore_init(semaphore, 1)) {
-            uvisor_error(USER_NOT_ALLOWED);
-        }
-
-        /* Semaphores are created with their value initialized to count. We
-         * want the semaphore to start at zero. Decrement the semaphore, so it
-         * starts with a value of zero. This will allow the first pend to
-         * block. */
-        if (__uvisor_semaphore_pend(semaphore, 0)) {
+        if (__uvisor_semaphore_init(semaphore, 1, 0)) {
             uvisor_error(USER_NOT_ALLOWED);
         }
     }
