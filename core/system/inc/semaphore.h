@@ -20,8 +20,8 @@
 #include "api/inc/uvisor_exports.h"
 #include "api/inc/uvisor_semaphore_exports.h"
 
-/* This function is not safe to call from interrupt context. */
-int semaphore_init(UvisorSemaphore * semaphore, int32_t count);
+/* This function is safe to call from interrupt context. */
+int semaphore_init(UvisorSemaphore * semaphore, uint32_t initial_count, uint32_t max_count);
 
 /* This function is not safe to call from interrupt context, even if the
  * timeout is zero. */
