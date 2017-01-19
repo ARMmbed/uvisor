@@ -92,9 +92,7 @@ void debug_halt_error(THaltError reason)
     if (!g_debug_box.initialized || debugged_once_before) {
         while (1);
     } else {
-        /* Remember that debug_deprivilege_and_return() has been called once.
-         * We'll reboot after the debug handler is run, so this will go back to
-         * zero after the reboot. */
+        /* Remember that debug_deprivilege_and_return() has been called once. */
         debugged_once_before = 1;
 
         /* The following arguments are passed to the destination function:
