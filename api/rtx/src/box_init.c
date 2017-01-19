@@ -18,8 +18,9 @@
 #include "api/inc/pool_queue_exports.h"
 #include "api/inc/rpc_exports.h"
 #include "api/inc/uvisor_semaphore.h"
+#include "api/inc/box_config.h"
 #include "mbed_interface.h"
-#include "cmsis_os.h"
+#include "cmsis_os2.h"
 #include <stdint.h>
 #include <string.h>
 
@@ -104,16 +105,14 @@ void __uvisor_initialize_rpc_queues(void)
  * create box main threads for the box. */
 void __uvisor_lib_box_init(void * lib_config)
 {
-    osThreadId thread_id;
-    osThreadDef_t * flash_thread_def = lib_config;
-    osThreadDef_t thread_def;
+    osThreadId_t thread_id;
+    uvisor_box_main_t * box_main = lib_config;
+    osThreadAttr_t thread_attr = { 0 };
 
     __uvisor_initialize_rpc_queues();
 
-    /* Copy thread definition from flash to RAM. The thread definition is most
-     * likely in flash, so we need to copy it to box-local RAM before we can
-     * modify it. */
-    memcpy(&thread_def, flash_thread_def, sizeof(thread_def));
+    thread_attr.priority = box_main->priority;
+    thread_attr.stack_size = box_main->stack_size;
 
     /* Note that the box main thread stack is separate from the box stack. This
      * is because the thread must be created to use a different stack than the
@@ -122,14 +121,23 @@ void __uvisor_lib_box_init(void * lib_config)
     /* Allocate memory for the main thread from the process heap (which is
      * private to the process). This memory is never freed, even if the box's
      * main thread exits. */
-    thread_def.stack_pointer = malloc_p(thread_def.stacksize);
-
-    if (thread_def.stack_pointer == NULL) {
-        /* No process heap memory available */
+    thread_attr.stack_mem = malloc_p(thread_attr.stack_size);
+    if (thread_attr.stack_mem == NULL) {
+        /* No process heap memory available for thread stack */
         uvisor_error(USER_NOT_ALLOWED);
     }
 
-    thread_id = osThreadCreate(&thread_def, NULL);
+    /* Allocate memory for the main thread control block from the process heap
+     * (which is private to the process). This memory is never freed, even if
+     * the box's main thread exits. */
+    thread_attr.cb_size = sizeof(osRtxThread_t);
+    thread_attr.cb_mem = malloc_p(thread_attr.cb_size);
+    if (thread_attr.cb_mem == NULL) {
+        /* No process heap memory available for thread control block. */
+        uvisor_error(USER_NOT_ALLOWED);
+    }
+
+    thread_id = osThreadNew((osThreadFunc_t) box_main->function, NULL, &thread_attr);
 
     if (thread_id == NULL) {
         /* Failed to create thread */
