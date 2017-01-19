@@ -122,12 +122,14 @@ Instead, debug events and messages are forwarded to a special unprivileged box, 
 
 The debug box driver is encoded in a standard table (a C `struct`) that must be populated by a debug box at initialization time. A debug box can decide to implement only some of the available handlers, although they must all exist at least as empty functions, otherwise the program behaviour might be unpredictable.
 
-Currently, only one debug handler is provided. A debug box driver will always expect a `get_version()` handler in position 0 of the function table:
+Currently, only one debug handler — `halt_error` — is provided. This handler only executes once, so if another fault occurs during its execution, the uVisor does not de-privilege again, halting instead. A debug box driver will also expect a `get_version()` handler in position 0 of the function table:
+
+Debug box handlers can also reset the device by calling the `NVIC_SystemReset()` API. This API cannot be called from other secure boxes.
 
 ```C
 typedef struct TUvisorDebugDriver {
   uint32_t (*get_version)(void);      /* 0. Return the implemented driver version. */
-  void (*halt_error)(int);            /* 1. Halt on error. Reboot upon return. */
+  void (*halt_error)(int);            /* 1. Halt on error. Halt upon return. */
 }
 ```
 
@@ -155,7 +157,11 @@ static uint32_t get_version(void) {
 
 static void halt_error(int reason) {
     printf("We halted with reason %i\r\n", reason);
-    /* We will now reboot. */
+
+    /* If we don't do anything, the system will halt upon return. */
+    /* A debug box handler like this one can also decide to reboot the whole
+     * system. This is only allowed from the debug box. */
+    NVIC_SystemReset();
 }
 
 static void box_debug_main(const void *)
