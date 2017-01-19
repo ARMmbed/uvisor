@@ -173,12 +173,7 @@ static void box_debug_main(const void *)
 
 ## Platform-specific details
 
-Currently the following platforms are officially supported by uVisor:
-
-* [NXP FRDM-K64F](http://developer.mbed.org/platforms/FRDM-K64F/).
-* [STMicorelectronics STM32F429I-DISCO](http://www.st.com/web/catalog/tools/FM116/SC959/SS1532/PF259090).
-
-This section provides details on how to enable debug on these platforms.
+This section provides details on how to enable debug on some specific hardware platforms.
 
 #### NXP FRDM-K64F
 
