@@ -137,20 +137,17 @@ The following is an example of how to implement and configure a debug box.
 #include "mbed.h"
 #include "uvisor-lib/uvisor-lib.h"
 
-struct box_context {
-    uint32_t unused;
-};
-
 static const UvisorBoxAclItem acl[] = {
+    /* No specific ACL required. */
 };
 
 static void box_debug_main(const void *);
 
 /* Configure the debug box. */
 UVISOR_BOX_NAMESPACE(NULL);
-UVISOR_BOX_CONFIG(box_debug, UVISOR_BOX_STACK_SIZE);
-UVISOR_BOX_MAIN(box_debug_main, osPriorityNormal, UVISOR_BOX_STACK_SIZE);
-UVISOR_BOX_CONFIG(box_debug, acl, UVISOR_BOX_STACK_SIZE, box_context);
+UVISOR_BOX_HEAPSIZE(2048);
+UVISOR_BOX_MAIN(box_debug_main, osPriorityNormal, 1024);
+UVISOR_BOX_CONFIG(box_debug, 1024);
 
 static uint32_t get_version(void) {
     return 0;
