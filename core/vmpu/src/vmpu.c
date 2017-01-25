@@ -162,6 +162,20 @@ static int vmpu_sanity_checks(void)
         }
     }
 
+    /* Check the public heap start and end addresses. */
+    uint32_t const heap_end = (uint32_t) __uvisor_config.heap_end;
+    uint32_t const heap_start = (uint32_t) __uvisor_config.heap_start;
+    if (!heap_start || !vmpu_public_sram_addr(heap_start)) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "Heap start pointer (0x%08x) is not in SRAM memory.\r\n", heap_start);
+    }
+    if (!heap_end || !vmpu_public_sram_addr(heap_end)) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "Heap end pointer (0x%08x) is not in SRAM memory.\r\n", heap_end);
+    }
+    if (heap_end < heap_start) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "Heap end pointer (0x%08x) is smaller than heap start pointer (0x%08x).\r\n",
+                   heap_end, heap_start);
+    }
+
     /* Return an error if uVisor is disabled. */
     if (!__uvisor_config.mode || (*__uvisor_config.mode == 0)) {
         return -1;
@@ -260,20 +274,6 @@ static void vmpu_enumerate_boxes(void)
     const UvisorBoxConfig **box_cfgtbl;
     uint32_t bss_size;
     uint8_t box_id;
-
-    /* Check heap start and end addresses. */
-    if (!__uvisor_config.heap_start || !vmpu_public_sram_addr((uint32_t) __uvisor_config.heap_start)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "Heap start pointer (0x%08x) is not in SRAM memory.\n",
-            (uint32_t) __uvisor_config.heap_start);
-    }
-    if (!__uvisor_config.heap_end || !vmpu_public_sram_addr((uint32_t) __uvisor_config.heap_end)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "Heap end pointer (0x%08x) is not in SRAM memory.\n",
-            (uint32_t) __uvisor_config.heap_end);
-    }
-    if (__uvisor_config.heap_end < __uvisor_config.heap_start) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "Heap end pointer (0x%08x) is smaller than heap start pointer (0x%08x).\n",
-            (uint32_t) __uvisor_config.heap_end, (uint32_t) __uvisor_config.heap_start);
-    }
 
     /* Enumerate boxes. */
     g_vmpu_box_count = (uint32_t) (__uvisor_config.cfgtbl_ptr_end - __uvisor_config.cfgtbl_ptr_start);
