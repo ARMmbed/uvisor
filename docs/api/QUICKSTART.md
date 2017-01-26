@@ -42,7 +42,6 @@ and place a new file `main.cpp` in it:
 /* ~/code/uvisor-example/source/main.cpp */
 
 #include "mbed.h"
-#include "rtos.h"
 
 DigitalOut led(LED1);
 
@@ -91,7 +90,6 @@ To enable the uVisor on the app, add the following lines at the beginning of the
 /* ~/code/uvisor-example/source/main.cpp */
 
 #include "mbed.h"
-#include "rtos.h"
 #include "uvisor-lib/uvisor-lib.h"
 
 /* Public box Access Control Lists (ACLs). */
@@ -106,6 +104,7 @@ static const UvisorBoxAclItem g_public_box_acls[] = {
     {OSC,   sizeof(*OSC),   UVISOR_TACLDEF_PERIPH},
     {MCG,   sizeof(*MCG),   UVISOR_TACLDEF_PERIPH},
     {UART0, sizeof(*UART0), UVISOR_TACLDEF_PERIPH},
+    {PIT,   sizeof(*PIT),   UVISOR_TACLDEF_PERIPH},
 };
 
 /* Enable uVisor, using the ACLs we just created. */
@@ -131,8 +130,8 @@ Before compiling, we need to override the original `K64F` target to enable the u
         }
     },
     "macros": [
-      "FEATURE_UVISOR=1",
-      "TARGET_UVISOR_SUPPORTED=1"
+        "FEATURE_UVISOR=1",
+        "TARGET_UVISOR_SUPPORTED=1"
     ]
 }
 ```
@@ -193,7 +192,6 @@ Create a new source file, `~/code/uvisor-example/source/secure_box.cpp`. We will
 /* ~/code/uvisor-example/source/secure_box.cpp */
 
 #include "mbed.h"
-#include "rtos.h"
 #include "uvisor-lib/uvisor-lib.h"
 
 /* Private static memory for the secure box */
@@ -201,6 +199,7 @@ typedef struct {
     uint32_t * buffer;          /* Static private memory, pointing to dynamically allocated private memory */
     uint32_t counter;           /* Static private memory */
     int index;                  /* Static private memory */
+    RawSerial * pc;             /* Static private memory, pointing to dynamically allocated private memory */
 } PrivateButtonStaticMemory;
 
 /* ACLs list for the secure box: Timer (PIT). */
@@ -249,11 +248,11 @@ static void private_button_on_press(void)
         uvisor_ctx->index = 0;
 
         /* For debug purposes: Print the content of the buffer. */
-        printf("Thread count between button presses: ");
+        uvisor_ctx->pc->printf("Thread count between button presses: ");
         for (int i = 0; i < PRIVATE_BUTTON_BUFFER_COUNT; ++i) {
-            printf("%lu ", uvisor_ctx->buffer[i]);
+            uvisor_ctx->pc->printf("%lu ", uvisor_ctx->buffer[i]);
         }
-        printf("\r\n");
+        uvisor_ctx->pc->printf("\r\n");
     }
 
 }
@@ -261,9 +260,15 @@ static void private_button_on_press(void)
 /* Main thread for the secure box */
 static void private_button_main_thread(const void *)
 {
+    /* Allocate serial port to ensure that code in this secure box
+     * won't touch handle in the default security context when printing */
+    if (!(uvisor_ctx->pc = new RawSerial(USBTX, USBRX)))
+        return;
+
     /* Create the buffer and cache its pointer to the private static memory. */
     uvisor_ctx->buffer = (uint32_t *) malloc(PRIVATE_BUTTON_BUFFER_COUNT * sizeof(uint32_t));
     if (uvisor_ctx->buffer == NULL) {
+        uvisor_ctx->pc->printf("ERROR: Failed to allocate memory for the button buffer\r\n");
         mbed_die();
     }
     uvisor_ctx->index = 0;
@@ -307,9 +312,111 @@ If you don't see the LED blinking, it means that the application halted somewher
 
 If the LED is blinking, it means that the app is running fine. If you now press the `SW2` button on the NXP FRDM-K64F board, the `private_button_on_press` function will be executed, printing the values in the timer buffer after `PRIVATE_BUTTON_BUFFER_COUNT` presses. You can observe these values by opening a serial port connection to the device, with a baud rate of 9600.
 
-### Expose public secure entry points to the secure box
+## Expose public secure entry points to the secure box
 
-Coming soon.
+So far the code in the secure box cannot communicate to other boxes. To let other boxes call functions in our secure box you can define public secure entry points. These entry points can map to private functions within the context of a secure box, and the arguments and return values are automatically serialized using an RPC protocol to ensure no private memory can be leaked to external boxes.
+
+You can define a public secure entry point to retrieve the index value from the secure box. This index value is increased every time the `SW2` button is pressed.
+
+### Defining a secure entry point
+
+Create a new source file, `~/code/uvisor-example/source/secure_box.h`. In here we will define the functions that can be called through RPC.
+
+```cpp
+/* ~/code/uvisor-example/source/secure_box.h */
+
+#ifndef SECURE_BOX_H_
+#define SECURE_BOX_H_
+
+#include "uvisor-lib/uvisor-lib.h"
+
+UVISOR_EXTERN int (*secure_get_index)(void);
+
+#endif
+```
+
+### Implementing a secure entry point
+
+Now that you have defined the secure entry point, you can map the entry point to a function running in the secure box. This is done through the `UVISOR_BOX_RPC_GATEWAY_SYNC` macro. Open `~/code/uvisor-example/source/secure_box.cpp`, and replace the line with `#define PRIVATE_BUTTON_BUFFER_COUNT 8` by:
+
+```cpp
+/* ~/code/uvisor-example/source/secure_box.cpp */
+
+/* Function called through RPC */
+static int get_index() {
+    /* Access to private memory here */
+    return uvisor_ctx->index;
+}
+
+UVISOR_BOX_RPC_GATEWAY_SYNC (private_button, secure_get_index, get_index, int, void);
+
+#define PRIVATE_BUTTON_BUFFER_COUNT 8
+```
+
+### Listening for RPC messages
+
+To receive RPC messages you will need to spin up a new thread, running in the secure box context. You can do this in the main thread of the secure box. In `~/code/uvisor-example/source/secure_box.cpp`, replace the first five lines of `private_button_main_thread` with:
+
+```cpp
+/* ~/code/uvisor-example/source/secure_box.cpp */
+
+static void listen_for_rpc() {
+    /* List of functions to wait for */
+    static const TFN_Ptr my_fn_array[] = {
+        (TFN_Ptr) get_index
+    };
+
+    while (1) {
+        int caller_id;
+        int status = rpc_fncall_waitfor(my_fn_array, 1, &caller_id, UVISOR_WAIT_FOREVER);
+
+        if (status) {
+            uvisor_error(USER_NOT_ALLOWED);
+        }
+    }
+}
+
+/* Main thread for the secure box */
+static void private_button_main_thread(const void *)
+{
+    /* allocate serial port to ensure that code in this secure box
+     * won't touch handle in the default security context when printing */
+    if (!(uvisor_ctx->pc = new RawSerial(USBTX, USBRX)))
+        return;
+
+    /* Start listening for RPC messages in a separate thread */
+    Thread rpc_thread(osPriorityNormal, 1024);
+    rpc_thread.start(&listen_for_rpc);
+
+    /* ... Rest of the private_button_main_thread function ... */
+```
+
+### Calling the public secure entry point
+
+To call the public secure entry point from any other box, you can use the `secure_get_index` function. It will automatically do an RPC call into the secure box and serialize the return value. You can try this out from the main box. In `~/code/uvisor-example/source/main.cpp`, first include the header file for the secure box:
+
+```cpp
+/* ~/code/uvisor-example/source/main.cpp */
+
+#include "secure-box.h"
+```
+
+And then replace the `main` function with:
+
+```cpp
+/* ~/code/uvisor-example/source/main.cpp */
+
+int main(void)
+{
+    while (true) {
+        led = !led;
+        printf("Secure index is %d\r\n", secure_get_index());
+        Thread::wait(500);
+    }
+}
+```
+
+You can observe the secure index by opening a serial port connection to the device, with a baud rate of 9600. When you press the `SW2` button the index will be increased.
 
 ## Wrap-up
 [Go to top](#overview)
@@ -320,7 +427,7 @@ In this guide we showed you how to:
 * Add a secure box to your application.
     * Protect static and dynamic memories in a secure box.
     * Gain exclusive access to a peripheral and an IRQ in a secure box.
-    * (Coming soon) Expose public secure entry points to a secure box.
+    * Expose public secure entry points to a secure box.
 
 You can now modify the example or create a new one to protect your resources into a secure box. You may find the following resources useful:
 

@@ -61,7 +61,7 @@ License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
 (gdb) ...
 ```
 
-The following is the minimum set of commands you need to send to the device to flash and run the binary:
+The following is the minimum set of commands you need to send to the device to flash and run the binary (replace '2331' by '3333' if you use pyOCD or OpenOCD as a debug server):
 
 ```bash
 (gdb) target remote localhost:2331
@@ -84,7 +84,7 @@ You can also group these commands in a script and pass it directly to `arm-none-
 $ arm-none-eabi-gdb -x gdb.script
 ```
 
-You can observe the debug messages using `netcat` or any other equivalent program:
+You can observe the debug messages using `netcat` or any other equivalent program (replace '2333' by '4444' if you use pyOCD or OpenOCD as a debug server):
 
 ```bash
 $ nc localhost 2333
