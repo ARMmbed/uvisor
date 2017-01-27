@@ -42,7 +42,6 @@ and place a new file `main.cpp` in it:
 /* ~/code/uvisor-example/source/main.cpp */
 
 #include "mbed.h"
-#include "rtos.h"
 
 DigitalOut led(LED1);
 
@@ -91,7 +90,6 @@ To enable the uVisor on the app, add the following lines at the beginning of the
 /* ~/code/uvisor-example/source/main.cpp */
 
 #include "mbed.h"
-#include "rtos.h"
 #include "uvisor-lib/uvisor-lib.h"
 
 /* Public box Access Control Lists (ACLs). */
@@ -106,6 +104,7 @@ static const UvisorBoxAclItem g_public_box_acls[] = {
     {OSC,   sizeof(*OSC),   UVISOR_TACLDEF_PERIPH},
     {MCG,   sizeof(*MCG),   UVISOR_TACLDEF_PERIPH},
     {UART0, sizeof(*UART0), UVISOR_TACLDEF_PERIPH},
+    {PIT,   sizeof(*PIT),   UVISOR_TACLDEF_PERIPH},
 };
 
 /* Enable uVisor, using the ACLs we just created. */
@@ -131,8 +130,8 @@ Before compiling, we need to override the original `K64F` target to enable the u
         }
     },
     "macros": [
-      "FEATURE_UVISOR=1",
-      "TARGET_UVISOR_SUPPORTED=1"
+        "FEATURE_UVISOR=1",
+        "TARGET_UVISOR_SUPPORTED=1"
     ]
 }
 ```
@@ -193,7 +192,6 @@ Create a new source file, `~/code/uvisor-example/source/secure_box.cpp`. We will
 /* ~/code/uvisor-example/source/secure_box.cpp */
 
 #include "mbed.h"
-#include "rtos.h"
 #include "uvisor-lib/uvisor-lib.h"
 
 /* Private static memory for the secure box */
