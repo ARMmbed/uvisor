@@ -27,6 +27,9 @@
  * terminating NULL. */
 #define UVISOR_MAX_BOX_NAMESPACE_LENGTH 37
 
+/** Invalid box id for use in marking objects with invalid ownership. */
+#define UVISOR_BOX_ID_INVALID ((uint8_t) -1)
+
 /* supervisor user access modes */
 #define UVISOR_TACL_UEXECUTE        0x0001UL
 #define UVISOR_TACL_UWRITE          0x0002UL
