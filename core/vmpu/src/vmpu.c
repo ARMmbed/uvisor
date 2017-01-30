@@ -23,14 +23,6 @@
 #include "vmpu.h"
 #include "vmpu_mpu.h"
 
-#ifndef MPU_MAX_PRIVATE_FUNCTIONS
-#define MPU_MAX_PRIVATE_FUNCTIONS 16
-#endif /* MPU_MAX_PRIVATE_FUNCTIONS */
-
-#if (MPU_MAX_PRIVATE_FUNCTIONS > 0x100UL)
-#error "MPU_MAX_PRIVATE_FUNCTIONS needs to be lower/equal to 0x100"
-#endif
-
 uint32_t  g_vmpu_box_count;
 bool g_vmpu_boxes_counted;
 
