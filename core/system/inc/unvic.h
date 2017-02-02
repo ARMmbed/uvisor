@@ -52,7 +52,7 @@ extern uint32_t unvic_irq_priority_get(uint32_t irqn);
 extern int      unvic_irq_level_get(void);
 extern int      unvic_default(uint32_t isr_id);
 
-extern void unvic_init(void);
+extern void unvic_init(uint32_t const * const user_vtor);
 
 /** Perform a context switch-in as a result of an interrupt request.
  *

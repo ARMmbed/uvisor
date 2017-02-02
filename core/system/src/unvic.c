@@ -32,7 +32,7 @@ uint8_t g_nvic_prio_bits;
  * @internal
  *
  * If multiple disable-/re-enable-all functions are called in the same box, a
- * counter is respectively incremented/drecremented so that it never happens
+ * counter is respectively incremented/decremented so that it never happens
  * that a nested function re-enables IRQs for the caller. */
 uint32_t g_irq_disable_all_counter[UVISOR_MAX_BOXES];
 
@@ -68,7 +68,7 @@ void unvic_acl_add(uint8_t box_id, void *function, uint32_t irqn)
     uv = &g_unvic_vector[irqn];
 
     /* check if IRQ entry is populated */
-    if(uv->id || uv->hdlr)
+    if(uv->id != UVISOR_BOX_ID_INVALID)
     {
         HALT_ERROR(PERMISSION_DENIED,
                    "Permission denied: IRQ %d is owned by box %d\n\r", irqn,
@@ -80,9 +80,12 @@ void unvic_acl_add(uint8_t box_id, void *function, uint32_t irqn)
     uv->hdlr = function;
 }
 
+#define UNVIC_ISR_OWNER_OTHER 0
+#define UNVIC_ISR_OWNER_NONE  1
+#define UNVIC_ISR_OWNER_SELF  2
+
 static int unvic_acl_check(int irqn)
 {
-    int is_irqn_registered;
     TIsrUVector *uv;
 
     /* don't allow to modify uVisor-owned IRQs */
@@ -91,113 +94,73 @@ static int unvic_acl_check(int irqn)
     /* get vector entry */
     uv = &g_unvic_vector[irqn];
 
-    /* an IRQn slot is considered as registered if the ISR entry in the unprivileged
-     * table is not 0 */
-    is_irqn_registered = uv->hdlr ? 1 : 0;
-
-    /* check if the same box that registered the IRQn is accessing it
-     * note: if the vector entry for a certain IRQn is 0, it means that no secure
-     *       box claimed exclusive ownership for it. So, another box can claim it
-     *       if it is currently un-registered (that is, if the registered handler
-     *       is NULL) */
-    if(uv->id != g_active_box && (uv->id || is_irqn_registered))
-    {
-        HALT_ERROR(PERMISSION_DENIED,
-                   "Permission denied: IRQ %d is owned by box %d\n\r", irqn,
-                                                                       uv->id);
+    if (uv->id == g_active_box) {
+        return UNVIC_ISR_OWNER_SELF;
     }
+    if (uv->id == UVISOR_BOX_ID_INVALID) {
+        return UNVIC_ISR_OWNER_NONE;
+    }
+    return UNVIC_ISR_OWNER_OTHER;
+}
 
-    return is_irqn_registered;
+static void unvic_isr_register(uint32_t irqn)
+{
+    switch (unvic_acl_check(irqn))
+    {
+        case UNVIC_ISR_OWNER_NONE:
+            g_unvic_vector[irqn].id = g_active_box;
+            DPRINTF("IRQ %d registered to box %d\n\r", irqn, g_active_box);
+        case UNVIC_ISR_OWNER_SELF:
+            return;
+        default:
+            break;
+    }
+    HALT_ERROR(PERMISSION_DENIED, "Permission denied: IRQ %d is owned by another box!\r\n", irqn);
 }
 
 void unvic_isr_set(uint32_t irqn, uint32_t vector)
 {
-    /* verify IRQ access privileges */
-    unvic_acl_check(irqn);
+    /* This function halts if the IRQ is owned by another box or by uVisor. */
+    unvic_isr_register(irqn);
 
-    /* save unprivileged handler
-     * note: if the handler is NULL the IRQn gets de-registered for the current
-     *       box, meaning that other boxes can still use it. In this way boxes
-     *       can share un-exclusive IRQs. A secure box should not do that if it
-     *       wants to hold exclusivity over an IRQn
-     * note: when an IRQ is released (de-registered) the corresponding IRQn is
-     *       disabled, to ensure that no spurious interrupts are served */
-    if (vector) {
-        g_unvic_vector[irqn].id = g_active_box;
-    }
-    else {
-        NVIC_DisableIRQ(irqn);
-        g_unvic_vector[irqn].id = 0;
-    }
+    /* Save unprivileged handler. */
     g_unvic_vector[irqn].hdlr = (TIsrVector) vector;
-
-    /* set default priority (SVC must always be higher) */
-    NVIC_SetPriority(irqn, __UVISOR_NVIC_MIN_PRIORITY);
-
-    DPRINTF("IRQ %d %s box %d\n\r",
-            irqn,
-            vector ? "registered to" : "released by",
-            g_active_box);
 }
 
 uint32_t unvic_isr_get(uint32_t irqn)
 {
-    /* verify IRQ access privileges */
-    unvic_acl_check(irqn);
+    /* This function halts if the IRQ is owned by another box or by uVisor. */
+    unvic_isr_register(irqn);
 
     return (uint32_t) g_unvic_vector[irqn].hdlr;
 }
 
 void unvic_irq_enable(uint32_t irqn)
 {
-    int is_irqn_registered;
+    /* This function halts if the IRQ is owned by another box or by uVisor. */
+    unvic_isr_register(irqn);
 
-    /* verify IRQ access privileges */
-    is_irqn_registered = unvic_acl_check(irqn);
-
-    /* Enable the IRQ, but only if IRQs are not globally disabled for the
-     * currently active box. */
-    if (is_irqn_registered) {
-        /* If the counter of nested disable-all IRQs is set to 0, it means that
-         * IRQs are not globally disabled for the current box. */
-        if (!g_irq_disable_all_counter[g_active_box]) {
-            DPRINTF("IRQ %d enabled\n\r", irqn);
-            NVIC_EnableIRQ(irqn);
-        } else {
-            /* We do not enable the IRQ directly, but notify uVisor to enable it
-             * when IRQs will be re-enabled globally for the current box. */
-            g_unvic_vector[irqn].was_enabled = true;
-        }
-        return;
+    /* If the counter of nested disable-all IRQs is set to 0, it means that
+     * IRQs are not globally disabled for the current box. */
+    if (!g_irq_disable_all_counter[g_active_box]) {
+        DPRINTF("IRQ %d enabled\n\r", irqn);
+        NVIC_EnableIRQ(irqn);
+    } else {
+        /* We do not enable the IRQ directly, but notify uVisor to enable it
+         * when IRQs will be re-enabled globally for the current box. */
+        g_unvic_vector[irqn].was_enabled = true;
     }
-    else if (UNVIC_IS_IRQ_ENABLED(irqn)) {
-        DPRINTF("IRQ %d is unregistered; state unchanged\n\r", irqn);
-        return;
-    }
-    else {
-        HALT_ERROR(NOT_ALLOWED, "IRQ %d is unregistered; state cannot be changed", irqn);
-    }
+    return;
 }
 
 void unvic_irq_disable(uint32_t irqn)
 {
-    int is_irqn_registered;
+    /* This function halts if the IRQ is owned by another box or by uVisor. */
+    unvic_isr_register(irqn);
 
-    /* verify IRQ access privileges */
-    is_irqn_registered = unvic_acl_check(irqn);
-
-    if (is_irqn_registered) {
-        DPRINTF("IRQ %d disabled, but still owned by box %d\n\r", irqn, g_unvic_vector[irqn].id);
-        NVIC_DisableIRQ(irqn);
-        return;
-    }
-    else if (!UNVIC_IS_IRQ_ENABLED(irqn)) {
-        DPRINTF("IRQ %d is unregistered; state unchanged\n\r", irqn);
-        return;
-    }
-    else {
-        HALT_ERROR(NOT_ALLOWED, "IRQ %d is unregistered; state cannot be changed", irqn);
-    }
+    DPRINTF("IRQ %d disabled, but still owned by box %d\n\r", irqn, g_unvic_vector[irqn].id);
+    NVIC_DisableIRQ(irqn);
+    return;
 }
 
 /** Disable all interrupts for the currently active box.
@@ -296,102 +259,78 @@ void unvic_irq_enable_all(void)
 
 void unvic_irq_pending_clr(uint32_t irqn)
 {
-    int is_irqn_registered;
+    /* This function halts if the IRQ is owned by another box or by uVisor. */
+    unvic_isr_register(irqn);
 
-    /* verify IRQ access privileges */
-    is_irqn_registered = unvic_acl_check(irqn);
-
-    /* enable IRQ */
-    if (is_irqn_registered) {
-        DPRINTF("IRQ %d pending status cleared\n\r", irqn);
-        NVIC_ClearPendingIRQ(irqn);
-        return;
-    }
-    else {
-        HALT_ERROR(NOT_ALLOWED, "IRQ %d is unregistered; state cannot be changed", irqn);
-    }
+    /* Clear pending IRQ. */
+    DPRINTF("IRQ %d pending status cleared\n\r", irqn);
+    NVIC_ClearPendingIRQ(irqn);
 }
 
 void unvic_irq_pending_set(uint32_t irqn)
 {
-    int is_irqn_registered;
+    /* This function halts if the IRQ is owned by another box or by uVisor. */
+    unvic_isr_register(irqn);
 
-    /* verify IRQ access privileges */
-    is_irqn_registered = unvic_acl_check(irqn);
-
-    /* enable IRQ */
-    if (is_irqn_registered) {
-        DPRINTF("IRQ %d pending status set (will be served as soon as possible)\n\r", irqn);
-        NVIC_SetPendingIRQ(irqn);
-        return;
-    }
-    else {
-        HALT_ERROR(NOT_ALLOWED, "IRQ %d is unregistered; state cannot be changed", irqn);
-    }
+    /* Set pending IRQ. */
+    DPRINTF("IRQ %d pending status set (will be served as soon as possible)\n\r", irqn);
+    NVIC_SetPendingIRQ(irqn);
 }
 
 uint32_t unvic_irq_pending_get(uint32_t irqn)
 {
-    /* verify IRQ access privileges */
-    unvic_acl_check(irqn);
+    /* This function halts if the IRQ is owned by another box or by uVisor. */
+    unvic_isr_register(irqn);
 
-    /* get priority for device specific interrupts  */
+    /* Get priority for device specific interrupts. */
     return NVIC_GetPendingIRQ(irqn);
 }
 
 void unvic_irq_priority_set(uint32_t irqn, uint32_t priority)
 {
-    int is_irqn_registered;
+    /* This function halts if the IRQ is owned by another box or by uVisor. */
+    unvic_isr_register(irqn);
 
-    /* verify IRQ access privileges */
-    is_irqn_registered = unvic_acl_check(irqn);
-
-    /* check for maximum priority */
+    /* Check for maximum priority. */
     if (priority > UVISOR_VIRQ_MAX_PRIORITY) {
         HALT_ERROR(NOT_ALLOWED, "NVIC priority overflow; max priority allowed: %d\n\r", UVISOR_VIRQ_MAX_PRIORITY);
     }
 
-    /* set priority for device specific interrupts */
-    if (is_irqn_registered) {
-        DPRINTF("IRQ %d priority set to %d (NVIC), %d (virtual)\n\r", irqn, __UVISOR_NVIC_MIN_PRIORITY + priority,
-                                                                            priority);
-        NVIC_SetPriority(irqn, __UVISOR_NVIC_MIN_PRIORITY + priority);
-        return;
-    }
-    else {
-        HALT_ERROR(NOT_ALLOWED, "IRQ %d is unregistered; state cannot be changed", irqn);
-    }
+    /* Set priority for device specific interrupts. */
+    DPRINTF("IRQ %d priority set to %d (NVIC), %d (virtual)\n\r", irqn, __UVISOR_NVIC_MIN_PRIORITY + priority,
+                                                                        priority);
+    NVIC_SetPriority(irqn, __UVISOR_NVIC_MIN_PRIORITY + priority);
 }
 
 uint32_t unvic_irq_priority_get(uint32_t irqn)
 {
-    /* verify IRQ access privileges */
-    unvic_acl_check(irqn);
+    /* This function halts if the IRQ is owned by another box or by uVisor. */
+    unvic_isr_register(irqn);
 
-    /* get priority for device specific interrupts  */
+    /* Get priority for device specific interrupts. */
     return NVIC_GetPriority(irqn) - __UVISOR_NVIC_MIN_PRIORITY;
 }
 
 int unvic_irq_level_get(void)
 {
-    /* gather IPSR from exception stack frame */
-    /* the currently active IRQn is the one of the SVCall, while instead we want
-     * to know the IRQn at the time of the SVCcall, which is saved on the stack */
+    /* Gather IPSR from exception stack frame. */
+    /* The currently active IRQn is the one of the SVCall, while instead we want
+     * to know the IRQn at the time of the SVCcall, which is saved on the stack. */
     uint32_t ipsr = vmpu_unpriv_uint32_read(__get_PSP() + 4 * 7);
     uint32_t irqn = (ipsr & 0x1FF) - NVIC_OFFSET;
 
-    /* check if an interrupt is actually active */
-    /* note: this includes pending interrupts that are not currently being served */
+    /* Check if an interrupt is actually active. */
+    /* Note: This includes pending interrupts that are not currently being served. */
     if (!ipsr || !NVIC_GetActive(irqn)) {
         return -1;
     }
 
-    /* check that the IRQn is not owned by uVisor */
-    /* this also checks that the IRQn is in the correct range */
+    /* Check that the IRQn is not owned by uVisor. */
+    /* This also checks that the IRQn is in the correct range. */
     unvic_default_check(irqn);
 
-    /* if an IRQn is active, return the (virtualised, i.e. shifted) priority level
-     * of the interrupt, which goes from 0 up */
+    /* If an IRQn is active, return the (virtualised, i.e. shifted) priority level
+     * of the interrupt, which goes from 0 up. */
     return (int) NVIC_GetPriority(irqn) - __UVISOR_NVIC_MIN_PRIORITY;
 }
 
@@ -560,7 +499,7 @@ void unvic_gateway_context_switch_out(uint32_t svc_sp, uint32_t msp)
     __set_CONTROL(__get_CONTROL() & ~2);
 }
 
-void unvic_init(void)
+void unvic_init(uint32_t const * const user_vtor)
 {
     uint8_t prio_bits;
     uint8_t volatile *prio;
@@ -604,4 +543,16 @@ void unvic_init(void)
      * by IRQ number. For example, IRQ 0 has precedence over IRQ 1 if both have
      * the same priority level. */
     NVIC_SetPriorityGrouping(0);
+
+    /* Copy the user interrupt table into the handlers to prevent user code
+     * from failing when enabling the IRQ before setting it.
+     * Note that the IRQ may fire and use the statically declared IRQ handler
+     * _before_ the user has had a chance to set a custom (runtime) handler.
+     * This mirrors hardware behavior. */
+    for (uint32_t ii = 0; ii < NVIC_VECTORS; ii++) {
+        g_unvic_vector[ii].id = UVISOR_BOX_ID_INVALID;
+        g_unvic_vector[ii].hdlr = (TIsrVector) user_vtor[ii + NVIC_OFFSET];
+        /* Set default priority (SVC must always be higher). */
+        NVIC_SetPriority(ii, __UVISOR_NVIC_MIN_PRIORITY);
+    }
 }
