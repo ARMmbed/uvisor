@@ -32,8 +32,10 @@ static int wake_up_handlers_for_target(const TFN_Ptr function, int box_id)
     int num_posted = 0;
 
     UvisorBoxIndex * index = (UvisorBoxIndex *) g_context_current_states[box_id].bss;
-    uvisor_pool_queue_t * fn_group_queue = &index->rpc_fn_group_queue->queue;
-    uvisor_rpc_fn_group_t * fn_group_array = index->rpc_fn_group_queue->fn_groups;
+    uvisor_rpc_fn_group_queue_t * fn_group_queue_ptr =
+        (uvisor_rpc_fn_group_queue_t *) index->bss.address_of.rpc_fn_group_queue;
+    uvisor_pool_queue_t * fn_group_queue = &(fn_group_queue_ptr->queue);
+    uvisor_rpc_fn_group_t * fn_group_array = fn_group_queue_ptr->fn_groups;
 
     /* Wake up all known waiters for this function. Search for the function in
      * all known function groups. We have to search through all function groups
@@ -194,7 +196,9 @@ static int is_valid_queue(uvisor_pool_queue_t * queue, int box_id)
 void drain_message_queue(void)
 {
     UvisorBoxIndex * caller_index = (UvisorBoxIndex *) *__uvisor_config.uvisor_box_context;
-    uvisor_pool_queue_t * caller_queue = &caller_index->rpc_outgoing_message_queue->queue;
+    uvisor_rpc_outgoing_message_queue_t * outgoing_message_queue_ptr =
+        (uvisor_rpc_outgoing_message_queue_t *) caller_index->bss.address_of.rpc_outgoing_message_queue;
+    uvisor_pool_queue_t * caller_queue = &(outgoing_message_queue_ptr->queue);
     uvisor_rpc_message_t * caller_array = (uvisor_rpc_message_t *) caller_queue->pool->array;
     int caller_box = g_active_box;
     int first_slot = -1;
@@ -262,7 +266,9 @@ void drain_message_queue(void)
         }
 
         UvisorBoxIndex * callee_index = (UvisorBoxIndex *) g_context_current_states[callee_box].bss;
-        uvisor_pool_queue_t * callee_queue = &callee_index->rpc_incoming_message_queue->todo_queue;
+        uvisor_rpc_incoming_message_queue_t * incoming_message_queue_ptr =
+            (uvisor_rpc_incoming_message_queue_t *) callee_index->bss.address_of.rpc_incoming_message_queue;
+        uvisor_pool_queue_t * callee_queue = &(incoming_message_queue_ptr->todo_queue);
         uvisor_rpc_message_t * callee_array = (uvisor_rpc_message_t *) callee_queue->pool->array;
 
         /* Verify that the callee queue is entirely in callee box BSS. We check the
@@ -348,7 +354,9 @@ void drain_message_queue(void)
 void drain_result_queue(void)
 {
     UvisorBoxIndex * callee_index = (UvisorBoxIndex *) *__uvisor_config.uvisor_box_context;
-    uvisor_pool_queue_t * callee_queue = &callee_index->rpc_incoming_message_queue->done_queue;
+    uvisor_rpc_incoming_message_queue_t * incoming_message_queue_ptr =
+        (uvisor_rpc_incoming_message_queue_t *) callee_index->bss.address_of.rpc_incoming_message_queue;
+    uvisor_pool_queue_t * callee_queue = &(incoming_message_queue_ptr->done_queue);
     uvisor_rpc_message_t * callee_array = (uvisor_rpc_message_t *) callee_queue->pool->array;
 
     int callee_box = g_active_box;
@@ -388,7 +396,9 @@ void drain_result_queue(void)
         const int caller_box = callee_msg->other_box_id;
 
         UvisorBoxIndex * caller_index = (UvisorBoxIndex *) g_context_current_states[caller_box].bss;
-        uvisor_pool_queue_t * caller_queue = &caller_index->rpc_outgoing_message_queue->queue;
+        uvisor_rpc_outgoing_message_queue_t * outgoing_message_queue_ptr =
+            (uvisor_rpc_outgoing_message_queue_t *) caller_index->bss.address_of.rpc_outgoing_message_queue;
+        uvisor_pool_queue_t * caller_queue = &(outgoing_message_queue_ptr->queue);
         uvisor_rpc_message_t * caller_array = (uvisor_rpc_message_t *) caller_queue->pool->array;
 
         /* Verify that the caller queue is entirely in caller box BSS. We check the

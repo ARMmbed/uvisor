@@ -237,9 +237,9 @@ static void vmpu_check_sanity_box_cfgtbl(uint8_t box_id, UvisorBoxConfig const *
     }
 
     /* Check the minimal size of the box index size. */
-    if (box_cfgtbl->index_size < sizeof(UvisorBoxIndex)) {
+    if (box_cfgtbl->bss.size_of.index < sizeof(UvisorBoxIndex)) {
         HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: Index size (%uB) < sizeof(UvisorBoxIndex) (%uB).\r\n",
-                   box_id, (uint32_t) box_cfgtbl, box_cfgtbl->index_size, sizeof(UvisorBoxIndex));
+                   box_id, (uint32_t) box_cfgtbl, box_cfgtbl->bss.size_of.index, sizeof(UvisorBoxIndex));
     }
 
     /* Check the minimal size of the box stack. */
@@ -252,40 +252,43 @@ static void vmpu_check_sanity_box_cfgtbl(uint8_t box_id, UvisorBoxConfig const *
     vmpu_check_sanity_box_namespace(box_id, box_cfgtbl->box_namespace);
 }
 
-static void vmpu_box_index_init(uint8_t box_id, const UvisorBoxConfig * const config)
+static void vmpu_box_index_init(uint8_t box_id, UvisorBoxConfig const * const box_cfgtbl)
 {
-    uint8_t * box_bss;
-    UvisorBoxIndex * index;
-    uint32_t heap_size = config->heap_size;
-    int i;
+    /* The box index is at the beginning of the BSS section. */
+    void * box_bss = (void *) g_context_current_states[box_id].bss;
+    UvisorBoxIndex * index = (UvisorBoxIndex *) box_bss;
 
-    if (box_id == 0) {
-        /* Box 0 still uses the public heap to be backwards compatible. */
-        const uint32_t heap_end = (uint32_t) __uvisor_config.heap_end;
-        const uint32_t heap_start = (uint32_t) __uvisor_config.heap_start;
-        heap_size = (heap_end - heap_start) - config->index_size;
-    }
-
-    box_bss = (uint8_t *) g_context_current_states[box_id].bss;
-
-    /* The box index is at the beginning of the bss section. */
-    index = (void *) box_bss;
     /* Zero the _entire_ index, so that user data inside the box index is in a
      * known state! This allows checking variables for `NULL`, or `0`, which
      * indicates an initialization requirement. */
-    memset(index, 0, config->index_size);
-    box_bss += config->index_size;
+    memset(index, 0, box_cfgtbl->bss.size_of.index);
 
-    for (i = 0; i < UVISOR_BOX_INDEX_SIZE_COUNT; i++) {
-        index->bss_ptr[i] = (void *) (config->bss_size[i] ? box_bss : NULL);
-        box_bss += config->bss_size[i];
-        if (box_id == 0) {
-            heap_size -= config->bss_size[i];
-        }
+    /* Assign the pointers to the BSS sections. */
+    for (int i = 0; i < UVISOR_BSS_SECTIONS_COUNT; i++) {
+        size_t size = box_cfgtbl->bss.sizes[i];
+        index->bss.pointers[i] = (size ? box_bss : NULL);
+        box_bss += size;
     }
 
-    /* Initialize box heap. */
-    index->box_heap = (void *) (heap_size ? box_bss : NULL);
+    /* Initialize the box heap size. */
+    uint32_t heap_size = 0;
+    if (box_id == 0) {
+        /* FIXME: At the moment we cannot just reliably use the size of the heap
+         *        as provided by the configuration table, because the public box
+         *        has a variable heap size that is not identified at compile
+         *        time. We should remove this dependency. */
+        const uint32_t heap_end = (uint32_t) __uvisor_config.heap_end;
+        const uint32_t heap_start = (uint32_t) __uvisor_config.heap_start;
+        size_t bss_size = (size_t) g_context_current_states[box_id].bss_size;
+        heap_size = heap_end - heap_start - bss_size;
+
+        /* Set the heap pointer for the public box.
+         * This value must be set manually because the previous loop will have
+         * caught a zero heap size and thus set the pointer to NULL. */
+        index->bss.address_of.heap = (uint32_t) ((void *) heap_start + bss_size);
+    } else {
+        heap_size = box_cfgtbl->bss.size_of.heap;
+    }
     index->box_heap_size = heap_size;
 
     /* Active heap pointer is NULL, indicating that the process heap needs to
@@ -293,7 +296,7 @@ static void vmpu_box_index_init(uint8_t box_id, const UvisorBoxConfig * const co
     index->active_heap = NULL;
 
     /* Point to the box config. */
-    index->config = config;
+    index->config = box_cfgtbl;
 }
 
 static void vmpu_configure_box_peripherals(uint8_t box_id, UvisorBoxConfig const * const box_cfgtbl)
@@ -331,10 +334,10 @@ static void vmpu_configure_box_peripherals(uint8_t box_id, UvisorBoxConfig const
 
 static void vmpu_configure_box_sram(uint8_t box_id, UvisorBoxConfig const * box_cfgtbl)
 {
-    /* Add ACL's for all box stacks. */
-    uint32_t bss_size = box_cfgtbl->index_size + box_cfgtbl->heap_size;
-    for (int i = 0; i < UVISOR_BOX_INDEX_SIZE_COUNT; i++) {
-        bss_size += box_cfgtbl->bss_size[i];
+    /* Add ACLs for the secure box BSS sections and for the stack. */
+    uint32_t bss_size = 0;
+    for (int i = 0; i < UVISOR_BSS_SECTIONS_COUNT; i++) {
+        bss_size += box_cfgtbl->bss.sizes[i];
     }
     vmpu_acl_stack(
         box_id,

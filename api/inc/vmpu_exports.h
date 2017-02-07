@@ -153,59 +153,65 @@ typedef struct {
     UvisorBoxAcl acl;
 } UVISOR_PACKED UvisorBoxAclItem;
 
+/* This struct contains all the BSS sections that uVisor allocates for a secure
+ * box. It can be used to keep the sizes of the sections or their pointers. */
+typedef struct uvisor_bss_sections_t {
+    uint32_t index;
+    uint32_t context;
+    uint32_t rpc_outgoing_message_queue;
+    uint32_t rpc_incoming_message_queue;
+    uint32_t rpc_fn_group_queue;
+    uint32_t heap;
+} UVISOR_PACKED UvisorBssSections;
+
+/* The number of per-box BSS sections. */
+#define UVISOR_BSS_SECTIONS_COUNT (sizeof(UvisorBssSections) / sizeof(uint32_t))
+
+/* Compile-time per-box configuration table
+ * Each box has one of this table in flash. Every other data structure that this
+ * table might point to must be in flash as well. The uVisor core must check the
+ * sanity of the table before trusting its fields. */
 typedef struct {
-    /* Contains user provided size of box context without guards of buffers. */
-    uint32_t context_size;
-    /* Contains total memory used by the RPC queues (incl. management and pool). */
-    uint32_t rpc_outgoing_message_size;
-    uint32_t rpc_incoming_message_size;
-    uint32_t rpc_fn_group_size;
-} UVISOR_PACKED uvisor_sizes_t;
+    const uint32_t magic;
+    const uint32_t version;
 
-/* The number of additional bss sections per box bss.
- * The size of each section is stored in the box config, and uVisor core will
- * iterate over the box bss, split it into sections as defined by the size table
- * and assign a pointer to beginning of that section into the box index pointer table.
- */
-#define UVISOR_BOX_INDEX_SIZE_COUNT (sizeof(uvisor_sizes_t) / sizeof(uint32_t))
-
-typedef struct {
-    uint32_t magic;
-    uint32_t version;
-
-    /* Box stack size includes stack guards and rounding buffer. */
-    uint32_t stack_size;
-    /* Contains user provided size of box heap without guards of buffers. */
-    uint32_t heap_size;
-    /* Contains the size of the index (must be at least sizeof(UvisorBoxIndex)). */
-    uint32_t index_size;
-
+    /* The UvisorBssSections struct is union-ed with a size_t array to allow for
+     * loops to scan the sizes of all the BSS sections and allocate the
+     * necessary space for each of them. */
     union {
-        uint32_t bss_size[UVISOR_BOX_INDEX_SIZE_COUNT];
-        uvisor_sizes_t sizes;
-    };
+        size_t sizes[UVISOR_BSS_SECTIONS_COUNT];
+        UvisorBssSections size_of;
+    } const bss;
+
+    /* Contains the size of the secure box static stack. */
+    /* Note: This does not include guards. */
+    /* Note: It is kept separately from the BSS sections as it's implementation
+     *       specific where the stack sits with respect to the BSS. */
+    const uint32_t stack_size;
 
     /* Opaque-to-uVisor data that potentially contains uvisor-lib-specific or
      * OS-specific per-box configuration */
     const void * const lib_config;
 
-    const char * box_namespace;
+    const char * const box_namespace;
     const UvisorBoxAclItem * const acl_list;
-    uint32_t acl_count;
+    const uint32_t acl_count;
 } UVISOR_PACKED UvisorBoxConfig;
 
+/* Enumeration-time per-box index table
+ * Each box has one of this table in SRAM. The index tables are initialized at
+ * box enumeration time and are then managed by the secure boxes themselves. */
+/* Note: Each box is able to read and write its own version of this table. Do
+ *       not trust these pointers in the uVisor core. */
 typedef struct {
+    /* The UvisorSramPointers struct is union-ed with a void * array to allow
+     * for loops to scan the pointers to all the SRAM sections and access them
+     * individually. */
     union {
-        void * bss_ptr[UVISOR_BOX_INDEX_SIZE_COUNT];
-        struct {
-            /* Pointer to the user context */
-            void * ctx;
-            /* Pointer to the RPC queues */
-            uvisor_rpc_outgoing_message_queue_t * rpc_outgoing_message_queue;
-            uvisor_rpc_incoming_message_queue_t * rpc_incoming_message_queue;
-            uvisor_rpc_fn_group_queue_t * rpc_fn_group_queue;
-        };
-    };
+        void * pointers[UVISOR_BSS_SECTIONS_COUNT];
+        UvisorBssSections address_of;
+    } bss;
+
     /* Pointer to the box heap */
     void * box_heap;
     /* Size of the box heap */
