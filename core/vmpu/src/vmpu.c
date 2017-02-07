@@ -215,6 +215,43 @@ static void vmpu_check_sanity_box_namespace(int box_id, const char *const box_na
     } while (box_namespace[length]);
 }
 
+static void vmpu_check_sanity_box_cfgtbl(uint8_t box_id, UvisorBoxConfig const * box_cfgtbl)
+{
+    /* Ensure that the configuration table resides in flash. */
+    if (!(vmpu_flash_addr((uint32_t) box_cfgtbl) &&
+        vmpu_flash_addr((uint32_t) ((uint8_t *) box_cfgtbl + (sizeof(*box_cfgtbl) - 1))))) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: The box configuration table is not in flash.\r\n",
+                   box_id, (uint32_t) box_cfgtbl);
+    }
+
+    /* Check the magic value in the box configuration table. */
+    if (box_cfgtbl->magic != UVISOR_BOX_MAGIC) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: Invalid magic number (found: 0x%08X, exepcted 0x%08X).\r\n",
+                   box_id, (uint32_t) box_cfgtbl, box_cfgtbl->magic, UVISOR_BOX_MAGIC);
+    }
+
+    /* Check the box configuration table version. */
+    if (box_cfgtbl->version != UVISOR_BOX_VERSION) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: Invalid version number (found: 0x%04X, expected: 0x%04X).\r\n",
+                   box_id, (uint32_t) box_cfgtbl, box_cfgtbl->version, UVISOR_BOX_VERSION);
+    }
+
+    /* Check the minimal size of the box index size. */
+    if (box_cfgtbl->index_size < sizeof(UvisorBoxIndex)) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: Index size (%uB) < sizeof(UvisorBoxIndex) (%uB).\r\n",
+                   box_id, (uint32_t) box_cfgtbl, box_cfgtbl->index_size, sizeof(UvisorBoxIndex));
+    }
+
+    /* Check the minimal size of the box stack. */
+    if (box_id != 0 && (box_cfgtbl->stack_size < UVISOR_MIN_STACK_SIZE)) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: Stack size (%uB) < UVISOR_MIN_STACK_SIZE (%uB).\r\n",
+                   box_id, (uint32_t) box_cfgtbl, box_cfgtbl->stack_size, UVISOR_MIN_STACK_SIZE);
+    }
+
+    /* Check that the box namespace is not too long. */
+    vmpu_check_sanity_box_namespace(box_id, box_cfgtbl->box_namespace);
+}
+
 static void vmpu_box_index_init(uint8_t box_id, const UvisorBoxConfig * const config)
 {
     uint8_t * box_bss;
@@ -311,33 +348,9 @@ static void vmpu_enumerate_boxes(void)
     for (box_cfgtbl = (const UvisorBoxConfig * *) __uvisor_config.cfgtbl_ptr_start;
          box_cfgtbl < (const UvisorBoxConfig * *) __uvisor_config.cfgtbl_ptr_end;
          box_cfgtbl++) {
-        /* Ensure that the configuration table resides in flash. */
-        if (!(vmpu_flash_addr((uint32_t) *box_cfgtbl) &&
-            vmpu_flash_addr((uint32_t) ((uint8_t *) (*box_cfgtbl)) + (sizeof(**box_cfgtbl) - 1)))) {
-            HALT_ERROR(SANITY_CHECK_FAILED, "invalid address - *box_cfgtbl must point to flash (0x%08X)\n",
-                *box_cfgtbl);
-        }
-
-        /* Check the magic value in the box configuration table. */
-        if (((*box_cfgtbl)->magic) != UVISOR_BOX_MAGIC) {
-            HALT_ERROR(SANITY_CHECK_FAILED, "box[%i] @0x%08X - invalid magic\n",
-                box_id, (uint32_t)(*box_cfgtbl));
-        }
-
-        /* Check the box configuration table version. */
-        if (((*box_cfgtbl)->version) != UVISOR_BOX_VERSION) {
-            HALT_ERROR(SANITY_CHECK_FAILED, "box[%i] @0x%08X - invalid version (0x%04X!-0x%04X)\n",
-                box_id, *box_cfgtbl, (*box_cfgtbl)->version, UVISOR_BOX_VERSION);
-        }
-
-        /* Confirm the minimal size of the box index size. */
-        if ((*box_cfgtbl)->index_size < sizeof(UvisorBoxIndex)) {
-            HALT_ERROR(SANITY_CHECK_FAILED, "Box index size (%uB) must be large enough to hold UvisorBoxIndex (%uB).\n",
-                (*box_cfgtbl)->index_size, sizeof(UvisorBoxIndex));
-        }
-
-        /* Check that the box namespace is not too long. */
-        vmpu_check_sanity_box_namespace(box_id, (*box_cfgtbl)->box_namespace);
+        /* Verify the box configuration table. */
+        /* Note: This function halts if a sanity check fails. */
+        vmpu_check_sanity_box_cfgtbl(box_id, *box_cfgtbl);
 
         /* Load the box ACLs. */
         DPRINTF("box[%i] ACL list:\n", box_id);
