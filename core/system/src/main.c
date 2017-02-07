@@ -21,7 +21,7 @@
 #include "unvic.h"
 #include "vmpu.h"
 
-UVISOR_NOINLINE void uvisor_init_pre(void)
+UVISOR_NOINLINE void uvisor_init_pre(uint32_t const * const user_vtor)
 {
     /* Reset the uVisor own BSS section. */
     memset(&__bss_start__, 0, VMPU_REGION_SIZE(&__bss_start__, &__bss_end__));
@@ -30,7 +30,7 @@ UVISOR_NOINLINE void uvisor_init_pre(void)
     memcpy(&__data_start__, &__data_start_src__, VMPU_REGION_SIZE(&__data_start__, &__data_end__));
 
     /* Initialize the unprivileged NVIC module. */
-    unvic_init();
+    unvic_init(user_vtor);
 
     /* Initialize the debugging features. */
     DEBUG_INIT();
@@ -135,7 +135,7 @@ void main_entry(void)
     }
 
     /* Early uVisor initialization. */
-    uvisor_init_pre();
+    uvisor_init_pre((uint32_t *) SCB->VTOR);
 
     /* Run basic sanity checks. */
     if (vmpu_init_pre() == 0) {

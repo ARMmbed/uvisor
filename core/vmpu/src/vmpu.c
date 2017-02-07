@@ -43,6 +43,13 @@ static int vmpu_sanity_checks(void)
             &__uvisor_config, __uvisor_config.magic, UVISOR_MAGIC);
     }
 
+    /* Make sure the UVISOR_BOX_ID_INVALID is definitely NOT a valid box id. */
+    if (vmpu_is_box_id_valid(UVISOR_BOX_ID_INVALID)) {
+        HALT_ERROR(SANITY_CHECK_FAILED,
+            "UVISOR_BOX_ID_INVALID (%u) must not be a valid box id!\n",
+            UVISOR_BOX_ID_INVALID);
+    }
+
     /* Verify basic assumptions about vmpu_bits/__builtin_clz. */
     assert(__builtin_clz(0) == 32);
     assert(__builtin_clz(1UL << 31) == 0);

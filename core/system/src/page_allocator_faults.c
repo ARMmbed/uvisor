@@ -16,6 +16,7 @@
  */
 
 #include <uvisor.h>
+#include "api/inc/vmpu_exports.h"
 #include "page_allocator.h"
 #include "page_allocator_faults.h"
 #include "page_allocator_config.h"
@@ -23,6 +24,7 @@
 
 /* Maps the number of faults to a page. */
 uint32_t g_page_fault_table[UVISOR_PAGE_MAX_COUNT];
+#define UVISOR_PAGE_UNUSED UVISOR_BOX_ID_INVALID
 
 void page_allocator_reset_faults(uint8_t page)
 {

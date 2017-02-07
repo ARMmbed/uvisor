@@ -297,7 +297,7 @@ void vIRQ_SetVector(uint32_t irqn, uint32_t vector)
 <table>
   <tr>
     <td>Description</td>
-    <td colspan="2">Register an ISR to the currently active box</td>
+    <td colspan="2">Set an ISR for IRQn</td>
   <tr>
     <td rowspan="2">Parameters</td>
     <td><pre>uint32_t irqn<code></td>
@@ -305,7 +305,7 @@ void vIRQ_SetVector(uint32_t irqn, uint32_t vector)
   </tr>
   <tr>
     <td><pre>uint32_t vector<code></td>
-    <td>Interrupt handler; if 0 the IRQn slot is de-registered for the current
+    <td>Interrupt handler
         box</td>
   </tr>
 </table>

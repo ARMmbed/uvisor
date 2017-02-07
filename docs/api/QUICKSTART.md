@@ -342,7 +342,8 @@ When the uVisor is enabled, all NVIC APIs are rerouted to the corresponding uVis
 
 * The uVisor owns the interrupt vector table.
 * All ISRs are relocated to SRAM.
-* Code in a box can only change the state of an IRQ (enable it, change its priority, etc.) if the box registered that IRQ with uVisor at runtime, using the `NVIC_SetVector` API.
+* The first call to any NVIC API will register the IRQ for exclusive use with the active box. IRQs cannot be unregistered.
+* Code in a box can only change the state of an IRQ (enable it, change its priority, etc.) if the box registered that IRQ with uVisor at runtime first.
 * An IRQ that belongs to a box can only be modified when that box context is active.
 
 Although this behaviour is different from the original NVIC one, it is backward compatible. This means that legacy code (like a device HAL) will still work after uVisor is enabled. The general use case is the following:
@@ -361,7 +362,7 @@ NVIC_SetPriority(MY_IRQ, 3);
 NVIC_EnableIRQ(MY_IRQ);
 ```
 
-> **Note**: In this model a call to `NVIC_SetVector` must always happen before an IRQ state is changed. In platforms that don't relocate the interrupt vector table such a call might be originally absent and must be added to work with uVisor.
+> **Note**: When enabling the IRQ before setting the vector, uVisor uses the handler specified in the original vector table. This mirrors the NVIC hardware behavior.
 
 For more information on the uVisor APIs, see the [uVisor API documentation](API.md) document.
 
