@@ -411,7 +411,7 @@ bool vmpu_mpu_push(const MpuRegion * const region, uint8_t priority)
     uint8_t viable_slot = start_slot;
 
     do {
-        if (++g_mpu_slot > ARMv7M_MPU_REGIONS_MAX) {
+        if (++g_mpu_slot >= ARMv7M_MPU_REGIONS_MAX) {
             g_mpu_slot = ARMv7M_MPU_REGIONS_STATIC;
         }
 
