@@ -26,7 +26,7 @@
 uint32_t  g_vmpu_box_count;
 bool g_vmpu_boxes_counted;
 
-static int vmpu_sanity_checks(void)
+static int vmpu_check_sanity(void)
 {
     /* Verify the uVisor configuration structure. */
     if (__uvisor_config.magic != UVISOR_MAGIC) {
@@ -176,7 +176,7 @@ static int vmpu_sanity_checks(void)
     }
 }
 
-static void vmpu_sanity_check_box_namespace(int box_id, const char *const box_namespace)
+static void vmpu_check_sanity_box_namespace(int box_id, const char *const box_namespace)
 {
     /* Verify that all characters of the box_namespace (including the trailing
      * NUL) are within flash and that the box_namespace is not too long. It is
@@ -305,7 +305,7 @@ static void vmpu_enumerate_boxes(void)
         }
 
         /* Check that the box namespace is not too long. */
-        vmpu_sanity_check_box_namespace(box_id, (*box_cfgtbl)->box_namespace);
+        vmpu_check_sanity_box_namespace(box_id, (*box_cfgtbl)->box_namespace);
 
         /* Load the box ACLs. */
         DPRINTF("box[%i] ACL list:\n", box_id);
@@ -501,7 +501,7 @@ int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint3
 
 int vmpu_init_pre(void)
 {
-    return vmpu_sanity_checks();
+    return vmpu_check_sanity();
 }
 
 void vmpu_init_post(void)
