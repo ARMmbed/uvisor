@@ -259,10 +259,42 @@ static void vmpu_box_index_init(uint8_t box_id, const UvisorBoxConfig * const co
     index->config = config;
 }
 
+static void vmpu_configure_box_peripherals(uint8_t box_id, UvisorBoxConfig const * const box_cfgtbl)
+{
+    /* Enumerate the box ACLs. */
+    DPRINTF("box[%i] ACL list:\r\n", box_id);
+    const UvisorBoxAclItem * region = box_cfgtbl->acl_list;
+    if (region != NULL) {
+        int count = box_cfgtbl->acl_count;
+        for (int i = 0; i < count; i++) {
+            /* Ensure that the ACL resides in public flash. */
+            if (!vmpu_public_flash_addr((uint32_t) region)) {
+                HALT_ERROR(SANITY_CHECK_FAILED, "box[%i]:acl[%i] must be in code section (@0x%08X)i\r\n",
+                           box_id, i, box_cfgtbl);
+            }
+
+            /* Add the ACL and force the entry as user-provided. */
+            if (region->acl & UVISOR_TACL_IRQ) {
+                vmpu_acl_irq(box_id, region->param1, region->param2);
+            } else {
+                vmpu_region_add_static_acl(
+                    box_id,
+                    (uint32_t) region->param1,
+                    region->param2,
+                    region->acl | UVISOR_TACL_USER,
+                    0
+                );
+            }
+
+            /* Proceed to the next ACL. */
+            region++;
+        }
+    }
+}
+
 static void vmpu_enumerate_boxes(void)
 {
-    int i, count;
-    const UvisorBoxAclItem *region;
+    int i;
     const UvisorBoxConfig **box_cfgtbl;
     uint32_t bss_size;
     uint8_t box_id;
@@ -330,34 +362,8 @@ static void vmpu_enumerate_boxes(void)
             *box_cfgtbl
         );
 
-        /* Enumerate the box ACLs. */
-        region = (*box_cfgtbl)->acl_list;
-        if (region != NULL) {
-            count = (*box_cfgtbl)->acl_count;
-            for (i = 0; i < count; i++) {
-                /* Ensure that the ACL resides in public flash. */
-                if (!vmpu_public_flash_addr((uint32_t) region)) {
-                    HALT_ERROR(SANITY_CHECK_FAILED, "box[%i]:acl[%i] must be in code section (@0x%08X)\n",
-                        box_id, i, *box_cfgtbl);
-                }
-
-                /* Add the ACL and force the entry as user-provided. */
-                if (region->acl & UVISOR_TACL_IRQ) {
-                    vmpu_acl_irq(box_id, region->param1, region->param2);
-                } else {
-                    vmpu_region_add_static_acl(
-                        box_id,
-                        (uint32_t) region->param1,
-                        region->param2,
-                        region->acl | UVISOR_TACL_USER,
-                        0
-                    );
-                }
-
-                /* Proceed to the next ACL. */
-                region++;
-            }
-        }
+        /* Add the box ACLs for peripherals. */
+        vmpu_configure_box_peripherals(box_id, *box_cfgtbl);
 
         /* Proceed to the next box. */
         box_id++;
