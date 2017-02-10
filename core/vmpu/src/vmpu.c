@@ -332,9 +332,7 @@ static void vmpu_configure_box_peripherals(uint8_t box_id, UvisorBoxConfig const
 static void vmpu_enumerate_boxes(void)
 {
     int i;
-    const UvisorBoxConfig **box_cfgtbl;
     uint32_t bss_size;
-    uint8_t box_id;
 
     /* Enumerate boxes. */
     g_vmpu_box_count = (uint32_t) (__uvisor_config.cfgtbl_ptr_end - __uvisor_config.cfgtbl_ptr_start);
@@ -343,27 +341,26 @@ static void vmpu_enumerate_boxes(void)
     }
     g_vmpu_boxes_counted = TRUE;
 
-    /* Initialize boxes. */
-    box_id = 0;
-    for (box_cfgtbl = (const UvisorBoxConfig * *) __uvisor_config.cfgtbl_ptr_start;
-         box_cfgtbl < (const UvisorBoxConfig * *) __uvisor_config.cfgtbl_ptr_end;
-         box_cfgtbl++) {
+    /* Initialize the boxes. */
+    for (uint8_t box_id = 0; box_id < g_vmpu_box_count; ++box_id) {
+        UvisorBoxConfig const * box_cfgtbl = ((UvisorBoxConfig const * *) __uvisor_config.cfgtbl_ptr_start)[box_id];
+
         /* Verify the box configuration table. */
         /* Note: This function halts if a sanity check fails. */
-        vmpu_check_sanity_box_cfgtbl(box_id, *box_cfgtbl);
+        vmpu_check_sanity_box_cfgtbl(box_id, box_cfgtbl);
 
         /* Load the box ACLs. */
         DPRINTF("box[%i] ACL list:\n", box_id);
 
         /* Add ACL's for all box stacks. */
-        bss_size = (*box_cfgtbl)->index_size + (*box_cfgtbl)->heap_size;
+        bss_size = box_cfgtbl->index_size + box_cfgtbl->heap_size;
         for (i = 0; i < UVISOR_BOX_INDEX_SIZE_COUNT; i++) {
-            bss_size += (*box_cfgtbl)->bss_size[i];
+            bss_size += box_cfgtbl->bss_size[i];
         }
         vmpu_acl_stack(
             box_id,
             bss_size,
-            (*box_cfgtbl)->stack_size
+            box_cfgtbl->stack_size
         );
 
         /* Save the BSS size for this box. */
@@ -372,14 +369,11 @@ static void vmpu_enumerate_boxes(void)
         /* Initialize box index. */
         vmpu_box_index_init(
             box_id,
-            *box_cfgtbl
+            box_cfgtbl
         );
 
         /* Add the box ACLs for peripherals. */
-        vmpu_configure_box_peripherals(box_id, *box_cfgtbl);
-
-        /* Proceed to the next box. */
-        box_id++;
+        vmpu_configure_box_peripherals(box_id, box_cfgtbl);
     }
 
     /* Load box 0. */
