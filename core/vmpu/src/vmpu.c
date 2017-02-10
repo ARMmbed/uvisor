@@ -329,11 +329,31 @@ static void vmpu_configure_box_peripherals(uint8_t box_id, UvisorBoxConfig const
     }
 }
 
+static void vmpu_configure_box_sram(uint8_t box_id, UvisorBoxConfig const * box_cfgtbl)
+{
+    /* Add ACL's for all box stacks. */
+    uint32_t bss_size = box_cfgtbl->index_size + box_cfgtbl->heap_size;
+    for (int i = 0; i < UVISOR_BOX_INDEX_SIZE_COUNT; i++) {
+        bss_size += box_cfgtbl->bss_size[i];
+    }
+    vmpu_acl_stack(
+        box_id,
+        bss_size,
+        box_cfgtbl->stack_size
+    );
+
+    /* Save the BSS size for this box. */
+    g_context_current_states[box_id].bss_size = bss_size;
+
+    /* Initialize box index. */
+    vmpu_box_index_init(
+        box_id,
+        box_cfgtbl
+    );
+}
+
 static void vmpu_enumerate_boxes(void)
 {
-    int i;
-    uint32_t bss_size;
-
     /* Enumerate boxes. */
     g_vmpu_box_count = (uint32_t) (__uvisor_config.cfgtbl_ptr_end - __uvisor_config.cfgtbl_ptr_start);
     if (g_vmpu_box_count >= UVISOR_MAX_BOXES) {
@@ -352,25 +372,8 @@ static void vmpu_enumerate_boxes(void)
         /* Load the box ACLs. */
         DPRINTF("box[%i] ACL list:\n", box_id);
 
-        /* Add ACL's for all box stacks. */
-        bss_size = box_cfgtbl->index_size + box_cfgtbl->heap_size;
-        for (i = 0; i < UVISOR_BOX_INDEX_SIZE_COUNT; i++) {
-            bss_size += box_cfgtbl->bss_size[i];
-        }
-        vmpu_acl_stack(
-            box_id,
-            bss_size,
-            box_cfgtbl->stack_size
-        );
-
-        /* Save the BSS size for this box. */
-        g_context_current_states[box_id].bss_size = bss_size;
-
-        /* Initialize box index. */
-        vmpu_box_index_init(
-            box_id,
-            box_cfgtbl
-        );
+        /* Add the box ACL for the static SRAM memories. */
+        vmpu_configure_box_sram(box_id, box_cfgtbl);
 
         /* Add the box ACLs for peripherals. */
         vmpu_configure_box_peripherals(box_id, box_cfgtbl);
