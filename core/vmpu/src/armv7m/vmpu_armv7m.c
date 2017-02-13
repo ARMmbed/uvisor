@@ -300,7 +300,8 @@ void vmpu_load_box(uint8_t box_id)
 
 extern int vmpu_region_bits(uint32_t size);
 
-void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
+void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size, uint32_t * bss_start,
+                    uint32_t * stack_pointer)
 {
     int bits, slots_ctx, slots_stack;
     uint32_t size, block_size;
@@ -308,21 +309,6 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
 
     if (box_mem_pos == 0) {
         box_mem_pos = (uint32_t) __uvisor_config.bss_boxes_start;
-    }
-
-    /* Handle public box. */
-    if (box_id == 0)
-    {
-        DPRINTF("ctx=%i stack=%i\n\r", bss_size, stack_size);
-        /* Non-important sanity checks */
-        assert(stack_size == 0);
-
-        /* Assign public box stack pointer to existing unprivileged stack
-         * pointer. */
-        g_context_current_states[0].sp = __get_PSP();
-        /* Box 0 still uses the public heap to be backwards compatible. */
-        g_context_current_states[0].bss = (uint32_t) __uvisor_config.heap_start;
-        return;
     }
 
     /* Ensure that box stack is at least UVISOR_MIN_STACK_SIZE. */
@@ -365,11 +351,11 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
     }
 
     /* Allocate context pointer. */
-    g_context_current_states[box_id].bss = slots_ctx ? box_mem_pos : (uint32_t) NULL;
+    *bss_start = slots_ctx ? box_mem_pos : (uint32_t) NULL;
     /* `(box_mem_pos + size)` is already outside the memory protected by the
      * MPU region, so a pointer 8B below stack top is chosen (8B due to stack
      * alignment requirements). */
-    g_context_current_states[box_id].sp = (box_mem_pos + size) - 8;
+    *stack_pointer = (box_mem_pos + size) - 8;
 
     /* Reset uninitialized secured box context. */
     if (slots_ctx) {

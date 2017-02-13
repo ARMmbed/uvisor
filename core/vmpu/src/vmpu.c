@@ -248,6 +248,24 @@ static void vmpu_check_sanity_box_cfgtbl(uint8_t box_id, UvisorBoxConfig const *
                    box_id, (uint32_t) box_cfgtbl, box_cfgtbl->stack_size, UVISOR_MIN_STACK_SIZE);
     }
 
+    /* Checks specific to the public box */
+    if (box_id == 0) {
+        /* We require both the stack and the heap to be set to 0. If the user
+         * configures the public box via our macros it is always the case. */
+        /* FIXME: At the moment we cannot calculate the stack and heap available
+         *        to the public box at compile/link time, so we have to set them
+         *        to zero and then determine them at runtime (see code in box
+         *        index initialization). We should remove this dependency. */
+        if (box_cfgtbl->stack_size != 0) {
+            HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: The public box stack size must be set to 0 (found %uB).\r\n",
+                       box_id, (uint32_t) box_cfgtbl, box_cfgtbl->stack_size);
+        }
+        if (box_cfgtbl->bss.size_of.heap != 0) {
+            HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: The public box heap size must be set to 0 (found %uB).\r\n",
+                       box_id, (uint32_t) box_cfgtbl, box_cfgtbl->bss.size_of.heap);
+        }
+    }
+
     /* Check that the box namespace is not too long. */
     vmpu_check_sanity_box_namespace(box_id, box_cfgtbl->box_namespace);
 }
@@ -334,25 +352,34 @@ static void vmpu_configure_box_peripherals(uint8_t box_id, UvisorBoxConfig const
 
 static void vmpu_configure_box_sram(uint8_t box_id, UvisorBoxConfig const * box_cfgtbl)
 {
-    /* Add ACLs for the secure box BSS sections and for the stack. */
+    /* Compute the size of the BSS sections. */
     uint32_t bss_size = 0;
     for (int i = 0; i < UVISOR_BSS_SECTIONS_COUNT; i++) {
         bss_size += box_cfgtbl->bss.sizes[i];
     }
-    vmpu_acl_stack(
-        box_id,
-        bss_size,
-        box_cfgtbl->stack_size
-    );
 
-    /* Save the BSS size for this box. */
+    /* Add ACLs for the secure box BSS sections and for the stack. */
+    uint32_t bss_start = 0;
+    uint32_t stack_pointer = 0;
+    if (box_id == 0) {
+        /* The public box does not need an explicit ACL. Instead, it uses the
+         * default access permissions given by the background regions. */
+        /* Note: This relies on the assumption that all supported MPU
+         *       architectures allow us to setup a background region somehow. */
+        bss_start = (uint32_t) __uvisor_config.heap_start;
+        stack_pointer = __get_PSP();
+    } else {
+        uint32_t stack_size = box_cfgtbl->stack_size;
+        vmpu_acl_stack(box_id, bss_size, stack_size, &bss_start, &stack_pointer);
+    }
+
+    /* Set the box state for the SRAM sections. */
+    g_context_current_states[box_id].bss = bss_start;
     g_context_current_states[box_id].bss_size = bss_size;
+    g_context_current_states[box_id].sp = stack_pointer;
 
-    /* Initialize box index. */
-    vmpu_box_index_init(
-        box_id,
-        box_cfgtbl
-    );
+    /* Initialize the box index. */
+    vmpu_box_index_init(box_id, box_cfgtbl);
 }
 
 static void vmpu_enumerate_boxes(void)
