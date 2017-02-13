@@ -212,8 +212,6 @@ typedef struct {
         UvisorBssSections address_of;
     } bss;
 
-    /* Pointer to the box heap */
-    void * box_heap;
     /* Size of the box heap */
     uint32_t box_heap_size;
     /* Pointer to the currently active heap.
