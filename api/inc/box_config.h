@@ -155,6 +155,6 @@ UVISOR_EXTERN void const * const public_box_cfg_ptr;
 #define UVISOR_BOX_HEAPSIZE(heap_size) \
     static const uint32_t __uvisor_box_heapsize = heap_size;
 
-#define uvisor_ctx (*__uvisor_ps + offsetof(UvisorBssSections, context))
+#define __uvisor_ctx (((UvisorBoxIndex *) __uvisor_ps)->bss.address_of.context)
 
 #endif /* __UVISOR_API_BOX_CONFIG_H__ */
