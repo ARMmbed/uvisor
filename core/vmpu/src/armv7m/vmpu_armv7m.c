@@ -300,13 +300,38 @@ void vmpu_load_box(uint8_t box_id)
 
 extern int vmpu_region_bits(uint32_t size);
 
+/* Compute the MPU region size for the given BSS sections and stack sizes.
+ * The function also updates the region_start parameter to meet the alignment
+ * requirements of the MPU. */
+static uint32_t vmpu_acl_stack_region_size(uint32_t * region_start, uint32_t const bss_size, uint32_t const stack_size)
+{
+    /* Ensure that 2/8th are available for protecting the stack from the BSS
+     * sections. One subregion will separate the 2 areas, another one is needed
+     * to include a margin for rounding errors. */
+    int bits = vmpu_region_bits(((stack_size + bss_size) * 8) / 6);
+
+    /* Calculate the whole MPU region size. */
+    /* Note: In order to support subregions the region size is at least 2**8. */
+    if (bits < 8) {
+        bits = 8;
+    }
+    uint32_t region_size = 1UL << bits;
+
+    /* Ensure that the MPU region is aligned to a multiple of its size. */
+    if ((*region_start & (region_size - 1)) != 0) {
+        *region_start = (*region_start & ~(region_size - 1)) + region_size;
+    }
+
+    return region_size;
+}
+
 void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size, uint32_t * bss_start,
                     uint32_t * stack_pointer)
 {
-    int bits, slots_ctx, slots_stack;
-    uint32_t size, block_size;
+    /* Offset at which the SRAM region is configured for a secure box. This
+     * offset is incremented at every function call. The actual MPU region start
+     * address depends on the size and alignment of the region. */
     static uint32_t box_mem_pos = 0;
-
     if (box_mem_pos == 0) {
         box_mem_pos = (uint32_t) __uvisor_config.bss_boxes_start;
     }
@@ -314,65 +339,57 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size, uint
     /* Ensure that box stack is at least UVISOR_MIN_STACK_SIZE. */
     stack_size = UVISOR_MIN_STACK(stack_size);
 
-    /* Ensure that 2/8th are available for protecting stack from context -
-     * include rounding error margin. */
-    bits = vmpu_region_bits(((stack_size + bss_size) * 8) / 6);
+    /* Compute the MPU region size. */
+    /* Note: This function also updates the memory offset. */
+    uint32_t region_size = vmpu_acl_stack_region_size(&box_mem_pos, bss_size, stack_size);
 
-    /* Ensure MPU region size of at least 256 bytes for subregion support. */
-    if (bits < 8) {
-        bits = 8;
-    }
-    size = 1UL << bits;
-    block_size = size / 8;
-
-    DPRINTF("\tbox[%i] stack=%i bss=%i rounded=%i\n\r", box_id, stack_size, bss_size, size);
-
-    /* Check for correct context address alignment. Alignment needs to be a
-     * muiltiple of the size. */
-    if ((box_mem_pos & (size - 1)) != 0) {
-        box_mem_pos = (box_mem_pos & ~(size - 1)) + size;
-    }
+    DPRINTF("\tbox[%i] stack=%i bss=%i rounded=%i\n\r", box_id, stack_size, bss_size, region_size);
 
     /* Check if we have enough memory left. */
-    if ((box_mem_pos + size) > ((uint32_t) __uvisor_config.bss_boxes_end)) {
+    /* Note: This should never happen as memory overflow is checked at box
+     *       ordering time. */
+    if ((box_mem_pos + region_size) > ((uint32_t) __uvisor_config.bss_boxes_end)) {
         HALT_ERROR(SANITY_CHECK_FAILED, "memory overflow - increase uvisor memory allocation\n\r");
     }
 
-    /* Round context sizes. Leave one free slot. */
-    slots_ctx = (bss_size + block_size - 1) / block_size;
-    slots_stack = slots_ctx ? (8 - slots_ctx - 1) : 8;
+    /* Allocate the subregions slots for the BSS sections and for the stack.
+     * One subregion is used to allow for rounding errors (BSS), and another one
+     * is used to separate the BSS sections from the stack. */
+    uint32_t subregion_size = region_size / 8;
+    int slots_for_bss = (bss_size + subregion_size - 1) / subregion_size;
+    int slots_for_stack = slots_for_bss ? (8 - slots_for_bss - 1) : 8;
 
     /* Final sanity checks */
-    if ((slots_ctx * block_size) < bss_size) {
+    if ((slots_for_bss * subregion_size) < bss_size) {
         HALT_ERROR(SANITY_CHECK_FAILED, "slots_ctx underrun\n\r");
     }
-    if ((slots_stack * block_size) < stack_size) {
+    if ((slots_for_stack * subregion_size) < stack_size) {
         HALT_ERROR(SANITY_CHECK_FAILED, "slots_stack underrun\n\r");
     }
 
-    /* Allocate context pointer. */
-    *bss_start = slots_ctx ? box_mem_pos : (uint32_t) NULL;
+    /* Set the pointers to the BSS sections and to the stack. */
+    *bss_start = slots_for_bss ? box_mem_pos : (uint32_t) NULL;
     /* `(box_mem_pos + size)` is already outside the memory protected by the
      * MPU region, so a pointer 8B below stack top is chosen (8B due to stack
      * alignment requirements). */
-    *stack_pointer = (box_mem_pos + size) - 8;
+    *stack_pointer = (box_mem_pos + region_size) - 8;
 
     /* Reset uninitialized secured box context. */
-    if (slots_ctx) {
+    if (slots_for_bss) {
         memset((void *) box_mem_pos, 0, bss_size);
     }
 
     /* Create stack protection region. */
-    size = vmpu_region_add_static_acl(
+    region_size = vmpu_region_add_static_acl(
         box_id,
         box_mem_pos,
-        size,
+        region_size,
         UVISOR_TACLDEF_STACK,
-        slots_ctx ? 1UL << slots_ctx : 0
+        slots_for_bss ? 1UL << slots_for_bss : 0
     );
 
     /* Move on to the next memory block. */
-    box_mem_pos += size;
+    box_mem_pos += region_size;
 }
 
 void vmpu_arch_init(void)
