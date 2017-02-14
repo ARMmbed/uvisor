@@ -270,10 +270,10 @@ static void vmpu_check_sanity_box_cfgtbl(uint8_t box_id, UvisorBoxConfig const *
     vmpu_check_sanity_box_namespace(box_id, box_cfgtbl->box_namespace);
 }
 
-static void vmpu_box_index_init(uint8_t box_id, UvisorBoxConfig const * const box_cfgtbl)
+static void vmpu_box_index_init(uint8_t box_id, UvisorBoxConfig const * const box_cfgtbl, void * const bss_start)
 {
     /* The box index is at the beginning of the BSS section. */
-    void * box_bss = (void *) g_context_current_states[box_id].bss;
+    void * box_bss = bss_start;
     UvisorBoxIndex * index = (UvisorBoxIndex *) box_bss;
 
     /* Zero the _entire_ index, so that user data inside the box index is in a
@@ -379,7 +379,7 @@ static void vmpu_configure_box_sram(uint8_t box_id, UvisorBoxConfig const * box_
     g_context_current_states[box_id].sp = stack_pointer;
 
     /* Initialize the box index. */
-    vmpu_box_index_init(box_id, box_cfgtbl);
+    vmpu_box_index_init(box_id, box_cfgtbl, (void *) bss_start);
 }
 
 static void vmpu_enumerate_boxes(void)
