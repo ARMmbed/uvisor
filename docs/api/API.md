@@ -1,14 +1,7 @@
 # uVisor API documentation
 
-Here you can find detailed documentation for:
-
-1. [Configuration macros](#configuration-macros), to configure a secure box and protect data and peripherals.
-1. [Box Identity](#box-identity), to retrieve a box-specific ID or the namespace of the current or calling box.
-1. [Low level APIs](#low-level-apis), to access uVisor functions that are not available to unprivileged code (interrupts, restricted system registers).
-1. [Type definitions](#type-definitions).
-1. [Error codes](#error-codes).
-
 ## Configuration macros
+You can use configuration macros to configure a secure box and protect data and peripherals.
 
 ```C
 UVISOR_BOX_CONFIG(box_name
@@ -24,7 +17,7 @@ UVISOR_BOX_CONFIG(box_name
   </tr>
   <tr>
     <td>Type</td>
-    <td colspan="2">C/C++ pre-processor macro (pseudo-function)</td>
+    <td colspan="2">C/C++ preprocessor macro (pseudo-function)</td>
   </tr>
   <tr>
     <td rowspan="4">Parameters</td>
@@ -46,6 +39,7 @@ UVISOR_BOX_CONFIG(box_name
 </table>
 
 Example:
+
 ```C
 #include "uvisor-lib/uvisor-lib.h"
 
@@ -107,11 +101,7 @@ Example:
 UVISOR_SET_MODE(UVISOR_ENABLED);
 ```
 
-**Note:**
-
-1. This macro is only needed temporarily (uVisor disabled by default) and will be removed in the future.
-
-2. This macro must be used only once in the top level yotta executable.
+**Note:** This macro is only temporary (uVisor disabled by default) and will be removed in the future.
 
 ---
 
@@ -161,11 +151,7 @@ static const UvBoxAclItem g_background_acl[] = {
 UVISOR_SET_MODE_ACL(UVISOR_ENABLED, g_background_acl);
 ```
 
-**Note:**
-
-1. This macro is only needed temporarily (uVisor disabled by default) and will be removed in the future.
-
-2. This macro must be used only once in the top level yotta executable.
+**Note:** This macro is only temporary (uVisor disabled by default) and will be removed in the future.
 
 ---
 
@@ -178,15 +164,15 @@ UVISOR_BOX_NAMESPACE(static const char const namespace[])
     <td>Description</td>
     <td colspan="2"><p>Specify the namespace for a box.</p>
 
-      <p>The namespace of the box must be a null-terminated string no longer than <code>MAX_BOX_NAMESPACE_LENGTH</code> (including the terminating null). The namespace must also be stored in public flash. uVisor will verify that the namespace is null-terminated and stored in public flash at boot-time, and will halt if the namespace fails this verification.</p>
+      <p>The namespace of the box must be a null-terminated string no longer than <code>MAX_BOX_NAMESPACE_LENGTH</code> (including the terminating null). The namespace must also be stored in public flash. uVisor will verify that the namespace is null-terminated and stored in public flash at boot-time and will halt if the namespace fails this verification.</p>
 
       <p>For now, use a reverse domain name for the box namespace. If you don't have a reverse domain name, use a GUID string identifier. We currently don't verify that the namespace is globally unique, but we will perform this validation in the future.</p>
 
-      <p>Use of this configuration macro before <code>UVISOR_BOX_CONFIG</code> is required. If you do not wish to give your box a namespace, specify <code>NULL</code> as the namespace to create an anonymous box.</p>
+      <p>You must use this configuration macro before <code>UVISOR_BOX_CONFIG</code>. If you do not wish to give your box a namespace, specify <code>NULL</code> as the namespace to create an anonymous box.</p>
   </tr>
   <tr>
     <td>Type</td>
-    <td colspan="2">C/C++ pre-processor macro (pseudo-function)</td>
+    <td colspan="2">C/C++ preprocessor macro (pseudo-function)</td>
   </tr>
   <tr>
     <td rowspan="1">Parameters</td>
@@ -204,17 +190,16 @@ UVISOR_BOX_NAMESPACE("com.example.my-box-name");
 UVISOR_BOX_CONFIG(my_box_name, UVISOR_BOX_STACK_SIZE);
 ```
 
-## Box Identity
-
+## Box identity
 A box identity identifies a security domain uniquely and globally.
 
-The box identity API can be used to determine the source box of an inbound secure gateway call. This can be useful for implementing complex authorization logic between mutually distrustful security domains.
+You can use the box identity API to determine the source box of an inbound secure gateway call. This can be useful for implementing complex authorization logic between mutually distrustful security domains.
 
 uVisor provides the ability to retrieve the box ID of the current box (`uvisor_box_id_self`), or of the box that called the current box through an RPC gateway via the `box_id_caller` parameter of `rpc_fncall_waitfor`.
 
-The box ID number is not constant and can change between reboots. But, the box ID number can be used as a token to retrieve a constant string identifier, known as the box namespace.
+The box ID number is not constant and can change between reboots, but you can use it as a token to retrieve a constant string identifier, known as the box namespace.
 
-A box namespace is a static, box-specific string, that can help identify which box has which ID at run-time. In the future, the box namespace will be guaranteed to be globally unique.
+A box namespace is a static, box-specific string that can help identify which box has which ID at runtime. In the future, the box namespace will be globally unique.
 
 A full example using this API is available at [mbed-os-example-uvisor-number-store](https://github.com/ARMmbed/mbed-os-example-uvisor-number-store).
 
@@ -250,7 +235,7 @@ int rpc_fncall_waitfor(const TFN_Ptr fn_ptr_array[], size_t fn_count, int * box_
   </tr>
 </table>
 
-> When deciding which memory to provide for `rpc_fncall_waitfor` to use when writing `box_id_caller`, strongly prefer thread local storage when multiple threads in a box can handle incoming RPC.
+> When deciding which memory to provide for `rpc_fncall_waitfor` to use when writing `box_id_caller`, use thread local storage when multiple threads in a box can handle incoming RPC.
 
 ---
 
@@ -284,9 +269,7 @@ int uvisor_box_namespace(int box_id, char *box_namespace, size_t length)
 
 ## Low-level APIs
 
-Currently the following low level operations are permitted:
-
-1. Interrupt management.
+You can use low-level APIs to access uVisor functions that are not available to unprivileged code (interrupts, restricted system registers). The only permitted low-level operation is interrupt management.
 
 ### Interrupt management
 
@@ -297,7 +280,7 @@ void vIRQ_SetVector(uint32_t irqn, uint32_t vector)
 <table>
   <tr>
     <td>Description</td>
-    <td colspan="2">Set an ISR for IRQn</td>
+    <td colspan="2">Register an ISR to the currently active box</td>
   <tr>
     <td rowspan="2">Parameters</td>
     <td><pre>uint32_t irqn<code></td>
@@ -305,7 +288,7 @@ void vIRQ_SetVector(uint32_t irqn, uint32_t vector)
   </tr>
   <tr>
     <td><pre>uint32_t vector<code></td>
-    <td>Interrupt handler
+    <td>Interrupt handler; if 0 the IRQn slot is deregistered for the current
         box</td>
   </tr>
 </table>
@@ -486,7 +469,7 @@ int vIRQ_GetLevel(void)
 ## Type definitions
 
 ```C
-typedef uint32_t UvisroBoxAcl;    /* Permssion mask */
+typedef uint32_t UvisroBoxAcl;    /* Permission mask */
 ```
 
 ---
