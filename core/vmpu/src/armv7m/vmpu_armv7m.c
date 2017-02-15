@@ -304,7 +304,7 @@ extern int vmpu_region_bits(uint32_t size);
 /* Compute the MPU region size for the given BSS sections and stack sizes.
  * The function also updates the region_start parameter to meet the alignment
  * requirements of the MPU. */
-static uint32_t vmpu_acl_stack_region_size(uint32_t * region_start, uint32_t const bss_size, uint32_t const stack_size)
+static uint32_t vmpu_acl_sram_region_size(uint32_t * region_start, uint32_t const bss_size, uint32_t const stack_size)
 {
     /* Ensure that 2/8th are available for protecting the stack from the BSS
      * sections. One subregion will separate the 2 areas, another one is needed
@@ -326,8 +326,8 @@ static uint32_t vmpu_acl_stack_region_size(uint32_t * region_start, uint32_t con
     return region_size;
 }
 
-void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size, uint32_t * bss_start,
-                    uint32_t * stack_pointer)
+void vmpu_acl_sram(uint8_t box_id, uint32_t bss_size, uint32_t stack_size, uint32_t * bss_start,
+                   uint32_t * stack_pointer)
 {
     /* Offset at which the SRAM region is configured for a secure box. This
      * offset is incremented at every function call. The actual MPU region start
@@ -343,7 +343,7 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size, uint
     /* Compute the MPU region size. */
     /* Note: This function also updates the memory offset to meet the alignment
      *       requirements. */
-    uint32_t region_size = vmpu_acl_stack_region_size(&box_mem_pos, bss_size, stack_size);
+    uint32_t region_size = vmpu_acl_sram_region_size(&box_mem_pos, bss_size, stack_size);
 
     DPRINTF("\tbox[%i] stack=%i bss=%i rounded=%i\n\r", box_id, stack_size, bss_size, region_size);
 
@@ -532,7 +532,7 @@ static uint32_t __vmpu_order_boxes(int * const box_order, int * const best_order
             uint32_t stack_size = box_cfgtbl->stack_size;
             /* This function automatically updates the sram_offset parameter to
              * meet the MPU alignment requirements. */
-            uint32_t region_size = vmpu_acl_stack_region_size(&sram_offset, bss_size, stack_size);
+            uint32_t region_size = vmpu_acl_sram_region_size(&sram_offset, bss_size, stack_size);
             sram_offset += region_size;
         }
         /* Update the best box configuration. */

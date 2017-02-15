@@ -177,8 +177,8 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
     return lr;
 }
 
-void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size, uint32_t * bss_start,
-                    uint32_t * stack_pointer)
+void vmpu_acl_sram(uint8_t box_id, uint32_t bss_size, uint32_t stack_size, uint32_t * bss_start,
+                   uint32_t * stack_pointer)
 {
     static uint32_t g_box_mem_pos = 0;
 

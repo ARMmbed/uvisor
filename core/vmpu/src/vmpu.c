@@ -365,7 +365,7 @@ static void vmpu_configure_box_sram(uint8_t box_id, UvisorBoxConfig const * box_
         stack_pointer = __get_PSP();
     } else {
         uint32_t stack_size = box_cfgtbl->stack_size;
-        vmpu_acl_stack(box_id, bss_size, stack_size, &bss_start, &stack_pointer);
+        vmpu_acl_sram(box_id, bss_size, stack_size, &bss_start, &stack_pointer);
     }
 
     /* Set the box state for the SRAM sections. */

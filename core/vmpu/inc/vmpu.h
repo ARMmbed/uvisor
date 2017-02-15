@@ -161,8 +161,8 @@ extern int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp, uint32_t fault_addr
 
 uint32_t vmpu_fault_find_acl(uint32_t fault_addr, uint32_t size);
 
-extern void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size, uint32_t * bss_start,
-                           uint32_t * stack_pointer);
+extern void vmpu_acl_sram(uint8_t box_id, uint32_t bss_size, uint32_t stack_size, uint32_t * bss_start,
+                          uint32_t * stack_pointer);
 extern uint32_t vmpu_acl_static_region(uint8_t region, void* base, uint32_t size, UvisorBoxAcl acl);
 
 extern void vmpu_arch_init(void);
