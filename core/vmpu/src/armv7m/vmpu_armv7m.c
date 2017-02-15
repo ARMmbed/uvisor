@@ -29,6 +29,7 @@
 /* This file contains the configuration-specific symbols. */
 #include "configurations.h"
 
+#include <limits.h>
 
 /* Sanity checks on SRAM boundaries */
 #if SRAM_LENGTH_MIN <= 0
@@ -340,17 +341,11 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size, uint
     stack_size = UVISOR_MIN_STACK(stack_size);
 
     /* Compute the MPU region size. */
-    /* Note: This function also updates the memory offset. */
+    /* Note: This function also updates the memory offset to meet the alignment
+     *       requirements. */
     uint32_t region_size = vmpu_acl_stack_region_size(&box_mem_pos, bss_size, stack_size);
 
     DPRINTF("\tbox[%i] stack=%i bss=%i rounded=%i\n\r", box_id, stack_size, bss_size, region_size);
-
-    /* Check if we have enough memory left. */
-    /* Note: This should never happen as memory overflow is checked at box
-     *       ordering time. */
-    if ((box_mem_pos + region_size) > ((uint32_t) __uvisor_config.bss_boxes_end)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "memory overflow - increase uvisor memory allocation\n\r");
-    }
 
     /* Allocate the subregions slots for the BSS sections and for the stack.
      * One subregion is used to allow for rounding errors (BSS), and another one
@@ -515,5 +510,78 @@ void vmpu_arch_init_hw(void)
         HALT_ERROR(SANITY_CHECK_FAILED,
                    "The page size (%ukB) must not be larger than 1/8th of SRAM (%ukB).",
                    *__uvisor_config.page_size / 1024, subregions_size / 1024);
+    }
+}
+
+static void swap_boxes(int * const b1, int * const b2)
+{
+    uint32_t tmp = *b1;
+    *b1 = *b2;
+    *b2 = tmp;
+}
+
+static uint32_t __vmpu_order_boxes(int * const box_order, int * const best_order, int start, int end, uint32_t min_size)
+{
+    /* When a permutation is found, calculate the SRAM usage of the box
+     * configuration and save the configuration if it's the best so far. */
+    if (start == end) {
+        uint32_t sram_offset = (uint32_t) __uvisor_config.bss_boxes_start;
+        /* Skip the public box. */
+        for (int i = 1; i <= end; ++i) {
+            int index = box_order[i];
+            UvisorBoxConfig const * box_cfgtbl = ((UvisorBoxConfig const * *) __uvisor_config.cfgtbl_ptr_start)[index];
+            uint32_t bss_size = 0;
+            for (int i = 0; i < UVISOR_BSS_SECTIONS_COUNT; ++i) {
+                bss_size = box_cfgtbl->bss.sizes[i];
+            }
+            uint32_t stack_size = box_cfgtbl->stack_size;
+            /* This function automatically updates the sram_offset parameter to
+             * meet the MPU alignment requirements. */
+            uint32_t region_size = vmpu_acl_stack_region_size(&sram_offset, bss_size, stack_size);
+            sram_offset += region_size;
+        }
+        /* Update the best box configuration. */
+        uint32_t sram_size = sram_offset - (uint32_t) __uvisor_config.bss_boxes_start;
+        if (sram_size < min_size) {
+            min_size = sram_size;
+            for (int i = 0; i <= end; ++i) {
+                best_order[i] = box_order[i];
+            }
+        }
+    }
+
+    /* Permute the boxes order. */
+    for (int i = start; i <= end; ++i) {
+        /* Swap, recurse, swap. */
+        swap_boxes(&box_order[start], &box_order[i]);
+        min_size = __vmpu_order_boxes(box_order, best_order, start + 1, end, min_size);
+        swap_boxes(&box_order[start], &box_order[i]);
+    }
+    return min_size;
+}
+
+void vmpu_order_boxes(int * const best_order, int box_count)
+{
+    /* Start with the same order of configuration table pointers. */
+    int box_order[UVISOR_MAX_BOXES];
+    for (int i = 0; i < box_count; ++i) {
+        box_order[i] = i;
+    }
+
+    /* Find the total amount of SRAM used by all the boxes.
+     * This function also updates the best_order array with the configuration
+     * that minimizes the SRAM usage. */
+    uint32_t total_sram_size = __vmpu_order_boxes(box_order, best_order, 1, box_count - 1, UINT32_MAX);
+
+    /* This helper message allows people to work around the linker script
+     * limitation that prevents us from allocating the correct amount of memory
+     * at link time. */
+    uint32_t available_sram_size = (uint32_t) __uvisor_config.bss_boxes_end - (uint32_t) __uvisor_config.bss_boxes_start;
+    if (available_sram_size < total_sram_size) {
+        DPRINTF("Not enough memory allocated for the secure boxes. This is a known limitation of the ARMv7-M MPU.\r\n");
+        DPRINTF("Please insert the following snippet in your public box file (usually main.cpp):\r\n");
+        DPRINTF("uint8_t __attribute__((section(\".keep.uvisor.bss.boxes\"), aligned(32))) __boxes_overhead[%d];\r\n",
+                total_sram_size - available_sram_size);
+        HALT_ERROR(SANITY_CHECK_FAILED, "Secure boxes memory overflow. See message above to fix it.\r\n");
     }
 }

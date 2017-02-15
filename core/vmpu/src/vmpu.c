@@ -391,9 +391,15 @@ static void vmpu_enumerate_boxes(void)
     }
     g_vmpu_boxes_counted = TRUE;
 
+    /* Get the boxes order. This is MPU-specific. */
+    int box_order[UVISOR_MAX_BOXES];
+    vmpu_order_boxes(box_order, g_vmpu_box_count);
+
     /* Initialize the boxes. */
     for (uint8_t box_id = 0; box_id < g_vmpu_box_count; ++box_id) {
-        UvisorBoxConfig const * box_cfgtbl = ((UvisorBoxConfig const * *) __uvisor_config.cfgtbl_ptr_start)[box_id];
+        /* Select the pointer to the (permuted) box configuration table. */
+        int index = box_order[box_id];
+        UvisorBoxConfig const * box_cfgtbl = ((UvisorBoxConfig const * *) __uvisor_config.cfgtbl_ptr_start)[index];
 
         /* Verify the box configuration table. */
         /* Note: This function halts if a sanity check fails. */

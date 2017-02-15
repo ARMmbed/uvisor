@@ -294,3 +294,10 @@ void vmpu_arch_init(void)
 
     vmpu_mpu_lock();
 }
+
+void vmpu_order_boxes(int * const best_order, int box_count)
+{
+    for (int i = 0; i < box_count; ++i) {
+        best_order[i] = i;
+    }
+}

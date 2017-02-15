@@ -206,6 +206,8 @@ extern int vmpu_is_region_size_valid(uint32_t size);
  */
 extern uint32_t vmpu_round_up_region(uint32_t addr, uint32_t size);
 
+extern void vmpu_order_boxes(int * const best_order, int box_count);
+
 static UVISOR_FORCEINLINE bool vmpu_is_box_id_valid(int box_id)
 {
     /* Return true if the box_id is valid.
