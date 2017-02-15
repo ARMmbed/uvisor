@@ -369,11 +369,6 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size, uint
      * alignment requirements). */
     *stack_pointer = (box_mem_pos + region_size) - 8;
 
-    /* Reset uninitialized secured box context. */
-    if (slots_for_bss) {
-        memset((void *) box_mem_pos, 0, bss_size);
-    }
-
     /* Create stack protection region. */
     region_size = vmpu_region_add_static_acl(
         box_id,

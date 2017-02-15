@@ -276,17 +276,13 @@ static void vmpu_box_index_init(uint8_t box_id, UvisorBoxConfig const * const bo
     void * box_bss = bss_start;
     UvisorBoxIndex * index = (UvisorBoxIndex *) box_bss;
 
-    /* Zero the _entire_ index, so that user data inside the box index is in a
-     * known state! This allows checking variables for `NULL`, or `0`, which
-     * indicates an initialization requirement. */
-    memset(index, 0, box_cfgtbl->bss.size_of.index);
-
     /* Assign the pointers to the BSS sections. */
     for (int i = 0; i < UVISOR_BSS_SECTIONS_COUNT; i++) {
         size_t size = box_cfgtbl->bss.sizes[i];
         index->bss.pointers[i] = (size ? box_bss : NULL);
         box_bss += size;
     }
+    size_t bss_size = box_bss - bss_start;
 
     /* Initialize the box heap size. */
     uint32_t heap_size = 0;
@@ -297,7 +293,6 @@ static void vmpu_box_index_init(uint8_t box_id, UvisorBoxConfig const * const bo
          *        time. We should remove this dependency. */
         const uint32_t heap_end = (uint32_t) __uvisor_config.heap_end;
         const uint32_t heap_start = (uint32_t) __uvisor_config.heap_start;
-        size_t bss_size = (size_t) g_context_current_states[box_id].bss_size;
         heap_size = heap_end - heap_start - bss_size;
 
         /* Set the heap pointer for the public box.
@@ -379,6 +374,7 @@ static void vmpu_configure_box_sram(uint8_t box_id, UvisorBoxConfig const * box_
     g_context_current_states[box_id].sp = stack_pointer;
 
     /* Initialize the box index. */
+    memset((void *) bss_start, 0, bss_size);
     vmpu_box_index_init(box_id, box_cfgtbl, (void *) bss_start);
 }
 
