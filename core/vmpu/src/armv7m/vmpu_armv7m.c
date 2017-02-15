@@ -401,8 +401,6 @@ void vmpu_arch_init(void)
     /* Initialize static MPU regions. */
     vmpu_arch_init_hw();
 
-    vmpu_mpu_lock();
-
     /* Dump MPU configuration in debug mode. */
 #ifndef NDEBUG
     debug_mpu_config();

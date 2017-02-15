@@ -524,6 +524,9 @@ void vmpu_init_post(void)
 
     /* load boxes */
     vmpu_load_boxes();
+
+    /* enable mpu */
+    vmpu_mpu_lock();
 }
 
 static int copy_box_namespace(const char *src, char *dst)
