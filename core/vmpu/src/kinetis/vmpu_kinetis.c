@@ -200,6 +200,8 @@ void vmpu_acl_sram(uint8_t box_id, uint32_t bss_size, uint32_t stack_size, uint3
         UVISOR_TACLDEF_STACK,
         0
     );
+    DPRINTF("  - Stack:      0x%08X - 0x%08X (permissions: 0x%04X)\r\n",
+            g_box_mem_pos, g_box_mem_pos + stack_size, UVISOR_TACLDEF_STACK);
 
     /* Set stack pointer to box stack size minus guard band. */
     g_box_mem_pos += stack_size;
@@ -220,6 +222,8 @@ void vmpu_acl_sram(uint8_t box_id, uint32_t bss_size, uint32_t stack_size, uint3
         UVISOR_TACLDEF_DATA,
         0
     );
+    DPRINTF("  - BSS:        0x%08X - 0x%08X (permissions: 0x%04X)\r\n",
+            g_box_mem_pos, g_box_mem_pos + bss_size, UVISOR_TACLDEF_DATA);
 
     g_box_mem_pos += bss_size + UVISOR_STACK_BAND_SIZE;
 }

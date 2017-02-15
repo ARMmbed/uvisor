@@ -161,9 +161,6 @@ static uint32_t vmpu_region_add_static_acl_internal(uint8_t box_id, uint32_t sta
     MpuRegionSlice * box;
     uint32_t rounded_size, end, t;
 
-    DPRINTF(" mem_acl[%i]: 0x%08X-0x%08X (size=%i, acl=0x%04X)\n",
-            g_mpu_region_count, start, ((uint32_t)start)+size, size, acl);
-
     /* handle empty or fully protected regions */
     if(!size || !(acl & (UVISOR_TACL_UACL|UVISOR_TACL_SACL)))
         return 1;
@@ -217,10 +214,6 @@ uint32_t vmpu_region_add_static_acl(uint8_t box_id, uint32_t start, uint32_t siz
 {
     int res;
 
-#ifndef NDEBUG
-    const MemMap *map;
-#endif/*NDEBUG*/
-
     /* check for maximum box ID */
     if (!vmpu_is_box_id_valid(box_id)) {
         HALT_ERROR(SANITY_CHECK_FAILED, "ACL add: The box ID is out of range (%u).\r\n", box_id);
@@ -230,9 +223,6 @@ uint32_t vmpu_region_add_static_acl(uint8_t box_id, uint32_t start, uint32_t siz
     if(start & 0x1F) {
         HALT_ERROR(SANITY_CHECK_FAILED, "ACL start address is not aligned [0x%08X]\n", start);
     }
-
-    DPRINTF("\t@0x%08X size=%06i acl=0x%04X [%s]\n", start, size, acl,
-        (map = memory_map_name(start)) ? map->name : "unknown");
 
     /* check for peripheral memory, proceed with general memory */
     if(acl & UVISOR_TACL_PERIPHERAL) {

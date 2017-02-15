@@ -315,7 +315,6 @@ static void vmpu_box_index_init(uint8_t box_id, UvisorBoxConfig const * const bo
 static void vmpu_configure_box_peripherals(uint8_t box_id, UvisorBoxConfig const * const box_cfgtbl)
 {
     /* Enumerate the box ACLs. */
-    DPRINTF("box[%i] ACL list:\r\n", box_id);
     const UvisorBoxAclItem * region = box_cfgtbl->acl_list;
     if (region != NULL) {
         int count = box_cfgtbl->acl_count;
@@ -337,6 +336,9 @@ static void vmpu_configure_box_peripherals(uint8_t box_id, UvisorBoxConfig const
                     region->acl | UVISOR_TACL_USER,
                     0
                 );
+                DPRINTF("  - Peripheral: 0x%08X - 0x%08X (permissions: 0x%04X)\r\n",
+                        (uint32_t) region->param1, (uint32_t) region->param1 + region->param2,
+                        region->acl | UVISOR_TACL_USER);
             }
 
             /* Proceed to the next ACL. */
@@ -401,8 +403,7 @@ static void vmpu_enumerate_boxes(void)
         /* Note: This function halts if a sanity check fails. */
         vmpu_check_sanity_box_cfgtbl(box_id, box_cfgtbl);
 
-        /* Load the box ACLs. */
-        DPRINTF("box[%i] ACL list:\n", box_id);
+        DPRINTF("Box %i ACLs:\r\n", box_id);
 
         /* Add the box ACL for the static SRAM memories. */
         vmpu_configure_box_sram(box_id, box_cfgtbl);

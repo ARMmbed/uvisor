@@ -345,8 +345,6 @@ void vmpu_acl_sram(uint8_t box_id, uint32_t bss_size, uint32_t stack_size, uint3
      *       requirements. */
     uint32_t region_size = vmpu_acl_sram_region_size(&box_mem_pos, bss_size, stack_size);
 
-    DPRINTF("\tbox[%i] stack=%i bss=%i rounded=%i\n\r", box_id, stack_size, bss_size, region_size);
-
     /* Allocate the subregions slots for the BSS sections and for the stack.
      * One subregion is used to allow for rounding errors (BSS), and another one
      * is used to separate the BSS sections from the stack. */
@@ -377,9 +375,16 @@ void vmpu_acl_sram(uint8_t box_id, uint32_t bss_size, uint32_t stack_size, uint3
         UVISOR_TACLDEF_STACK,
         slots_for_bss ? 1UL << slots_for_bss : 0
     );
+    DPRINTF("  - SRAM:       0x%08X - 0x%08X (permissions: 0x%04X, subregions: 0x%02X)\r\n",
+            box_mem_pos, box_mem_pos + region_size, UVISOR_TACLDEF_STACK, slots_for_bss ? 1UL << slots_for_bss : 0);
 
     /* Move on to the next memory block. */
     box_mem_pos += region_size;
+
+    DPRINTF("    - BSS:      0x%08X - 0x%08X (original size: %uB, rounded size: %uB)\r\n",
+            *bss_start, *bss_start + bss_size, bss_size, slots_for_bss * subregion_size);
+    DPRINTF("    - Stack:    0x%08X - 0x%08X (original size: %uB, rounded size: %uB)\r\n",
+            *bss_start + (slots_for_bss + 1) * subregion_size, box_mem_pos, stack_size, slots_for_stack * subregion_size);
 }
 
 void vmpu_arch_init(void)

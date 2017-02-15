@@ -52,8 +52,6 @@ int vmpu_aips_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl)
 
     /* calculate resulting AIPS slot and base */
     base = AIPS0_BASE | (((uint32_t)(aips_slot)) << 12);
-    DPRINTF("\t\tAIPS slot[%02i] for base 0x%08X\n",
-        aips_slot, base);
 
     /* check if ACL base is equal to slot base */
     if(base != (uint32_t)start)
