@@ -43,11 +43,22 @@ void UVISOR_NAKED PendSV_IRQn_Handler(void)
 
 void UVISOR_NAKED SysTick_IRQn_Handler(void)
 {
+/* On v8-M, we don't want to call the priv_systick hook, but our own scheduler
+ * instead. */
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+    asm volatile(
+        "mov r0, lr\n"
+        "mrs r1, SP_NS\n"
+        "bl scheduler_tick\n"
+        "bx r0\n"
+    );
+#else
     asm volatile(
         "ldr  r0, %[priv_systick]\n" /* Load the hook from the hook table. */
         "bx   r0\n"                  /* Branch to the hook (without link). */
         :: [priv_systick] "m" (g_priv_sys_hooks.priv_systick)
     );
+#endif
 }
 
 /* Default vector table (placed in Flash) */
