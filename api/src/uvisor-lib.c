@@ -25,6 +25,11 @@ void uvisor_init(void)
     __builtin_unreachable();
 }
 
+void uvisor_start(void)
+{
+    uvisor_api.start();
+}
+
 int uvisor_lib_init(void)
 {
     /* osRegisterForOsEvents won't allow a second call. For systems that don't

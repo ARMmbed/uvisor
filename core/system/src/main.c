@@ -17,6 +17,7 @@
 #include <uvisor.h>
 #include "debug.h"
 #include "page_allocator.h"
+#include "scheduler.h"
 #include "svc.h"
 #include "unvic.h"
 #include "vmpu.h"
@@ -224,4 +225,9 @@ void __attribute__((section(".ns_text"))) main_init_ns(void)
 {
     /* FIXME: Populate this function. */
     return;
+}
+
+void uvisor_start(void)
+{
+    scheduler_start();
 }
