@@ -83,6 +83,7 @@ typedef struct {
     uint32_t sp;        /**< Stack pointer */
     uint32_t bss;       /**< Bss pointer */
     uint32_t bss_size;  /**< Bss size */
+    int32_t  remaining_ms; /**< Remaining miliseconds of run-time */
 } TContextCurrentState;
 
 /** Currently active box */
