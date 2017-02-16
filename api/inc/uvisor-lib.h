@@ -45,10 +45,14 @@
 
 #endif /* defined(UVISOR_PRESENT) && UVISOR_PRESENT == 1 */
 
-/* The host startup needs to call this after osKernelInitialize to initialize
- * uvisor-lib. The function can fail. It's up the the host startup to decide
- * what to do with any failures. */
-UVISOR_EXTERN int uvisor_lib_init(void);
+/* On ARMv7-M, the host startup needs to call this after osKernelInitialize to
+ * initialize uvisor-lib. The function can fail. It's up the the host startup
+ * to decide what to do with any failures. */
+UVISOR_EXTERN int uvisor_lib_init(void); /* FIXME: Remove this when we move ARMv7-M to the hypervisor model. */
+
+/* The host startup needs to call this after osKernelInitialize to start
+ * uVisor. The function will halt if errors are encountered. */
+UVISOR_EXTERN void uvisor_start(void);
 
 #include "api/inc/page_allocator.h"
 

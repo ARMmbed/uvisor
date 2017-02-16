@@ -17,6 +17,7 @@
 #include <uvisor.h>
 #include "debug.h"
 #include "page_allocator.h"
+#include "scheduler.h"
 #include "svc.h"
 #include "unvic.h"
 #include "vmpu.h"
@@ -216,4 +217,9 @@ void main_init(void)
 
     /* Finish the uVisor initialization */
     uvisor_init_post();
+}
+
+void uvisor_start(void)
+{
+    scheduler_start();
 }
