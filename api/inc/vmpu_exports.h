@@ -19,7 +19,6 @@
 
 #include "api/inc/uvisor_exports.h"
 #include "api/inc/pool_queue_exports.h"
-#include "api/inc/rpc_exports.h"
 #include <stdint.h>
 
 /* The maximum box namespace length is 37 so that it is exactly big enough for
@@ -158,9 +157,7 @@ typedef struct {
 typedef struct uvisor_bss_sections_t {
     uint32_t index;
     uint32_t context;
-    uint32_t rpc_outgoing_message_queue;
-    uint32_t rpc_incoming_message_queue;
-    uint32_t rpc_fn_group_queue;
+    uint32_t rpc;
     uint32_t heap;
 } UVISOR_PACKED UvisorBssSections;
 
@@ -218,10 +215,6 @@ typedef struct {
      * This is set to `NULL` by uVisor, signalling to the user lib that the
      * box heap needs to be initialized before use! */
     void * active_heap;
-
-    /* Counter that helps to avoid waiting on the same RPC message result twice
-     * by accident. */
-    uint32_t rpc_result_counter;
 
     /* Box ID */
     int box_id_self;

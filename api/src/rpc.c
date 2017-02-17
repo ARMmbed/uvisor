@@ -23,61 +23,46 @@
 #include "api/inc/uvisor_semaphore.h"
 #include <string.h>
 
-extern UvisorBoxIndex * __uvisor_ps;
-
+extern UvisorBoxIndex * const __uvisor_ps;
 
 static uvisor_pool_queue_t * outgoing_message_queue(void)
 {
-    uvisor_rpc_outgoing_message_queue_t * ptr =
-        (uvisor_rpc_outgoing_message_queue_t *) __uvisor_ps->bss.address_of.rpc_outgoing_message_queue;
-    return &(ptr->queue);
+    return &(uvisor_rpc(__uvisor_ps)->outgoing_message_queue.queue);
 }
 
 static uvisor_rpc_message_t * outgoing_message_array(void)
 {
-    uvisor_rpc_outgoing_message_queue_t * ptr =
-        (uvisor_rpc_outgoing_message_queue_t *) __uvisor_ps->bss.address_of.rpc_outgoing_message_queue;
-    return ptr->messages;
+    return uvisor_rpc(__uvisor_ps)->outgoing_message_queue.messages;
 }
 
 static uint32_t * result_counter(void)
 {
-    return &(__uvisor_ps->rpc_result_counter);
+    return &(uvisor_rpc(__uvisor_ps)->result_counter);
 }
 
 static uvisor_pool_queue_t * incoming_message_todo_queue(void)
 {
-    uvisor_rpc_incoming_message_queue_t * ptr =
-        (uvisor_rpc_incoming_message_queue_t *) __uvisor_ps->bss.address_of.rpc_incoming_message_queue;
-    return &(ptr->todo_queue);
+    return &(uvisor_rpc(__uvisor_ps)->incoming_message_queue.todo_queue);
 }
 
 static uvisor_pool_queue_t * incoming_message_done_queue(void)
 {
-    uvisor_rpc_incoming_message_queue_t * ptr =
-        (uvisor_rpc_incoming_message_queue_t *) __uvisor_ps->bss.address_of.rpc_incoming_message_queue;
-    return &(ptr->done_queue);
+    return &(uvisor_rpc(__uvisor_ps)->incoming_message_queue.done_queue);
 }
 
 static uvisor_rpc_message_t * incoming_message_array(void)
 {
-    uvisor_rpc_incoming_message_queue_t * ptr =
-        (uvisor_rpc_incoming_message_queue_t *) __uvisor_ps->bss.address_of.rpc_incoming_message_queue;
-    return ptr->messages;
+    return uvisor_rpc(__uvisor_ps)->incoming_message_queue.messages;
 }
 
 static uvisor_pool_queue_t * fn_group_queue(void)
 {
-    uvisor_rpc_fn_group_queue_t * ptr =
-        (uvisor_rpc_fn_group_queue_t *) __uvisor_ps->bss.address_of.rpc_fn_group_queue;
-    return &(ptr->queue);
+    return &(uvisor_rpc(__uvisor_ps)->fn_group_queue.queue);
 }
 
 static uvisor_rpc_fn_group_t * fn_group_array(void)
 {
-    uvisor_rpc_fn_group_queue_t * ptr =
-        (uvisor_rpc_fn_group_queue_t *) __uvisor_ps->bss.address_of.rpc_fn_group_queue;
-    return ptr->fn_groups;
+    return uvisor_rpc(__uvisor_ps)->fn_group_queue.fn_groups;
 }
 
 /* Place a message into the outgoing queue. `timeout_ms` is how long to wait

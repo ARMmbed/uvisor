@@ -47,9 +47,7 @@ UVISOR_EXTERN void const * const public_box_cfg_ptr;
         { \
             sizeof(RtxBoxIndex), \
             0, \
-            sizeof(uvisor_rpc_outgoing_message_queue_t), \
-            sizeof(uvisor_rpc_incoming_message_queue_t), \
-            sizeof(uvisor_rpc_fn_group_queue_t), \
+            sizeof(uvisor_rpc_t), \
             0, \
         }, \
         0, \
@@ -95,9 +93,7 @@ UVISOR_EXTERN void const * const public_box_cfg_ptr;
         { \
             sizeof(RtxBoxIndex), \
             context_size, \
-            sizeof(uvisor_rpc_outgoing_message_queue_t), \
-            sizeof(uvisor_rpc_incoming_message_queue_t), \
-            sizeof(uvisor_rpc_fn_group_queue_t), \
+            sizeof(uvisor_rpc_t), \
             __uvisor_box_heapsize, \
         }, \
         UVISOR_MIN_STACK(stack_size), \
