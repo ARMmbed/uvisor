@@ -23,18 +23,10 @@
 #include "vmpu.h"
 #include "vmpu_mpu.h"
 
-#ifndef MPU_MAX_PRIVATE_FUNCTIONS
-#define MPU_MAX_PRIVATE_FUNCTIONS 16
-#endif /* MPU_MAX_PRIVATE_FUNCTIONS */
-
-#if (MPU_MAX_PRIVATE_FUNCTIONS > 0x100UL)
-#error "MPU_MAX_PRIVATE_FUNCTIONS needs to be lower/equal to 0x100"
-#endif
-
 uint32_t  g_vmpu_box_count;
 bool g_vmpu_boxes_counted;
 
-static int vmpu_sanity_checks(void)
+static int vmpu_check_sanity(void)
 {
     /* Verify the uVisor configuration structure. */
     if (__uvisor_config.magic != UVISOR_MAGIC) {
@@ -162,6 +154,20 @@ static int vmpu_sanity_checks(void)
         }
     }
 
+    /* Check the public heap start and end addresses. */
+    uint32_t const heap_end = (uint32_t) __uvisor_config.heap_end;
+    uint32_t const heap_start = (uint32_t) __uvisor_config.heap_start;
+    if (!heap_start || !vmpu_public_sram_addr(heap_start)) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "Heap start pointer (0x%08x) is not in SRAM memory.\r\n", heap_start);
+    }
+    if (!heap_end || !vmpu_public_sram_addr(heap_end)) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "Heap end pointer (0x%08x) is not in SRAM memory.\r\n", heap_end);
+    }
+    if (heap_end < heap_start) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "Heap end pointer (0x%08x) is smaller than heap start pointer (0x%08x).\r\n",
+                   heap_end, heap_start);
+    }
+
     /* Return an error if uVisor is disabled. */
     if (!__uvisor_config.mode || (*__uvisor_config.mode == 0)) {
         return -1;
@@ -170,7 +176,7 @@ static int vmpu_sanity_checks(void)
     }
 }
 
-static void vmpu_sanity_check_box_namespace(int box_id, const char *const box_namespace)
+static void vmpu_check_sanity_box_namespace(int box_id, const char *const box_namespace)
 {
     /* Verify that all characters of the box_namespace (including the trailing
      * NUL) are within flash and that the box_namespace is not too long. It is
@@ -209,40 +215,93 @@ static void vmpu_sanity_check_box_namespace(int box_id, const char *const box_na
     } while (box_namespace[length]);
 }
 
-static void vmpu_box_index_init(uint8_t box_id, const UvisorBoxConfig * const config)
+static void vmpu_check_sanity_box_cfgtbl(uint8_t box_id, UvisorBoxConfig const * box_cfgtbl)
 {
-    uint8_t * box_bss;
-    UvisorBoxIndex * index;
-    uint32_t heap_size = config->heap_size;
-    int i;
-
-    if (box_id == 0) {
-        /* Box 0 still uses the public heap to be backwards compatible. */
-        const uint32_t heap_end = (uint32_t) __uvisor_config.heap_end;
-        const uint32_t heap_start = (uint32_t) __uvisor_config.heap_start;
-        heap_size = (heap_end - heap_start) - config->index_size;
+    /* Ensure that the configuration table resides in flash. */
+    if (!(vmpu_flash_addr((uint32_t) box_cfgtbl) &&
+        vmpu_flash_addr((uint32_t) ((uint8_t *) box_cfgtbl + (sizeof(*box_cfgtbl) - 1))))) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: The box configuration table is not in flash.\r\n",
+                   box_id, (uint32_t) box_cfgtbl);
     }
 
-    box_bss = (uint8_t *) g_context_current_states[box_id].bss;
+    /* Check the magic value in the box configuration table. */
+    if (box_cfgtbl->magic != UVISOR_BOX_MAGIC) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: Invalid magic number (found: 0x%08X, exepcted 0x%08X).\r\n",
+                   box_id, (uint32_t) box_cfgtbl, box_cfgtbl->magic, UVISOR_BOX_MAGIC);
+    }
 
-    /* The box index is at the beginning of the bss section. */
-    index = (void *) box_bss;
-    /* Zero the _entire_ index, so that user data inside the box index is in a
-     * known state! This allows checking variables for `NULL`, or `0`, which
-     * indicates an initialization requirement. */
-    memset(index, 0, config->index_size);
-    box_bss += config->index_size;
+    /* Check the box configuration table version. */
+    if (box_cfgtbl->version != UVISOR_BOX_VERSION) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: Invalid version number (found: 0x%04X, expected: 0x%04X).\r\n",
+                   box_id, (uint32_t) box_cfgtbl, box_cfgtbl->version, UVISOR_BOX_VERSION);
+    }
 
-    for (i = 0; i < UVISOR_BOX_INDEX_SIZE_COUNT; i++) {
-        index->bss_ptr[i] = (void *) (config->bss_size[i] ? box_bss : NULL);
-        box_bss += config->bss_size[i];
-        if (box_id == 0) {
-            heap_size -= config->bss_size[i];
+    /* Check the minimal size of the box index size. */
+    if (box_cfgtbl->bss.size_of.index < sizeof(UvisorBoxIndex)) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: Index size (%uB) < sizeof(UvisorBoxIndex) (%uB).\r\n",
+                   box_id, (uint32_t) box_cfgtbl, box_cfgtbl->bss.size_of.index, sizeof(UvisorBoxIndex));
+    }
+
+    /* Check the minimal size of the box stack. */
+    if (box_id != 0 && (box_cfgtbl->stack_size < UVISOR_MIN_STACK_SIZE)) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: Stack size (%uB) < UVISOR_MIN_STACK_SIZE (%uB).\r\n",
+                   box_id, (uint32_t) box_cfgtbl, box_cfgtbl->stack_size, UVISOR_MIN_STACK_SIZE);
+    }
+
+    /* Checks specific to the public box */
+    if (box_id == 0) {
+        /* We require both the stack and the heap to be set to 0. If the user
+         * configures the public box via our macros it is always the case. */
+        /* FIXME: At the moment we cannot calculate the stack and heap available
+         *        to the public box at compile/link time, so we have to set them
+         *        to zero and then determine them at runtime (see code in box
+         *        index initialization). We should remove this dependency. */
+        if (box_cfgtbl->stack_size != 0) {
+            HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: The public box stack size must be set to 0 (found %uB).\r\n",
+                       box_id, (uint32_t) box_cfgtbl, box_cfgtbl->stack_size);
+        }
+        if (box_cfgtbl->bss.size_of.heap != 0) {
+            HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: The public box heap size must be set to 0 (found %uB).\r\n",
+                       box_id, (uint32_t) box_cfgtbl, box_cfgtbl->bss.size_of.heap);
         }
     }
 
-    /* Initialize box heap. */
-    index->box_heap = (void *) (heap_size ? box_bss : NULL);
+    /* Check that the box namespace is not too long. */
+    vmpu_check_sanity_box_namespace(box_id, box_cfgtbl->box_namespace);
+}
+
+static void vmpu_box_index_init(uint8_t box_id, UvisorBoxConfig const * const box_cfgtbl, void * const bss_start)
+{
+    /* The box index is at the beginning of the BSS section. */
+    void * box_bss = bss_start;
+    UvisorBoxIndex * index = (UvisorBoxIndex *) box_bss;
+
+    /* Assign the pointers to the BSS sections. */
+    for (int i = 0; i < UVISOR_BSS_SECTIONS_COUNT; i++) {
+        size_t size = box_cfgtbl->bss.sizes[i];
+        index->bss.pointers[i] = (size ? box_bss : NULL);
+        box_bss += size;
+    }
+    size_t bss_size = box_bss - bss_start;
+
+    /* Initialize the box heap size. */
+    uint32_t heap_size = 0;
+    if (box_id == 0) {
+        /* FIXME: At the moment we cannot just reliably use the size of the heap
+         *        as provided by the configuration table, because the public box
+         *        has a variable heap size that is not identified at compile
+         *        time. We should remove this dependency. */
+        const uint32_t heap_end = (uint32_t) __uvisor_config.heap_end;
+        const uint32_t heap_start = (uint32_t) __uvisor_config.heap_start;
+        heap_size = heap_end - heap_start - bss_size;
+
+        /* Set the heap pointer for the public box.
+         * This value must be set manually because the previous loop will have
+         * caught a zero heap size and thus set the pointer to NULL. */
+        index->bss.address_of.heap = (uint32_t) ((void *) heap_start + bss_size);
+    } else {
+        heap_size = box_cfgtbl->bss.size_of.heap;
+    }
     index->box_heap_size = heap_size;
 
     /* Active heap pointer is NULL, indicating that the process heap needs to
@@ -250,31 +309,79 @@ static void vmpu_box_index_init(uint8_t box_id, const UvisorBoxConfig * const co
     index->active_heap = NULL;
 
     /* Point to the box config. */
-    index->config = config;
+    index->config = box_cfgtbl;
 }
 
-static void vmpu_load_boxes(void)
+static void vmpu_configure_box_peripherals(uint8_t box_id, UvisorBoxConfig const * const box_cfgtbl)
 {
-    int i, count;
-    const UvisorBoxAclItem *region;
-    const UvisorBoxConfig **box_cfgtbl;
-    uint32_t bss_size;
-    uint8_t box_id;
+    /* Enumerate the box ACLs. */
+    const UvisorBoxAclItem * region = box_cfgtbl->acl_list;
+    if (region != NULL) {
+        int count = box_cfgtbl->acl_count;
+        for (int i = 0; i < count; i++) {
+            /* Ensure that the ACL resides in public flash. */
+            if (!vmpu_public_flash_addr((uint32_t) region)) {
+                HALT_ERROR(SANITY_CHECK_FAILED, "box[%i]:acl[%i] must be in code section (@0x%08X)i\r\n",
+                           box_id, i, box_cfgtbl);
+            }
 
-    /* Check heap start and end addresses. */
-    if (!__uvisor_config.heap_start || !vmpu_public_sram_addr((uint32_t) __uvisor_config.heap_start)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "Heap start pointer (0x%08x) is not in SRAM memory.\n",
-            (uint32_t) __uvisor_config.heap_start);
+            /* Add the ACL and force the entry as user-provided. */
+            if (region->acl & UVISOR_TACL_IRQ) {
+                vmpu_acl_irq(box_id, region->param1, region->param2);
+            } else {
+                vmpu_region_add_static_acl(
+                    box_id,
+                    (uint32_t) region->param1,
+                    region->param2,
+                    region->acl | UVISOR_TACL_USER,
+                    0
+                );
+                DPRINTF("  - Peripheral: 0x%08X - 0x%08X (permissions: 0x%04X)\r\n",
+                        (uint32_t) region->param1, (uint32_t) region->param1 + region->param2,
+                        region->acl | UVISOR_TACL_USER);
+            }
+
+            /* Proceed to the next ACL. */
+            region++;
+        }
     }
-    if (!__uvisor_config.heap_end || !vmpu_public_sram_addr((uint32_t) __uvisor_config.heap_end)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "Heap end pointer (0x%08x) is not in SRAM memory.\n",
-            (uint32_t) __uvisor_config.heap_end);
-    }
-    if (__uvisor_config.heap_end < __uvisor_config.heap_start) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "Heap end pointer (0x%08x) is smaller than heap start pointer (0x%08x).\n",
-            (uint32_t) __uvisor_config.heap_end, (uint32_t) __uvisor_config.heap_start);
+}
+
+static void vmpu_configure_box_sram(uint8_t box_id, UvisorBoxConfig const * box_cfgtbl)
+{
+    /* Compute the size of the BSS sections. */
+    uint32_t bss_size = 0;
+    for (int i = 0; i < UVISOR_BSS_SECTIONS_COUNT; i++) {
+        bss_size += box_cfgtbl->bss.sizes[i];
     }
 
+    /* Add ACLs for the secure box BSS sections and for the stack. */
+    uint32_t bss_start = 0;
+    uint32_t stack_pointer = 0;
+    if (box_id == 0) {
+        /* The public box does not need an explicit ACL. Instead, it uses the
+         * default access permissions given by the background regions. */
+        /* Note: This relies on the assumption that all supported MPU
+         *       architectures allow us to setup a background region somehow. */
+        bss_start = (uint32_t) __uvisor_config.heap_start;
+        stack_pointer = __get_PSP();
+    } else {
+        uint32_t stack_size = box_cfgtbl->stack_size;
+        vmpu_acl_sram(box_id, bss_size, stack_size, &bss_start, &stack_pointer);
+    }
+
+    /* Set the box state for the SRAM sections. */
+    g_context_current_states[box_id].bss = bss_start;
+    g_context_current_states[box_id].bss_size = bss_size;
+    g_context_current_states[box_id].sp = stack_pointer;
+
+    /* Initialize the box index. */
+    memset((void *) bss_start, 0, bss_size);
+    vmpu_box_index_init(box_id, box_cfgtbl, (void *) bss_start);
+}
+
+static void vmpu_enumerate_boxes(void)
+{
     /* Enumerate boxes. */
     g_vmpu_box_count = (uint32_t) (__uvisor_config.cfgtbl_ptr_end - __uvisor_config.cfgtbl_ptr_start);
     if (g_vmpu_box_count >= UVISOR_MAX_BOXES) {
@@ -282,100 +389,34 @@ static void vmpu_load_boxes(void)
     }
     g_vmpu_boxes_counted = TRUE;
 
-    /* Initialize boxes. */
-    box_id = 0;
-    for (box_cfgtbl = (const UvisorBoxConfig * *) __uvisor_config.cfgtbl_ptr_start;
-         box_cfgtbl < (const UvisorBoxConfig * *) __uvisor_config.cfgtbl_ptr_end;
-         box_cfgtbl++) {
-        /* Ensure that the configuration table resides in flash. */
-        if (!(vmpu_flash_addr((uint32_t) *box_cfgtbl) &&
-            vmpu_flash_addr((uint32_t) ((uint8_t *) (*box_cfgtbl)) + (sizeof(**box_cfgtbl) - 1)))) {
-            HALT_ERROR(SANITY_CHECK_FAILED, "invalid address - *box_cfgtbl must point to flash (0x%08X)\n",
-                *box_cfgtbl);
-        }
+    /* Get the boxes order. This is MPU-specific. */
+    int box_order[UVISOR_MAX_BOXES];
+    vmpu_order_boxes(box_order, g_vmpu_box_count);
 
-        /* Check the magic value in the box configuration table. */
-        if (((*box_cfgtbl)->magic) != UVISOR_BOX_MAGIC) {
-            HALT_ERROR(SANITY_CHECK_FAILED, "box[%i] @0x%08X - invalid magic\n",
-                box_id, (uint32_t)(*box_cfgtbl));
-        }
+    /* Initialize the boxes. */
+    for (uint8_t box_id = 0; box_id < g_vmpu_box_count; ++box_id) {
+        /* Select the pointer to the (permuted) box configuration table. */
+        int index = box_order[box_id];
+        UvisorBoxConfig const * box_cfgtbl = ((UvisorBoxConfig const * *) __uvisor_config.cfgtbl_ptr_start)[index];
 
-        /* Check the box configuration table version. */
-        if (((*box_cfgtbl)->version) != UVISOR_BOX_VERSION) {
-            HALT_ERROR(SANITY_CHECK_FAILED, "box[%i] @0x%08X - invalid version (0x%04X!-0x%04X)\n",
-                box_id, *box_cfgtbl, (*box_cfgtbl)->version, UVISOR_BOX_VERSION);
-        }
+        /* Verify the box configuration table. */
+        /* Note: This function halts if a sanity check fails. */
+        vmpu_check_sanity_box_cfgtbl(box_id, box_cfgtbl);
 
-        /* Confirm the minimal size of the box index size. */
-        if ((*box_cfgtbl)->index_size < sizeof(UvisorBoxIndex)) {
-            HALT_ERROR(SANITY_CHECK_FAILED, "Box index size (%uB) must be large enough to hold UvisorBoxIndex (%uB).\n",
-                (*box_cfgtbl)->index_size, sizeof(UvisorBoxIndex));
-        }
+        DPRINTF("Box %i ACLs:\r\n", box_id);
 
-        /* Check that the box namespace is not too long. */
-        vmpu_sanity_check_box_namespace(box_id, (*box_cfgtbl)->box_namespace);
+        /* Add the box ACL for the static SRAM memories. */
+        vmpu_configure_box_sram(box_id, box_cfgtbl);
 
-        /* Load the box ACLs. */
-        DPRINTF("box[%i] ACL list:\n", box_id);
-
-        /* Add ACL's for all box stacks. */
-        bss_size = (*box_cfgtbl)->index_size + (*box_cfgtbl)->heap_size;
-        for (i = 0; i < UVISOR_BOX_INDEX_SIZE_COUNT; i++) {
-            bss_size += (*box_cfgtbl)->bss_size[i];
-        }
-        vmpu_acl_stack(
-            box_id,
-            bss_size,
-            (*box_cfgtbl)->stack_size
-        );
-
-        /* Save the BSS size for this box. */
-        g_context_current_states[box_id].bss_size = bss_size;
-
-        /* Initialize box index. */
-        vmpu_box_index_init(
-            box_id,
-            *box_cfgtbl
-        );
-
-        /* Enumerate the box ACLs. */
-        region = (*box_cfgtbl)->acl_list;
-        if (region != NULL) {
-            count = (*box_cfgtbl)->acl_count;
-            for (i = 0; i < count; i++) {
-                /* Ensure that the ACL resides in public flash. */
-                if (!vmpu_public_flash_addr((uint32_t) region)) {
-                    HALT_ERROR(SANITY_CHECK_FAILED, "box[%i]:acl[%i] must be in code section (@0x%08X)\n",
-                        box_id, i, *box_cfgtbl);
-                }
-
-                /* Add the ACL and force the entry as user-provided. */
-                if (region->acl & UVISOR_TACL_IRQ) {
-                    vmpu_acl_irq(box_id, region->param1, region->param2);
-                } else {
-                    vmpu_region_add_static_acl(
-                        box_id,
-                        (uint32_t) region->param1,
-                        region->param2,
-                        region->acl | UVISOR_TACL_USER,
-                        0
-                    );
-                }
-
-                /* Proceed to the next ACL. */
-                region++;
-            }
-        }
-
-        /* Proceed to the next box. */
-        box_id++;
+        /* Add the box ACLs for peripherals. */
+        vmpu_configure_box_peripherals(box_id, box_cfgtbl);
     }
 
     /* Load box 0. */
     vmpu_load_box(0);
     *(__uvisor_config.uvisor_box_context) = (uint32_t *) g_context_current_states[0].bss;
 
-    DPRINTF("vmpu_load_boxes [DONE]\n");
+    DPRINTF("vmpu_enumerate_boxes [DONE]\n");
 }
 
 int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint32_t fault_status)
@@ -509,7 +550,7 @@ int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint3
 
 int vmpu_init_pre(void)
 {
-    return vmpu_sanity_checks();
+    return vmpu_check_sanity();
 }
 
 void vmpu_init_post(void)
@@ -523,7 +564,7 @@ void vmpu_init_post(void)
     vmpu_arch_init();
 
     /* load boxes */
-    vmpu_load_boxes();
+    vmpu_enumerate_boxes();
 }
 
 static int copy_box_namespace(const char *src, char *dst)

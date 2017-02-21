@@ -177,23 +177,10 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
     return lr;
 }
 
-void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
+void vmpu_acl_sram(uint8_t box_id, uint32_t bss_size, uint32_t stack_size, uint32_t * bss_start,
+                   uint32_t * stack_pointer)
 {
     static uint32_t g_box_mem_pos = 0;
-
-    /* Handle public box. */
-    if (box_id == 0) {
-        DPRINTF("ctx=%i stack=%i\n\r", bss_size, stack_size);
-        /* non-important sanity checks */
-        assert(stack_size == 0);
-
-        /* Assign public box stack pointer to existing unprivileged stack
-         * pointer. */
-        g_context_current_states[0].sp = __get_PSP();
-        /* Box 0 still uses the public heap to be backwards compatible. */
-        g_context_current_states[0].bss = (uint32_t) __uvisor_config.heap_start;
-        return;
-    }
 
     if (!g_box_mem_pos) {
         /* Initialize box memories. Leave stack-band sized gap. */
@@ -213,29 +200,19 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
         UVISOR_TACLDEF_STACK,
         0
     );
+    DPRINTF("  - Stack:      0x%08X - 0x%08X (permissions: 0x%04X)\r\n",
+            g_box_mem_pos, g_box_mem_pos + stack_size, UVISOR_TACLDEF_STACK);
 
     /* Set stack pointer to box stack size minus guard band. */
     g_box_mem_pos += stack_size;
-    g_context_current_states[box_id].sp = g_box_mem_pos;
+    *stack_pointer = g_box_mem_pos;
     /* Add stack protection band. */
     g_box_mem_pos += UVISOR_STACK_BAND_SIZE;
 
     /* Add context ACL. */
     assert(bss_size != 0);
     bss_size = UVISOR_REGION_ROUND_UP(bss_size);
-    g_context_current_states[box_id].bss = g_box_mem_pos;
-
-    DPRINTF("erasing box context at 0x%08X (%u bytes)\n",
-        g_box_mem_pos,
-        bss_size
-    );
-
-    /* Reset uninitialized secured box context. */
-    memset(
-        (void *) g_box_mem_pos,
-        0,
-        bss_size
-    );
+    *bss_start = g_box_mem_pos;
 
     /* Add context ACL. */
     vmpu_region_add_static_acl(
@@ -245,6 +222,8 @@ void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
         UVISOR_TACLDEF_DATA,
         0
     );
+    DPRINTF("  - BSS:        0x%08X - 0x%08X (permissions: 0x%04X)\r\n",
+            g_box_mem_pos, g_box_mem_pos + bss_size, UVISOR_TACLDEF_DATA);
 
     g_box_mem_pos += bss_size + UVISOR_STACK_BAND_SIZE;
 }
@@ -306,4 +285,11 @@ void vmpu_arch_init(void)
     vmpu_mem_init();
 
     vmpu_mpu_lock();
+}
+
+void vmpu_order_boxes(int * const best_order, int box_count)
+{
+    for (int i = 0; i < box_count; ++i) {
+        best_order[i] = i;
+    }
 }

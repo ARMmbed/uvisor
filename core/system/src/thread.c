@@ -75,7 +75,7 @@ void * thread_create(int id, void * c)
         /* Remember the process id for this thread. */
         thread[ii].process_id = g_active_box;
         /* Fall back to the process heap if ctx is NULL. */
-        thread[ii].allocator = context ? context : index->box_heap;
+        thread[ii].allocator = context ? context : (void *) index->bss.address_of.heap;
         return &thread[ii];
     }
     return context;

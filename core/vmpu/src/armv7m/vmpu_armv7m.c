@@ -29,6 +29,7 @@
 /* This file contains the configuration-specific symbols. */
 #include "configurations.h"
 
+#include <limits.h>
 
 /* Sanity checks on SRAM boundaries */
 #if SRAM_LENGTH_MIN <= 0
@@ -300,93 +301,90 @@ void vmpu_load_box(uint8_t box_id)
 
 extern int vmpu_region_bits(uint32_t size);
 
-void vmpu_acl_stack(uint8_t box_id, uint32_t bss_size, uint32_t stack_size)
+/* Compute the MPU region size for the given BSS sections and stack sizes.
+ * The function also updates the region_start parameter to meet the alignment
+ * requirements of the MPU. */
+static uint32_t vmpu_acl_sram_region_size(uint32_t * region_start, uint32_t const bss_size, uint32_t const stack_size)
 {
-    int bits, slots_ctx, slots_stack;
-    uint32_t size, block_size;
-    static uint32_t box_mem_pos = 0;
+    /* Ensure that 2/8th are available for protecting the stack from the BSS
+     * sections. One subregion will separate the 2 areas, another one is needed
+     * to include a margin for rounding errors. */
+    int bits = vmpu_region_bits(((stack_size + bss_size) * 8) / 6);
 
-    if (box_mem_pos == 0) {
-        box_mem_pos = (uint32_t) __uvisor_config.bss_boxes_start;
+    /* Calculate the whole MPU region size. */
+    /* Note: In order to support subregions the region size is at least 2**8. */
+    if (bits < 8) {
+        bits = 8;
+    }
+    uint32_t region_size = 1UL << bits;
+
+    /* Ensure that the MPU region is aligned to a multiple of its size. */
+    if ((*region_start & (region_size - 1)) != 0) {
+        *region_start = (*region_start & ~(region_size - 1)) + region_size;
     }
 
-    /* Handle public box. */
-    if (box_id == 0)
-    {
-        DPRINTF("ctx=%i stack=%i\n\r", bss_size, stack_size);
-        /* Non-important sanity checks */
-        assert(stack_size == 0);
+    return region_size;
+}
 
-        /* Assign public box stack pointer to existing unprivileged stack
-         * pointer. */
-        g_context_current_states[0].sp = __get_PSP();
-        /* Box 0 still uses the public heap to be backwards compatible. */
-        g_context_current_states[0].bss = (uint32_t) __uvisor_config.heap_start;
-        return;
+void vmpu_acl_sram(uint8_t box_id, uint32_t bss_size, uint32_t stack_size, uint32_t * bss_start,
+                   uint32_t * stack_pointer)
+{
+    /* Offset at which the SRAM region is configured for a secure box. This
+     * offset is incremented at every function call. The actual MPU region start
+     * address depends on the size and alignment of the region. */
+    static uint32_t box_mem_pos = 0;
+    if (box_mem_pos == 0) {
+        box_mem_pos = (uint32_t) __uvisor_config.bss_boxes_start;
     }
 
     /* Ensure that box stack is at least UVISOR_MIN_STACK_SIZE. */
     stack_size = UVISOR_MIN_STACK(stack_size);
 
-    /* Ensure that 2/8th are available for protecting stack from context -
-     * include rounding error margin. */
-    bits = vmpu_region_bits(((stack_size + bss_size) * 8) / 6);
+    /* Compute the MPU region size. */
+    /* Note: This function also updates the memory offset to meet the alignment
+     *       requirements. */
+    uint32_t region_size = vmpu_acl_sram_region_size(&box_mem_pos, bss_size, stack_size);
 
-    /* Ensure MPU region size of at least 256 bytes for subregion support. */
-    if (bits < 8) {
-        bits = 8;
-    }
-    size = 1UL << bits;
-    block_size = size / 8;
-
-    DPRINTF("\tbox[%i] stack=%i bss=%i rounded=%i\n\r", box_id, stack_size, bss_size, size);
-
-    /* Check for correct context address alignment. Alignment needs to be a
-     * muiltiple of the size. */
-    if ((box_mem_pos & (size - 1)) != 0) {
-        box_mem_pos = (box_mem_pos & ~(size - 1)) + size;
-    }
-
-    /* Check if we have enough memory left. */
-    if ((box_mem_pos + size) > ((uint32_t) __uvisor_config.bss_boxes_end)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "memory overflow - increase uvisor memory allocation\n\r");
-    }
-
-    /* Round context sizes. Leave one free slot. */
-    slots_ctx = (bss_size + block_size - 1) / block_size;
-    slots_stack = slots_ctx ? (8 - slots_ctx - 1) : 8;
+    /* Allocate the subregions slots for the BSS sections and for the stack.
+     * One subregion is used to allow for rounding errors (BSS), and another one
+     * is used to separate the BSS sections from the stack. */
+    uint32_t subregion_size = region_size / 8;
+    int slots_for_bss = (bss_size + subregion_size - 1) / subregion_size;
+    int slots_for_stack = slots_for_bss ? (8 - slots_for_bss - 1) : 8;
 
     /* Final sanity checks */
-    if ((slots_ctx * block_size) < bss_size) {
+    if ((slots_for_bss * subregion_size) < bss_size) {
         HALT_ERROR(SANITY_CHECK_FAILED, "slots_ctx underrun\n\r");
     }
-    if ((slots_stack * block_size) < stack_size) {
+    if ((slots_for_stack * subregion_size) < stack_size) {
         HALT_ERROR(SANITY_CHECK_FAILED, "slots_stack underrun\n\r");
     }
 
-    /* Allocate context pointer. */
-    g_context_current_states[box_id].bss = slots_ctx ? box_mem_pos : (uint32_t) NULL;
+    /* Set the pointers to the BSS sections and to the stack. */
+    *bss_start = slots_for_bss ? box_mem_pos : (uint32_t) NULL;
     /* `(box_mem_pos + size)` is already outside the memory protected by the
      * MPU region, so a pointer 8B below stack top is chosen (8B due to stack
      * alignment requirements). */
-    g_context_current_states[box_id].sp = (box_mem_pos + size) - 8;
-
-    /* Reset uninitialized secured box context. */
-    if (slots_ctx) {
-        memset((void *) box_mem_pos, 0, bss_size);
-    }
+    *stack_pointer = (box_mem_pos + region_size) - 8;
 
     /* Create stack protection region. */
-    size = vmpu_region_add_static_acl(
+    region_size = vmpu_region_add_static_acl(
         box_id,
         box_mem_pos,
-        size,
+        region_size,
         UVISOR_TACLDEF_STACK,
-        slots_ctx ? 1UL << slots_ctx : 0
+        slots_for_bss ? 1UL << slots_for_bss : 0
     );
+    DPRINTF("  - SRAM:       0x%08X - 0x%08X (permissions: 0x%04X, subregions: 0x%02X)\r\n",
+            box_mem_pos, box_mem_pos + region_size, UVISOR_TACLDEF_STACK, slots_for_bss ? 1UL << slots_for_bss : 0);
 
     /* Move on to the next memory block. */
-    box_mem_pos += size;
+    box_mem_pos += region_size;
+
+    DPRINTF("    - BSS:      0x%08X - 0x%08X (original size: %uB, rounded size: %uB)\r\n",
+            *bss_start, *bss_start + bss_size, bss_size, slots_for_bss * subregion_size);
+    DPRINTF("    - Stack:    0x%08X - 0x%08X (original size: %uB, rounded size: %uB)\r\n",
+            *bss_start + (slots_for_bss + 1) * subregion_size, box_mem_pos, stack_size, slots_for_stack * subregion_size);
 }
 
 void vmpu_arch_init(void)
@@ -512,5 +510,78 @@ void vmpu_arch_init_hw(void)
         HALT_ERROR(SANITY_CHECK_FAILED,
                    "The page size (%ukB) must not be larger than 1/8th of SRAM (%ukB).",
                    *__uvisor_config.page_size / 1024, subregions_size / 1024);
+    }
+}
+
+static void swap_boxes(int * const b1, int * const b2)
+{
+    uint32_t tmp = *b1;
+    *b1 = *b2;
+    *b2 = tmp;
+}
+
+static uint32_t __vmpu_order_boxes(int * const box_order, int * const best_order, int start, int end, uint32_t min_size)
+{
+    /* When a permutation is found, calculate the SRAM usage of the box
+     * configuration and save the configuration if it's the best so far. */
+    if (start == end) {
+        uint32_t sram_offset = (uint32_t) __uvisor_config.bss_boxes_start;
+        /* Skip the public box. */
+        for (int i = 1; i <= end; ++i) {
+            int index = box_order[i];
+            UvisorBoxConfig const * box_cfgtbl = ((UvisorBoxConfig const * *) __uvisor_config.cfgtbl_ptr_start)[index];
+            uint32_t bss_size = 0;
+            for (int i = 0; i < UVISOR_BSS_SECTIONS_COUNT; ++i) {
+                bss_size = box_cfgtbl->bss.sizes[i];
+            }
+            uint32_t stack_size = box_cfgtbl->stack_size;
+            /* This function automatically updates the sram_offset parameter to
+             * meet the MPU alignment requirements. */
+            uint32_t region_size = vmpu_acl_sram_region_size(&sram_offset, bss_size, stack_size);
+            sram_offset += region_size;
+        }
+        /* Update the best box configuration. */
+        uint32_t sram_size = sram_offset - (uint32_t) __uvisor_config.bss_boxes_start;
+        if (sram_size < min_size) {
+            min_size = sram_size;
+            for (int i = 0; i <= end; ++i) {
+                best_order[i] = box_order[i];
+            }
+        }
+    }
+
+    /* Permute the boxes order. */
+    for (int i = start; i <= end; ++i) {
+        /* Swap, recurse, swap. */
+        swap_boxes(&box_order[start], &box_order[i]);
+        min_size = __vmpu_order_boxes(box_order, best_order, start + 1, end, min_size);
+        swap_boxes(&box_order[start], &box_order[i]);
+    }
+    return min_size;
+}
+
+void vmpu_order_boxes(int * const best_order, int box_count)
+{
+    /* Start with the same order of configuration table pointers. */
+    int box_order[UVISOR_MAX_BOXES];
+    for (int i = 0; i < box_count; ++i) {
+        box_order[i] = i;
+    }
+
+    /* Find the total amount of SRAM used by all the boxes.
+     * This function also updates the best_order array with the configuration
+     * that minimizes the SRAM usage. */
+    uint32_t total_sram_size = __vmpu_order_boxes(box_order, best_order, 1, box_count - 1, UINT32_MAX);
+
+    /* This helper message allows people to work around the linker script
+     * limitation that prevents us from allocating the correct amount of memory
+     * at link time. */
+    uint32_t available_sram_size = (uint32_t) __uvisor_config.bss_boxes_end - (uint32_t) __uvisor_config.bss_boxes_start;
+    if (available_sram_size < total_sram_size) {
+        DPRINTF("Not enough memory allocated for the secure boxes. This is a known limitation of the ARMv7-M MPU.\r\n");
+        DPRINTF("Please insert the following snippet in your public box file (usually main.cpp):\r\n");
+        DPRINTF("uint8_t __attribute__((section(\".keep.uvisor.bss.boxes\"), aligned(32))) __boxes_overhead[%d];\r\n",
+                total_sram_size - available_sram_size);
+        HALT_ERROR(SANITY_CHECK_FAILED, "Secure boxes memory overflow. See message above to fix it.\r\n");
     }
 }

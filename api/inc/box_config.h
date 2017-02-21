@@ -44,15 +44,13 @@ UVISOR_EXTERN void const * const public_box_cfg_ptr;
     static const __attribute__((section(".keep.uvisor.cfgtbl"), aligned(4))) UvisorBoxConfig public_box_cfg = { \
         UVISOR_BOX_MAGIC, \
         UVISOR_BOX_VERSION, \
-        0, \
-        0, \
-        sizeof(RtxBoxIndex), \
         { \
+            sizeof(RtxBoxIndex), \
             0, \
-            sizeof(uvisor_rpc_outgoing_message_queue_t), \
-            sizeof(uvisor_rpc_incoming_message_queue_t), \
-            sizeof(uvisor_rpc_fn_group_queue_t), \
+            sizeof(uvisor_rpc_t), \
+            0, \
         }, \
+        0, \
         NULL, \
         NULL, \
         acl_list, \
@@ -92,15 +90,13 @@ UVISOR_EXTERN void const * const public_box_cfg_ptr;
     static const __attribute__((section(".keep.uvisor.cfgtbl"), aligned(4))) UvisorBoxConfig box_name ## _cfg = { \
         UVISOR_BOX_MAGIC, \
         UVISOR_BOX_VERSION, \
-        UVISOR_MIN_STACK(stack_size), \
-        __uvisor_box_heapsize, \
-        sizeof(RtxBoxIndex), \
         { \
+            sizeof(RtxBoxIndex), \
             context_size, \
-            sizeof(uvisor_rpc_outgoing_message_queue_t), \
-            sizeof(uvisor_rpc_incoming_message_queue_t), \
-            sizeof(uvisor_rpc_fn_group_queue_t), \
+            sizeof(uvisor_rpc_t), \
+            __uvisor_box_heapsize, \
         }, \
+        UVISOR_MIN_STACK(stack_size), \
         __uvisor_box_lib_config, \
         __uvisor_box_namespace, \
         acl_list, \
@@ -155,6 +151,6 @@ UVISOR_EXTERN void const * const public_box_cfg_ptr;
 #define UVISOR_BOX_HEAPSIZE(heap_size) \
     static const uint32_t __uvisor_box_heapsize = heap_size;
 
-#define uvisor_ctx (*__uvisor_ps)
+#define __uvisor_ctx (((UvisorBoxIndex *) __uvisor_ps)->bss.address_of.context)
 
 #endif /* __UVISOR_API_BOX_CONFIG_H__ */
