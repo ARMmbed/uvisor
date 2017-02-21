@@ -233,6 +233,8 @@ The `private_button_main_thread` function configures the push-button to trigger 
 /* The previous code goes here. */
 ...
 
+#define uvisor_ctx ((PrivateButtonStaticMemory *) __uvisor_ctx)
+
 #define PRIVATE_BUTTON_BUFFER_COUNT 8
 
 static void private_button_on_press(void)
@@ -290,7 +292,7 @@ static void private_button_main_thread(const void *)
 A few things to note in the code above:
 
 * If code is running in the context of `private_button`, then any object instantiated inside that code will belong to the `private_button` heap and stack. This means that in the example above, the `InterruptIn` object is private to the `private_button` box. The same applies to the dynamically allocated buffer `uvisor_ctx->buffer`.
-* You can access the content of the private memory `PrivateButtonStaticMemory` using the `PrivateButtonStaticMemory volatile * volatile uvisor_ctx` pointer, which uVisor maintains.
+* You can access the content of the private memory `PrivateButtonStaticMemory` using the `void * const __uvisor_ctx` pointer, which uVisor maintains. You need to cast this pointer to your own context type. In this example we used a pre-processor symbol to improve readability.
 * The `InterruptIn` object triggers the registration of an interrupt slot. Because that code is run in the context of the `private_button` box, then the push-button IRQ belongs to that box. If you want to use the IRQ APIs directly, read the [section](#the-nvic-apis) below.
 * Even if the `private_button_on_press` function runs in the context of `private_button`, we can still use the `printf` function, which accesses the `UART0` peripheral, owned by the public box. This is because all ACLs declared in the public box are by default shared with all the other secure boxes. This also means that the messages we are printing on the serial port are not secure, because other boxes have access to that peripheral.
 
