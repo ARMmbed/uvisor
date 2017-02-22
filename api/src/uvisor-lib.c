@@ -29,7 +29,11 @@ int uvisor_lib_init(void)
      * make use of osRegisterForOsEvents we recommend to
      * osRegisterForOsEvents(NULL) to disable further registrations (which if
      * allowed would be a backdoor). */
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+    osRegisterForOsEvents(NULL); // On ARMv8-M, we don't need an OsEventObserver.
+#else
     osRegisterForOsEvents(&uvisor_api.os_event_observer);
+#endif
 
     extern void __uvisor_initialize_rpc_queues(void);
     __uvisor_initialize_rpc_queues();
