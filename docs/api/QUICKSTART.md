@@ -389,7 +389,7 @@ static void private_button_main_thread(const void *)
 
 ### Calling the public secure entry point
 
-To call the public secure entry point from any other box, you can use the `secure_get_index` function. It will automatically do an RPC call into the secure box and serialize the return value. You can try this out from the main box. In `~/code/uvisor-example/source/main.cpp`, first include the header file for the secure box:
+To call the public secure entry point from any other box, you can use the `secure_get_index` function. It will automatically do an RPC call into the secure box and serialize the return value. You can try this out from the public box. In `~/code/uvisor-example/source/main.cpp`, first include the header file for the secure box:
 
 ```cpp
 /* ~/code/uvisor-example/source/main.cpp */
