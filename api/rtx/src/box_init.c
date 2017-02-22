@@ -36,6 +36,11 @@ extern RtxBoxIndex * const __uvisor_ps;
 
 void __uvisor_initialize_rpc_queues(void)
 {
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+    // TODO Initialize RPC queues on ARMv8-M (via uvisor_start).
+    return;
+#endif
+
     UvisorBoxIndex * const index = &__uvisor_ps->index;
 
     uvisor_pool_slot_t i;
