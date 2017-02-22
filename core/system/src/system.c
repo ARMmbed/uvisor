@@ -46,11 +46,18 @@ void UVISOR_NAKED SysTick_IRQn_Handler(void)
 /* On v8-M, we don't want to call the priv_systick hook, but our own scheduler
  * instead. */
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+    /* When switching from NS to S via secure exception or IRQ, the NS
+     * registers are not stacked. Secure side has to read all this state so
+     * that it can restore it when resuming that box. We push all this state
+     * onto the stack and read it from C as a struct. When restoring state, we
+     * write the register values to the stack from C and then pop the
+     * registers. */
     asm volatile(
-        "mov r0, lr\n"
-        "mrs r1, SP_NS\n"
+        "push {r4-r11, lr}\n"
+        "mov r0, sp\n"
         "bl scheduler_tick\n"
-        "bx r0\n"
+        "pop {r4-r11, lr}\n"
+        "bx lr\n"
     );
 #else
     asm volatile(
