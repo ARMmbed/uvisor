@@ -22,11 +22,11 @@
 #include <string.h>
 
 /* Define the correct NVIC Priority Register name. */
-#if defined(CORE_CORTEX_M81)
+#if defined(CORE_CORTEX_M33)
 #define NVIC_IPR NVIC->IPR
-#else /* defined(CORE_CORTEX_M81) */
+#else /* defined(CORE_CORTEX_M33) */
 #define NVIC_IPR NVIC->IP
-#endif /* defined(CORE_CORTEX_M81) */
+#endif /* defined(CORE_CORTEX_M33) */
 
 /* Number of implemented priority bits */
 uint8_t g_nvic_prio_bits;

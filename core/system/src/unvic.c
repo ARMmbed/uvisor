@@ -23,11 +23,11 @@
 #include "vmpu.h"
 
 /* Define the correct NVIC Priority Register name. */
-#if defined(CORE_CORTEX_M81)
+#if defined(CORE_CORTEX_M33)
 #define NVIC_IPR NVIC->IPR
-#else /* defined(CORE_CORTEX_M81) */
+#else /* defined(CORE_CORTEX_M33) */
 #define NVIC_IPR NVIC->IP
-#endif /* defined(CORE_CORTEX_M81) */
+#endif /* defined(CORE_CORTEX_M33) */
 
 /* unprivileged vector table */
 TIsrUVector g_unvic_vector[NVIC_VECTORS];
