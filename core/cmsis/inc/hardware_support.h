@@ -53,7 +53,7 @@
  *       requirement, r0p0. */
 #define __CM4_REV 0x0
 
-#elif defined(CORE_CORTEX_M81)
+#elif defined(CORE_CORTEX_M33)
 
 /* Note: This core is a temporary value provided by the file core_armv8mml.h */
 /* Note: Most values below have just been taken from the fastmodel

@@ -54,11 +54,11 @@
 
 /* The symbols below are specific to each configuration. */
 
-#if defined(CONFIGURATION_ARMv8MML_CORTEX_M81)
+#if defined(CONFIGURATION_ARMv8MML_CORTEX_M33)
 
 /* ARM core selection
  * Note: This core is a temporary value provided by the file core_armv8mml.h */
-#define CORE_CORTEX_M81
+#define CORE_CORTEX_M33
 
 #else /* Hardware-specific configurations */
 
