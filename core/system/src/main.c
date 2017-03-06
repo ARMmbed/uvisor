@@ -136,11 +136,11 @@ UVISOR_NAKED void main_entry(uint32_t caller)
         /* Store the bootloader lr value. */
         "push  {r0}\n"
 
-        /* Check for early exit. */
-        "bl    main_entry_early_exit\n"
+        /* Check if uVisor config is sane and enabled. */
+        "bl    uvisor_config_is_sane_and_enabled\n"
         "cmp   r0, #0\n"
-        "it    ne\n"
-        "popne {pc}\n"
+        "it    eq\n"
+        "popeq {pc}\n"
 
         /* Set the MSP. Since we are changing stacks we need to pop and re-push
          * the lr value. */
@@ -178,9 +178,28 @@ UVISOR_NAKED void main_entry(uint32_t caller)
     );
 }
 
-bool main_entry_early_exit(void)
+/* Return true if the uvisor_config magic matches. */
+static bool uvisor_config_magic_match(void)
 {
-    return (__uvisor_config.magic != UVISOR_MAGIC || !__uvisor_config.mode || *(__uvisor_config.mode) == 0);
+    return __uvisor_config.magic == UVISOR_MAGIC;
+}
+
+/* Return true if uVisor is enabled. */
+static bool uvisor_config_enabled(void)
+{
+    return __uvisor_config.mode && *(__uvisor_config.mode) != 0;
+}
+
+/* Halt if uVisor magic doesn't match. Return true if uVisor is enabled, false
+ * if disabled. */
+bool uvisor_config_is_sane_and_enabled(void)
+{
+    if (!uvisor_config_magic_match()) {
+        /* uVisor magic didn't match. Halt. */
+        HALT_ERROR(SANITY_CHECK_FAILED, "Bad uVisor config magic");
+    }
+
+    return uvisor_config_enabled();
 }
 
 void main_init(void)
