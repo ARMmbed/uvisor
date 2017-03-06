@@ -41,10 +41,21 @@ static void uvisor_sanity_check_api_load(void)
     }
 }
 
+/* Halt if the uVisor API version is not what we expect. */
+static void uvisor_sanity_check_api_version()
+{
+    if (uvisor_api.get_version(UVISOR_API_VERSION) != UVISOR_API_VERSION) {
+        /* We can't call any uVisor APIs other than get_version (which is a
+         * backwards and forwards compatible API), so we must halt. */
+        for (;;);
+    }
+}
+
 /* Halt if the uVisor API is not loaded correctly or not of a compatible
  * version. */
 static void uvisor_sanity_check_api() {
     uvisor_sanity_check_api_load();
+    uvisor_sanity_check_api_version();
 }
 
 void uvisor_init(void)
