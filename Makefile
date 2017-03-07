@@ -174,6 +174,7 @@ CPPFLAGS:=
 CXXFLAGS:=-fno-exceptions
 
 LINKER_CONFIG:=\
+    -DARCH_MPU_$(ARCH_MPU) \
     -D$(CONFIGURATION) \
     -I$(PLATFORM_DIR)/$(PLATFORM)/inc \
     -include $(CORE_DIR)/uvisor-config.h
