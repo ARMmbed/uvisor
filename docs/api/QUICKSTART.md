@@ -310,13 +310,13 @@ If the LED is blinking, the app is running correctly. If you press the `SW2` but
 ## Expose public secure entry points to the secure box
 [Go to top](#overview)
 
-So far the code in the secure box cannot communicate to other boxes. To let other boxes call functions in our secure box you can define public secure entry points. These entry points can map to private functions within the context of a secure box, and the arguments and return values are automatically serialized using an RPC protocol to ensure no private memory can be leaked to external boxes.
+So far, the code in the secure box cannot communicate to other boxes. To let other boxes call functions in our secure box you can define public secure entry points. These entry points can map to private functions within the context of a secure box, and the arguments and return values are automatically serialized using an RPC protocol to ensure no private memory can be leaked to external boxes.
 
 You can define a public secure entry point to retrieve the index value from the secure box. This index value is increased every time the `SW2` button is pressed.
 
 ### Defining a secure entry point
 
-Create a new source file, `~/code/uvisor-example/source/secure_box.h`. In here we will define the functions that can be called through RPC.
+Create a new source file, `~/code/uvisor-example/source/secure_box.h`, where we will define the functions that can be called through RPC.
 
 ```cpp
 /* ~/code/uvisor-example/source/secure_box.h */
@@ -351,7 +351,7 @@ UVISOR_BOX_RPC_GATEWAY_SYNC (private_button, secure_get_index, get_index, int, v
 
 ### Listening for RPC messages
 
-To receive RPC messages you will need to spin up a new thread, running in the secure box context. You can do this in the main thread of the secure box. In `~/code/uvisor-example/source/secure_box.cpp`, replace the first five lines of `private_button_main_thread` with:
+To receive RPC messages, you need to spin up a new thread, running in the secure box context. You can do this in the main thread of the secure box. In `~/code/uvisor-example/source/secure_box.cpp`, replace the first five lines of `private_button_main_thread` with:
 
 ```cpp
 /* ~/code/uvisor-example/source/secure_box.cpp */
