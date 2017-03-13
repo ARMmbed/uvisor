@@ -325,21 +325,25 @@ void vmpu_arch_init(void)
 
     vmpu_mpu_init();
 
+    /* Public uVisor flash */
     vmpu_mpu_set_static_acl(0, (uint32_t) __uvisor_config.flash_start,
         ((uint32_t) &__uvisor_entry_points_start__) - ((uint32_t) __uvisor_config.flash_start),
         UVISOR_TACL_UEXECUTE | UVISOR_TACL_UREAD | UVISOR_TACL_UWRITE,
         0
     );
+    /* Entry points */
     vmpu_mpu_set_static_acl(1, (uint32_t) &__uvisor_entry_points_start__,
         ((uint32_t) &__uvisor_entry_points_end__) - ((uint32_t) &__uvisor_entry_points_start__),
         UVISOR_TACL_SEXECUTE | UVISOR_TACL_UEXECUTE,
         2
     );
+    /* Public flash */
     vmpu_mpu_set_static_acl(2, (uint32_t) &__uvisor_entry_points_end__,
         (uint32_t) __uvisor_config.flash_end - (uint32_t) &__uvisor_entry_points_end__,
         UVISOR_TACL_UEXECUTE | UVISOR_TACL_UREAD | UVISOR_TACL_UWRITE,
         0
     );
+    /* Public SRAM */
     vmpu_mpu_set_static_acl(3, (uint32_t) __uvisor_config.page_end,
         (uint32_t) __uvisor_config.sram_end - (uint32_t) __uvisor_config.page_end,
         UVISOR_TACL_UEXECUTE | UVISOR_TACL_UREAD | UVISOR_TACL_UWRITE,
