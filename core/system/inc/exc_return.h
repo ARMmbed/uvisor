@@ -40,6 +40,10 @@
 #define EXC_FROM_S(lr)  (lr & EXC_RETURN_S_Msk)
 #define EXC_TO_S(lr)    (lr & EXC_RETURN_ES_Msk)
 
+#else
+
+#define EXC_RETURN_S_Msk        0U
+
 #endif /* defined(ARCH_MPU_ARMv8M) */
 
 #define EXC_FROM_NP(lr)     (lr & EXC_RETURN_Mode_Msk)
