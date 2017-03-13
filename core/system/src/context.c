@@ -274,3 +274,35 @@ TContextPreviousState * context_switch_out(TContextSwitchType context_type)
 
     return previous_state;
 }
+
+typedef struct exception_frame {
+    uint32_t r0;
+    uint32_t r1;
+    uint32_t r2;
+    uint32_t r3;
+    uint32_t r12;
+    uint32_t lr;
+    uint32_t retaddr;
+    uint32_t retpsr;
+} UVISOR_PACKED exception_frame_t;
+
+uint32_t context_forge_initial_frame(uint32_t sp, void (*function)(const void *))
+{
+    /* Compute the secure alias of the NS SP */
+    sp -= sizeof(exception_frame_t);
+
+    exception_frame_t * s_ns_sp = UVISOR_GET_S_ALIAS((exception_frame_t *) sp);
+
+    /* Clear bottom bit of the function to allow the secure side to EXC_RETURN
+     * to the function. */
+    s_ns_sp->retaddr = ((uint32_t) function) & ~1UL;
+
+    /* Set T32 bit in RETPSR to run thumb2 code. */
+    s_ns_sp->retpsr = xPSR_T_Msk;
+
+    s_ns_sp->lr = 0UL; // TODO Call a uvisor_api to
+    // notify uVisor that a box exited. Then uVisor could do something like stop
+    // scheduling the box.
+
+    return sp;
+}

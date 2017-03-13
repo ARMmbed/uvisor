@@ -83,7 +83,30 @@ typedef struct {
     uint32_t sp;        /**< Stack pointer */
     uint32_t bss;       /**< Bss pointer */
     uint32_t bss_size;  /**< Bss size */
+    uint32_t lr;        /**< EXC_RETURN */
     int32_t  remaining_ms; /**< Remaining miliseconds of run-time */
+
+    /* These are registers that we must save on behalf of the NS side when
+     * switching from NS to S. */
+    uint32_t psp;
+    uint32_t msp;
+    uint32_t r4;
+    uint32_t r5;
+    uint32_t r6;
+    uint32_t r7;
+    uint32_t r8;
+    uint32_t r9;
+    uint32_t r10;
+    uint32_t r11;
+    uint32_t psplim;
+    uint32_t msplim;
+    uint32_t control;
+    uint32_t basepri;
+    uint32_t faultmask;
+    uint32_t primask;
+    // TODO SCB registers (pendsv, systick enable state stuff)
+    // TODO Allow pre-empting a NS box running its own NS memmanagefault
+    // handler.
 } TContextCurrentState;
 
 /** Currently active box */
@@ -186,5 +209,10 @@ void context_switch_in(TContextSwitchType context_type, uint8_t dst_id, uint32_t
  * @param context_type  Type of context switch to perform
  * @returns the pointer to the previous box context state. */
 TContextPreviousState * context_switch_out(TContextSwitchType context_type);
+
+/* Create an initial exception stack frame at the specified sp that will run
+ * the provided function.
+ * @return new sp (top of exception frame). */
+uint32_t context_forge_initial_frame(uint32_t sp, void (*function)(const void *));
 
 #endif /* __CONTEXT_H__ */
