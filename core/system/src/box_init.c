@@ -19,6 +19,7 @@
 #include "context.h"
 #include "box_init.h"
 #include "exc_return.h"
+#include "ipc.h"
 
 void box_init(uint8_t box_id, UvisorBoxConfig const * box_cfgtbl)
 {
@@ -26,6 +27,9 @@ void box_init(uint8_t box_id, UvisorBoxConfig const * box_cfgtbl)
      * the very first time. */
     TContextCurrentState * state = &g_context_current_states[box_id];
     state->remaining_ms = 100;
+
+    /* Initialize IPC for the box. */
+    ipc_box_init(box_id);
 
     /* Set the initial state for a box. Box 0 doesn't need its initial
      * state set here, as box 0 is already running. */

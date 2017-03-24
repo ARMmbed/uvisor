@@ -16,6 +16,7 @@
  */
 #include <uvisor.h>
 #include "debug.h"
+#include "ipc.h"
 #include "exc_return.h"
 #include "halt.h"
 #include "context.h"
@@ -74,6 +75,9 @@ static void dispatch(int dst_box_id, int src_box_id, saved_reg_t * reg)
 {
     bool src_from_s = false;
     bool dst_from_s = false;
+
+    /* Deliver any IPC messages. */
+    ipc_drain_queue();
 
     /* There are four cases to handle saving and restoring core registers from.
      *

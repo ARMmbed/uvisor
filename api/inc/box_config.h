@@ -56,6 +56,7 @@ UVISOR_EXTERN void const * const public_box_cfg_ptr;
             0, \
             0, \
             sizeof(uvisor_rpc_t), \
+            sizeof(uvisor_ipc_t), \
             0, \
         }, \
         0, \
@@ -104,6 +105,7 @@ UVISOR_EXTERN void const * const public_box_cfg_ptr;
             context_size, \
             sizeof(struct _reent), \
             sizeof(uvisor_rpc_t), \
+            sizeof(uvisor_ipc_t), \
             __uvisor_box_heapsize, \
         }, \
         UVISOR_MIN_STACK(stack_size), \
