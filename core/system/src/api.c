@@ -16,6 +16,7 @@
  */
 #include <uvisor.h>
 #include "api/inc/api.h"
+#include "api/inc/uvisor_spinlock_exports.h"
 #include "box_init.h"
 #include "debug.h"
 #include "halt.h"
@@ -149,6 +150,11 @@ const UvisorApi __uvisor_api = {
     .pool_queue_dequeue = uvisor_pool_queue_dequeue,
     .pool_queue_dequeue_first = uvisor_pool_queue_dequeue_first,
     .pool_queue_find_first = uvisor_pool_queue_find_first,
+
+    .spin_init = uvisor_spin_init,
+    .spin_trylock = uvisor_spin_trylock,
+    .spin_lock = uvisor_spin_lock,
+    .spin_unlock = uvisor_spin_unlock,
 
     .os_event_observer = {
         .version = 0,
