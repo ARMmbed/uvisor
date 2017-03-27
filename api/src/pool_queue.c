@@ -18,19 +18,19 @@
 #include "api/inc/pool_queue_exports.h"
 #include "api/inc/api.h"
 
-int uvisor_pool_init(uvisor_pool_t * pool, void * array, size_t stride, size_t num, int blocking)
+int uvisor_pool_init(uvisor_pool_t * pool, void * array, size_t stride, size_t num)
 {
-    return uvisor_api.pool_init(pool, array, stride, num, blocking);
+    return uvisor_api.pool_init(pool, array, stride, num);
 }
 
-int uvisor_pool_queue_init(uvisor_pool_queue_t * pool_queue, uvisor_pool_t * pool, void * array, size_t stride, size_t num, int blocking)
+int uvisor_pool_queue_init(uvisor_pool_queue_t * pool_queue, uvisor_pool_t * pool, void * array, size_t stride, size_t num)
 {
-    return uvisor_api.pool_queue_init(pool_queue, pool, array, stride, num, blocking);
+    return uvisor_api.pool_queue_init(pool_queue, pool, array, stride, num);
 }
 
-uvisor_pool_slot_t uvisor_pool_allocate(uvisor_pool_t * pool, uint32_t timeout_ms)
+uvisor_pool_slot_t uvisor_pool_allocate(uvisor_pool_t * pool)
 {
-    return uvisor_api.pool_allocate(pool, timeout_ms);
+    return uvisor_api.pool_allocate(pool);
 }
 
 void uvisor_pool_queue_enqueue(uvisor_pool_queue_t * pool_queue, uvisor_pool_slot_t slot)

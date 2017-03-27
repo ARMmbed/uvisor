@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 #include "api/inc/pool_queue_exports.h"
-#include "semaphore.h"
 #include "spinlock.h"
 #include <string.h>
 
-int uvisor_pool_init(uvisor_pool_t * pool, void * array, size_t stride, size_t num, int blocking)
+int uvisor_pool_init(uvisor_pool_t * pool, void * array, size_t stride, size_t num)
 {
     uvisor_pool_slot_t i;
 
@@ -31,7 +30,6 @@ int uvisor_pool_init(uvisor_pool_t * pool, void * array, size_t stride, size_t n
     pool->array = array;
     pool->stride = stride;
     pool->num = num;
-    pool->blocking = blocking;
     pool->num_allocated = 0;
     pool->first_free = 0;
 
@@ -43,16 +41,12 @@ int uvisor_pool_init(uvisor_pool_t * pool, void * array, size_t stride, size_t n
 
     spin_init(&pool->spinlock);
 
-    if (pool->blocking) {
-        return semaphore_init(&pool->semaphore, num, num);
-    }
-
     return 0;
 }
 
-int uvisor_pool_queue_init(uvisor_pool_queue_t * pool_queue, uvisor_pool_t * pool, void * array, size_t stride, size_t num, int blocking)
+int uvisor_pool_queue_init(uvisor_pool_queue_t * pool_queue, uvisor_pool_t * pool, void * array, size_t stride, size_t num)
 {
-    uvisor_pool_init(pool, array, stride, num, blocking);
+    uvisor_pool_init(pool, array, stride, num);
     pool_queue->magic = UVISOR_POOL_QUEUE_MAGIC;
     pool_queue->head = UVISOR_POOL_SLOT_INVALID;
     pool_queue->tail = UVISOR_POOL_SLOT_INVALID;
@@ -108,17 +102,8 @@ static void enqueue(uvisor_pool_queue_t * pool_queue, uvisor_pool_slot_t slot)
     pool_queue->tail = slot;
 }
 
-uvisor_pool_slot_t uvisor_pool_allocate(uvisor_pool_t * pool, uint32_t timeout_ms)
+uvisor_pool_slot_t uvisor_pool_allocate(uvisor_pool_t * pool)
 {
-    if (pool->blocking) {
-        int status;
-        status = semaphore_pend(&pool->semaphore, timeout_ms);
-        if (status) {
-            /* We may have timed out waiting for a slot. */
-            return UVISOR_POOL_SLOT_INVALID;
-        }
-    }
-
     /* uvisor should try lock. users should wait forever... */
     spin_lock(&pool->spinlock);
     uvisor_pool_slot_t fresh = pool_alloc(pool);
@@ -129,15 +114,6 @@ uvisor_pool_slot_t uvisor_pool_allocate(uvisor_pool_t * pool, uint32_t timeout_m
 
 uvisor_pool_slot_t uvisor_pool_try_allocate(uvisor_pool_t * pool)
 {
-    if (pool->blocking) {
-        int status;
-        status = semaphore_pend(&pool->semaphore, 0);
-        if (status) {
-            /* We may have timed out waiting for a slot. */
-            return UVISOR_POOL_SLOT_INVALID;
-        }
-    }
-
     /* uvisor should try lock. users should wait forever... */
     bool locked = spin_trylock(&pool->spinlock);
     if (!locked) {
@@ -230,9 +206,6 @@ uvisor_pool_slot_t uvisor_pool_free(uvisor_pool_t * pool, uvisor_pool_slot_t slo
 
     pool_free(pool, slot);
     spin_unlock(&pool->spinlock);
-    if (pool->blocking) {
-        semaphore_post(&pool->semaphore);
-    }
 
     return slot;
 }
@@ -259,9 +232,6 @@ uvisor_pool_slot_t uvisor_pool_try_free(uvisor_pool_t * pool, uvisor_pool_slot_t
 
     pool_free(pool, slot);
     spin_unlock(&pool->spinlock);
-    if (pool->blocking) {
-        semaphore_post(&pool->semaphore);
-    }
 
     return slot;
 }

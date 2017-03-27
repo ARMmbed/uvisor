@@ -55,8 +55,7 @@ void __uvisor_initialize_rpc_queues(void)
                                &rpc_outgoing_msg_queue->pool,
                                rpc_outgoing_msg_queue->messages,
                                sizeof(*rpc_outgoing_msg_queue->messages),
-                               UVISOR_RPC_OUTGOING_MESSAGE_SLOTS,
-                               UVISOR_POOL_QUEUE_BLOCKING)) {
+                               UVISOR_RPC_OUTGOING_MESSAGE_SLOTS)) {
         uvisor_error(USER_NOT_ALLOWED);
     }
 
@@ -73,8 +72,7 @@ void __uvisor_initialize_rpc_queues(void)
                                &rpc_incoming_msg_queue->pool,
                                rpc_incoming_msg_queue->messages,
                                sizeof(*rpc_incoming_msg_queue->messages),
-                               UVISOR_RPC_INCOMING_MESSAGE_SLOTS,
-                               UVISOR_POOL_QUEUE_NON_BLOCKING)) {
+                               UVISOR_RPC_INCOMING_MESSAGE_SLOTS)) {
         uvisor_error(USER_NOT_ALLOWED);
     }
     /* This is a double init of the pool. We need a function that just inits
@@ -83,8 +81,7 @@ void __uvisor_initialize_rpc_queues(void)
                                &rpc_incoming_msg_queue->pool,
                                rpc_incoming_msg_queue->messages,
                                sizeof(*rpc_incoming_msg_queue->messages),
-                               UVISOR_RPC_INCOMING_MESSAGE_SLOTS,
-                               UVISOR_POOL_QUEUE_NON_BLOCKING)) {
+                               UVISOR_RPC_INCOMING_MESSAGE_SLOTS)) {
         uvisor_error(USER_NOT_ALLOWED);
     }
 
@@ -93,8 +90,7 @@ void __uvisor_initialize_rpc_queues(void)
                                &rpc_fn_group_queue->pool,
                                rpc_fn_group_queue->fn_groups,
                                sizeof(*rpc_fn_group_queue->fn_groups),
-                               UVISOR_RPC_FN_GROUP_SLOTS,
-                               UVISOR_POOL_QUEUE_BLOCKING)) {
+                               UVISOR_RPC_FN_GROUP_SLOTS)) {
         uvisor_error(USER_NOT_ALLOWED);
     }
 

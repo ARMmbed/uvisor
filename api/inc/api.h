@@ -63,9 +63,9 @@ typedef struct {
     void (*start)(void);
     void (*vmpu_mem_invalidate)(void);
 
-    int                (*pool_init)(uvisor_pool_t *, void *, size_t, size_t, int);
-    int                (*pool_queue_init)(uvisor_pool_queue_t *, uvisor_pool_t *, void *, size_t, size_t, int);
-    uvisor_pool_slot_t (*pool_allocate)(uvisor_pool_t *, uint32_t);
+    int                (*pool_init)(uvisor_pool_t *, void *, size_t, size_t);
+    int                (*pool_queue_init)(uvisor_pool_queue_t *, uvisor_pool_t *, void *, size_t, size_t);
+    uvisor_pool_slot_t (*pool_allocate)(uvisor_pool_t *);
     void               (*pool_queue_enqueue)(uvisor_pool_queue_t *, uvisor_pool_slot_t);
     uvisor_pool_slot_t (*pool_free)(uvisor_pool_t *, uvisor_pool_slot_t);
     uvisor_pool_slot_t (*pool_queue_dequeue)(uvisor_pool_queue_t *, uvisor_pool_slot_t);

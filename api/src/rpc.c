@@ -76,7 +76,7 @@ static int send_outgoing_rpc(uint32_t p0, uint32_t p1, uint32_t p2, uint32_t p3,
     uvisor_pool_slot_t slot;
 
     /* Claim a slot in the outgoing RPC queue. */
-    slot = uvisor_pool_queue_allocate(outgoing_message_queue(), timeout_ms);
+    slot = uvisor_pool_queue_allocate(outgoing_message_queue());
     if (slot >= outgoing_message_queue()->pool->num) {
         /* No slots available in incoming queue. We asked for a free slot but
          * didn't get one. */
@@ -212,8 +212,7 @@ static uvisor_rpc_fn_group_t * allocate_function_group(const TFN_Ptr fn_ptr_arra
     uvisor_pool_slot_t slot;
     uvisor_rpc_fn_group_t * fn_group;
 
-    static const uint32_t timeout_ms = 0; /* Don't wait for an available slot. */
-    slot = uvisor_pool_queue_allocate(fn_group_queue(), timeout_ms);
+    slot = uvisor_pool_queue_allocate(fn_group_queue());
 
     if (slot >= fn_group_queue()->pool->num) {
         /* Nothing left in pool */
