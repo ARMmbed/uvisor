@@ -16,8 +16,8 @@
  */
 #include <uvisor.h>
 #include "api/inc/box_config.h"
+#include "box_init.h"
 #include "debug.h"
-#include "exc_return.h"
 #include "context.h"
 #include "halt.h"
 #include "memory_map.h"
@@ -427,39 +427,7 @@ static void vmpu_enumerate_boxes(void)
         /* Add the box ACLs for peripherals. */
         vmpu_configure_box_peripherals(box_id, box_cfgtbl);
 
-        /* Create initial exception stack frame in box so we can switch into it
-         * the very first time. */
-        TContextCurrentState * state = &g_context_current_states[box_id];
-        state->remaining_ms = 100;
-        /* Set the initial state for a box. Box 0 doesn't need its initial
-         * state set here, as box 0 is already running. */
-        if (box_id > 0) {
-            // TODO Make the box_main explicit in the box config.
-            uvisor_box_main_t * box_main = (uvisor_box_main_t *) box_cfgtbl->lib_config;
-
-            state->msplim = state->sp - box_cfgtbl->stack_size;
-
-            /* The stack pointer is currently set to exactly the upper address
-             * in box memory. We can't actually store things there, so
-             * decrement the stack pointer by 8 (keeping the stack pointer
-             * 8-byte aligned). */
-            state->sp -= 8;
-
-            state->sp = context_forge_initial_frame(state->sp, box_main->function);
-            state->msp = state->sp;
-
-            /* On v7-M, return to threaded mode, with MSP as stack pointer. */
-            /* On v8-M, return to NS threaded mode, with MSP as stack pointer. */
-            state->lr = 0xFFFFFFFD;
-            state->lr &= ~EXC_RETURN_SPSEL_Msk; /* Use MSP */
-            state->lr &= ~EXC_RETURN_S_Msk; /* Use NS. This does nothing on ARMv7-M. */
-
-            /* The stack must be 8-byte aligned after an exception (see ARM DDI
-             * 0553A.a, paragraph RKQFB). */
-            assert((state->sp & 0x7) == 0);
-
-            /* All other state is zero, as we want. */
-        }
+        box_init(box_id, box_cfgtbl);
     }
 
     /* Load box 0. */
