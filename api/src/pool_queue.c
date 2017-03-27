@@ -15,6 +15,13 @@
  * limitations under the License.
  */
 
+#ifdef ARCH_CORE_ARMv8M
+
+/* TODO Consider making the Makefile duplicate this as part of the build. */
+#include "core/system/src/pool_queue.c"
+
+#else
+
 #include "api/inc/pool_queue_exports.h"
 #include "api/inc/api.h"
 
@@ -57,3 +64,5 @@ uvisor_pool_slot_t uvisor_pool_queue_find_first(uvisor_pool_queue_t * pool_queue
 {
     return uvisor_api.pool_queue_find_first(pool_queue,query_fn, context);
 }
+
+#endif
