@@ -18,6 +18,15 @@
 #define __BOX_INIT_H__
 
 #include <stdint.h>
+#include "api/inc/vmpu_exports.h"
+
+/** This function is called once per box, to initalize all the data structures,
+ * stack, and other resources a box needs. It's got what boxes crave.
+ * @param box_id[in]     The ID of the box to initialize.
+ * @param box_cfgtbl[in] The UvisorBoxConfig object for the box being
+ *                       initialized.
+ * */
+void box_init(uint8_t box_id, UvisorBoxConfig const * box_cfgtbl);
 
 void boxes_init(void);
 
