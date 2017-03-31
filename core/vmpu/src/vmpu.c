@@ -24,6 +24,7 @@
 #include "svc.h"
 #include "vmpu.h"
 #include "vmpu_mpu.h"
+#include <sys/reent.h>
 
 uint32_t  g_vmpu_box_count;
 bool g_vmpu_boxes_counted;
@@ -304,6 +305,17 @@ static void vmpu_box_index_init(uint8_t box_id, UvisorBoxConfig const * const bo
         index->bss.address_of.heap = (uint32_t) ((void *) heap_start + bss_size);
     } else {
         heap_size = box_cfgtbl->bss.size_of.heap;
+
+        /* TODO: Move this into box_init on NS side. */
+        /* The _REENT_INIT_PTR points these buffers to other parts of the struct,
+         * which, since this is executed in S-mode, aliases to the secure addresses.
+         * That has to be corrected. The rest of the reent struct is initialized to
+         * zero by _REENT_INIT_PTR, but this is newlib implementation defined. */
+        struct _reent * reent = (struct _reent *) index->bss.address_of.newlib_reent;
+        _REENT_INIT_PTR(UVISOR_GET_S_ALIAS(reent));
+        UVISOR_GET_S_ALIAS(reent)->_stdin  = UVISOR_GET_NS_ALIAS(UVISOR_GET_S_ALIAS(reent)->_stdin);
+        UVISOR_GET_S_ALIAS(reent)->_stdout = UVISOR_GET_NS_ALIAS(UVISOR_GET_S_ALIAS(reent)->_stdout);
+        UVISOR_GET_S_ALIAS(reent)->_stderr = UVISOR_GET_NS_ALIAS(UVISOR_GET_S_ALIAS(reent)->_stderr);
     }
     index->box_heap_size = heap_size;
 
