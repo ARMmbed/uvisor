@@ -40,6 +40,14 @@ extern RtxBoxIndex * const __uvisor_ps;
  *  @retval 1 The kernel is initialized.. */
 static int is_kernel_initialized()
 {
+    /* TODO: Bare-bone boxes must not call any RTX2 functions for now.
+     * Each box should instead provide `heap_lock` and `heap_unlock` functions
+     * as part of the box context. These would just be empty for boxes without
+     * the need for heap locking. */
+    if (__uvisor_ps->index.box_id_self != 0) {
+        return 0;
+    }
+
     static uint8_t kernel_running = 0;
     if (kernel_running) {
         return 1;
