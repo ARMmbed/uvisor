@@ -20,7 +20,7 @@
 #include "debug.h"
 #include "halt.h"
 #include "svc.h"
-#include "unvic.h"
+#include "virq.h"
 #include "vmpu.h"
 #include "page_allocator.h"
 #include "thread.h"
@@ -84,18 +84,18 @@ transition_np_to_p(box_namespace, int,  vmpu_box_namespace_from_id, int box_id, 
 transition_np_to_p(page_malloc, int,  page_allocator_malloc,       UvisorPageTable * const table);
 transition_np_to_p(page_free,   int,  page_allocator_free,   const UvisorPageTable * const table);
 
-transition_np_to_p(irq_set_vector,    void,     unvic_isr_set,          uint32_t irqn, uint32_t vector);
-transition_np_to_p(irq_get_vector,    uint32_t, unvic_isr_get,          uint32_t irqn);
-transition_np_to_p(irq_enable,        void,     unvic_irq_enable,       uint32_t irqn);
-transition_np_to_p(irq_disable,       void,     unvic_irq_disable,      uint32_t irqn);
-transition_np_to_p(irq_clear_pending, void,     unvic_irq_pending_clr,  uint32_t irqn);
-transition_np_to_p(irq_set_pending,   void,     unvic_irq_pending_set,  uint32_t irqn);
-transition_np_to_p(irq_get_pending,   uint32_t, unvic_irq_pending_get,  uint32_t irqn);
-transition_np_to_p(irq_set_priority,  void,     unvic_irq_priority_set, uint32_t irqn, uint32_t priority);
-transition_np_to_p(irq_get_priority,  uint32_t, unvic_irq_priority_get, uint32_t irqn);
-transition_np_to_p(irq_get_level,     int,      unvic_irq_level_get,    void);
-transition_np_to_p(irq_disable_all,   void,     unvic_irq_disable_all,  void);
-transition_np_to_p(irq_enable_all,    void,     unvic_irq_enable_all,   void);
+transition_np_to_p(irq_set_vector,    void,     virq_isr_set,          uint32_t irqn, uint32_t vector);
+transition_np_to_p(irq_get_vector,    uint32_t, virq_isr_get,          uint32_t irqn);
+transition_np_to_p(irq_enable,        void,     virq_irq_enable,       uint32_t irqn);
+transition_np_to_p(irq_disable,       void,     virq_irq_disable,      uint32_t irqn);
+transition_np_to_p(irq_clear_pending, void,     virq_irq_pending_clr,  uint32_t irqn);
+transition_np_to_p(irq_set_pending,   void,     virq_irq_pending_set,  uint32_t irqn);
+transition_np_to_p(irq_get_pending,   uint32_t, virq_irq_pending_get,  uint32_t irqn);
+transition_np_to_p(irq_set_priority,  void,     virq_irq_priority_set, uint32_t irqn, uint32_t priority);
+transition_np_to_p(irq_get_priority,  uint32_t, virq_irq_priority_get, uint32_t irqn);
+transition_np_to_p(irq_get_level,     int,      virq_irq_level_get,    void);
+transition_np_to_p(irq_disable_all,   void,     virq_irq_disable_all,  void);
+transition_np_to_p(irq_enable_all,    void,     virq_irq_enable_all,   void);
 
 transition_p_to_p(pre_start,       void,   boxes_init, void);
 transition_p_to_p(thread_create,   void *, thread_create, int id, void * c);

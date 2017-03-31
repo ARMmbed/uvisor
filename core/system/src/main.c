@@ -19,7 +19,7 @@
 #include "page_allocator.h"
 #include "scheduler.h"
 #include "svc.h"
-#include "unvic.h"
+#include "virq.h"
 #include "vmpu.h"
 #include <stdbool.h>
 
@@ -32,7 +32,7 @@ UVISOR_NOINLINE void uvisor_init_pre(uint32_t const * const user_vtor)
     memcpy(&__uvisor_data_start__, &__uvisor_data_start_src__, VMPU_REGION_SIZE(&__uvisor_data_start__, &__uvisor_data_end__));
 
     /* Initialize the unprivileged NVIC module. */
-    unvic_init(user_vtor);
+    virq_init(user_vtor);
 
     /* Initialize the debugging features. */
     DEBUG_INIT();

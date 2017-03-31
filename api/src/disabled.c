@@ -29,7 +29,7 @@
 #endif /* defined(CORE_CORTEX_M33) */
 
 /* Number of implemented priority bits */
-uint8_t g_nvic_prio_bits;
+uint8_t g_virq_prio_bits;
 
 /* Symbols exported by the mbed linker script */
 UVISOR_EXTERN uint32_t __uvisor_cfgtbl_ptr_start;
@@ -223,7 +223,7 @@ UVISOR_WEAK void uvisor_disabled_set_vector(uint32_t irqn, uint32_t vector)
         prio = (uint8_t volatile *) &(NVIC_IPR[0]);
         prio_bits = *prio;
         *prio = 0xFFU;
-        g_nvic_prio_bits = (uint8_t) __builtin_popcount(*prio);
+        g_virq_prio_bits = (uint8_t) __builtin_popcount(*prio);
         *prio = prio_bits;
         __enable_irq();
     }

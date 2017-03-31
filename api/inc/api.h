@@ -19,7 +19,7 @@
 
 #include "rt_OsEventObserver.h"
 #include "api/inc/uvisor_exports.h"
-#include "api/inc/unvic_exports.h"
+#include "api/inc/virq_exports.h"
 #include "api/inc/debug_exports.h"
 #include "api/inc/halt_exports.h"
 #include "api/inc/pool_queue_exports.h"
