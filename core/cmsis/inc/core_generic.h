@@ -47,8 +47,8 @@
  * uVisor.
  * This allows us to remove the __NVIC_PRIO_BITS axis from the release binaries
  * matrix */
-extern uint8_t g_nvic_prio_bits;
-#define __NVIC_PRIO_BITS g_nvic_prio_bits
+extern uint8_t g_virq_prio_bits;
+#define __NVIC_PRIO_BITS g_virq_prio_bits
 
 /* This ensures that the CMSIS header files actively check for our
  * configurations. If a symbol is not configured, a warning is issued. */

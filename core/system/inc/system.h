@@ -18,7 +18,7 @@
 #define __SYSTEM_H__
 
 #include <uvisor.h>
-#include "unvic.h"
+#include "virq.h"
 
 /* Default vector table (placed in Flash) */
 extern const TIsrVector g_isr_vector[ISR_VECTORS];

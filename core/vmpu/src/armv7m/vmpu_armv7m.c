@@ -21,7 +21,7 @@
 #include "halt.h"
 #include "memory_map.h"
 #include "svc.h"
-#include "unvic.h"
+#include "virq.h"
 #include "vmpu.h"
 #include "vmpu_mpu.h"
 #include "page_allocator_faults.h"

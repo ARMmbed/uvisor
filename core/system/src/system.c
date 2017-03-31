@@ -132,10 +132,10 @@ void UVISOR_NAKED UVISOR_NORETURN isr_default_handler(void)
      * The first one de-previliges execution, the second one re-privileges it. */
     /* Note: NONBASETHRDENA (in SCB) must be set to 1 for this to work. */
     asm volatile(
-        "svc  %[unvic_in]\n"
-        "svc  %[unvic_out]\n"
+        "svc  %[virq_in]\n"
+        "svc  %[virq_out]\n"
         "bx   lr\n"
-        ::[unvic_in]  "i" ((UVISOR_SVC_ID_UNVIC_IN) & 0xFF),
-          [unvic_out] "i" ((UVISOR_SVC_ID_UNVIC_OUT) & 0xFF)
+        ::[virq_in]  "i" ((UVISOR_SVC_ID_UNVIC_IN) & 0xFF),
+          [virq_out] "i" ((UVISOR_SVC_ID_UNVIC_OUT) & 0xFF)
     );
 }

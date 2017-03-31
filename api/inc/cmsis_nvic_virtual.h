@@ -18,7 +18,7 @@
 #define __UVISOR_API_NVIC_VIRTUAL_H__
 
 #include "api/inc/interrupts.h"
-#include "api/inc/unvic_exports.h"
+#include "api/inc/virq_exports.h"
 
 #define NVIC_SetPriorityGrouping    __NVIC_SetPriorityGrouping
 #define NVIC_GetPriorityGrouping    __NVIC_GetPriorityGrouping
