@@ -29,8 +29,8 @@ static int g_next_box_id = 1;
 /* Set the desired time slice. */
 static const int32_t time_slice_ms = 100;
 
-/* 100 ms time slice is 2,500,000 ticks on 25MHz the fast model. */
-static const uint32_t time_slice_ticks = 2500000;
+/* 10 ms time slice is 250,000 ticks on 25MHz the fast model. */
+static const uint32_t time_slice_ticks = 250000;
 
 /* Stacked by us in SysTick_IRQn_Handler */
 typedef struct saved_reg {
