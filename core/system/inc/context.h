@@ -86,8 +86,19 @@ typedef struct {
     uint32_t lr;        /**< EXC_RETURN */
     int32_t  remaining_ms; /**< Remaining miliseconds of run-time */
 
-    /* These are registers that we must save on behalf of the NS side when
-     * switching from NS to S. */
+    /* These are registers that we must save on behalf of the src box when
+     * switching from the secure side. */
+    uint32_t r0;
+    uint32_t r1;
+    uint32_t r2;
+    uint32_t r3;
+    uint32_t r12;
+    uint32_t retaddr;
+    uint32_t retlr;
+    uint32_t retpsr;
+
+    /* These are registers that we must save on behalf of the src box when
+     * switching from either the secure or non-secure sides. */
     uint32_t psp;
     uint32_t msp;
     uint32_t r4;

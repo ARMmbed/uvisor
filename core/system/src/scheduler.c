@@ -19,6 +19,7 @@
 
 #include <uvisor.h>
 #include "debug.h"
+#include "exc_return.h"
 #include "halt.h"
 #include "context.h"
 #include "vmpu.h"
@@ -43,6 +44,18 @@ typedef struct saved_reg {
     uint32_t r10;
     uint32_t r11;
     uint32_t lr;
+
+    /* Stacked by architecture if S bit set in LR. This space is always
+     * available to write to as our SysTick handler reserves this space even
+     * when S bit is not set in the src LR. */
+    uint32_t r0;
+    uint32_t r1;
+    uint32_t r2;
+    uint32_t r3;
+    uint32_t r12;
+    uint32_t retlr;
+    uint32_t retaddr;
+    uint32_t retpsr;
 } UVISOR_PACKED saved_reg_t;
 
 /* Stacked by architecture */
@@ -52,7 +65,7 @@ typedef struct exception_frame {
     uint32_t r2;
     uint32_t r3;
     uint32_t r12;
-    uint32_t lr;
+    uint32_t retlr;
     uint32_t retaddr;
     uint32_t retpsr;
 } UVISOR_PACKED exception_frame_t;
@@ -62,16 +75,44 @@ typedef struct exception_frame {
  * the destination box via `reg->lr`. */
 static void dispatch(int dst_box_id, int src_box_id, saved_reg_t * reg)
 {
+    bool src_from_s = false;
+    bool dst_from_s = false;
+
     DPRINTF("Switch from box ID %d to box ID %d\n", src_box_id, dst_box_id);
 
-    /* We could be coming from unpriv or priv, secure or non-secure. We need to
-     * save the stack pointer of the pre-empted process so that we can switch
-     * back to it later. We need to save the EXC_RETURN and a bunch of other
-     * registers as well. */
+    /* There are four cases to handle saving and restoring core registers from.
+     *
+     * 1. Coming from S side, going to NS (b9). Save information from
+     *    the real secure stack frame and discard it before restoring from the
+     *    NS stack frame. Restore from the NS stack frame.
+     * 2. Coming from NS side, going to S (f9). Keep the real NS stack
+     *    frame around and use it to restore from later. Use the forged secure
+     *    stack frame to restore state.
+     * 3. Coming from S side, going to S. Save information from the real secure
+     *    stack frame and use the modified real secure stack frame to restore
+     *    state.
+     * 4. Coming from NS side, going to NS. Keep the real NS stack frame around
+     *    and use it to restore from later. Don't use the allocated secure
+     *    stack frame. Use the destination exception stack frame to restore
+     *    state.
+     */
 
     // TODO copy state with memcpy by sharing the struct type in both places
     // (put saved_reg_t into TContextCurrentState)
     TContextCurrentState * src_state = &g_context_current_states[src_box_id];
+    src_from_s = EXC_FROM_S(reg->lr);
+    /* If we came from the secure side, we have to save the register values in
+     * the struct so we can later restore them. */
+    if (src_from_s) {
+        src_state->r0 = reg->r0;
+        src_state->r1 = reg->r1;
+        src_state->r2 = reg->r2;
+        src_state->r3 = reg->r3;
+        src_state->r12 = reg->r12;
+        src_state->retlr = reg->retlr;
+        src_state->retaddr = reg->retaddr;
+        src_state->retpsr = reg->retpsr;
+    }
     src_state->r4 = reg->r4;
     src_state->r5 = reg->r5;
     src_state->r6 = reg->r6;
@@ -99,6 +140,25 @@ static void dispatch(int dst_box_id, int src_box_id, saved_reg_t * reg)
 
     /* Restore state */
     TContextCurrentState * dst_state = &g_context_current_states[dst_box_id];
+    dst_from_s = EXC_FROM_S(dst_state->lr);
+    /* If we are going to the secure side, we have to restore the register
+     * values from the struct to the secure stack frame (and we always have a
+     * secure stack frame, even when we don't use it-- our SysTick_IRQn_Handler
+     * makes certain of this). */
+    if (dst_from_s) {
+        /* Populate the secure exception frame so that when we return from the
+         * SysTick handler (not this function) we end up with a proper
+         * exception stack frame on the secure stack and use it to restore the
+         * state of r0-r3, r12, retlr, retaddr, and xpsr. */
+        reg->r0 = dst_state->r0;
+        reg->r1 = dst_state->r1;
+        reg->r2 = dst_state->r2;
+        reg->r3 = dst_state->r3;
+        reg->r12 = dst_state->r12;
+        reg->retlr = dst_state->retlr;
+        reg->retaddr = dst_state->retaddr;
+        reg->retpsr = dst_state->retpsr;
+    }
     reg->r4 = dst_state->r4;
     reg->r5 = dst_state->r5;
     reg->r6 = dst_state->r6;
