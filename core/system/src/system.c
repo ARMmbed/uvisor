@@ -53,10 +53,16 @@ void UVISOR_NAKED SysTick_IRQn_Handler(void)
      * write the register values to the stack from C and then pop the
      * registers. */
     asm volatile(
-        "push {r4-r11, lr}\n"
+        "tst lr, #0x40\n"     /* Is source frame stacked on the secure side? */
+        "it eq\n"
+        "subeq sp, #0x20\n"   /* No, allocate a secure stack frame. */
+        "push {r4-r11, lr}\n" /* Save registers not in exception frame. */
         "mov r0, sp\n"
         "bl scheduler_tick\n"
-        "pop {r4-r11, lr}\n"
+        "pop {r4-r11, lr}\n"  /* Restore registers not in exception frame. */
+        "tst lr, #0x40\n"     /* Is dest frame stacked on the secure side? */
+        "it eq\n"
+        "addeq sp, #0x20\n"   /* No, deallocate the secure stack frame. */
         "bx lr\n"
     );
 #else
