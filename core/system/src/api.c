@@ -33,10 +33,12 @@
     fn_ret fn_target ## _transition(__VA_ARGS__) { \
         asm volatile( \
             "sg                  \n" \
+            "cpsid i             \n" \
             "push {lr}           \n" \
             "ldr r3,=" #fn_name "\n" \
             "blx r3              \n" \
             "pop {lr}            \n" \
+            "cpsie i             \n" \
             "bxns lr             \n" \
         ); \
         __builtin_unreachable(); \
