@@ -16,5 +16,9 @@
 #  limitations under the License.
 #
 ###########################################################################
+
+ARCH_CORE:=CORE_ARMv7M
+ARCH_MPU:=MPU_ARMv7M
+
 CONFIGURATIONS:= \
 	CONFIGURATION_BEETLE_CORTEX_M3_0x20000000_0x140

@@ -16,6 +16,10 @@
 #  limitations under the License.
 #
 ###########################################################################
+
+ARCH_CORE:=CORE_ARMv7M
+ARCH_MPU:=MPU_ARMv7M
+
 # uVisor configurations for EFM32 devices
 # The M3_P1 configuration supports:
 #  - EFM32 Giant Gecko
