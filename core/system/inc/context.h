@@ -27,10 +27,10 @@
  * generates when the FPU is enabled will escalate to a hard fault. */
 #define CONTEXT_SWITCH_EXC_SF_WORDS             8
 #define CONTEXT_SWITCH_EXC_SF_BYTES             (CONTEXT_SWITCH_EXC_SF_WORDS * sizeof(uint32_t))
-#if defined(ARCH_MPU_ARMv8M)
+#if defined(ARCH_CORE_ARMv8M)
 #define CONTEXT_SWITCH_EXC_SF_ADDITIONAL_WORDS  10
 #define CONTEXT_SWITCH_EXC_SF_ADDITIONAL_BYTES  (CONTEXT_SWITCH_EXC_SF_ADDITIONAL_WORDS * sizeof(uint32_t))
-#endif /* defined(ARCH_MPU_ARMv8M) */
+#endif /* defined(ARCH_CORE_ARMv8M) */
 
 /** Maximum number of arguments that can be passed to a function-bound context
  * switch. */

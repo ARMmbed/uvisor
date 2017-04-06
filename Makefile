@@ -73,11 +73,8 @@ API_SOURCES:=$(filter-out $(API_DIR)/src/unsupported.c, $(API_SOURCES))
 API_OBJS:=$(foreach API_SOURCE, $(API_SOURCES), $(CONFIGURATION_PREFIX)/$(API_DIR)/$(notdir $(API_SOURCE:.c=.o))) \
           $(API_ASM_OUTPUT:.s=.o)
 
-# Select the MPU driver.
-# If not set, the ARMv7-M driver is selected by default.
-ifeq ("$(ARCH_MPU)","")
-ARCH_MPU:=ARMv7M
-endif
+# Architecture filters.
+ARCH_CORE_LOWER:=$(shell echo $(ARCH_CORE) | tr '[:upper:]' '[:lower:]')
 ARCH_MPU_LOWER:=$(shell echo $(ARCH_MPU) | tr '[:upper:]' '[:lower:]')
 
 # List of core libraries
@@ -88,7 +85,7 @@ CORE_LIBS:=$(notdir $(realpath $(dir $(wildcard $(CORE_LIB_DIR)/*/))))
 # Core source files directories.
 # Change this list every time a folder is added or removed.
 # Note: We assume that the all source files directories follow the src/inc
-#       directory structure, including optional MPU-specific folders.
+#       directory structure, including optional MPU- or core-specific folders.
 CORE_DIRS:=\
 	$(CORE_CMSIS_DIR) \
 	$(CORE_DEBUG_DIR) \
@@ -100,6 +97,7 @@ CORE_INC_DIRS:=\
 	$(foreach DIR, $(CORE_DIRS), $(DIR)/inc)
 CORE_SRC_DIRS:=\
 	$(foreach DIR, $(CORE_DIRS), $(DIR)/src) \
+	$(foreach DIR, $(CORE_DIRS), $(DIR)/src/$(ARCH_CORE_LOWER)) \
 	$(foreach DIR, $(CORE_DIRS), $(DIR)/src/$(ARCH_MPU_LOWER))
 
 # Core source files
@@ -140,7 +138,7 @@ ifeq ("$(PROGRAM_VERSION)","")
 PROGRAM_VERSION:='unknown'
 endif
 
-ifeq ("$(ARCH_MPU)","ARMv8M")
+ifeq ("$(ARCH_CORE)","CORE_ARMv8M")
 FLAGS_CORE:=-march=armv8-m.main -mcmse -mthumb
 else
 FLAGS_CORE:=-mcpu=cortex-m3 -march=armv7-m -mthumb
@@ -160,7 +158,8 @@ CFLAGS_PRE:=\
         $(DEBUG) \
         $(WARNING) \
         -DUVISOR_PRESENT=1 \
-        -DARCH_MPU_$(ARCH_MPU) \
+        -DARCH_$(ARCH_CORE) \
+        -DARCH_$(ARCH_MPU) \
         -D$(CONFIGURATION) \
         -DPROGRAM_VERSION=\"$(PROGRAM_VERSION)\" \
         $(APP_CFLAGS) \
@@ -175,7 +174,8 @@ CPPFLAGS:=
 CXXFLAGS:=-fno-exceptions
 
 LINKER_CONFIG:=\
-    -DARCH_MPU_$(ARCH_MPU) \
+    -DARCH_$(ARCH_CORE) \
+    -DARCH_$(ARCH_MPU) \
     -D$(CONFIGURATION) \
     -I$(PLATFORM_DIR)/$(PLATFORM)/inc \
     -include $(CORE_DIR)/uvisor-config.h

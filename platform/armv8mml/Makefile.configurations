@@ -16,8 +16,9 @@
 #  limitations under the License.
 #
 ###########################################################################
-# MPU architecture (default: ARMv7M)
-ARCH_MPU:=ARMv8M
+
+ARCH_CORE:=CORE_ARMv8M
+ARCH_MPU:=MPU_ARMv8M
 
 CONFIGURATIONS:=\
 	CONFIGURATION_ARMv8MML_CORTEX_M33

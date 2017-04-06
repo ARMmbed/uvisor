@@ -65,9 +65,9 @@ typedef enum IRQn {
   MemoryManagement_IRQn = -12,
   BusFault_IRQn         = -11,
   UsageFault_IRQn       = -10,
-#if defined(ARCH_MPU_ARMv8M)
+#if defined(ARCH_CORE_ARMv8M)
   SecureFault_IRQn      = -9,
-#endif /* defined(ARCH_MPU_ARMv8M) */
+#endif /* defined(ARCH_CORE_ARMv8M) */
   SVCall_IRQn           = -5,
   DebugMonitor_IRQn     = -4,
   PendSV_IRQn           = -2,

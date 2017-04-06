@@ -28,7 +28,7 @@
 #define EXC_RETURN_SPSEL_Pos    2U
 #define EXC_RETURN_SPSEL_Msk    (0x1UL << EXC_RETURN_SPSEL_Pos)
 
-#if defined(ARCH_MPU_ARMv8M)
+#if defined(ARCH_CORE_ARMv8M)
 
 #define EXC_RETURN_S_Pos        6U
 #define EXC_RETURN_S_Msk        (0x1UL << EXC_RETURN_S_Pos)

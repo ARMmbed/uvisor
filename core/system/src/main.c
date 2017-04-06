@@ -152,12 +152,12 @@ UVISOR_NAKED void main_entry(uint32_t caller)
         /* First initialization stage. */
         "bl    main_init\n"
 
-#if defined(ARCH_MPU_ARMv8M)
+#if defined(ARCH_CORE_ARMv8M)
         /* Second initialization stage. */
         "ldr   r0, =main_init_ns\n"
         "bic   r0, r0, #1\n"
         "blxns r0\n"
-#endif /* defined(ARCH_MPU_ARMv8M) */
+#endif /* defined(ARCH_CORE_ARMv8M) */
 
         /* Re-enable all IRQs. */
         "cpsie i\n"
@@ -166,20 +166,20 @@ UVISOR_NAKED void main_entry(uint32_t caller)
         /* De-privilege execution. We need to pop the lr value now as the stack
          * that contains it will be unaccessible. */
         "pop   {r0}\n"
-#if !defined(ARCH_MPU_ARMv8M)
+#if !defined(ARCH_CORE_ARMv8M)
         /* v8-M is currently only doing privileged-only execution */
         "mrs   r1, CONTROL\n"
         "orr   r1, r1, #3\n"
         "msr   CONTROL, r1\n"
-#endif
+#endif /* defined(ARCH_CORE_ARMv8M) */
 
         /* Return to the caller. */
-#if defined(ARCH_MPU_ARMv8M)
+#if defined(ARCH_CORE_ARMv8M)
         "bic   r0, r0, #1\n"
         "bxns  r0\n"
-#else /* defined(ARCH_MPU_ARMv8M) */
+#else /* defined(ARCH_CORE_ARMv8M) */
         "bx    r0\n"
-#endif /* defined(ARCH_MPU_ARMv8M) */
+#endif /* defined(ARCH_CORE_ARMv8M) */
     );
 }
 
@@ -220,14 +220,14 @@ void main_init(void)
     /* Note: The uVisor stack pointer is assumed to be already correctly set. */
     /* Note: We do not need to set the NS NP stack pointer (for the app and the
      *       private boxes), as it is set during the vMPU initialization. */
-#if defined(ARCH_MPU_ARMv8M)
+#if defined(ARCH_CORE_ARMv8M)
     /* NS P stack pointer, for the RTOS and the uVisor-ns. */
     uint32_t msp_ns = ((uint32_t *) SCB->VTOR)[0] - 4;
     __TZ_set_MSP_NS(msp_ns);
 
     /* S NP stack pointer, for the SDSs and the transition gateways. */
     __set_PSP((uint32_t) &__uvisor_stack_top_np__);
-#endif /* defined(ARCH_MPU_ARMv8M) */
+#endif /* defined(ARCH_CORE_ARMv8M) */
 
     /* Set the uVisor vector table */
     SCB->VTOR = (uint32_t) &g_isr_vector;

@@ -108,7 +108,7 @@ SECTIONS
         __uvisor_data_end__ = .;
     } > RAM_S AT > FLASH_NS
 
-#if ARCH_MPU_ARMv8M
+#if defined(ARCH_CORE_ARMv8M)
     /* ARMv8-M Entry points section */
     .entry_points :
     {
@@ -120,12 +120,12 @@ SECTIONS
     } > FLASH_NS
 
     PROVIDE(__uvisor_config = LOADADDR(.entry_points) + SIZEOF(.entry_points));
-#else
+#else /* defined(ARCH_CORE_ARMv8M) */
     /* The .entry_points section is empty on ARMv7-M. Don't calculate the
      * location of uvisor_config based on entry_points, as even an empty
      * section's ALIGN can change the location counter. */
     PROVIDE(__uvisor_config = LOADADDR(.data) + SIZEOF(.data));
-#endif
+#endif /* defined(ARCH_CORE_ARMv8M) */
 
     .bss (NOLOAD):
     {
