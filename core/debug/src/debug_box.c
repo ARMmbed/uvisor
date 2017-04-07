@@ -25,7 +25,12 @@
 
 static void debug_die(void)
 {
+#if defined(ARCH_CORE_ARMv7M)
     UVISOR_SVC(UVISOR_SVC_ID_GET(error), "", DEBUG_BOX_HALT);
+#else /* defined(ARCH_CORE_ARMv7M) */
+    /* FIXME: Implement debug_die for ARMv8-M. */
+    while (1);
+#endif /* defined(ARCH_CORE_ARMv7M) */
 }
 
 void debug_reboot(TResetReason reason)

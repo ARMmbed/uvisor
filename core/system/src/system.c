@@ -108,7 +108,7 @@ __attribute__((section(".isr"))) const TIsrVector g_isr_vector[ISR_VECTORS] =
 
 /* Default privileged system hooks (placed in SRAM) */
 UvisorPrivSystemHooks g_priv_sys_hooks = {
-    .priv_svc_0 = __svc_not_implemented,
+    .priv_svc_0 = isr_default_sys_handler,
     .priv_pendsv = isr_default_sys_handler,
     .priv_systick = isr_default_sys_handler,
 };

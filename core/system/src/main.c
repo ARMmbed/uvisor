@@ -117,8 +117,10 @@ UVISOR_NOINLINE void uvisor_init_post(void)
     /* Initialize the page allocator. */
     page_allocator_init(__uvisor_config.page_start, __uvisor_config.page_end, __uvisor_config.page_size);
 
+#if defined(ARCH_CORE_ARMv7M)
     /* Initialize the SVCall interface. */
     svc_init();
+#endif /* defined(ARCH_CORE_ARMv7M) */
 
     /* Load the privileged system hooks. */
     load_priv_sys_hooks();
