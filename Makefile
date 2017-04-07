@@ -150,9 +150,9 @@ PROGRAM_VERSION:='unknown'
 endif
 
 ifeq ("$(ARCH_CORE)","CORE_ARMv8M")
-FLAGS_CORE:=-march=armv8-m.main -mcmse -mthumb
+FLAGS_CORE:=-mthumb -march=armv8-m.main -mcmse
 else
-FLAGS_CORE:=-mcpu=cortex-m3 -march=armv7-m -mthumb
+FLAGS_CORE:=-mthumb -march=armv7-m
 endif
 
 LDFLAGS:=\
