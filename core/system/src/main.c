@@ -154,26 +154,21 @@ UVISOR_NAKED void main_entry(uint32_t caller)
         /* First initialization stage. */
         "bl    main_init\n"
 
-#if defined(ARCH_CORE_ARMv8M)
-        /* Second initialization stage. */
-        "ldr   r0, =main_init_ns\n"
-        "bic   r0, r0, #1\n"
-        "blxns r0\n"
-#endif /* defined(ARCH_CORE_ARMv8M) */
-
         /* Re-enable all IRQs. */
         "cpsie i\n"
         "isb\n"
 
-        /* De-privilege execution. We need to pop the lr value now as the stack
-         * that contains it will be unaccessible. */
+        /* Pop the lr value. */
+        /* Note: This needs to be done now if we then de-privilege exeuction,
+         *       otherwise the stack will become unaccessible. */
         "pop   {r0}\n"
-#if !defined(ARCH_CORE_ARMv8M)
-        /* v8-M is currently only doing privileged-only execution */
+
+#if defined(ARCH_CORE_ARMv7M)
+        /* De-privilege execution (ARMv7-M only). */
         "mrs   r1, CONTROL\n"
         "orr   r1, r1, #3\n"
         "msr   CONTROL, r1\n"
-#endif /* defined(ARCH_CORE_ARMv8M) */
+#endif /* defined(ARCH_CORE_ARMv7M) */
 
         /* Return to the caller. */
 #if defined(ARCH_CORE_ARMv8M)
@@ -236,12 +231,6 @@ void main_init(void)
 
     /* Finish the uVisor initialization */
     uvisor_init_post();
-}
-
-void __attribute__((section(".ns_text"))) main_init_ns(void)
-{
-    /* FIXME: Populate this function. */
-    return;
 }
 
 void uvisor_start(void)
