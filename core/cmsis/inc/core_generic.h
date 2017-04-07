@@ -43,6 +43,10 @@
  * will be detected at runtime. */
 #define __FPU_PRESENT 0
 
+/* We assume no DSP is present. This disables possible optimizations but allows
+ * for more generality in our targets (Cortex-M3, M4 and M33). */
+#define __DSP_PRESENT 0
+
 /* Redefine the macro to a custom variable that is written at startup time by
  * uVisor.
  * This allows us to remove the __NVIC_PRIO_BITS axis from the release binaries

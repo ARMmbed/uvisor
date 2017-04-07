@@ -24,32 +24,6 @@
 #include "context.h"
 #include "vmpu.h"
 
-
-#if  (__ARM_FEATURE_CMSE == 3U)
-/**
-  \brief   Get Stack Pointer (non-secure)
-  \details Returns the current value of the non-secure Stack Pointer (SP) when in secure state.
-  \return               SP Register value
- */
-__attribute__((always_inline)) __STATIC_INLINE uint32_t __TZ_get_SP_NS(void)
-{
-  register uint32_t result;
-
-  __ASM volatile ("MRS %0, sp_ns"  : "=r" (result) );
-  return(result);
-}
-
-/**
-  \brief   Set Stack Pointer (non-secure)
-  \details Writes the given value to the non-secure Stack Pointer (SP) when in secure state.
-  \param [in]    sp  Stack Pointer Register value to set
- */
-__attribute__((always_inline)) __STATIC_INLINE void __TZ_set_SP_NS(uint32_t sp)
-{
-  __ASM volatile ("MSR sp_ns, %0" : : "r" (sp) : "memory");
-}
-#endif
-
 /* The box to switch to when the current one runs out of time. */
 static int g_next_box_id = 1;
 

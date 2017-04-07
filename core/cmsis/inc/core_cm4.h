@@ -1,11 +1,11 @@
 /**************************************************************************//**
  * @file     core_cm4.h
  * @brief    CMSIS Cortex-M4 Core Peripheral Access Layer Header File
- * @version  V5.00
- * @date     14. July 2016
+ * @version  V5.0.2
+ * @date     13. February 2017
  ******************************************************************************/
 /*
- * Copyright (c) 2009-2016 ARM Limited. All rights reserved.
+ * Copyright (c) 2009-2017 ARM Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -13,7 +13,7 @@
  * not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an AS IS BASIS, WITHOUT
@@ -67,99 +67,6 @@
                                     __CM4_CMSIS_VERSION_SUB           )  /*!< CMSIS HAL version number */
 
 #define __CORTEX_M                (4U)                                   /*!< Cortex-M Core */
-
-/* Common defines in core_*.h files
-  - #define __ASM               Compiler keyword for asm
-  - #define __INLINE            Compiler keyword for inline
-  - #define __STATIC_INLINE     Compiler keyword for static inline
-  - #define __NO_RETURN         function that never returns
-  - #define __USED              function or variable that is not optimized away
-  - #define __WEAK              weak function or variable
-  - #define __UNALIGNED_UINT32  pointer to unaligned uint32_t variable
-  - #define __ALIGNED(x)        compiler keyword to align a variable
- */
-#if   defined ( __CC_ARM )                                            /* ARM Compiler 4/5 */
-  #define __ASM                     __asm
-  #define __INLINE                  __inline
-  #define __STATIC_INLINE           static __inline
-  #define __NO_RETURN               __declspec(noreturn)
-  #define __USED                    __attribute__((used))
-  #define __WEAK                    __attribute__((weak))
-  #define __UNALIGNED_UINT32(x)     (*((__packed uint32_t *)(x)))
-  #define __ALIGNED(x)              __attribute__((aligned(x)))
-
-#elif defined (__ARMCC_VERSION) && (__ARMCC_VERSION >= 6010050)       /* ARM Compiler 6 */
-  #define __ASM                     __asm
-  #define __INLINE                  __inline
-  #define __STATIC_INLINE           static __inline
-  #define __NO_RETURN               __attribute__((noreturn))
-  #define __USED                    __attribute__((used))
-  #define __WEAK                    __attribute__((weak))
-  #pragma clang diagnostic push
-  #pragma clang diagnostic ignored "-Wpacked"
-  struct __attribute__((packed)) T_UINT32 { uint32_t v; };
-  #pragma clang diagnostic pop
-  #define __UNALIGNED_UINT32(x)     (((struct T_UINT32 *)(x))->v)
-  #define __ALIGNED(x)              __attribute__((aligned(x)))
-
-#elif defined ( __GNUC__ )                                            /* GNU Compiler */
-  #define __ASM                     __asm
-  #define __INLINE                  inline
-  #define __STATIC_INLINE           static inline
-  #define __NO_RETURN               __attribute__((noreturn))
-  #define __USED                    __attribute__((used))
-  #define __WEAK                    __attribute__((weak))
-  struct __attribute__((packed)) T_UINT32 { uint32_t v; };
-  #define __UNALIGNED_UINT32(x)     (((struct T_UINT32 *)(x))->v)
-  #define __ALIGNED(x)              __attribute__((aligned(x)))
-
-#elif defined ( __ICCARM__ )                                          /* IAR Compiler */
-  #define __ASM                     __asm
-  #define __INLINE                  inline
-  #define __STATIC_INLINE           static inline
-  #define __NO_RETURN               __noreturn
-  #define __USED
-  #define __WEAK                    __weak
-  __packed struct T_UINT32 { uint32_t v; };
-  #define __UNALIGNED_UINT32(x)     (((struct T_UINT32 *)(x))->v)
-  #define __ALIGNED(x)
-
-#elif defined ( __TI_ARM__ )                                          /* TI ARM Compiler */
-  #define __ASM                     __asm
-  #define __INLINE                  inline
-  #define __STATIC_INLINE           static inline
-  #define __NO_RETURN               __attribute__((noreturn))
-  #define __USED                    __attribute__((used))
-  #define __WEAK                    __attribute__((weak))
-  struct __attribute__((packed)) T_UINT32 { uint32_t v; };
-  #define __UNALIGNED_UINT32(x)     (((struct T_UINT32 *)(x))->v)
-  #define __ALIGNED(x)
-
-#elif defined ( __TASKING__ )                                         /* TASKING Compiler */
-  #define __ASM                     __asm
-  #define __INLINE                  inline
-  #define __STATIC_INLINE           static inline
-  #define __NO_RETURN               __attribute__((noreturn))
-  #define __USED                    __attribute__((used))
-  #define __WEAK                    __attribute__((weak))
-  struct __packed__ T_UINT32 { uint32_t v; };
-  #define __UNALIGNED_UINT32(x)     (((struct T_UINT32 *)(x))->v)
-  #define __ALIGNED(x)              __align(x)
-
-#elif defined ( __CSMC__ )                                            /* COSMIC Compiler */
-  #define __packed
-  #define __ASM                     _asm
-  #define __INLINE                  inline
-  #define __STATIC_INLINE           static inline
-  #define __NO_RETURN
-  #define __USED
-  #define __WEAK
-  #define __UNALIGNED_UINT32(x)     (*x)
-  #define __ALIGNED(x)
-
-#else
-  #error Unknown compiler
-#endif
 
 /** __FPU_USED indicates whether an FPU is used or not.
     For this, __FPU_PRESENT has to be checked prior to making use of FPU specific registers and functions.
@@ -250,9 +157,8 @@
 
 #endif
 
-#include "core_cmInstr.h"                /* Core Instruction Access */
-#include "core_cmFunc.h"                 /* Core Function Access */
-#include "core_cmSimd.h"                 /* Compiler specific SIMD Intrinsics */
+#include "cmsis_compiler.h"               /* CMSIS compiler specific defines */
+
 
 #ifdef __cplusplus
 }
@@ -1634,7 +1540,7 @@ typedef struct
   @{
  */
 
-/* Memory mapping of Cortex-M4 Hardware */
+/* Memory mapping of Core Hardware */
 #define SCS_BASE            (0xE000E000UL)                            /*!< System Control Space Base Address */
 #define ITM_BASE            (0xE0000000UL)                            /*!< ITM Base Address */
 #define DWT_BASE            (0xE0001000UL)                            /*!< DWT Base Address */
@@ -1687,7 +1593,12 @@ typedef struct
   @{
  */
 
-#ifndef CMSIS_NVIC_VIRTUAL
+#ifdef CMSIS_NVIC_VIRTUAL
+  #ifndef CMSIS_NVIC_VIRTUAL_HEADER_FILE
+    #define CMSIS_NVIC_VIRTUAL_HEADER_FILE "cmsis_nvic_virtual.h"
+  #endif
+  #include CMSIS_NVIC_VIRTUAL_HEADER_FILE
+#else
   #define NVIC_SetPriorityGrouping    __NVIC_SetPriorityGrouping
   #define NVIC_GetPriorityGrouping    __NVIC_GetPriorityGrouping
   #define NVIC_EnableIRQ              __NVIC_EnableIRQ
@@ -1699,9 +1610,15 @@ typedef struct
   #define NVIC_GetActive              __NVIC_GetActive
   #define NVIC_SetPriority            __NVIC_SetPriority
   #define NVIC_GetPriority            __NVIC_GetPriority
+  #define NVIC_SystemReset            __NVIC_SystemReset
 #endif /* CMSIS_NVIC_VIRTUAL */
 
-#ifndef CMSIS_VECTAB_VIRTUAL
+#ifdef CMSIS_VECTAB_VIRTUAL
+  #ifndef CMSIS_VECTAB_VIRTUAL_HEADER_FILE
+   #define CMSIS_VECTAB_VIRTUAL_HEADER_FILE "cmsis_vectab_virtual.h"
+  #endif
+  #include CMSIS_VECTAB_VIRTUAL_HEADER_FILE
+#else
   #define NVIC_SetVector              __NVIC_SetVector
   #define NVIC_GetVector              __NVIC_GetVector
 #endif  /* (CMSIS_VECTAB_VIRTUAL) */
@@ -1791,6 +1708,8 @@ __STATIC_INLINE void __NVIC_DisableIRQ(IRQn_Type IRQn)
   if ((int32_t)(IRQn) >= 0)
   {
     NVIC->ICER[(((uint32_t)(int32_t)IRQn) >> 5UL)] = (uint32_t)(1UL << (((uint32_t)(int32_t)IRQn) & 0x1FUL));
+    __DSB();
+    __ISB();
   }
 }
 
@@ -1975,8 +1894,8 @@ __STATIC_INLINE void NVIC_DecodePriority (uint32_t Priority, uint32_t PriorityGr
  */
 __STATIC_INLINE void __NVIC_SetVector(IRQn_Type IRQn, uint32_t vector)
 {
-    uint32_t *vectors = (uint32_t *)SCB->VTOR;
-    vectors[IRQn + NVIC_USER_IRQ_OFFSET] = vector;
+  uint32_t *vectors = (uint32_t *)SCB->VTOR;
+  vectors[(int32_t)IRQn + NVIC_USER_IRQ_OFFSET] = vector;
 }
 
 
@@ -1990,8 +1909,8 @@ __STATIC_INLINE void __NVIC_SetVector(IRQn_Type IRQn, uint32_t vector)
  */
 __STATIC_INLINE uint32_t __NVIC_GetVector(IRQn_Type IRQn)
 {
-    uint32_t *vectors = (uint32_t *)SCB->VTOR;
-    return vectors[IRQn + NVIC_USER_IRQ_OFFSET];
+  uint32_t *vectors = (uint32_t *)SCB->VTOR;
+  return vectors[(int32_t)IRQn + NVIC_USER_IRQ_OFFSET];
 }
 
 
@@ -1999,7 +1918,7 @@ __STATIC_INLINE uint32_t __NVIC_GetVector(IRQn_Type IRQn)
   \brief   System Reset
   \details Initiates a system reset request to reset the MCU.
  */
-__STATIC_INLINE void NVIC_SystemReset(void)
+__STATIC_INLINE void __NVIC_SystemReset(void)
 {
   __DSB();                                                          /* Ensure all outstanding memory accesses included
                                                                        buffered write are completed before reset */
@@ -2104,8 +2023,8 @@ __STATIC_INLINE uint32_t SysTick_Config(uint32_t ticks)
   @{
  */
 
-extern volatile int32_t ITM_RxBuffer;                    /*!< External variable to receive characters. */
-#define                 ITM_RXBUFFER_EMPTY   0x5AA55AA5U /*!< Value identifying \ref ITM_RxBuffer is ready for next character. */
+extern volatile int32_t ITM_RxBuffer;                              /*!< External variable to receive characters. */
+#define                 ITM_RXBUFFER_EMPTY  ((int32_t)0x5AA55AA5U) /*!< Value identifying \ref ITM_RxBuffer is ready for next character. */
 
 
 /**
