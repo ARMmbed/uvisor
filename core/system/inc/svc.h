@@ -21,33 +21,6 @@
 
 #define UVISOR_SVC_ID_GET(target) UVISOR_SVC_CUSTOM_TABLE(offsetof(UvisorSvcTarget, target) / sizeof(uint32_t))
 
-typedef struct {
-    void (*not_implemented)(void);
-
-    void     (*irq_enable)(uint32_t irqn);
-    void     (*irq_disable)(uint32_t irqn);
-    void     (*irq_disable_all)(void);
-    void     (*irq_enable_all)(void);
-    void     (*irq_set_vector)(uint32_t irqn, uint32_t vector);
-    uint32_t (*irq_get_vector)(uint32_t irqn);
-    void     (*irq_set_priority)(uint32_t irqn, uint32_t priority);
-    uint32_t (*irq_get_priority)(uint32_t irqn);
-    void     (*irq_set_pending)(uint32_t irqn);
-    uint32_t (*irq_get_pending)(uint32_t irqn);
-    void     (*irq_clear_pending)(uint32_t irqn);
-    int      (*irq_get_level)(void);
-    void     (*irq_system_reset)(TResetReason reason);
-
-    int (*page_malloc)(UvisorPageTable * const table);
-    int (*page_free)(const UvisorPageTable * const table);
-
-    int (*box_namespace)(int box_id, char *box_namespace, size_t length);
-
-    void (*debug_init)(const TUvisorDebugDriver * const driver);
-    void (*error)(THaltUserError reason);
-    void (*vmpu_mem_invalidate)(void);
-} UVISOR_PACKED UvisorSvcTarget;
-
 /* macro to execute an SVCall; additional metadata can be provided, which will
  * be appended right after the svc instruction */
 /* note: the macro is implicitly overloaded to allow 0 to 4 32bits arguments */
@@ -78,6 +51,11 @@ typedef struct {
     })
 
 void svc_init(void);
-void __svc_not_implemented(void);
+
+#if defined(ARCH_CORE_ARMv7M)
+#include "svc_v7m.h"
+#elif defined(ARCH_CORE_ARMv8M)
+#include "svc_v8m.h"
+#endif /* Architecture-specific header files */
 
 #endif/*__SVC_H__*/
