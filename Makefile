@@ -63,26 +63,36 @@ API_ASM_OUTPUT:=$(CONFIGURATION_PREFIX)/$(API_DIR)/uvisor-output.s
 API_RELEASE:=$(API_DIR)/lib/$(PLATFORM)/$(BUILD_MODE)/$(CONFIGURATION_LOWER).a
 API_VERSION:=$(API_DIR)/lib/$(PLATFORM)/$(BUILD_MODE)/$(CONFIGURATION_LOWER).txt
 
+# Architecture filters.
+ARCH_CORE_LOWER:=$(shell echo $(ARCH_CORE) | tr '[:upper:]' '[:lower:]')
+ARCH_MPU_LOWER:=$(shell echo $(ARCH_MPU) | tr '[:upper:]' '[:lower:]')
+
+# Release library source files directories
+# Note: We assume that the all source files directories follow the src/inc
+#       directory structure, including optional MPU- or core-specific folders.
+API_DIRS:=\
+	$(API_DIR)
+API_SRC_DIRS:=\
+	$(foreach DIR, $(API_DIRS), $(DIR)/src) \
+	$(foreach DIR, $(API_DIRS), $(DIR)/src/$(ARCH_CORE_LOWER)) \
+	$(foreach DIR, $(API_DIRS), $(DIR)/src/$(ARCH_MPU_LOWER))
+
 # Release library source files
 # Note: We explicitly remove unsupported.c from the list of source files. It
 #       will be compiled by the host OS in case uVisor is not supported.
-API_SOURCES:=$(wildcard $(API_DIR)/src/*.c)
+API_SOURCES:=$(foreach DIR, $(API_SRC_DIRS), $(wildcard $(DIR)/*.c))
 API_SOURCES:=$(filter-out $(API_DIR)/src/unsupported.c, $(API_SOURCES))
 
 # Release library object files
 API_OBJS:=$(foreach API_SOURCE, $(API_SOURCES), $(CONFIGURATION_PREFIX)/$(API_DIR)/$(notdir $(API_SOURCE:.c=.o))) \
           $(API_ASM_OUTPUT:.s=.o)
 
-# Architecture filters.
-ARCH_CORE_LOWER:=$(shell echo $(ARCH_CORE) | tr '[:upper:]' '[:lower:]')
-ARCH_MPU_LOWER:=$(shell echo $(ARCH_MPU) | tr '[:upper:]' '[:lower:]')
-
 # List of core libraries
 # Note: One could do it in a simpler way but this prevents spurious files in
 #       $(CORE_LIB_DIR) from getting picked.
 CORE_LIBS:=$(notdir $(realpath $(dir $(wildcard $(CORE_LIB_DIR)/*/))))
 
-# Core source files directories.
+# Core source files directories
 # Change this list every time a folder is added or removed.
 # Note: We assume that the all source files directories follow the src/inc
 #       directory structure, including optional MPU- or core-specific folders.
@@ -94,15 +104,16 @@ CORE_DIRS:=\
 	$(CORE_VMPU_DIR) \
 	$(PLATFORM_DIR)/$(PLATFORM)
 CORE_INC_DIRS:=\
-	$(foreach DIR, $(CORE_DIRS), $(DIR)/inc)
+	$(foreach DIR, $(CORE_DIRS), $(DIR)/inc) \
+	$(foreach DIR, $(CORE_DIRS), $(DIR)/inc/$(ARCH_CORE_LOWER)) \
+	$(foreach DIR, $(CORE_DIRS), $(DIR)/inc/$(ARCH_MPU_LOWER))
 CORE_SRC_DIRS:=\
 	$(foreach DIR, $(CORE_DIRS), $(DIR)/src) \
 	$(foreach DIR, $(CORE_DIRS), $(DIR)/src/$(ARCH_CORE_LOWER)) \
 	$(foreach DIR, $(CORE_DIRS), $(DIR)/src/$(ARCH_MPU_LOWER))
 
 # Core source files
-CORE_SOURCES:=\
-	$(foreach DIR, $(CORE_SRC_DIRS), $(wildcard $(DIR)/*.c))
+CORE_SOURCES:=$(foreach DIR, $(CORE_SRC_DIRS), $(wildcard $(DIR)/*.c))
 
 # Core object files
 CORE_OBJS:=$(foreach SOURCE, $(CORE_SOURCES), $(CONFIGURATION_PREFIX)/$(CORE_DIR)/$(notdir $(SOURCE:.c=.o)))
@@ -115,8 +126,8 @@ CORE_OBJS:=$(foreach SOURCE, $(CORE_SOURCES), $(CONFIGURATION_PREFIX)/$(CORE_DIR
 # build the core or the release library (so the two can have the same names
 # without collisions).
 ifneq ($(MAKECMDGOALS),build_core)
-vpath %.c $(API_DIR)/src
-vpath %.s $(API_DIR)/src
+vpath %.c $(API_SRC_DIRS)
+vpath %.s $(API_SRC_DIRS)
 else
 vpath %.c $(CORE_SRC_DIRS)
 endif
