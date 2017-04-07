@@ -85,7 +85,7 @@ typedef enum IRQn {
 #elif defined(CORE_CORTEX_M4)
 #include "core_cm4.h"
 #elif defined(CORE_CORTEX_M33)
-#include "core_armv8mml.h"
+#include "core_cm33.h"
 #else /* Core selection */
 #error "Unsupported ARM core. Make sure CORE_* is defined in your workspace."
 #endif /* Core selection */

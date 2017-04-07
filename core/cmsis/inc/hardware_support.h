@@ -64,18 +64,17 @@
 #define CORE_VARIANT_MIN  0x0   /* Variant  >= r0 */
 #define CORE_REVISION_MIN 0x0   /* Revision >= p0 */
 
-/* This setting enables some conditional definitions in the core_armv8mml.h
- * file. */
+/* This setting enables some conditional definitions in the core_cm33.h file. */
 /* Note: Currently (CMSIS v5.00) the __ARMv8MML_REV symbol does not affect any
  *       conditional definition. Hence we will just set it to the uVisor minimum
  *       requirement, r0p0. */
-#define __ARMv8MML_REV 0x0
+#define __CM33_REV 0x0
 
-#else /* defined(CORE_CORTEX_M3) || defined(CORE_CORTEX_M4) */
+#else /* Core-specific definitions */
 
 #error "Unsupported ARM core. Make sure CORE_* is defined in your workspace."
 
-#endif /* Unsupported ARM core */
+#endif /* Core-specific definitions */
 
 /* These macros will be used to check the core specifications at runtime.
  * They return true if the check succeeds. */
