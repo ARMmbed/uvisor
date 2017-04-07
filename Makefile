@@ -140,10 +140,10 @@ ifeq ("$(PROGRAM_VERSION)","")
 PROGRAM_VERSION:='unknown'
 endif
 
-FLAGS_CM4:=-mcpu=cortex-m4 -march=armv7e-m -mthumb
+FLAGS_CORE:=-mcpu=cortex-m3 -march=armv7-m -mthumb
 
 LDFLAGS:=\
-        $(FLAGS_CM4) \
+        $(FLAGS_CORE) \
         -T$(CONFIGURATION_PREFIX).linker \
         -nostartfiles \
         -nostdlib \
@@ -166,7 +166,7 @@ CFLAGS_PRE:=\
         -ffunction-sections \
         -fdata-sections
 
-CFLAGS:=$(FLAGS_CM4) $(CFLAGS_PRE)
+CFLAGS:=$(FLAGS_CORE) $(CFLAGS_PRE)
 CPPFLAGS:=
 CXXFLAGS:=-fno-exceptions
 
