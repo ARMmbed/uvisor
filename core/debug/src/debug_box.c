@@ -71,8 +71,10 @@ static void debug_deprivilege_and_return(void * debug_handler, void * return_han
     ((uint32_t *) dst_sp)[2] = a2;
     ((uint32_t *) dst_sp)[3] = a3;
 
+#if defined(ARCH_CORE_ARMv7M)
     /* Suspend the OS. */
     g_priv_sys_hooks.priv_os_suspend();
+#endif /* defined(ARCH_CORE_ARMv7M) */
 
     context_switch_in(CONTEXT_SWITCH_FUNCTION_DEBUG, dst_id, src_sp, dst_sp);
 

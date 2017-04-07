@@ -14,9 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-
 #include <uvisor.h>
 #include "debug.h"
 #include "exc_return.h"
@@ -212,11 +209,25 @@ void scheduler_start()
     SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
 }
 
-#else
-
-/* The scheduler doesn't do anything except on v8-M. */
-void scheduler_start(void)
+void UVISOR_NAKED SysTick_IRQn_Handler(void)
 {
+    /* When switching from NS to S via secure exception or IRQ, the NS
+     * registers are not stacked. Secure side has to read all this state so
+     * that it can restore it when resuming that box. We push all this state
+     * onto the stack and read it from C as a struct. When restoring state, we
+     * write the register values to the stack from C and then pop the
+     * registers. */
+    asm volatile(
+        "tst lr, #0x40\n"     /* Is source frame stacked on the secure side? */
+        "it eq\n"
+        "subeq sp, #0x20\n"   /* No, allocate a secure stack frame. */
+        "push {r4-r11, lr}\n" /* Save registers not in exception frame. */
+        "mov r0, sp\n"
+        "bl scheduler_tick\n"
+        "pop {r4-r11, lr}\n"  /* Restore registers not in exception frame. */
+        "tst lr, #0x40\n"     /* Is dest frame stacked on the secure side? */
+        "it eq\n"
+        "addeq sp, #0x20\n"   /* No, deallocate the secure stack frame. */
+        "bx lr\n"
+    );
 }
-
-#endif
