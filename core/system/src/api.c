@@ -75,7 +75,7 @@
 transition_np_to_p(debug_init,       void, debug_register_driver, const TUvisorDebugDriver * const driver);
 transition_np_to_p(irq_system_reset, void, debug_reboot,          TResetReason reason);
 transition_np_to_p(error,            void, halt_user_error,       THaltUserError reason);
-transition_p_to_p(start, void, scheduler_start, void);
+transition_p_to_p(start,             void, uvisor_start,          void);
 
 transition_np_to_p(vmpu_mem_invalidate, void, vmpu_mpu_invalidate, void);
 

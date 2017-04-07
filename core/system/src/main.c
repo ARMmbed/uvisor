@@ -17,6 +17,9 @@
 #include <uvisor.h>
 #include "debug.h"
 #include "page_allocator.h"
+#if defined(ARCH_CORE_ARMv7M)
+#include "priv_sys_hooks.h"
+#endif /* defined(ARCH_CORE_ARMv7M) */
 #include "scheduler.h"
 #include "svc.h"
 #include "virq.h"
@@ -38,77 +41,6 @@ UVISOR_NOINLINE void uvisor_init_pre(uint32_t const * const user_vtor)
     DEBUG_INIT();
 }
 
-static void sanity_check_priv_sys_hooks(UvisorPrivSystemHooks const * priv_sys_hooks)
-{
-    /* Check that the table is in flash. */
-    if (!vmpu_public_flash_addr((uint32_t) priv_sys_hooks) ||
-        !vmpu_public_flash_addr((uint32_t) priv_sys_hooks + sizeof(priv_sys_hooks))) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "priv_sys_hooks (0x%08x) not entirely in public flash\n", priv_sys_hooks);
-    }
-
-    /*
-     * Check that each hook is in flash, if the hook is non-0.
-     */
-    if (__uvisor_config.priv_sys_hooks->priv_svc_0 &&
-        !vmpu_public_flash_addr((uint32_t) __uvisor_config.priv_sys_hooks->priv_svc_0)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "priv_svc_0 (0x%08x) not entirely in public flash\n",
-                   __uvisor_config.priv_sys_hooks->priv_svc_0);
-    }
-
-    if (__uvisor_config.priv_sys_hooks->priv_pendsv &&
-        !vmpu_public_flash_addr((uint32_t) __uvisor_config.priv_sys_hooks->priv_pendsv)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "priv_pendsv (0x%08x) not entirely in public flash\n",
-                   __uvisor_config.priv_sys_hooks->priv_pendsv);
-    }
-
-    if (__uvisor_config.priv_sys_hooks->priv_systick &&
-        !vmpu_public_flash_addr((uint32_t) __uvisor_config.priv_sys_hooks->priv_systick)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "priv_systick (0x%08x) not entirely in public flash\n",
-                   __uvisor_config.priv_sys_hooks->priv_pendsv);
-    }
-
-    if (__uvisor_config.priv_sys_hooks->priv_os_suspend &&
-        !vmpu_public_flash_addr((uint32_t) __uvisor_config.priv_sys_hooks->priv_os_suspend)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "priv_os_suspend (0x%08x) not entirely in public flash\n",
-                   __uvisor_config.priv_sys_hooks->priv_os_suspend);
-    }
-
-    if (__uvisor_config.priv_sys_hooks->priv_uvisor_semaphore_post &&
-        !vmpu_public_flash_addr((uint32_t) __uvisor_config.priv_sys_hooks->priv_uvisor_semaphore_post)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "priv_uvisor_semaphore_post (0x%08x) not entirely in public flash\n",
-                   __uvisor_config.priv_sys_hooks->priv_uvisor_semaphore_post);
-    }
-}
-
-static void load_priv_sys_hooks(void)
-{
-    /* Make sure the hook table is sane. */
-    sanity_check_priv_sys_hooks(__uvisor_config.priv_sys_hooks);
-
-    /*
-     * Register each hook.
-     */
-    if (__uvisor_config.priv_sys_hooks->priv_svc_0) {
-        g_priv_sys_hooks.priv_svc_0 = __uvisor_config.priv_sys_hooks->priv_svc_0;
-    }
-
-    if (__uvisor_config.priv_sys_hooks->priv_pendsv) {
-        g_priv_sys_hooks.priv_pendsv = __uvisor_config.priv_sys_hooks->priv_pendsv;
-    }
-
-    if (__uvisor_config.priv_sys_hooks->priv_systick) {
-        g_priv_sys_hooks.priv_systick = __uvisor_config.priv_sys_hooks->priv_systick;
-    }
-
-    if (__uvisor_config.priv_sys_hooks->priv_os_suspend) {
-        g_priv_sys_hooks.priv_os_suspend = __uvisor_config.priv_sys_hooks->priv_os_suspend;
-    }
-
-    if (__uvisor_config.priv_sys_hooks->priv_uvisor_semaphore_post) {
-        g_priv_sys_hooks.priv_uvisor_semaphore_post = __uvisor_config.priv_sys_hooks->priv_uvisor_semaphore_post;
-    }
-}
-
 UVISOR_NOINLINE void uvisor_init_post(void)
 {
     /* Inititalize the MPU. */
@@ -120,10 +52,10 @@ UVISOR_NOINLINE void uvisor_init_post(void)
 #if defined(ARCH_CORE_ARMv7M)
     /* Initialize the SVCall interface. */
     svc_init();
-#endif /* defined(ARCH_CORE_ARMv7M) */
 
     /* Load the privileged system hooks. */
-    load_priv_sys_hooks();
+    priv_sys_hooks_load();
+#endif /* defined(ARCH_CORE_ARMv7M) */
 
     DPRINTF("uvisor initialized\n");
 }
@@ -235,5 +167,7 @@ void main_init(void)
 
 void uvisor_start(void)
 {
+#if defined(ARCH_CORE_ARMv8M)
     scheduler_start();
+#endif /* defined(ARCH_CORE_ARMv8M) */
 }

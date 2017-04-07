@@ -26,53 +26,8 @@ void UVISOR_ALIAS(isr_default_sys_handler) UsageFault_IRQn_Handler(void);
 void UVISOR_ALIAS(isr_default_sys_handler) SecureFault_IRQn_Handler(void);
 void UVISOR_ALIAS(isr_default_sys_handler) SVCall_IRQn_Handler(void);
 void UVISOR_ALIAS(isr_default_sys_handler) DebugMonitor_IRQn_Handler(void);
-
-/* Privileged PendSV and SysTick hooks assume that they are called directly by
- * hardware. So, these handlers need their stack frame and registers to look
- * exactly like they were called directly by hardware. This means LR needs to
- * be EXC_RETURN, not some value placed there by the C compiler when it does a
- * branch with link. */
-void UVISOR_NAKED PendSV_IRQn_Handler(void)
-{
-    asm volatile(
-        "ldr  r0, %[priv_pendsv]\n"  /* Load the hook from the hook table. */
-        "bx   r0\n"                  /* Branch to the hook (without link). */
-        :: [priv_pendsv] "m" (g_priv_sys_hooks.priv_pendsv)
-    );
-}
-
-void UVISOR_NAKED SysTick_IRQn_Handler(void)
-{
-/* On v8-M, we don't want to call the priv_systick hook, but our own scheduler
- * instead. */
-#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-    /* When switching from NS to S via secure exception or IRQ, the NS
-     * registers are not stacked. Secure side has to read all this state so
-     * that it can restore it when resuming that box. We push all this state
-     * onto the stack and read it from C as a struct. When restoring state, we
-     * write the register values to the stack from C and then pop the
-     * registers. */
-    asm volatile(
-        "tst lr, #0x40\n"     /* Is source frame stacked on the secure side? */
-        "it eq\n"
-        "subeq sp, #0x20\n"   /* No, allocate a secure stack frame. */
-        "push {r4-r11, lr}\n" /* Save registers not in exception frame. */
-        "mov r0, sp\n"
-        "bl scheduler_tick\n"
-        "pop {r4-r11, lr}\n"  /* Restore registers not in exception frame. */
-        "tst lr, #0x40\n"     /* Is dest frame stacked on the secure side? */
-        "it eq\n"
-        "addeq sp, #0x20\n"   /* No, deallocate the secure stack frame. */
-        "bx lr\n"
-    );
-#else
-    asm volatile(
-        "ldr  r0, %[priv_systick]\n" /* Load the hook from the hook table. */
-        "bx   r0\n"                  /* Branch to the hook (without link). */
-        :: [priv_systick] "m" (g_priv_sys_hooks.priv_systick)
-    );
-#endif
-}
+void UVISOR_ALIAS(isr_default_sys_handler) PendSV_IRQn_Handler(void);
+void UVISOR_ALIAS(isr_default_sys_handler) SysTick_IRQn_Handler(void);
 
 /* Default vector table (placed in Flash) */
 __attribute__((section(".isr"))) const TIsrVector g_isr_vector[ISR_VECTORS] =
@@ -104,13 +59,6 @@ __attribute__((section(".isr"))) const TIsrVector g_isr_vector[ISR_VECTORS] =
     /* NVIC IRQs */
     /* Note: This is a GCC extension. */
     [NVIC_OFFSET ... (ISR_VECTORS - 1)] = isr_default_handler
-};
-
-/* Default privileged system hooks (placed in SRAM) */
-UvisorPrivSystemHooks g_priv_sys_hooks = {
-    .priv_svc_0 = isr_default_sys_handler,
-    .priv_pendsv = isr_default_sys_handler,
-    .priv_systick = isr_default_sys_handler,
 };
 
 void UVISOR_NAKED UVISOR_NORETURN isr_default_sys_handler(void)
