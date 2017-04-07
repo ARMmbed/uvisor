@@ -133,6 +133,16 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
     uint32_t sp = from_psp ? __get_PSP() : msp;
 
     switch (ipsr) {
+        case NonMaskableInt_IRQn:
+            HALT_ERROR(NOT_IMPLEMENTED, "No NonMaskableInt IRQ handler registered.");
+            break;
+
+        case HardFault_IRQn:
+            DEBUG_FAULT(FAULT_HARD, lr, sp);
+            HALT_ERROR(FAULT_HARD, "Cannot recover from a hard fault.");
+            lr = debug_box_enter_from_priv(lr);
+            break;
+
         case MemoryManagement_IRQn:
             fault_status = VMPU_SCB_MMFSR;
 
@@ -171,7 +181,7 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
             /* If recovery was not successful, throw an error and halt. */
             DEBUG_FAULT(FAULT_MEMMANAGE, lr, sp);
             VMPU_SCB_MMFSR = fault_status;
-            HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied");
+            HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied.");
             lr = debug_box_enter_from_priv(lr);
             break;
 
@@ -202,7 +212,7 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
 
             /* If recovery was not successful, throw an error and halt. */
             DEBUG_FAULT(FAULT_BUS, lr, sp);
-            HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied");
+            HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied.");
             break;
 
         case UsageFault_IRQn:
@@ -210,27 +220,25 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
             HALT_ERROR(FAULT_USAGE, "Cannot recover from a usage fault.");
             break;
 
-        case HardFault_IRQn:
-            DEBUG_FAULT(FAULT_HARD, lr, sp);
-            HALT_ERROR(FAULT_HARD, "Cannot recover from a hard fault.");
-            lr = debug_box_enter_from_priv(lr);
+        case SVCall_IRQn:
+            HALT_ERROR(NOT_IMPLEMENTED, "No SVCall IRQ handler registered.");
             break;
 
         case DebugMonitor_IRQn:
             DEBUG_FAULT(FAULT_DEBUG, lr, sp);
-            HALT_ERROR(FAULT_DEBUG, "Cannot recover from a debug fault.");
+            HALT_ERROR(FAULT_DEBUG, "Cannot recover from a DebugMonitor fault.");
             break;
 
         case PendSV_IRQn:
-            HALT_ERROR(NOT_IMPLEMENTED, "No PendSV IRQ hook registered");
+            HALT_ERROR(NOT_IMPLEMENTED, "No PendSV IRQ handler registered.");
             break;
 
         case SysTick_IRQn:
-            HALT_ERROR(NOT_IMPLEMENTED, "No SysTick IRQ hook registered");
+            HALT_ERROR(NOT_IMPLEMENTED, "No SysTick IRQ handler registered.");
             break;
 
         default:
-            HALT_ERROR(NOT_ALLOWED, "Active IRQn(%i) is not a system interrupt", ipsr);
+            HALT_ERROR(NOT_ALLOWED, "Active IRQn (%i) is not a system interrupt.", ipsr);
             break;
     }
 
