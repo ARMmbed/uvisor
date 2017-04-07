@@ -17,7 +17,7 @@
 #ifndef __LINKER_H__
 #define __LINKER_H__
 
-#include "api/inc/priv_sys_hook_exports.h"
+#include "api/inc/priv_sys_hooks_exports.h"
 #include "api/inc/lib_hook_exports.h"
 
 #if !defined(SECURE_ALIAS_OFFSET)
