@@ -53,6 +53,10 @@ extern int      virq_irq_level_get(void);
 extern int      virq_default(uint32_t isr_id);
 
 extern void virq_init(uint32_t const * const user_vtor);
+extern void virq_switch(uint8_t src_id, uint8_t dst_id);
+
+/* Returns true if the input box is currently in a suspended interrupt state. */
+extern bool virq_is_box_in_active_state(uint8_t box_id);
 
 /** Perform a context switch-in as a result of an interrupt request.
  *

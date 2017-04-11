@@ -342,7 +342,7 @@ static void vmpu_configure_box_peripherals(uint8_t box_id, UvisorBoxConfig const
 
             /* Add the ACL and force the entry as user-provided. */
             if (region->acl & UVISOR_TACL_IRQ) {
-                vmpu_acl_irq(box_id, region->param1, region->param2);
+                vmpu_acl_irq(box_id, (uint32_t) region->param1);
             } else {
                 vmpu_region_add_static_acl(
                     box_id,

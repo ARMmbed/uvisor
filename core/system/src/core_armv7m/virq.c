@@ -44,8 +44,7 @@ uint8_t g_virq_prio_bits;
 uint32_t g_irq_disable_all_counter[UVISOR_MAX_BOXES];
 
 /* vmpu_acl_irq to virq_acl_add */
-void vmpu_acl_irq(uint8_t box_id, void *function, uint32_t irqn)
-     UVISOR_LINKTO(virq_acl_add);
+void vmpu_acl_irq(uint8_t box_id, uint32_t irqn) UVISOR_LINKTO(virq_acl_add);
 
 static void virq_default_check(uint32_t irqn)
 {

@@ -195,6 +195,11 @@ void context_switch_in(TContextSwitchType context_type, uint8_t dst_id, uint32_t
         g_active_box = dst_id;
         index->box_id_self = dst_id;
 
+#if defined(ARCH_CORE_ARMv8M)
+        /* Switch vIRQ configurations. */
+        virq_switch(src_id, dst_id);
+#endif /* defined(ARCH_CORE_ARMv8M) */
+
         /* Switch MPU configurations. */
         /* This function halts if it finds an error. */
         vmpu_switch(src_id, dst_id);
