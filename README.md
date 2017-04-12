@@ -4,7 +4,7 @@ The uVisor is a self-contained software hypervisor that creates independent secu
 
 To start using uVisor, you need to include it as a library in your design. We release the uVisor library periodically into the mbed OS repository, [ARMmbed/mbed-os](https://github.com/ARMmbed/mbed-os). Review it to learn more about the uVisor security model and see an overview of its features.
 
-You can find most of the uVisor documentation in the [docs](docs) folder. Please look at the [getting started guide](docs/api/QUICKSTART.md) for an introduction to uVisor application development. If you are interested in uVisor internals, please refer to the [OS-level introduction](https://github.com/ARMmbed/uvisor/raw/docs/uvisor-rtos-docs.pdf) and the [uVisor API docs](docs/api/API.md).
+You can find most of the uVisor documentation in the [docs](docs) folder. Please look at the [getting started guide](docs/lib/QUICKSTART.md) for an introduction to uVisor application development. If you are interested in uVisor internals, please refer to the [OS-level introduction](https://github.com/ARMmbed/uvisor/raw/docs/uvisor-rtos-docs.pdf) and the [uVisor API docs](docs/lib/API.md).
 
 Contributions to this repository in the form of issue reporting and pull requests are welcome! Please read our [contribution guidelines](CONTRIBUTING.md) first.
 
@@ -81,7 +81,7 @@ All the code that is not explicitly part of the uVisor is generally referred to 
 
 The unprivileged code can be made of mutually untrusted isolated modules (or boxes). This way, even if all are running with unprivileged permissions, different modules can protect their own secrets and execute critical code securely.
 
-For more details about how to setup a secure box and protect memories and peripherals, please read the [getting started guide](docs/api/QUICKSTART.md).
+For more details about how to setup a secure box and protect memories and peripherals, please read the [getting started guide](docs/lib/QUICKSTART.md).
 
 ### Memory layout
 
@@ -124,7 +124,7 @@ This table details the main memory sections that the uVisor protects:
   </tbody>
 </table>
 
-To use the uVisor APIs to set up a secure box, please refer to the [getting started guide](docs/api/QUICKSTART.md) and the full [uVisor API documentation](docs/api/API.md).
+To use the uVisor APIs to set up a secure box, please refer to the [getting started guide](docs/lib/QUICKSTART.md) and the full [uVisor API documentation](docs/lib/API.md).
 
 ### The boot process
 

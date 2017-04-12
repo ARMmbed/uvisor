@@ -600,7 +600,7 @@ Once uVisor is active, it maintains its own vector table, which the rest of the 
 
 The heap boundaries need to be provided (`__uvisor_heap_start` and `__uvisor_heap_end`) because the uVisor allocator APIs use them. The uVisor allocator APIs are available even when uVisor is not strictly supported on a platform, but in that case, there is no security feature.
 
-> **Note**: After making the necessary changes to your linker script, `HEAP_SIZE` becomes the minimum heap size. The heap will grow to fill all available RAM between the stack and data sections. If there is not enough room for the minimum heap size, the linker generates an error. The reason for this change is to ease transitioning applications from the legacy heap to the [uVisor page heap](https://github.com/ARMmbed/uvisor/blob/master/docs/api/manual/UseCases.md#tier-1-page-allocator); after an application is fully transitioned to the [uVisor page heap](https://github.com/ARMmbed/uvisor/blob/master/docs/api/manual/UseCases.md#tier-1-page-allocator), the legacy heap is no longer required and can have a `HEAP_SIZE` size of 0.
+> **Note**: After making the necessary changes to your linker script, `HEAP_SIZE` becomes the minimum heap size. The heap will grow to fill all available RAM between the stack and data sections. If there is not enough room for the minimum heap size, the linker generates an error. The reason for this change is to ease transitioning applications from the legacy heap to the [uVisor page heap](https://github.com/ARMmbed/uvisor/blob/master/docs/lib/manual/UseCases.md#tier-1-page-allocator); after an application is fully transitioned to the [uVisor page heap](https://github.com/ARMmbed/uvisor/blob/master/docs/lib/manual/UseCases.md#tier-1-page-allocator), the legacy heap is no longer required and can have a `HEAP_SIZE` size of 0.
 
 Finally, note that at the end of the linker script, the physical boundaries for the memories (flash/SRAM) uVisor populates are also provided.
 
@@ -706,7 +706,7 @@ Given the description above, the following combinations are possible:
 
 Please note that defining both the `FEATURE_UVISOR` and the `UVISOR_SUPPORTED` symbols does not automatically enable uVisor on the application. By default, uVisor runs in *disabled* mode, where the uVisor initialization function is executed but returns immediately.
 
-In disabled mode, no security feature is enabled though the uVisor binaries are still flashed to the device. To learn more about the uVisor modes of operation, please see the [API documentation](../api/API.md). If you want to know how to enable uVisor and configure an application to use the uVisor security features, please see the [getting started guide](../api/QUICKSTART.md).
+In disabled mode, no security feature is enabled though the uVisor binaries are still flashed to the device. To learn more about the uVisor modes of operation, please see the [API documentation](../lib/API.md). If you want to know how to enable uVisor and configure an application to use the uVisor security features, please see the [getting started guide](../lib/QUICKSTART.md).
 
 If you do not want to enable the uVisor features immediately on your mbed target, users can still selectively override the target features and labels to enable uVisor. You can use the configuration system to set the `FEATURE_UVISOR` and `UVISOR_SUPPORTED` symbols by creating a file called `mbed_app.json` at the application level with the following content:
 
@@ -730,9 +730,9 @@ Please note that the macros `FEATURE_UVISOR` and `TARGET_UVISOR_SUPPORTED` in th
 ### Next steps
 [Go to top](#overview)
 
-It is time to test your application. We suggest that you use the example app, [`mbed-os-example-uvisor`](https://github.com/ARMmbed/mbed-os-example-uvisor), but if you prefer, you can build a uVisor-enabled blinky program following the [getting started guide](../api/QUICKSTART.md).
+It is time to test your application. We suggest that you use the example app, [`mbed-os-example-uvisor`](https://github.com/ARMmbed/mbed-os-example-uvisor), but if you prefer, you can build a uVisor-enabled blinky program following the [getting started guide](../lib/QUICKSTART.md).
 
 In both cases, please:
 
-- Run uVisor at least once in debug mode to ensure all runtime sanity checks pass. You can also use this round of checks to confirm your linker script and uVisor ports are structurally correct. For more information about the uVisor debug mode, please read [Debugging uVisor on mbed OS](../api/DEBUGGING.md).
-- Ensure that your app has the relevant ACLs to work with uVisor enabled. This requires you to run uVisor in debug mode multiple times and find all the faulting peripherals. Read a more detailed description of this procedure in [the final section](../api/QUICKSTART.md#the-main-box-acls) of the [getting started guide](../api/QUICKSTART.md).
+- Run uVisor at least once in debug mode to ensure all runtime sanity checks pass. You can also use this round of checks to confirm your linker script and uVisor ports are structurally correct. For more information about the uVisor debug mode, please read [Debugging uVisor on mbed OS](../lib/DEBUGGING.md).
+- Ensure that your app has the relevant ACLs to work with uVisor enabled. This requires you to run uVisor in debug mode multiple times and find all the faulting peripherals. Read a more detailed description of this procedure in [the final section](../lib/QUICKSTART.md#the-main-box-acls) of the [getting started guide](../lib/QUICKSTART.md).
