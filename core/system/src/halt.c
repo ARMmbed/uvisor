@@ -35,8 +35,8 @@ static void halt_printf(const char *fmt, ...)
 
 void halt(THaltError reason)
 {
+    /* TODO: Implement the debug box in the rtx2-v8m branch. */
     /* Die. */
-    for(;;); // Don't enter the debug box. TODO Implement the debug box in the rtx2-v8m branch.
     debug_halt_error(reason);
 }
 
