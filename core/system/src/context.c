@@ -183,17 +183,24 @@ void context_switch_in(TContextSwitchType context_type, uint8_t dst_id, uint32_t
 
     /* The source/destination box IDs can be the same (for example, in IRQs). */
     if (src_id != dst_id) {
+        /* Store outgoing newlib reent pointer. */
+        UvisorBoxIndex * index = (UvisorBoxIndex *) g_context_current_states[src_id].bss;
+        index->bss.address_of.newlib_reent = (uint32_t) *(__uvisor_config.newlib_impure_ptr);
+
         /* Update the context pointer to the one of the destination box. */
-        *(__uvisor_config.uvisor_box_context) = (uint32_t *) g_context_current_states[dst_id].bss;
+        index = (UvisorBoxIndex *) g_context_current_states[dst_id].bss;
+        *(__uvisor_config.uvisor_box_context) = (uint32_t *) index;
 
         /* Update the ID of the currently active box. */
         g_active_box = dst_id;
-        UvisorBoxIndex * index = (UvisorBoxIndex *) *(__uvisor_config.uvisor_box_context);
         index->box_id_self = dst_id;
 
         /* Switch MPU configurations. */
         /* This function halts if it finds an error. */
         vmpu_switch(src_id, dst_id);
+
+        /* Restore incoming newlib reent pointer. */
+        *(__uvisor_config.newlib_impure_ptr) = (uint32_t *) index->bss.address_of.newlib_reent;
     }
 
     /* Push the state of the source box and set the stack pointer for the
@@ -251,15 +258,22 @@ TContextPreviousState * context_switch_out(TContextSwitchType context_type)
 
     /* The source/destination box IDs can be the same (for example, in IRQs). */
     if (src_id != dst_id) {
+        /* Store outgoing newlib reent pointer. */
+        UvisorBoxIndex * index = (UvisorBoxIndex *) g_context_current_states[dst_id].bss;
+        index->bss.address_of.newlib_reent = (uint32_t) *(__uvisor_config.newlib_impure_ptr);
+
         /* Update the ID of the currently active box. */
         g_active_box = src_id;
-
         /* Update the context pointer to the one of the source box. */
-        *(__uvisor_config.uvisor_box_context) = (uint32_t *) g_context_current_states[src_id].bss;
+        index = (UvisorBoxIndex *) g_context_current_states[src_id].bss;
+        *(__uvisor_config.uvisor_box_context) = (uint32_t *) index;
 
         /* Switch MPU configurations. */
         /* This function halts if it finds an error. */
         vmpu_switch(dst_id, src_id);
+
+        /* Restore incoming newlib reent pointer. */
+        *(__uvisor_config.newlib_impure_ptr) = (uint32_t *) index->bss.address_of.newlib_reent;
     }
 
     /* Set the stack pointer for the source box. This is only needed if the

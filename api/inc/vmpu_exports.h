@@ -157,6 +157,7 @@ typedef struct {
 typedef struct uvisor_bss_sections_t {
     uint32_t index;
     uint32_t context;
+    uint32_t newlib_reent;
     uint32_t rpc;
     uint32_t heap;
 } UVISOR_PACKED UvisorBssSections;
