@@ -100,6 +100,9 @@ uvisor_config:
     .long __uvisor_public_sram_start;
     .long __uvisor_public_sram_end;
 
+    /* newlib impure pointer */
+    .long _impure_ptr
+
     /* Privileged system hooks */
     .long __uvisor_priv_sys_hooks
 

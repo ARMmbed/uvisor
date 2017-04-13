@@ -22,6 +22,7 @@
 #include "api/inc/rpc_exports.h"
 #include <stddef.h>
 #include <stdint.h>
+#include <sys/reent.h>
 
 UVISOR_EXTERN const uint32_t __uvisor_mode;
 UVISOR_EXTERN void const * const public_box_cfg_ptr;
@@ -52,6 +53,7 @@ UVISOR_EXTERN void const * const public_box_cfg_ptr;
         UVISOR_BOX_VERSION, \
         { \
             sizeof(RtxBoxIndex), \
+            0, \
             0, \
             sizeof(uvisor_rpc_t), \
             0, \
@@ -88,7 +90,8 @@ UVISOR_EXTERN void const * const public_box_cfg_ptr;
                     __UVISOR_BOX_ROUND_4(sizeof(RtxBoxIndex)) + \
                     __UVISOR_BOX_ROUND_4(sizeof(uvisor_rpc_outgoing_message_queue_t)) + \
                     __UVISOR_BOX_ROUND_4(sizeof(uvisor_rpc_incoming_message_queue_t)) + \
-                    __UVISOR_BOX_ROUND_4(sizeof(uvisor_rpc_fn_group_queue_t)) \
+                    __UVISOR_BOX_ROUND_4(sizeof(uvisor_rpc_fn_group_queue_t)) + \
+                    __UVISOR_BOX_ROUND_4(sizeof(struct _reent)) \
                 ) \
             * 8) \
         / 6)]; \
@@ -99,6 +102,7 @@ UVISOR_EXTERN void const * const public_box_cfg_ptr;
         { \
             sizeof(RtxBoxIndex), \
             context_size, \
+            sizeof(struct _reent), \
             sizeof(uvisor_rpc_t), \
             __uvisor_box_heapsize, \
         }, \

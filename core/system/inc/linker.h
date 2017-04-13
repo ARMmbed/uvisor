@@ -118,6 +118,9 @@ typedef struct {
     uint32_t * public_sram_start;
     uint32_t * public_sram_end;
 
+    /* Newlib impure pointer */
+    uint32_t * * newlib_impure_ptr;
+
     /* Privileged system hooks */
     UvisorPrivSystemHooks const * const priv_sys_hooks;
 
