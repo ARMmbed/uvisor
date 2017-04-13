@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #include <uvisor.h>
+#include "api/inc/box_config.h"
 #include "debug.h"
 #include "exc_return.h"
 #include "context.h"
@@ -279,7 +280,8 @@ static void vmpu_box_index_init(uint8_t box_id, UvisorBoxConfig const * const bo
 
     /* Assign the pointers to the BSS sections. */
     for (int i = 0; i < UVISOR_BSS_SECTIONS_COUNT; i++) {
-        size_t size = box_cfgtbl->bss.sizes[i];
+        /* Round size up to a multiple of 4. */
+        size_t size = __UVISOR_BOX_ROUND_4(box_cfgtbl->bss.sizes[i]);
         index->bss.pointers[i] = (size ? box_bss : NULL);
         box_bss += size;
     }
