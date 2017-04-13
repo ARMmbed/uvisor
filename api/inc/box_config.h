@@ -26,6 +26,12 @@
 UVISOR_EXTERN const uint32_t __uvisor_mode;
 UVISOR_EXTERN void const * const public_box_cfg_ptr;
 
+/* All pointers in the box index need to be 4-byte aligned.
+ * We therefore also need to round up all sizes to 4-byte multiples to
+ * provide the space to be able to align the pointers to 4-bytes. */
+#define __UVISOR_BOX_ROUND_4(size) \
+    (((size) + 3UL) & ~3UL)
+
 #define UVISOR_DISABLED   0
 #define UVISOR_PERMISSIVE 1
 #define UVISOR_ENABLED    2
@@ -77,12 +83,12 @@ UVISOR_EXTERN void const * const public_box_cfg_ptr;
             UVISOR_STACK_SIZE_ROUND( \
                 ( \
                     (UVISOR_MIN_STACK(stack_size) + \
-                    (context_size) + \
-                    (__uvisor_box_heapsize) + \
-                    sizeof(RtxBoxIndex) + \
-                    sizeof(uvisor_rpc_outgoing_message_queue_t) + \
-                    sizeof(uvisor_rpc_incoming_message_queue_t) + \
-                    sizeof(uvisor_rpc_fn_group_queue_t) \
+                    __UVISOR_BOX_ROUND_4(context_size) + \
+                    __UVISOR_BOX_ROUND_4(__uvisor_box_heapsize) + \
+                    __UVISOR_BOX_ROUND_4(sizeof(RtxBoxIndex)) + \
+                    __UVISOR_BOX_ROUND_4(sizeof(uvisor_rpc_outgoing_message_queue_t)) + \
+                    __UVISOR_BOX_ROUND_4(sizeof(uvisor_rpc_incoming_message_queue_t)) + \
+                    __UVISOR_BOX_ROUND_4(sizeof(uvisor_rpc_fn_group_queue_t)) \
                 ) \
             * 8) \
         / 6)]; \
