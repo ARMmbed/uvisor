@@ -31,7 +31,7 @@ $ mbed import https://github.com/ARMmbed/mbed-os-example-uvisor
 
 The command above will import all the example dependencies, as well, including the mbed OS codebase and the uVisor libraries.
 
-If you already have an application that you want to use for this guide, make sure it is ready to work with uVisor enabled. Follow the [Getting started guide for uVisor on mbed OS](../api/QUICKSTART.md) for more details.
+If you already have an application that you want to use for this guide, make sure it is ready to work with uVisor enabled. Follow the [Getting started guide for uVisor on mbed OS](../lib/QUICKSTART.md) for more details.
 
 In either case, move to the app folder:
 
@@ -85,4 +85,4 @@ You can also compile the application using the uVisor debug build:
 $ mbed compile -m ${your_target} -t GCC_ARM --profile mbed-os/tools/profiles/debug.json
 ```
 
-The uVisor debug build gives you access to runtime messages and fault blue screens, which are useful in understanding the uVisor protection mechanisms, but it requires a debugger to be connected to the board. Please read [Debugging uVisor on mbed OS](../api/DEBUGGING.md) for further details.
+The uVisor debug build gives you access to runtime messages and fault blue screens, which are useful in understanding the uVisor protection mechanisms, but it requires a debugger to be connected to the board. Please read [Debugging uVisor on mbed OS](../lib/DEBUGGING.md) for further details.

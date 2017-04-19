@@ -9,9 +9,9 @@ These user-facing documents show what you can do with uVisor and how to set up a
 | I want to...                                          | Document                                                     |
 |-------------------------------------------------------|--------------------------------------------------------------|
 | See a high-level introduction to mbed uVisor          | [Practical real-time operating system security for the masses](https://github.com/ARMmbed/uvisor/raw/docs/uVisorSecurity-TechCon2016.pdf) |
-| Start using uVisor in mbed OS on a supported platform | [Getting started guide for uVisor on mbed OS](api/QUICKSTART.md) |
-| Read the uVisor API documentation in detail           | [The uVisor API documentation](api/API.md)                   |
-| Enable the uVisor debug messages                      | [Debugging uVisor on mbed OS](api/DEBUGGING.md)              |
+| Start using uVisor in mbed OS on a supported platform | [Getting started guide for uVisor on mbed OS](lib/QUICKSTART.md) |
+| Read the uVisor API documentation in detail           | [The uVisor API documentation](lib/API.md)                   |
+| Enable the uVisor debug messages                      | [Debugging uVisor on mbed OS](lib/DEBUGGING.md)              |
 
 ## Core documentation
 
