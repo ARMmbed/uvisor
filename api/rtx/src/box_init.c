@@ -22,6 +22,7 @@
 #include "mbed_interface.h"
 #include "cmsis_os2.h"
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 /* Register the OS with uVisor */
@@ -123,20 +124,18 @@ void __uvisor_lib_box_init(void * lib_config)
      * is because the thread must be created to use a different stack than the
      * stack osCreateThread() is called from, as context information is saved
      * to the thread stack by the call to osCreateThread(). */
-    /* Allocate memory for the main thread from the process heap (which is
-     * private to the process). This memory is never freed, even if the box's
-     * main thread exits. */
-    thread_attr.stack_mem = malloc_p(thread_attr.stack_size);
+    /* Allocate memory for the main thread from the box heap. This memory is
+     * never freed, even if the box's main thread exits. */
+    thread_attr.stack_mem = malloc(thread_attr.stack_size);
     if (thread_attr.stack_mem == NULL) {
         /* No process heap memory available for thread stack */
         uvisor_error(USER_NOT_ALLOWED);
     }
 
-    /* Allocate memory for the main thread control block from the process heap
-     * (which is private to the process). This memory is never freed, even if
-     * the box's main thread exits. */
+    /* Allocate memory for the main thread control block from the box heap.
+     * This memory is never freed, even if the box's main thread exits. */
     thread_attr.cb_size = sizeof(osRtxThread_t);
-    thread_attr.cb_mem = malloc_p(thread_attr.cb_size);
+    thread_attr.cb_mem = malloc(thread_attr.cb_size);
     if (thread_attr.cb_mem == NULL) {
         /* No process heap memory available for thread control block. */
         uvisor_error(USER_NOT_ALLOWED);
