@@ -220,6 +220,81 @@ MpuRegion * vmpu_region_find_for_address(uint8_t box_id, uint32_t address)
     return NULL;
 }
 
+
+static bool vmpu_region_is_ns(uint32_t rlar)
+{
+    return (rlar & SAU_RLAR_NSC_Msk) == 0 &&
+           (rlar & SAU_RLAR_ENABLE_Msk) == SAU_RLAR_ENABLE_Msk;
+}
+
+static bool vmpu_buffer_access_is_ok_static(uint32_t start_addr, uint32_t end_addr)
+{
+    /* NOTE: Buffers are not allowed to span more than 1 region. If they do
+     * span more than one region, access will be denied. */
+
+    /* Search through all static regions programmed into the SAU, until we find
+     * a region that contains both the start and end of our buffer. */
+    for (uint8_t slot = 0; slot < ARMv8M_SAU_REGIONS_STATIC; ++slot) {
+        SAU->RNR = slot;
+        uint32_t rlar = SAU->RLAR;
+
+        /* Is the region NS? */
+        if (!vmpu_region_is_ns(rlar)) {
+            continue;
+        }
+
+        uint32_t rbar = SAU->RBAR;
+        uint32_t start = rbar & ~0x1F; /* The bottom 5 bits are not part of the base address. */
+        uint32_t end = rlar | 0x1F; /* The bottom 5 bits are not part of the limit. */
+
+        /* Test that the buffer is fully contained in the region. */
+        if (value_in_range(start, end, start_addr) && value_in_range(start, end, end_addr)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool vmpu_buffer_access_is_ok(int box_id, const void * addr, size_t size)
+{
+    uint32_t start_addr = (uint32_t) UVISOR_GET_NS_ALIAS(addr);
+    uint32_t end_addr = start_addr + size - 1;
+
+    /* NOTE: Buffers are not allowed to span more than 1 region. If they do
+     * span more than one region, access will be denied. */
+
+    if (box_id != 0) {
+        /* Check the public box as well as the specified box, since public box
+         * memories are accessible by all boxes. */
+        if (vmpu_buffer_access_is_ok(0, addr, size)) {
+            return true;
+        }
+    } else {
+        /* Check static regions. */
+        if (vmpu_buffer_access_is_ok_static(start_addr, end_addr)) {
+            return true;
+        }
+    }
+
+    assert(start_addr <= end_addr);
+    if (start_addr > end_addr) {
+        /* We couldn't determine the end of the buffer. */
+        return false;
+    }
+
+    MpuRegion * region = vmpu_region_find_for_address(box_id, start_addr);
+    if (!region) {
+        /* No region contained the start of the buffer. */
+        return false;
+    }
+
+    /* If the end address is also within the region, and the region is NS
+     * accessible, then access to the buffer is OK. */
+    return value_in_range(region->start, region->end, end_addr) &&
+           vmpu_region_is_ns(region->config);
+}
+
 /* SAU access */
 
 void vmpu_mpu_init(void)
