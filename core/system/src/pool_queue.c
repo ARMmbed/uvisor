@@ -321,13 +321,12 @@ uvisor_pool_slot_t uvisor_pool_queue_try_dequeue_first(uvisor_pool_queue_t * poo
     return slot;
 }
 
-uvisor_pool_slot_t uvisor_pool_queue_find_first(uvisor_pool_queue_t * pool_queue,
-                                                TQueryFN_Ptr query_fn, void * context)
+static uvisor_pool_slot_t find_first(uvisor_pool_queue_t * pool_queue,
+                                     TQueryFN_Ptr query_fn, void * context)
 {
     uvisor_pool_slot_t slot;
     uvisor_pool_t * pool = UVISOR_AUTO_NS_ALIAS(pool_queue->pool);
 
-    uvisor_spin_lock(&pool->spinlock);
     /* Walk the queue, looking for the first slot that matches the query. */
     slot = pool_queue->head;
     while (slot != UVISOR_POOL_SLOT_INVALID)
@@ -345,8 +344,37 @@ uvisor_pool_slot_t uvisor_pool_queue_find_first(uvisor_pool_queue_t * pool_queue
 
         slot = entry->queued.next;
     }
-    uvisor_spin_unlock(&pool->spinlock);
 
     /* We didn't find a match. */
     return UVISOR_POOL_SLOT_INVALID;
+}
+
+uvisor_pool_slot_t uvisor_pool_queue_try_find_first(uvisor_pool_queue_t * pool_queue,
+                                                    TQueryFN_Ptr query_fn, void * context)
+{
+    uvisor_pool_slot_t slot;
+    uvisor_pool_t * pool = UVISOR_AUTO_NS_ALIAS(pool_queue->pool);
+
+    bool locked = uvisor_spin_trylock(&pool->spinlock);
+    if (!locked) {
+        /* We didn't get the lock. */
+        return UVISOR_POOL_SLOT_INVALID;
+    }
+    slot = find_first(pool_queue, query_fn, context);
+    uvisor_spin_unlock(&pool->spinlock);
+
+    return slot;
+}
+
+uvisor_pool_slot_t uvisor_pool_queue_find_first(uvisor_pool_queue_t * pool_queue,
+                                                TQueryFN_Ptr query_fn, void * context)
+{
+    uvisor_pool_slot_t slot;
+    uvisor_pool_t * pool = UVISOR_AUTO_NS_ALIAS(pool_queue->pool);
+
+    uvisor_spin_lock(&pool->spinlock);
+    slot = find_first(pool_queue, query_fn, context);
+    uvisor_spin_unlock(&pool->spinlock);
+
+    return slot;
 }

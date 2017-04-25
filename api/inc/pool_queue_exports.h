@@ -144,6 +144,8 @@ UVISOR_EXTERN uvisor_pool_slot_t uvisor_pool_queue_try_dequeue_first(uvisor_pool
  * invocation. This allows query functions to access additional data without
  * having to use global variables. `uvisor_pool_queue_find_first` is reentrant. */
 typedef int (*TQueryFN_Ptr)(uvisor_pool_slot_t slot, void * context);
+UVISOR_EXTERN uvisor_pool_slot_t uvisor_pool_queue_try_find_first(uvisor_pool_queue_t * pool_queue,
+                                                                  TQueryFN_Ptr query_fn, void * context);
 UVISOR_EXTERN uvisor_pool_slot_t uvisor_pool_queue_find_first(uvisor_pool_queue_t * pool_queue,
                                                               TQueryFN_Ptr query_fn, void * context);
 
