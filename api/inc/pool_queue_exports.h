@@ -130,6 +130,7 @@ UVISOR_EXTERN uvisor_pool_slot_t uvisor_pool_try_free(uvisor_pool_t * pool, uvis
  * UVISOR_POOL_SLOT_IS_DEQUEUED if the slot was already dequeued, or
  * UVISOR_POOL_SLOT_INVALID if the slot being requested to dequeue is outside
  * the range of the queue. */
+UVISOR_EXTERN uvisor_pool_slot_t uvisor_pool_queue_try_dequeue(uvisor_pool_queue_t * pool_queue, uvisor_pool_slot_t slot);
 UVISOR_EXTERN uvisor_pool_slot_t uvisor_pool_queue_dequeue(uvisor_pool_queue_t * pool_queue, uvisor_pool_slot_t slot);
 
 /* Remove the first slot from the queue. This function does not free the
