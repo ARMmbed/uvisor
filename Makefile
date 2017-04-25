@@ -172,6 +172,7 @@ CFLAGS_PRE:=\
         $(DEBUG) \
         $(WARNING) \
         -DUVISOR_PRESENT=1 \
+        -DUVISOR_CORE_BUILD=$(UVISOR_CORE_BUILD) \
         -DARCH_$(ARCH_CORE) \
         -DARCH_$(ARCH_MPU) \
         -D$(CONFIGURATION) \
@@ -242,9 +243,9 @@ ifndef BUILD_MODE
 	$(error "Missing build mode. Use PLATFORM=<platform> BUILD_MODE=<build_mode> make CONFIGURATION_<configuration>")
 endif
 	@# 3rd-level make
-	$(MAKE) BUILD_MODE=$(BUILD_MODE) PLATFORM=$(PLATFORM) CONFIGURATION=$@ build_core
+	$(MAKE) UVISOR_CORE_BUILD=1 BUILD_MODE=$(BUILD_MODE) PLATFORM=$(PLATFORM) CONFIGURATION=$@ build_core
 	@# 3rd-level make
-	$(MAKE) BUILD_MODE=$(BUILD_MODE) PLATFORM=$(PLATFORM) CONFIGURATION=$@ build_api
+	$(MAKE) UVISOR_CORE_BUILD=0 BUILD_MODE=$(BUILD_MODE) PLATFORM=$(PLATFORM) CONFIGURATION=$@ build_api
 
 # This middleware target is needed because the parent make does not know the
 # name to give to the core binary yet.
