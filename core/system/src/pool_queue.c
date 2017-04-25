@@ -250,6 +250,38 @@ uvisor_pool_slot_t uvisor_pool_try_free(uvisor_pool_t * pool, uvisor_pool_slot_t
     return slot;
 }
 
+uvisor_pool_slot_t uvisor_pool_queue_try_dequeue(uvisor_pool_queue_t * pool_queue, uvisor_pool_slot_t slot)
+{
+    uvisor_pool_t * pool = UVISOR_AUTO_NS_ALIAS(pool_queue->pool);
+
+    /* TODO refactor with uvisor_pool_free */
+    if (slot >= pool->num) {
+        return UVISOR_POOL_SLOT_INVALID;
+    }
+
+    uvisor_pool_queue_entry_t * slot_entry = &pool_queue->pool->management_array[slot];
+    bool locked = uvisor_spin_trylock(&pool->spinlock);
+    if (!locked) {
+        /* We didn't get the lock. */
+        return UVISOR_POOL_SLOT_INVALID;
+    }
+    uvisor_pool_slot_t state = slot_entry->dequeued.state;
+    if (state == UVISOR_POOL_SLOT_IS_FREE || state == UVISOR_POOL_SLOT_IS_DEQUEUED) {
+        /* Already dequeued or freed. Return. */
+        uvisor_spin_unlock(&pool->spinlock);
+        return state;
+    }
+
+    /* If the queue is non-empty: */
+    if (pool_queue->head != UVISOR_POOL_SLOT_INVALID) {
+        /* Dequeue the slot. */
+        dequeue(pool_queue, slot);
+    }
+    uvisor_spin_unlock(&pool->spinlock);
+
+    return slot;
+}
+
 uvisor_pool_slot_t uvisor_pool_queue_dequeue(uvisor_pool_queue_t * pool_queue, uvisor_pool_slot_t slot)
 {
     uvisor_pool_t * pool = UVISOR_AUTO_NS_ALIAS(pool_queue->pool);
