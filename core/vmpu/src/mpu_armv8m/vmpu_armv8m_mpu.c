@@ -199,6 +199,11 @@ bool vmpu_region_get_for_box(uint8_t box_id, const MpuRegion * * const region, u
     return false;
 }
 
+static bool value_in_range(size_t start, size_t end, size_t value)
+{
+    return start <= value && value < end;
+}
+
 MpuRegion * vmpu_region_find_for_address(uint8_t box_id, uint32_t address)
 {
     int count;
@@ -207,7 +212,7 @@ MpuRegion * vmpu_region_find_for_address(uint8_t box_id, uint32_t address)
     count = g_mpu_box_region[box_id].count;
     region = g_mpu_box_region[box_id].regions;
     for (; count-- > 0; region++) {
-        if ((region->start <= address) && (address < region->end)) {
+        if (value_in_range(region->start, region->end, address)) {
             return region;
         }
     }
