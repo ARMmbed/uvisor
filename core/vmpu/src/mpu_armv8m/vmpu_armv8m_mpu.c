@@ -30,6 +30,37 @@
 #define SAU_ACL_COUNT 64
 #endif/*SAU_ACL_COUNT*/
 
+/* set default SAU region count */
+#ifndef ARMv8M_SAU_REGIONS
+#define ARMv8M_SAU_REGIONS 8
+#endif/*ARMv8M_SAU_REGIONS*/
+
+/* The v8-M SAU has 8 regions.
+ * Region 0, 1, 2, 3 are used to unlock Application SRAM and Flash.
+ * Therefore 4 SAU regions are available for user ACLs.
+ * Region 4 and 4 are used to protect the current box stack and context.
+ * This leaves 6 SAU regions for round robin scheduling:
+ *
+ *      8      <-- End of SAU regions, V8M_SAU_REGIONS_MAX
+ * .---------.
+ * |    7    |
+ * |    6    |
+ * |    5    | <-- Box Pages, V8M_SAU_REGIONS_USER
+ * +---------+
+ * |    4    | <-- Box Context
+ * +---------+
+ * |    3    | <-- Application SRAM unlock
+ * |    2    | <-- Application Flash after uVisor unlock
+ * |    1    | <-- Application Flash Non-Secure-Callable in uVisor
+ * |    0    | <-- Application Flash before uVisor unlock
+ * '---------'
+ */
+#define ARMv8M_SAU_REGIONS_STATIC 4
+#define ARMv8M_SAU_REGIONS_MAX (ARMv8M_SAU_REGIONS)
+
+/* SAU helper macros */
+#define SAU_RLAR(config,addr)   ((config) | (((addr) - 1UL) & ~(32UL - 1UL)))
+
 typedef struct
 {
     MpuRegion * regions;
@@ -39,6 +70,9 @@ typedef struct
 static uint16_t g_mpu_region_count;
 static MpuRegion g_mpu_region[SAU_ACL_COUNT];
 static MpuRegionSlice g_mpu_box_region[UVISOR_MAX_BOXES];
+
+static uint8_t g_mpu_slot = ARMv8M_SAU_REGIONS_STATIC;
+static uint8_t g_mpu_priority[ARMv8M_SAU_REGIONS_MAX];
 
 int vmpu_is_region_size_valid(uint32_t size)
 {
@@ -182,40 +216,6 @@ MpuRegion * vmpu_region_find_for_address(uint8_t box_id, uint32_t address)
 }
 
 /* SAU access */
-
-/* set default SAU region count */
-#ifndef ARMv8M_SAU_REGIONS
-#define ARMv8M_SAU_REGIONS 8
-#endif/*ARMv8M_SAU_REGIONS*/
-
-/* The v8-M SAU has 8 regions.
- * Region 0, 1, 2, 3 are used to unlock Application SRAM and Flash.
- * Therefore 4 SAU regions are available for user ACLs.
- * Region 4 and 4 are used to protect the current box stack and context.
- * This leaves 6 SAU regions for round robin scheduling:
- *
- *      8      <-- End of SAU regions, V8M_SAU_REGIONS_MAX
- * .---------.
- * |    7    |
- * |    6    |
- * |    5    | <-- Box Pages, V8M_SAU_REGIONS_USER
- * +---------+
- * |    4    | <-- Box Context
- * +---------+
- * |    3    | <-- Application SRAM unlock
- * |    2    | <-- Application Flash after uVisor unlock
- * |    1    | <-- Application Flash Non-Secure-Callable in uVisor
- * |    0    | <-- Application Flash before uVisor unlock
- * '---------'
- */
-#define ARMv8M_SAU_REGIONS_STATIC 4
-#define ARMv8M_SAU_REGIONS_MAX (ARMv8M_SAU_REGIONS)
-
-/* SAU helper macros */
-#define SAU_RLAR(config,addr)   ((config) | (((addr) - 1UL) & ~(32UL - 1UL)))
-
-static uint8_t g_mpu_slot = ARMv8M_SAU_REGIONS_STATIC;
-static uint8_t g_mpu_priority[ARMv8M_SAU_REGIONS_MAX];
 
 void vmpu_mpu_init(void)
 {
