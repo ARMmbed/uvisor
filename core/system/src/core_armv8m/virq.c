@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #include <uvisor.h>
+#include "context.h"
 #include "halt.h"
 #include "virq.h"
 #include "vmpu.h"
@@ -31,13 +32,24 @@ typedef struct virq_state_t {
 } TVirqState;
 static TVirqState g_virq_states[NVIC_VECTORS];
 
-/* SysTick state */
-typedef struct virq_systick_state_t {
-    SysTick_Type periph;
-    bool active;
-    uint8_t priority;
-} TVirqSysTickState;
-static TVirqSysTickState g_virq_state_systick_ns;
+/* System exception state
+ * Each box keeps the state for all banked system exceptions. These exceptions
+ * cannot be assigned an arbitrary target state and hence need to be
+ * saved/restored at every switch. */
+/* TODO: Implement state restoring for all banked faults. */
+struct {
+    struct {
+        SysTick_Type periph;
+        bool pending;
+        bool active;
+        uint8_t priority;
+    } systick;
+    struct {
+        bool active;
+        bool pending;
+        uint8_t priority;
+    } svcall;
+} g_virq_system_exception_state[UVISOR_MAX_BOXES];
 
 /* Per-box state that keeps track if the box was pre-empted while in an IRQ. */
 static bool g_virq_box_in_active_irq[UVISOR_MAX_BOXES];
@@ -85,17 +97,57 @@ static inline void virq_set_active_systick_ns(bool activate)
     }
 }
 
-static void virq_copy_systick_ns(void)
+static bool virq_copy_systick_ns(uint8_t box_id)
 {
-    g_virq_state_systick_ns.periph.CTRL = SysTick_NS->CTRL;
-    g_virq_state_systick_ns.periph.LOAD = SysTick_NS->LOAD;
+    g_virq_system_exception_state[box_id].systick.periph.CTRL = SysTick_NS->CTRL;
+    g_virq_system_exception_state[box_id].systick.periph.LOAD = SysTick_NS->LOAD;
+    g_virq_system_exception_state[box_id].systick.pending = SCB_NS->ICSR & SCB_ICSR_PENDSTSET_Msk;
+    g_virq_system_exception_state[box_id].systick.active = SCB_NS->SHCSR & SCB_SHCSR_SYSTICKACT_Msk;
+    g_virq_system_exception_state[box_id].systick.priority = TZ_NVIC_GetPriority_NS(SysTick_IRQn);
+    return g_virq_system_exception_state[box_id].systick.active;
 }
 
-static void virq_restore_systick_ns(void)
+static void virq_load_systick_ns(uint8_t box_id)
 {
-    SysTick_NS->LOAD = g_virq_state_systick_ns.periph.LOAD;
+    SysTick_NS->LOAD = g_virq_system_exception_state[box_id].systick.periph.LOAD;
+    /* Note: This creates a slightly distorted view of time. The timer is always
+     *       reset before entering a box. */
     SysTick_NS->VAL = 0;
-    SysTick_NS->CTRL = g_virq_state_systick_ns.periph.CTRL;
+    SysTick_NS->CTRL = g_virq_system_exception_state[box_id].systick.periph.CTRL;
+    if (g_virq_system_exception_state[box_id].systick.pending) {
+        SCB_NS->ICSR |= SCB_ICSR_PENDSTSET_Msk;
+    } else {
+        SCB_NS->ICSR |= SCB_ICSR_PENDSTCLR_Msk;
+    }
+    if (g_virq_system_exception_state[box_id].systick.active) {
+        SCB_NS->SHCSR |= SCB_SHCSR_SYSTICKACT_Msk;
+    } else {
+        SCB_NS->SHCSR &= ~SCB_SHCSR_SYSTICKACT_Msk;
+    }
+    TZ_NVIC_SetPriority_NS(SysTick_IRQn, g_virq_system_exception_state[box_id].systick.priority);
+}
+
+static bool virq_copy_svcall_ns(uint8_t box_id)
+{
+    g_virq_system_exception_state[box_id].svcall.pending = SCB_NS->SHCSR & SCB_SHCSR_SVCALLPENDED_Msk;
+    g_virq_system_exception_state[box_id].svcall.active = SCB_NS->SHCSR & SCB_SHCSR_SVCALLACT_Msk;
+    g_virq_system_exception_state[box_id].svcall.priority = TZ_NVIC_GetPriority_NS(SVCall_IRQn);
+    return g_virq_system_exception_state[box_id].svcall.active;
+}
+
+static void virq_load_svcall_ns(uint8_t box_id)
+{
+    if (g_virq_system_exception_state[box_id].svcall.pending) {
+        SCB_NS->SHCSR |= SCB_SHCSR_SVCALLPENDED_Msk;
+    } else {
+        SCB_NS->SHCSR &= ~SCB_SHCSR_SVCALLPENDED_Msk;
+    }
+    if (g_virq_system_exception_state[box_id].svcall.active) {
+        SCB_NS->SHCSR |= SCB_SHCSR_SVCALLACT_Msk;
+    } else {
+        SCB_NS->SHCSR &= ~SCB_SHCSR_SVCALLACT_Msk;
+    }
+    TZ_NVIC_SetPriority_NS(SVCall_IRQn, g_virq_system_exception_state[box_id].svcall.priority);
 }
 
 void virq_acl_add(uint8_t box_id, void * function, uint32_t irqn)
@@ -149,27 +201,21 @@ void virq_switch(uint8_t src_id, uint8_t dst_id)
         }
     }
 
-    /* Special treatment for SysTick, which is not a user IRQ. */
-    /* Note: We assume that box 0 has exclusive owneship of the SysTick, so we
-     *       do not virtualize it. In addition, our approach produces a slightly
-     *       distorted vision of time. The timer is always reset when
-     *       re-entering box 0. */
-    if (src_id == 0) {
-        virq_copy_systick_ns();
-        virq_disable_systick_ns();
-        g_virq_state_systick_ns.priority = TZ_NVIC_GetPriority_NS(SysTick_IRQn);
-        g_virq_state_systick_ns.active = virq_get_active_systick_ns();
-        if (g_virq_state_systick_ns.active) {
-            src_box_in_active_irq = true;
-        }
-        virq_set_active_systick_ns(false);
-    }
-    if (dst_id == 0) {
-        TZ_NVIC_SetPriority_NS(SysTick_IRQn, g_virq_state_systick_ns.priority);
-        virq_set_active_systick_ns(g_virq_state_systick_ns.active);
-        virq_restore_systick_ns();
-        virq_enable_systick_ns();
-    }
+    /* System exceptions
+     * These exceptions are banked between secure states, and hence need to be
+     * saved and restored at every context switch. */
+    /* Note: The very first time that an exception state is saved or restored,
+     *       the box has actually never run. The code below assumes that all the
+     *       save/restore functions use a sensible default state, i.e., an
+     *       inactive, not pending, not enabled exception state. */
+
+    /* SysTick */
+    src_box_in_active_irq |= virq_copy_systick_ns(src_id);
+    virq_load_systick_ns(dst_id);
+
+    /* SVCall */
+    src_box_in_active_irq |= virq_copy_svcall_ns(src_id);
+    virq_load_svcall_ns(dst_id);
 
     /* Save the active state for the source box. */
     g_virq_box_in_active_irq[src_id] = src_box_in_active_irq;
