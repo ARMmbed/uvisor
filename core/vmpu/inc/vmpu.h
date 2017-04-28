@@ -155,8 +155,6 @@ extern int  vmpu_acl_bit(UvisorBoxAcl acl, uint32_t addr);
 
 extern void vmpu_switch(uint8_t src_box, uint8_t dst_box);
 
-extern void vmpu_load_box(uint8_t box_id);
-
 extern int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint32_t fault_status);
 
 uint32_t vmpu_fault_find_acl(uint32_t fault_addr, uint32_t size);

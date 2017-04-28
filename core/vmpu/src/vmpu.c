@@ -462,8 +462,7 @@ static void vmpu_enumerate_boxes(void)
     }
 
     /* Load box 0. */
-    vmpu_load_box(0);
-    *(__uvisor_config.uvisor_box_context) = (uint32_t *) g_context_current_states[0].bss;
+    context_switch_in(CONTEXT_SWITCH_UNBOUND_FIRST, 0, 0, 0);
 
     DPRINTF("vmpu_enumerate_boxes [DONE]\n");
 }

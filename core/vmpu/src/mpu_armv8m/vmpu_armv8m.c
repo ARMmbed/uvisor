@@ -197,6 +197,7 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp_s)
     return lr;
 }
 
+/* This function assumes that its inputs are validated. */
 /* FIXME: We've added very simple MPU region switching. - Optimize! */
 void vmpu_switch(uint8_t src_box, uint8_t dst_box)
 {
@@ -204,10 +205,6 @@ void vmpu_switch(uint8_t src_box, uint8_t dst_box)
     const MpuRegion * region;
 
     /* DPRINTF("switching from %i to %i\n\r", src_box, dst_box); */
-    /* Sanity checks */
-    if (!vmpu_is_box_id_valid(dst_box)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "ACL add: The destination box ID is out of range (%u).\r\n", dst_box);
-    }
 
     vmpu_mpu_invalidate();
 
@@ -232,15 +229,6 @@ void vmpu_switch(uint8_t src_box, uint8_t dst_box)
         vmpu_region_get_for_box(0, &region, &dst_count);
 
         while (dst_count-- && vmpu_mpu_push(region++, 1));
-    }
-}
-
-void vmpu_load_box(uint8_t box_id)
-{
-    if (box_id == 0) {
-        vmpu_switch(0, 0);
-    } else {
-        HALT_ERROR(NOT_IMPLEMENTED, "currently only box 0 can be loaded");
     }
 }
 

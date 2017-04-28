@@ -50,6 +50,7 @@ typedef enum {
     CONTEXT_SWITCH_FUNCTION_ISR,     /**< Bound to an ISR. Does not allow arguments, nor a return value. */
     CONTEXT_SWITCH_FUNCTION_DEBUG,   /**< Bound to debug handler. Uses the format specified by the debug box driver. */
     CONTEXT_SWITCH_UNBOUND_THREAD,   /**< Not bound to a handler. Used for thread switching. No switch-out. */
+    CONTEXT_SWITCH_UNBOUND_FIRST,    /**< Not bound to a handler. Used for the very first box switch. No switch-out. */
 } TContextSwitchType;
 
 /** Snapshot of a previous context state

@@ -21,7 +21,7 @@
 #include "debug.h"
 
 /* Currently active box */
-uint8_t g_active_box;
+uint8_t g_active_box = UVISOR_BOX_ID_INVALID;
 
 /** Stack of previous context states
  *
@@ -176,13 +176,23 @@ uint32_t context_validate_exc_sf(uint32_t exc_sp)
  * stack pointers provided as input. */
 void context_switch_in(TContextSwitchType context_type, uint8_t dst_id, uint32_t src_sp, uint32_t dst_sp)
 {
-    uint8_t src_id;
-
-    /* Source box: Gather information from the current state. */
-    src_id = g_active_box;
+    /* The source box is the currently active box. */
+    uint8_t src_id = g_active_box;
+    if (!vmpu_is_box_id_valid(src_id)) {
+        /* Note: We accept that the source box ID is invalid if this is the very
+         *       first context switch. */
+        if (context_type == CONTEXT_SWITCH_UNBOUND_FIRST) {
+            src_id = dst_id;
+        } else {
+            HALT_ERROR(SANITY_CHECK_FAILED, "Context switch: The source box ID is out of range (%u).\r\n", src_id);
+        }
+    }
+    if (!vmpu_is_box_id_valid(dst_id)) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "Context switch: The destination box ID is out of range (%u).\r\n", dst_id);
+    }
 
     /* The source/destination box IDs can be the same (for example, in IRQs). */
-    if (src_id != dst_id) {
+    if (src_id != dst_id || context_type == CONTEXT_SWITCH_UNBOUND_FIRST) {
         /* Store outgoing newlib reent pointer. */
         UvisorBoxIndex * index = (UvisorBoxIndex *) g_context_current_states[src_id].bss;
         index->bss.address_of.newlib_reent = (uint32_t) *(__uvisor_config.newlib_impure_ptr);
