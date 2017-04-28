@@ -117,10 +117,6 @@ bool virq_is_box_in_active_state(uint8_t box_id)
 
 void virq_switch(uint8_t src_id, uint8_t dst_id)
 {
-    if (src_id == dst_id) {
-        return;
-    }
-
     bool src_box_in_active_irq = false;
 
     for (uint32_t irqn = 0; irqn < NVIC_VECTORS; ++irqn) {

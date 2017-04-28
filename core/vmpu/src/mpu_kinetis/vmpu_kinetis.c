@@ -240,16 +240,9 @@ void vmpu_acl_sram(uint8_t box_id, uint32_t bss_size, uint32_t stack_size, uint3
     g_box_mem_pos += bss_size + UVISOR_STACK_BAND_SIZE;
 }
 
+/* This function assumes that its inputs are validated. */
 void vmpu_switch(uint8_t src_box, uint8_t dst_box)
 {
-    /* Check for errors. */
-    if (!vmpu_is_box_id_valid(src_box)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "vMPU switch: The source box ID is out of range (%u).\r\n", src_box);
-    }
-    if (!vmpu_is_box_id_valid(dst_box)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "vMPU switch: The destination box ID is out of range (%u).\r\n", dst_box);
-    }
-
     /* Switch ACLs for peripherals. */
     vmpu_aips_switch(src_box, dst_box);
 
@@ -278,15 +271,6 @@ uint32_t vmpu_fault_find_acl(uint32_t fault_addr, uint32_t size)
     }
 
     return 0;
-}
-
-void vmpu_load_box(uint8_t box_id)
-{
-    if (box_id != 0) {
-        HALT_ERROR(NOT_IMPLEMENTED, "currently only box 0 can be loaded");
-    }
-    vmpu_aips_switch(box_id, box_id);
-    DPRINTF("%d  box %d loaded \n\r", box_id);
 }
 
 void vmpu_arch_init(void)
