@@ -19,6 +19,11 @@
 #include "debug.h"
 #include "vmpu.h"
 
+void debug_die(void)
+{
+    UVISOR_SVC(UVISOR_SVC_ID_GET(error), "", DEBUG_BOX_HALT);
+}
+
 /* FIXME: Currently it is not possible to return to a regular execution flow
  *        after the execution of the debug box handler. */
 void debug_deprivilege_and_return(void * debug_handler, void * return_handler,
