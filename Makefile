@@ -75,7 +75,8 @@ API_DIRS:=\
 API_SRC_DIRS:=\
 	$(foreach DIR, $(API_DIRS), $(DIR)/src) \
 	$(foreach DIR, $(API_DIRS), $(DIR)/src/$(ARCH_CORE_LOWER)) \
-	$(foreach DIR, $(API_DIRS), $(DIR)/src/$(ARCH_MPU_LOWER))
+	$(foreach DIR, $(API_DIRS), $(DIR)/src/$(ARCH_MPU_LOWER)) \
+	$(foreach DIR, $(API_DIRS), $(DIR)/src/$(ARCH_CORE_LOWER)/$(ARCH_MPU_LOWER))
 
 # Release library source files
 # Note: We explicitly remove unsupported.c from the list of source files. It
@@ -106,11 +107,13 @@ CORE_DIRS:=\
 CORE_INC_DIRS:=\
 	$(foreach DIR, $(CORE_DIRS), $(DIR)/inc) \
 	$(foreach DIR, $(CORE_DIRS), $(DIR)/inc/$(ARCH_CORE_LOWER)) \
-	$(foreach DIR, $(CORE_DIRS), $(DIR)/inc/$(ARCH_MPU_LOWER))
+	$(foreach DIR, $(CORE_DIRS), $(DIR)/inc/$(ARCH_MPU_LOWER)) \
+	$(foreach DIR, $(CORE_DIRS), $(DIR)/inc/$(ARCH_CORE_LOWER)/$(ARCH_MPU_LOWER))
 CORE_SRC_DIRS:=\
 	$(foreach DIR, $(CORE_DIRS), $(DIR)/src) \
 	$(foreach DIR, $(CORE_DIRS), $(DIR)/src/$(ARCH_CORE_LOWER)) \
-	$(foreach DIR, $(CORE_DIRS), $(DIR)/src/$(ARCH_MPU_LOWER))
+	$(foreach DIR, $(CORE_DIRS), $(DIR)/src/$(ARCH_MPU_LOWER)) \
+	$(foreach DIR, $(CORE_DIRS), $(DIR)/src/$(ARCH_CORE_LOWER)/$(ARCH_MPU_LOWER))
 
 # Core source files
 CORE_SOURCES:=$(foreach DIR, $(CORE_SRC_DIRS), $(wildcard $(DIR)/*.c))
