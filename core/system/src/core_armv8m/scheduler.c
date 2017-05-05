@@ -75,8 +75,6 @@ static void dispatch(int dst_box_id, int src_box_id, saved_reg_t * reg)
     bool src_from_s = false;
     bool dst_from_s = false;
 
-    DPRINTF("Switch from box ID %d to box ID %d\n", src_box_id, dst_box_id);
-
     /* There are four cases to handle saving and restoring core registers from.
      *
      * 1. Coming from S side, going to NS (b9). Save information from
