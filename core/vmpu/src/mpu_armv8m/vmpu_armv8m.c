@@ -108,9 +108,6 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp_s)
     uint32_t fault_addr, fault_status;
     int recovered = 0;
 
-    (void)pc;
-    (void)fault_addr;
-
     /* The IPSR enumerates interrupt numbers from 0 up, while *_IRQn numbers are
      * both positive (hardware IRQn) and negative (system IRQn). Here we convert
      * the IPSR value to this latter encoding. */
@@ -122,9 +119,6 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp_s)
     bool from_psp = EXC_FROM_PSP(lr);
     uint32_t sp = from_s ? (from_np ? (from_psp ? __get_PSP() : msp_s) : msp_s) :
                            (from_np ? (from_psp ? __TZ_get_PSP_NS() : __TZ_get_MSP_NS()) : __TZ_get_MSP_NS());
-
-    /* FIXME: Remove once sp is actually used. */
-    (void) sp;
 
     switch(ipsr) {
         case NonMaskableInt_IRQn:
@@ -157,11 +151,7 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp_s)
                                 (SAU_SFSR_AUVIOL_Msk | SAU_SFSR_SFARVALID_Msk)) {
                 pc = vmpu_unpriv_uint32_read(sp + (6 * 4));
                 fault_addr = SAU->SFAR;
-
-                // DPRINTF("fault_addr=0x%08x from 0x%08x\n", fault_addr, pc);
-
                 recovered = vmpu_fault_recovery_mpu(pc, sp, fault_addr, fault_status);
-                // debug_sau_config();
                 if (recovered) {
                     SAU->SFSR = fault_status;
                     return lr;
