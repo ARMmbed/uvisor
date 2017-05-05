@@ -17,6 +17,11 @@
 #include <uvisor.h>
 #include "debug.h"
 
+void debug_die(void)
+{
+    while (1);
+}
+
 void debug_deprivilege_and_return(void * debug_handler, void * return_handler,
                                   uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3)
 {

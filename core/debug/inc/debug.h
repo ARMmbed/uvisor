@@ -52,6 +52,7 @@ void debug_reboot(TResetReason reason);
  * handler, this function does nothing. */
 uint32_t debug_box_enter_from_priv(uint32_t lr);
 
+void debug_die(void);
 void debug_deprivilege_and_return(void * debug_handler, void * return_handler,
                                   uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3);
 
