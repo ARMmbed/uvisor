@@ -145,70 +145,58 @@ uint32_t vmpu_fault_find_acl_aips(uint8_t active_box, uint32_t fault_addr, uint3
 
 void vmpu_aips_switch(uint8_t src_box, uint8_t dst_box)
 {
-    int i, j, k;
-    uint32_t *psrc_acl, *pdst_acl;
-    uint32_t src_acl, dst_acl, mod_acl;
-    uint32_t pacr;
-    volatile uint32_t *ppacr;
+    /* Beginning of AIPS0 */
+    uint32_t volatile * ppacr = &AIPS0->PACRA;
 
-    /* beginning of AIPS0 */
-    ppacr = &AIPS0->PACRA;
-    /* initialize destination box pointer */
-    psrc_acl = g_aipsx_box[src_box];
-    pdst_acl = g_aipsx_box[dst_box];
+    /* Initialize the destination box pointer. */
+    uint32_t * psrc_acl = g_aipsx_box[src_box];
+    uint32_t * pdst_acl = g_aipsx_box[dst_box];
 
-    for(i=0; i<AIPSx_DWORDS; i++)
-    {
-        dst_acl = *pdst_acl++;
-        src_acl = *psrc_acl++;
+    for (size_t i = 0; i < AIPSx_DWORDS; i++) {
+        uint32_t dst_acl = *pdst_acl++;
+        uint32_t src_acl = *psrc_acl++;
 
-        /* skip reserved words */
-        switch(i)
-        {
-            case 1:
-            case 5:
-                ppacr += 4;
-                break;
-            case 4:
-                ppacr = &AIPS1->PACRA;
-                break;
+        /* Skip the reserved words. */
+        switch (i) {
+        case 1:
+        case 5:
+            ppacr += 4;
+            break;
+        case 4:
+            ppacr = &AIPS1->PACRA;
+            break;
         }
 
-        /* if src_box == dst_box, then initialize all fields */
-        if(src_box == dst_box)
+        /* If the source and destination box are the same, initialize all
+         * fields. */
+        uint32_t mod_acl = 0;
+        if (src_box == dst_box) {
             mod_acl = 0xFFFFFFFF;
-        else
-        {
+        } else {
             mod_acl = src_acl ^ dst_acl;
-            /* skip 4 PACRn altogether */
-            if(!mod_acl)
-            {
+
+            /* Skip 4 PACRn altogether if there's nothing to update. */
+            if (!mod_acl) {
                 ppacr += 4;
                 continue;
             }
         }
 
-        /* run through 4 PACRn's */
-        for(j = 0; j < 4; j++)
-        {
-            /* modified byte ? */
-            if((uint8_t)mod_acl)
-            {
-                pacr = 0;
-
-                for(k = 0; k < 8; k++)
-                {
+        /* Apply the changes to 4 consecurive PACRn's. */
+        for (size_t j = 0; j < 4; j++) {
+            /* Skip this byte if there is nothing to update. */
+            if (!((uint8_t) mod_acl)) {
+                dst_acl >>= 8;
+            } else {
+                uint32_t pacr = 0;
+                for (size_t k = 0; k < 8; k++) {
                     pacr <<= 4;
                     pacr |= (dst_acl & 1) << 2;
                     dst_acl >>= 1;
                 }
-
                 pacr ^= PACRx_DEFAULT_MASK;
                 *ppacr = pacr;
             }
-            else
-                dst_acl >>= 8;
-
             mod_acl >>= 8;
             ppacr++;
         }
