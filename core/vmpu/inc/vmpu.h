@@ -177,7 +177,7 @@ extern uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp);
 /* contains the total number of boxes
  * boxes are enumerated from 0 to (g_vmpu_box_count - 1) and the following
  * condition must hold: g_vmpu_box_count < UVISOR_MAX_BOXES */
-extern uint32_t  g_vmpu_box_count;
+extern uint8_t g_vmpu_box_count;
 bool g_vmpu_boxes_counted;
 
 extern int vmpu_box_namespace_from_id(int box_id, char *box_name, size_t length);
@@ -208,7 +208,7 @@ extern uint32_t vmpu_round_up_region(uint32_t addr, uint32_t size);
 
 extern void vmpu_order_boxes(int * const best_order, int box_count);
 
-static UVISOR_FORCEINLINE bool vmpu_is_box_id_valid(int box_id)
+static UVISOR_FORCEINLINE bool vmpu_is_box_id_valid(uint8_t box_id)
 {
     /* Return true if the box_id is valid.
      * This function checks box_id against UVISOR_MAX_BOXES if boxes have not

@@ -26,7 +26,7 @@
 #include "vmpu_mpu.h"
 #include <sys/reent.h>
 
-uint32_t  g_vmpu_box_count;
+uint8_t g_vmpu_box_count;
 bool g_vmpu_boxes_counted;
 
 static int vmpu_check_sanity(void)
