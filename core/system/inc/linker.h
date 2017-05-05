@@ -30,6 +30,8 @@
 #define UVISOR_GET_S_ALIAS(addr) ((typeof(addr)) ((uint32_t) (addr) | SECURE_ALIAS_OFFSET))
 /** @returns `true` if address is a secure alias. */
 #define UVISOR_IS_S_ALIAS(addr) ((uint32_t) (addr) & SECURE_ALIAS_OFFSET)
+/** @returns an address targeting the non-secure state. */
+#define UVISOR_GET_NS_ADDRESS(addr) ((addr) & ~1UL)
 
 extern uint32_t const __uvisor_code_end__;
 extern uint32_t const __uvisor_stack_start__;

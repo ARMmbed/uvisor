@@ -122,16 +122,5 @@ uint32_t vmpu_unpriv_access(uint32_t addr, uint32_t size, uint32_t data)
         }
     }
     HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied");
-    /* Switch to debug box context before calling debug box. */
-    if (g_active_box != g_debug_box.box_id) {
-        context_switch_in(CONTEXT_SWITCH_UNBOUND_THREAD, g_debug_box.box_id, 0, 0);
-    }
-    uint32_t caller = (uint32_t) g_debug_box.driver->halt_error & ~1UL;
-    asm volatile (
-        "mov r0, %[error]\n"
-        "bxns %[caller]\n"
-        :: [caller] "r" (caller), [error] "r" (PERMISSION_DENIED)
-    );
-    halt_user_error(PERMISSION_DENIED);
     return 0;
 }
