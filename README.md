@@ -41,7 +41,7 @@ To use uVisor on a specific OS, you must complete the porting process for that O
 
 - mbed OS: [NXP FRDM-K64F](http://developer.mbed.org/platforms/FRDM-K64F/).
 
-The Launchpad [GNU ARM Embedded](https://launchpad.net/gcc-arm-embedded) Toolchain builds the uVisor prelinked binary images. Currently, uVisor only supports applications built with this toolchain.
+The Launchpad [GNU ARM Embedded](https://launchpad.net/gcc-arm-embedded) Toolchain builds the uVisor prelinked binary images. Currently, uVisor only supports applications built with this toolchain. The minimum required version is 5.4-2016q3.
 
 ## The uVisor design philosophy
 
