@@ -268,6 +268,14 @@ void vmpu_mpu_invalidate(void)
     }
 }
 
+static void vmpu_sau_add_region(const MpuRegion * const region, uint8_t slot, uint8_t priority)
+{
+    SAU->RNR = slot;
+    SAU->RBAR = region->start;
+    SAU->RLAR = SAU_RLAR(region->config, region->end);
+    g_mpu_priority[slot] = priority;
+}
+
 bool vmpu_mpu_push(const MpuRegion * const region, uint8_t priority)
 {
     if (!priority) priority = 1;
@@ -282,10 +290,7 @@ bool vmpu_mpu_push(const MpuRegion * const region, uint8_t priority)
 
         if (g_mpu_priority[g_mpu_slot] < priority) {
             /* We can place this region in here. */
-            SAU->RNR = g_mpu_slot;
-            SAU->RBAR = region->start;
-            SAU->RLAR = SAU_RLAR(region->config, region->end);
-            g_mpu_priority[g_mpu_slot] = priority;
+            vmpu_sau_add_region(region, g_mpu_slot, priority);
             return true;
         }
     }
@@ -298,10 +303,7 @@ bool vmpu_mpu_push(const MpuRegion * const region, uint8_t priority)
 
     /* We did not find a slot with a lower priority, so just take the next
      * position that does not have the highest priority. */
-    SAU->RNR = g_mpu_slot;
-    SAU->RBAR = region->start;
-    SAU->RLAR = SAU_RLAR(region->config, region->end);
-    g_mpu_priority[start_slot] = priority;
+    vmpu_sau_add_region(region, g_mpu_slot, priority);
 
     return true;
 }
