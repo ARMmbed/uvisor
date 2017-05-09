@@ -168,7 +168,6 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp_s)
                 }
             }
             DEBUG_FAULT(FAULT_SECURE, lr, sp);
-            SAU->SFSR = fault_status;
             HALT_ERROR(PERMISSION_DENIED, "Cannot recover from a secure fault.");
             break;
 
