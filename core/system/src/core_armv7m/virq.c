@@ -534,9 +534,6 @@ void virq_init(uint32_t const * const user_vtor)
     NVIC_SetPriority(MemoryManagement_IRQn, priority_0);
     NVIC_SetPriority(BusFault_IRQn, priority_0);
     NVIC_SetPriority(UsageFault_IRQn, priority_0);
-#if defined(ARCH_CORE_ARMv8M)
-    NVIC_SetPriority(SecureFault_IRQn, priority_0);
-#endif /* defined(ARCH_CORE_ARMv8M) */
     NVIC_SetPriority(SVCall_IRQn, priority_1);
     NVIC_SetPriority(DebugMonitor_IRQn, __UVISOR_NVIC_MIN_PRIORITY);
     NVIC_SetPriority(PendSV_IRQn, UVISOR_VIRQ_MAX_PRIORITY);
