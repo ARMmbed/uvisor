@@ -22,6 +22,7 @@
 #include "halt.h"
 #include "memory_map.h"
 #include "svc.h"
+#include "virq.h"
 #include "vmpu.h"
 #include "vmpu_mpu.h"
 #include <sys/reent.h>
@@ -338,7 +339,7 @@ static void vmpu_configure_box_peripherals(uint8_t box_id, UvisorBoxConfig const
 
             /* Add the ACL and force the entry as user-provided. */
             if (region->acl & UVISOR_TACL_IRQ) {
-                vmpu_acl_irq(box_id, (uint32_t) region->param1);
+                virq_acl_add(box_id, (uint32_t) region->param1);
             } else {
                 vmpu_region_add_static_acl(
                     box_id,

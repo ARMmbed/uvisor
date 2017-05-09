@@ -55,6 +55,8 @@ extern int      virq_default(uint32_t isr_id);
 extern void virq_init(uint32_t const * const user_vtor);
 extern void virq_switch(uint8_t src_id, uint8_t dst_id);
 
+/** Add an IRQ ACL. */
+void virq_acl_add(uint8_t box_id, uint32_t irqn);
 
 /** Perform a context switch-in as a result of an interrupt request.
  *

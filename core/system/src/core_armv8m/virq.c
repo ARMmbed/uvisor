@@ -150,7 +150,7 @@ static void virq_load_svcall_ns(uint8_t box_id)
     TZ_NVIC_SetPriority_NS(SVCall_IRQn, g_virq_system_exception_state[box_id].svcall.priority);
 }
 
-void virq_acl_add(uint8_t box_id, void * function, uint32_t irqn)
+void virq_acl_add(uint8_t box_id, uint32_t irqn)
 {
     /* Basic checks */
     virq_check_acls(irqn, box_id);
@@ -158,9 +158,6 @@ void virq_acl_add(uint8_t box_id, void * function, uint32_t irqn)
     /* Assign IRQ owneship. */
     g_virq_states[irqn].box_id = box_id;
 }
-
-/* virq_acl_add implements vmpu_acl_irq. */
-void vmpu_acl_irq(uint8_t box_id, uint32_t irqn) UVISOR_LINKTO(virq_acl_add);
 
 void virq_switch(uint8_t src_id, uint8_t dst_id)
 {
