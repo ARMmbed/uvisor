@@ -82,9 +82,9 @@ void virq_acl_add(uint8_t box_id, uint32_t irqn)
     uv->id = box_id;
 }
 
-#define UNVIC_ISR_OWNER_OTHER 0
-#define UNVIC_ISR_OWNER_NONE  1
-#define UNVIC_ISR_OWNER_SELF  2
+#define VIRQ_ISR_OWNER_OTHER 0
+#define VIRQ_ISR_OWNER_NONE  1
+#define VIRQ_ISR_OWNER_SELF  2
 
 static int virq_acl_check(int irqn)
 {
@@ -97,22 +97,22 @@ static int virq_acl_check(int irqn)
     uv = &g_virq_vector[irqn];
 
     if (uv->id == g_active_box) {
-        return UNVIC_ISR_OWNER_SELF;
+        return VIRQ_ISR_OWNER_SELF;
     }
     if (uv->id == UVISOR_BOX_ID_INVALID) {
-        return UNVIC_ISR_OWNER_NONE;
+        return VIRQ_ISR_OWNER_NONE;
     }
-    return UNVIC_ISR_OWNER_OTHER;
+    return VIRQ_ISR_OWNER_OTHER;
 }
 
 static void virq_isr_register(uint32_t irqn)
 {
     switch (virq_acl_check(irqn))
     {
-        case UNVIC_ISR_OWNER_NONE:
+        case VIRQ_ISR_OWNER_NONE:
             g_virq_vector[irqn].id = g_active_box;
             DPRINTF("IRQ %d registered to box %d\n\r", irqn, g_active_box);
-        case UNVIC_ISR_OWNER_SELF:
+        case VIRQ_ISR_OWNER_SELF:
             return;
         default:
             break;
@@ -182,7 +182,7 @@ void virq_irq_disable_all(void)
         /* Iterate over all the IRQs owned by the currently active box and
          * disable them if they were active before the function call. */
         for (irqn = 0; irqn < NVIC_VECTORS; irqn++) {
-            if (g_virq_vector[irqn].id == g_active_box && UNVIC_IS_IRQ_ENABLED(irqn)) {
+            if (g_virq_vector[irqn].id == g_active_box && VIRQ_IS_IRQ_ENABLED(irqn)) {
                 /* Remember the state for this IRQ. The state is the NVIC one,
                  * so we are sure we don't enable spurious interrupts. */
                 g_virq_vector[irqn].was_enabled = true;

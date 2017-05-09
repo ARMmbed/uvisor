@@ -21,8 +21,8 @@
 #include "svc.h"
 #include "api/inc/virq_exports.h"
 
-#define UNVIC_IS_IRQ_ENABLED(irqn) (NVIC->ISER[(((uint32_t) ((int32_t) (irqn))) >> 5UL)] & \
-                                    (uint32_t) (1UL << (((uint32_t) ((int32_t) (irqn))) & 0x1FUL)))
+#define VIRQ_IS_IRQ_ENABLED(irqn) (NVIC->ISER[(((uint32_t) ((int32_t) (irqn))) >> 5UL)] & \
+                                   (uint32_t) (1UL << (((uint32_t) ((int32_t) (irqn))) & 0x1FUL)))
 
 #define ISR_VECTORS ((NVIC_OFFSET) + (NVIC_VECTORS))
 
