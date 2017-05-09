@@ -74,11 +74,11 @@ static int virq_acl_check(int irqn)
     /* get vector entry */
     uv = &g_virq_vector[irqn];
 
-    if (uv->id == g_active_box) {
-        return VIRQ_ISR_OWNER_SELF;
-    }
     if (uv->id == UVISOR_BOX_ID_INVALID) {
         return VIRQ_ISR_OWNER_NONE;
+    }
+    if (uv->id == g_active_box) {
+        return VIRQ_ISR_OWNER_SELF;
     }
     return VIRQ_ISR_OWNER_OTHER;
 }
