@@ -162,11 +162,6 @@ void virq_acl_add(uint8_t box_id, void * function, uint32_t irqn)
 /* virq_acl_add implements vmpu_acl_irq. */
 void vmpu_acl_irq(uint8_t box_id, uint32_t irqn) UVISOR_LINKTO(virq_acl_add);
 
-bool virq_is_box_in_active_state(uint8_t box_id)
-{
-    return g_virq_box_in_active_irq[box_id];
-}
-
 void virq_switch(uint8_t src_id, uint8_t dst_id)
 {
     bool src_box_in_active_irq = false;
