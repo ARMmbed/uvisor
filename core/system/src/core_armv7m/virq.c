@@ -29,6 +29,10 @@
 #define NVIC_IPR NVIC->IP
 #endif /* defined(CORE_CORTEX_M33) */
 
+#define VIRQ_ISR_OWNER_OTHER 0
+#define VIRQ_ISR_OWNER_NONE  1
+#define VIRQ_ISR_OWNER_SELF  2
+
 /* unprivileged vector table */
 TIsrUVector g_virq_vector[NVIC_VECTORS];
 uint8_t g_virq_prio_bits;
@@ -59,32 +63,6 @@ static void virq_default_check(uint32_t irqn)
                    "Permission denied: IRQ %d is owned by uVisor\n\r", irqn);
     }
 }
-
-void virq_acl_add(uint8_t box_id, uint32_t irqn)
-{
-    TIsrUVector *uv;
-
-    /* don't allow to modify uVisor-owned IRQs */
-    virq_default_check(irqn);
-
-    /* get vector entry */
-    uv = &g_virq_vector[irqn];
-
-    /* check if IRQ entry is populated */
-    if(uv->id != UVISOR_BOX_ID_INVALID)
-    {
-        HALT_ERROR(PERMISSION_DENIED,
-                   "Permission denied: IRQ %d is owned by box %d\n\r", irqn,
-                                                                       uv->id);
-    }
-
-    /* save settings */
-    uv->id = box_id;
-}
-
-#define VIRQ_ISR_OWNER_OTHER 0
-#define VIRQ_ISR_OWNER_NONE  1
-#define VIRQ_ISR_OWNER_SELF  2
 
 static int virq_acl_check(int irqn)
 {
@@ -118,6 +96,28 @@ static void virq_isr_register(uint32_t irqn)
             break;
     }
     HALT_ERROR(PERMISSION_DENIED, "Permission denied: IRQ %d is owned by another box!\r\n", irqn);
+}
+
+void virq_acl_add(uint8_t box_id, uint32_t irqn)
+{
+    TIsrUVector *uv;
+
+    /* don't allow to modify uVisor-owned IRQs */
+    virq_default_check(irqn);
+
+    /* get vector entry */
+    uv = &g_virq_vector[irqn];
+
+    /* check if IRQ entry is populated */
+    if(uv->id != UVISOR_BOX_ID_INVALID)
+    {
+        HALT_ERROR(PERMISSION_DENIED,
+                   "Permission denied: IRQ %d is owned by box %d\n\r", irqn,
+                                                                       uv->id);
+    }
+
+    /* save settings */
+    uv->id = box_id;
 }
 
 void virq_isr_set(uint32_t irqn, uint32_t vector)
