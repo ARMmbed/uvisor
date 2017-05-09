@@ -43,9 +43,6 @@ uint8_t g_virq_prio_bits;
  * that a nested function re-enables IRQs for the caller. */
 uint32_t g_irq_disable_all_counter[UVISOR_MAX_BOXES];
 
-/* vmpu_acl_irq to virq_acl_add */
-void vmpu_acl_irq(uint8_t box_id, uint32_t irqn) UVISOR_LINKTO(virq_acl_add);
-
 static void virq_default_check(uint32_t irqn)
 {
     /* IRQn goes from 0 to (NVIC_VECTORS - 1) */
@@ -63,7 +60,7 @@ static void virq_default_check(uint32_t irqn)
     }
 }
 
-void virq_acl_add(uint8_t box_id, void *function, uint32_t irqn)
+void virq_acl_add(uint8_t box_id, uint32_t irqn)
 {
     TIsrUVector *uv;
 
@@ -81,9 +78,8 @@ void virq_acl_add(uint8_t box_id, void *function, uint32_t irqn)
                                                                        uv->id);
     }
 
-    /* save settings, function handler is optional */
+    /* save settings */
     uv->id = box_id;
-    uv->hdlr = function;
 }
 
 #define UNVIC_ISR_OWNER_OTHER 0
