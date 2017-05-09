@@ -100,24 +100,12 @@ static void virq_isr_register(uint32_t irqn)
 
 void virq_acl_add(uint8_t box_id, uint32_t irqn)
 {
-    TIsrUVector *uv;
-
-    /* don't allow to modify uVisor-owned IRQs */
-    virq_default_check(irqn);
-
-    /* get vector entry */
-    uv = &g_virq_vector[irqn];
-
-    /* check if IRQ entry is populated */
-    if(uv->id != UVISOR_BOX_ID_INVALID)
-    {
-        HALT_ERROR(PERMISSION_DENIED,
-                   "Permission denied: IRQ %d is owned by box %d\n\r", irqn,
-                                                                       uv->id);
+    /* Only save the IRQ if it's not owned by anybody else. */
+    int owner = virq_acl_check(irqn);
+    if (owner == VIRQ_ISR_OWNER_OTHER) {
+        HALT_ERROR(PERMISSION_DENIED, "vIRQ: IRQ %d is already owned by box %u.\r\n", irqn, g_virq_vector[irqn].id);
     }
-
-    /* save settings */
-    uv->id = box_id;
+    g_virq_vector[irqn].id = box_id;
 }
 
 void virq_isr_set(uint32_t irqn, uint32_t vector)
