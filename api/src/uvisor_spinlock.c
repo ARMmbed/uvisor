@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, ARM Limited, All Rights Reserved
+ * Copyright (c) 2017, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -14,26 +14,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#ifdef ARCH_CORE_ARMv8M
+
+/* TODO Consider making the Makefile duplicate this as part of the build. */
+#include "core/system/src/spinlock.c"
+
+#else
+
 #include "api/inc/uvisor_spinlock_exports.h"
+#include "api/inc/api.h"
 
 void uvisor_spin_init(UvisorSpinlock * spinlock)
 {
-    __sync_synchronize();
-    spinlock->acquired = false;
+    uvisor_api.spin_init(spinlock);
 }
 
 bool uvisor_spin_trylock(UvisorSpinlock * spinlock)
 {
-    return __sync_bool_compare_and_swap(&spinlock->acquired, false, true);
+    return uvisor_api.spin_trylock(spinlock);
 }
 
 void uvisor_spin_lock(UvisorSpinlock * spinlock)
 {
-    while (uvisor_spin_trylock(spinlock) == false);
+    uvisor_api.spin_lock(spinlock);
 }
 
 void uvisor_spin_unlock(UvisorSpinlock * spinlock)
 {
-    __sync_synchronize();
-    spinlock->acquired = false;
+    uvisor_api.spin_unlock(spinlock);
 }
+
+#endif

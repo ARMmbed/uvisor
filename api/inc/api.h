@@ -24,6 +24,7 @@
 #include "api/inc/halt_exports.h"
 #include "api/inc/pool_queue_exports.h"
 #include "api/inc/page_allocator_exports.h"
+#include "api/inc/uvisor_spinlock_exports.h"
 #include <stdint.h>
 
 #define UVISOR_API_MAGIC 0x5C9411B4
@@ -63,14 +64,19 @@ typedef struct {
     void (*start)(void);
     void (*vmpu_mem_invalidate)(void);
 
-    int                (*pool_init)(uvisor_pool_t *, void *, size_t, size_t, int);
-    int                (*pool_queue_init)(uvisor_pool_queue_t *, uvisor_pool_t *, void *, size_t, size_t, int);
-    uvisor_pool_slot_t (*pool_allocate)(uvisor_pool_t *, uint32_t);
+    int                (*pool_init)(uvisor_pool_t *, void *, size_t, size_t);
+    int                (*pool_queue_init)(uvisor_pool_queue_t *, uvisor_pool_t *, void *, size_t, size_t);
+    uvisor_pool_slot_t (*pool_allocate)(uvisor_pool_t *);
     void               (*pool_queue_enqueue)(uvisor_pool_queue_t *, uvisor_pool_slot_t);
     uvisor_pool_slot_t (*pool_free)(uvisor_pool_t *, uvisor_pool_slot_t);
     uvisor_pool_slot_t (*pool_queue_dequeue)(uvisor_pool_queue_t *, uvisor_pool_slot_t);
     uvisor_pool_slot_t (*pool_queue_dequeue_first)(uvisor_pool_queue_t *);
     uvisor_pool_slot_t (*pool_queue_find_first)(uvisor_pool_queue_t *, TQueryFN_Ptr, void *);
+
+    void (*spin_init)(UvisorSpinlock * spinlock);
+    bool (*spin_trylock)(UvisorSpinlock * spinlock);
+    void (*spin_lock)(UvisorSpinlock * spinlock);
+    void (*spin_unlock)(UvisorSpinlock * spinlock);
 
     OsEventObserver os_event_observer;
 } UVISOR_PACKED UvisorApi;

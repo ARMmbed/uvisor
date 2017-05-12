@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, ARM Limited, All Rights Reserved
+ * Copyright (c) 2017, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -14,26 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "api/inc/uvisor_spinlock_exports.h"
+#ifndef __IPC_H__
+#define __IPC_H__
 
-void uvisor_spin_init(UvisorSpinlock * spinlock)
-{
-    __sync_synchronize();
-    spinlock->acquired = false;
-}
+void ipc_drain_queue(void);
+void ipc_box_init(uint8_t box_init);
 
-bool uvisor_spin_trylock(UvisorSpinlock * spinlock)
-{
-    return __sync_bool_compare_and_swap(&spinlock->acquired, false, true);
-}
-
-void uvisor_spin_lock(UvisorSpinlock * spinlock)
-{
-    while (uvisor_spin_trylock(spinlock) == false);
-}
-
-void uvisor_spin_unlock(UvisorSpinlock * spinlock)
-{
-    __sync_synchronize();
-    spinlock->acquired = false;
-}
+#endif

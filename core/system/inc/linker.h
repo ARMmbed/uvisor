@@ -19,19 +19,7 @@
 
 #include "api/inc/priv_sys_hooks_exports.h"
 #include "api/inc/lib_hook_exports.h"
-
-#if !defined(SECURE_ALIAS_OFFSET)
-#define SECURE_ALIAS_OFFSET 0
-#endif /* !defined(SECURE_ALIAS_OFFSET) */
-
-/** @returns the non-secure alias of the input address. */
-#define UVISOR_GET_NS_ALIAS(addr) ((typeof(addr)) ((uint32_t) (addr) & ~SECURE_ALIAS_OFFSET))
-/** @returns the secure alias of the input address. */
-#define UVISOR_GET_S_ALIAS(addr) ((typeof(addr)) ((uint32_t) (addr) | SECURE_ALIAS_OFFSET))
-/** @returns `true` if address is a secure alias. */
-#define UVISOR_IS_S_ALIAS(addr) ((uint32_t) (addr) & SECURE_ALIAS_OFFSET)
-/** @returns an address targeting the non-secure state. */
-#define UVISOR_GET_NS_ADDRESS(addr) ((addr) & ~1UL)
+#include "api/inc/linker_exports.h"
 
 extern uint32_t const __uvisor_code_end__;
 extern uint32_t const __uvisor_stack_start__;
