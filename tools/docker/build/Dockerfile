@@ -1,6 +1,8 @@
 FROM meriac/mbed-base
 MAINTAINER Milosch Meriac <milosch@meriac.com>
 
+USER root
+
 # install sudo for mbed user
 RUN dnf -y install sudo && dnf clean all
 RUN usermod -aG wheel mbed
@@ -10,4 +12,6 @@ COPY sudoers /etc
 # update mbed-cli to latest version
 RUN pip install -U mbed-cli
 
-CMD ["/usr/bin/su","-l","mbed"]
+USER mbed
+WORKDIR /home/mbed
+CMD ["bash"]

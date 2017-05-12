@@ -1,6 +1,8 @@
 FROM meriac/mbed-base
 MAINTAINER Milosch Meriac <milosch@meriac.com>
 
+USER root
+
 # update mbed-cli to latest version
 RUN pip install -U mbed-cli
 
@@ -23,4 +25,3 @@ EXPOSE 22
 
 # start SSH daemon by default
 CMD ["/usr/sbin/sshd", "-D"]
-
