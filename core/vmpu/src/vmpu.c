@@ -25,6 +25,7 @@
 #include "virq.h"
 #include "vmpu.h"
 #include "vmpu_mpu.h"
+#include "vmpu_unpriv_access.h"
 #include <sys/reent.h>
 
 uint8_t g_vmpu_box_count;
@@ -631,4 +632,24 @@ int vmpu_box_namespace_from_id(int box_id, char *box_namespace, size_t length)
     }
 
     return copy_box_namespace(box_cfgtbl[box_id]->box_namespace, box_namespace);
+}
+
+int vmpu_xpriv_memcmp(uint32_t addr1, uint32_t addr2, size_t length, XPrivMemCmpType type)
+{
+    int32_t data1, data2;
+    for (size_t ii = 0; ii < length; ii++) {
+        data1 = (type & XPRIV_MEMCMP_ADDR1_PRIVILEGED) ?
+                    ((uint8_t *) addr1)[ii] :
+                    vmpu_unpriv_uint8_read(addr1 + ii);
+        data2 = (type & XPRIV_MEMCMP_ADDR2_PRIVILEGED) ?
+                    ((uint8_t *) addr2)[ii] :
+                    vmpu_unpriv_uint8_read(addr2 + ii);
+        data1 -= data2;
+        if (data1) {
+            /* <0 if d1 < d2,
+             * >0 if d1 > d2  */
+            return data1;
+        }
+    }
+    return 0;
 }
