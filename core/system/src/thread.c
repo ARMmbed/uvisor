@@ -18,6 +18,7 @@
 // #include "api/inc/vmpu_exports.h"
 #include "context.h"
 #include "halt.h"
+#include "ipc.h"
 #include "vmpu.h"
 #include "rpc.h"
 
@@ -109,6 +110,9 @@ static void thread_switch_nonatomic(void * c)
     /* Drain any outgoing RPC queues */
     drain_message_queue();
     drain_result_queue();
+
+    /* Drain the IPC queue. */
+    ipc_drain_queue();
 
     if (context == NULL) {
         return;
