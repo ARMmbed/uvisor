@@ -178,6 +178,7 @@ extern uint8_t g_vmpu_box_count;
 bool g_vmpu_boxes_counted;
 
 extern int vmpu_box_namespace_from_id(int box_id, char *box_name, size_t length);
+extern int vmpu_box_id_from_namespace(int * const box_id, const char * const box_name);
 
 /** Determine if the passed size can be mapped to an exact region size
  * depending on underlying MPU implementation. Note that the size must be an

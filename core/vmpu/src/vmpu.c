@@ -634,6 +634,40 @@ int vmpu_box_namespace_from_id(int box_id, char *box_namespace, size_t length)
     return copy_box_namespace(box_cfgtbl[box_id]->box_namespace, box_namespace);
 }
 
+int vmpu_box_id_from_namespace(int * const box_id, const char * const query_namespace)
+{
+    if (query_namespace == NULL) {
+        /* You can't search for anonymous boxes, that would defeat their purpose! */
+        return UVISOR_ERROR_BOX_NAMESPACE_ANONYMOUS;
+    }
+    if (box_id == NULL) {
+        return UVISOR_ERROR_BOX_NAMESPACE_ANONYMOUS;
+    }
+    const UvisorBoxConfig * * box_cfgtbl;
+    box_cfgtbl = (const UvisorBoxConfig * *) __uvisor_config.cfgtbl_ptr_start;
+
+    for (size_t id = 0; id < UVISOR_MAX_BOXES; id++) {
+        const char * const current_namespace = box_cfgtbl[id]->box_namespace;
+        if (current_namespace == NULL) {
+            /* You can't contact anonymous boxes, they contact you! */
+            continue;
+        }
+        /* strlen + 1, since we want to check for \0 as well!
+         * strnlen counts the length without terminating NULL, but
+         * UVISOR_MAX_BOX_NAMESPACE_LENGTH includes the terminating NULL, therefore -1 */
+        size_t max_length = strnlen(current_namespace, UVISOR_MAX_BOX_NAMESPACE_LENGTH - 1) + 1;
+        if (!vmpu_priv_unpriv_memcmp((uint32_t) current_namespace,
+                                     (uint32_t) query_namespace,
+                                     max_length)) {
+            /* We found a match! */
+            vmpu_unpriv_uint32_write((uint32_t) box_id, id);
+            return 0;
+        }
+    }
+    /* No match found. */
+    return UVISOR_ERROR_INVALID_BOX_ID;
+}
+
 int vmpu_xpriv_memcmp(uint32_t addr1, uint32_t addr2, size_t length, XPrivMemCmpType type)
 {
     int32_t data1, data2;

@@ -80,7 +80,8 @@ transition_p_to_p(start,             void, uvisor_start,          void);
 
 transition_np_to_p(vmpu_mem_invalidate, void, vmpu_mpu_invalidate, void);
 
-transition_np_to_p(box_namespace, int,  vmpu_box_namespace_from_id, int box_id, char * box_namespace, size_t length);
+transition_np_to_p(box_namespace,        int,  vmpu_box_namespace_from_id, int         box_id,       char *       box_namespace, size_t length);
+transition_np_to_p(box_id_for_namespace, int,  vmpu_box_id_from_namespace, int * const box_id, const char * const box_namespace);
 
 transition_np_to_p(page_malloc, int,  page_allocator_malloc,       UvisorPageTable * const table);
 transition_np_to_p(page_free,   int,  page_allocator_free,   const UvisorPageTable * const table);
@@ -135,6 +136,7 @@ const UvisorApi __uvisor_api = {
     .page_free = page_free_transition,
 
     .box_namespace = box_namespace_transition,
+    .box_id_for_namespace = box_id_for_namespace_transition,
 
     .debug_init = debug_init_transition,
     .error = error_transition,
