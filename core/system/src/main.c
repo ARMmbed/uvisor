@@ -149,13 +149,16 @@ void main_init(void)
     /* Note: The uVisor stack pointer is assumed to be already correctly set. */
     /* Note: We do not need to set the NS NP stack pointer (for the app and the
      *       private boxes), as it is set during the vMPU initialization. */
+    uint32_t original_sp = ((uint32_t *) SCB->VTOR)[0] - 4;
 #if defined(ARCH_CORE_ARMv8M)
     /* NS P stack pointer, for the RTOS and the uVisor-ns. */
-    uint32_t msp_ns = ((uint32_t *) SCB->VTOR)[0] - 4;
-    __TZ_set_MSP_NS(msp_ns);
+    __TZ_set_MSP_NS(original_sp);
 
     /* S NP stack pointer, for the SDSs and the transition gateways. */
     __set_PSP((uint32_t) &__uvisor_stack_top_np__);
+#else /* defined(ARCH_CORE_ARMv8M) */
+    /* NP stack pointer, for the RTOS and the uVisor lib. */
+    __set_PSP(original_sp);
 #endif /* defined(ARCH_CORE_ARMv8M) */
 
     /* Set the uVisor vector table */
