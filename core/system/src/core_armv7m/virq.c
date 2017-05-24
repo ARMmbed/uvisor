@@ -483,7 +483,7 @@ void virq_gateway_context_switch_out(uint32_t svc_sp, uint32_t msp)
     context_discard_exc_sf(g_active_box, dst_sp);
 
     /* Perform the context switch back to the previous state. */
-    context_switch_out(CONTEXT_SWITCH_FUNCTION_GATEWAY);
+    context_switch_out(CONTEXT_SWITCH_FUNCTION_ISR);
 
     /* Re-privilege execution. */
     __set_CONTROL(__get_CONTROL() & ~2);
