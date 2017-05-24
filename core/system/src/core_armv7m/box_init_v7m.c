@@ -37,6 +37,22 @@ static uint8_t g_box_init_counter;
  */
 static uint32_t g_box_init_box0_sp;
 
+void box_init_pre(void)
+{
+    /* Prepare for box initialization by disabling all lower-than-SVC-priority
+     * interrupts. Otherwise, some boards like STM will fire their timer IRQs
+     * (which deliver to box 0, switching to a different box than we want)
+     * during the box initialization SVC chain. */
+    __set_BASEPRI(__UVISOR_NVIC_MIN_PRIORITY << (8U - __NVIC_PRIO_BITS));
+}
+
+static void box_init_post(void)
+{
+    /* Re-enable interrupts lower than SVC, as box initialization is complete.
+     * */
+    __set_BASEPRI(0);
+}
+
 void boxes_init(void)
 {
     /* Tell uVisor to call the uVisor lib box_init function for each box with
@@ -74,6 +90,9 @@ void UVISOR_NAKED box_init_first(uint32_t src_svc_sp)
     asm volatile (
         "push {lr}\n"           /* Store the lr for later. */
         "push {r4 - r11}\n"     /* Store the callee-saved registers for box 0. */
+        "push {lr}\n"           /* Remember lr. */
+        "bl box_init_pre\n"     /* Prepare for box init. */
+        "pop {lr}\n"            /* Restore saved lr. */
         "b    box_init_next\n"  /* return box_init_next(src_svc_sp) */
         /* The box init handler will be executed after this. */
         :: "r" (src_svc_sp)
@@ -201,6 +220,7 @@ bool box_init_context_switch_next(uint32_t src_svc_sp)
      *       already by the latest context_switch_out. */
     if (dst_id >= g_vmpu_box_count) {
         g_box_init_happened = true;
+        box_init_post();
         return g_box_init_happened;
     }
 
