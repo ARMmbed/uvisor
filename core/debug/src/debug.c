@@ -311,6 +311,10 @@ static void debug_fault_debug(void)
     dprintf("  DFSR  : 0x%08X\r\n\r\n", SCB->DFSR);
 }
 
+static void debug_box_id(void) {
+    dprintf("* Active Box ID: %u\r\n", g_active_box);
+}
+
 static void debug_fault_hard(void)
 {
     dprintf("* FAULT SYNDROME REGISTERS\r\n");
@@ -374,32 +378,39 @@ void debug_fault(THaltError reason, uint32_t lr, uint32_t sp)
     switch (reason) {
         case FAULT_HARD:
             DEBUG_PRINT_HEAD("HARD FAULT");
+            debug_box_id();
             debug_fault_hard();
             break;
         case FAULT_MEMMANAGE:
             DEBUG_PRINT_HEAD("MEMMANAGE FAULT");
+            debug_box_id();
             debug_fault_memmanage();
             break;
         case FAULT_BUS:
             DEBUG_PRINT_HEAD("BUS FAULT");
+            debug_box_id();
             debug_fault_bus();
             break;
         case FAULT_USAGE:
             DEBUG_PRINT_HEAD("USAGE FAULT");
+            debug_box_id();
             debug_fault_usage();
             break;
 #if defined(ARCH_MPU_ARMv8M)
         case FAULT_SECURE:
             DEBUG_PRINT_HEAD("SECURE FAULT");
+            debug_box_id();
             debug_fault_secure();
             break;
 #endif /* defined(ARCH_MPU_ARMv8M) */
         case FAULT_DEBUG:
             DEBUG_PRINT_HEAD("DEBUG FAULT");
+            debug_box_id();
             debug_fault_debug();
             break;
         default:
             DEBUG_PRINT_HEAD("[unknown fault]");
+            debug_box_id();
             break;
     }
 
