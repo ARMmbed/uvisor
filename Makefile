@@ -158,7 +158,6 @@ CFLAGS_PRE:=\
         -DUVISOR_PRESENT=1 \
         -DARCH_MPU_$(ARCH_MPU) \
         -D$(CONFIGURATION) \
-        -DPROGRAM_VERSION=\"$(PROGRAM_VERSION)\" \
         $(APP_CFLAGS) \
         -I$(ROOT_DIR) \
         -I$(CORE_DIR) \
