@@ -42,6 +42,19 @@ ENTRY(main_entry)
 #define STACK_SIZE 2048
 #endif /* !defined(STACK_SIZE) */
 
+#if !defined(SECURE_ALIAS_OFFSET)
+#define SECURE_ALIAS_OFFSET 0
+#endif /* !defined(SECURE_ALIAS_OFFSET) */
+
+/* Default uVisor non-priviledged stack size for v8-M only. */
+#if !defined(STACK_SIZE_NP)
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+#define STACK_SIZE_NP 256 /* TODO: choose better default. */
+#else
+#define STACK_SIZE_NP 0
+#endif /* defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U) */
+#endif /* !defined(STACK_SIZE_NP) */
+
 /* Default uVisor own stack guard band
  * Note: Currently we do not actively use the stack guard to isolate the uVisor
  *       stack from the rest of the protected memories. For this reason the
@@ -51,12 +64,14 @@ ENTRY(main_entry)
 
 MEMORY
 {
-  FLASH (rx) : ORIGIN = (FLASH_ORIGIN + FLASH_OFFSET),
-               LENGTH = UVISOR_FLASH_LENGTH_MAX
-  RAM   (rwx): ORIGIN = (SRAM_ORIGIN + SRAM_OFFSET),
-               LENGTH = UVISOR_SRAM_LENGTH_USED - STACK_SIZE - STACK_GUARD_BAND
-  STACK (rw) : ORIGIN = ORIGIN(RAM) + LENGTH(RAM),
-               LENGTH = UVISOR_SRAM_LENGTH_PROTECTED - LENGTH(RAM)
+  FLASH_NS (r x) : ORIGIN = (FLASH_ORIGIN + FLASH_OFFSET),
+                   LENGTH = UVISOR_FLASH_LENGTH_MAX
+  FLASH_S  (r x) : ORIGIN = (FLASH_ORIGIN + SECURE_ALIAS_OFFSET + FLASH_OFFSET),
+                   LENGTH = UVISOR_FLASH_LENGTH_MAX
+  RAM_S    (rwx) : ORIGIN = (SRAM_ORIGIN + SECURE_ALIAS_OFFSET + SRAM_OFFSET),
+                   LENGTH = UVISOR_SRAM_LENGTH_USED - (STACK_SIZE + STACK_GUARD_BAND) - (STACK_SIZE_NP ? (STACK_SIZE_NP + STACK_GUARD_BAND) : 0)
+  STACK_S  (rw ) : ORIGIN = ORIGIN(RAM_S) + LENGTH(RAM_S),
+                   LENGTH = UVISOR_SRAM_LENGTH_PROTECTED - LENGTH(RAM_S)
 }
 
 SECTIONS
@@ -69,43 +84,75 @@ SECTIONS
         . = ALIGN(512);
         *(.isr*)
         . = ALIGN(16);
-        __code_end__ = .;
-    } > FLASH
+        __uvisor_code_end__ = .;
+    } > FLASH_S AT > FLASH_NS
+
+    .ns_text :
+    {
+        . = ALIGN(32);
+        *(.ns_text*)
+        . = ALIGN(32);
+    } > FLASH_NS
 
     .data :
     {
         . = ALIGN(4);
-        PROVIDE(__data_start_src__ = LOADADDR(.data));
-        __data_start__ = .;
+        PROVIDE(__uvisor_data_start_src__ = LOADADDR(.data));
+        __uvisor_data_start__ = .;
         *(.ramfunc)
         *(.ramfunc.*)
         *(.data)
         *(.data.*)
         . = ALIGN(4);
         /* All data end */
-        __data_end__ = .;
-    } > RAM AT > FLASH
+        __uvisor_data_end__ = .;
+    } > RAM_S AT > FLASH_NS
 
+#ifdef ARCH_CORE_ARMv8M
+    /* ARMv8-M Entry points section */
+    .entry_points :
+    {
+        . = ALIGN(32);
+        __uvisor_entry_points_start__ = .;
+        KEEP(*(.entry_points))
+        . = ALIGN(32);
+        __uvisor_entry_points_end__ = .;
+    } > FLASH_NS
+
+    PROVIDE(__uvisor_config = LOADADDR(.entry_points) + SIZEOF(.entry_points));
+#else
+    /* The .entry_points section is empty on ARMv7-M. Don't calculate the
+     * location of uvisor_config based on entry_points, as even an empty
+     * section's ALIGN can change the location counter. */
     PROVIDE(__uvisor_config = LOADADDR(.data) + SIZEOF(.data));
+#endif
 
     .bss (NOLOAD):
     {
         . = ALIGN(4);
-        __bss_start__ = .;
+        __uvisor_bss_start__ = .;
         *(.bss)
         *(.bss.*)
         *(COMMON)
         . = ALIGN(4);
-        __bss_end__ = .;
-    } > RAM
+        __uvisor_bss_end__ = .;
+    } > RAM_S
 
     .stack (NOLOAD):
     {
         . = ALIGN(4);
-        __stack_start__ = .;
+        /* Non-privileged stack for v8-M only. */
+        __uvisor_stack_start_np__ = .;
+        . += STACK_SIZE_NP;
+        __uvisor_stack_top_np__ = .;
+        . += STACK_SIZE_NP ? STACK_GUARD_BAND : 0;
+        __uvisor_stack_end_np__ = .;
+
+        /* Privileged stack for v7-M and v8-M. */
+        __uvisor_stack_start__ = .;
         . += STACK_SIZE;
-        __stack_top__ = .;
+        __uvisor_stack_top__ = .;
         . += STACK_GUARD_BAND;
-        __stack_end__ = .;
-    } > STACK
+        __uvisor_stack_end__ = .;
+    } > STACK_S
 }

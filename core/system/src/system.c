@@ -23,46 +23,30 @@ void UVISOR_ALIAS(isr_default_sys_handler) HardFault_IRQn_Handler(void);
 void UVISOR_ALIAS(isr_default_sys_handler) MemoryManagement_IRQn_Handler(void);
 void UVISOR_ALIAS(isr_default_sys_handler) BusFault_IRQn_Handler(void);
 void UVISOR_ALIAS(isr_default_sys_handler) UsageFault_IRQn_Handler(void);
+void UVISOR_ALIAS(isr_default_sys_handler) SecureFault_IRQn_Handler(void);
 void UVISOR_ALIAS(isr_default_sys_handler) SVCall_IRQn_Handler(void);
 void UVISOR_ALIAS(isr_default_sys_handler) DebugMonitor_IRQn_Handler(void);
-
-/* Privileged PendSV and SysTick hooks assume that they are called directly by
- * hardware. So, these handlers need their stack frame and registers to look
- * exactly like they were called directly by hardware. This means LR needs to
- * be EXC_RETURN, not some value placed there by the C compiler when it does a
- * branch with link. */
-void UVISOR_NAKED PendSV_IRQn_Handler(void)
-{
-    asm volatile(
-        "ldr  r0, %[priv_pendsv]\n"  /* Load the hook from the hook table. */
-        "bx   r0\n"                  /* Branch to the hook (without link). */
-        :: [priv_pendsv] "m" (g_priv_sys_hooks.priv_pendsv)
-    );
-}
-
-void UVISOR_NAKED SysTick_IRQn_Handler(void)
-{
-    asm volatile(
-        "ldr  r0, %[priv_systick]\n" /* Load the hook from the hook table. */
-        "bx   r0\n"                  /* Branch to the hook (without link). */
-        :: [priv_systick] "m" (g_priv_sys_hooks.priv_systick)
-    );
-}
+void UVISOR_ALIAS(isr_default_sys_handler) PendSV_IRQn_Handler(void);
+void UVISOR_ALIAS(isr_default_sys_handler) SysTick_IRQn_Handler(void);
 
 /* Default vector table (placed in Flash) */
 __attribute__((section(".isr"))) const TIsrVector g_isr_vector[ISR_VECTORS] =
 {
     /* Initial stack pointer */
-    (TIsrVector) &__stack_top__,
+    (TIsrVector) &__uvisor_stack_top__,
 
     /* System IRQs */
-    &main_entry,                           /* -15 */
+    (TIsrVector) &main_entry,              /* -15 */
     NonMaskableInt_IRQn_Handler,           /* -14 */
     HardFault_IRQn_Handler,                /* -13 */
     MemoryManagement_IRQn_Handler,         /* -12 */
     BusFault_IRQn_Handler,                 /* -11 */
     UsageFault_IRQn_Handler,               /* -10 */
+#if defined(ARCH_CORE_ARMv8M)
+    SecureFault_IRQn_Handler,              /* - 9 */
+#else /* defined(ARCH_CORE_ARMv8M) */
     isr_default_sys_handler,               /* - 9 */
+#endif /* defined(ARCH_CORE_ARMv8M) */
     isr_default_sys_handler,               /* - 8 */
     isr_default_sys_handler,               /* - 7 */
     isr_default_sys_handler,               /* - 6 */
@@ -75,13 +59,6 @@ __attribute__((section(".isr"))) const TIsrVector g_isr_vector[ISR_VECTORS] =
     /* NVIC IRQs */
     /* Note: This is a GCC extension. */
     [NVIC_OFFSET ... (ISR_VECTORS - 1)] = isr_default_handler
-};
-
-/* Default privileged system hooks (placed in SRAM) */
-UvisorPrivSystemHooks g_priv_sys_hooks = {
-    .priv_svc_0 = __svc_not_implemented,
-    .priv_pendsv = isr_default_sys_handler,
-    .priv_systick = isr_default_sys_handler,
 };
 
 void UVISOR_NAKED UVISOR_NORETURN isr_default_sys_handler(void)
@@ -103,10 +80,10 @@ void UVISOR_NAKED UVISOR_NORETURN isr_default_handler(void)
      * The first one de-previliges execution, the second one re-privileges it. */
     /* Note: NONBASETHRDENA (in SCB) must be set to 1 for this to work. */
     asm volatile(
-        "svc  %[unvic_in]\n"
-        "svc  %[unvic_out]\n"
+        "svc  %[virq_in]\n"
+        "svc  %[virq_out]\n"
         "bx   lr\n"
-        ::[unvic_in]  "i" ((UVISOR_SVC_ID_UNVIC_IN) & 0xFF),
-          [unvic_out] "i" ((UVISOR_SVC_ID_UNVIC_OUT) & 0xFF)
+        ::[virq_in]  "i" ((UVISOR_SVC_ID_UNVIC_IN) & 0xFF),
+          [virq_out] "i" ((UVISOR_SVC_ID_UNVIC_OUT) & 0xFF)
     );
 }

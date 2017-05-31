@@ -21,7 +21,7 @@
 #include "debug.h"
 
 /* Currently active box */
-uint8_t g_active_box;
+uint8_t g_active_box = UVISOR_BOX_ID_INVALID;
 
 /** Stack of previous context states
  *
@@ -176,24 +176,46 @@ uint32_t context_validate_exc_sf(uint32_t exc_sp)
  * stack pointers provided as input. */
 void context_switch_in(TContextSwitchType context_type, uint8_t dst_id, uint32_t src_sp, uint32_t dst_sp)
 {
-    uint8_t src_id;
-
-    /* Source box: Gather information from the current state. */
-    src_id = g_active_box;
+    /* The source box is the currently active box. */
+    uint8_t src_id = g_active_box;
+    if (!vmpu_is_box_id_valid(src_id)) {
+        /* Note: We accept that the source box ID is invalid if this is the very
+         *       first context switch. */
+        if (context_type == CONTEXT_SWITCH_UNBOUND_FIRST) {
+            src_id = dst_id;
+        } else {
+            HALT_ERROR(SANITY_CHECK_FAILED, "Context switch: The source box ID is out of range (%u).\r\n", src_id);
+        }
+    }
+    if (!vmpu_is_box_id_valid(dst_id)) {
+        HALT_ERROR(SANITY_CHECK_FAILED, "Context switch: The destination box ID is out of range (%u).\r\n", dst_id);
+    }
 
     /* The source/destination box IDs can be the same (for example, in IRQs). */
-    if (src_id != dst_id) {
+    if (src_id != dst_id || context_type == CONTEXT_SWITCH_UNBOUND_FIRST) {
+        /* Store outgoing newlib reent pointer. */
+        UvisorBoxIndex * index = (UvisorBoxIndex *) g_context_current_states[src_id].bss;
+        index->bss.address_of.newlib_reent = (uint32_t) *(__uvisor_config.newlib_impure_ptr);
+
         /* Update the context pointer to the one of the destination box. */
-        *(__uvisor_config.uvisor_box_context) = (uint32_t *) g_context_current_states[dst_id].bss;
+        index = (UvisorBoxIndex *) g_context_current_states[dst_id].bss;
+        *(__uvisor_config.uvisor_box_context) = (uint32_t *) index;
 
         /* Update the ID of the currently active box. */
         g_active_box = dst_id;
-        UvisorBoxIndex * index = (UvisorBoxIndex *) *(__uvisor_config.uvisor_box_context);
         index->box_id_self = dst_id;
+
+#if defined(ARCH_CORE_ARMv8M)
+        /* Switch vIRQ configurations. */
+        virq_switch(src_id, dst_id);
+#endif /* defined(ARCH_CORE_ARMv8M) */
 
         /* Switch MPU configurations. */
         /* This function halts if it finds an error. */
         vmpu_switch(src_id, dst_id);
+
+        /* Restore incoming newlib reent pointer. */
+        *(__uvisor_config.newlib_impure_ptr) = (uint32_t *) index->bss.address_of.newlib_reent;
     }
 
     /* Push the state of the source box and set the stack pointer for the
@@ -251,15 +273,22 @@ TContextPreviousState * context_switch_out(TContextSwitchType context_type)
 
     /* The source/destination box IDs can be the same (for example, in IRQs). */
     if (src_id != dst_id) {
+        /* Store outgoing newlib reent pointer. */
+        UvisorBoxIndex * index = (UvisorBoxIndex *) g_context_current_states[dst_id].bss;
+        index->bss.address_of.newlib_reent = (uint32_t) *(__uvisor_config.newlib_impure_ptr);
+
         /* Update the ID of the currently active box. */
         g_active_box = src_id;
-
         /* Update the context pointer to the one of the source box. */
-        *(__uvisor_config.uvisor_box_context) = (uint32_t *) g_context_current_states[src_id].bss;
+        index = (UvisorBoxIndex *) g_context_current_states[src_id].bss;
+        *(__uvisor_config.uvisor_box_context) = (uint32_t *) index;
 
         /* Switch MPU configurations. */
         /* This function halts if it finds an error. */
         vmpu_switch(dst_id, src_id);
+
+        /* Restore incoming newlib reent pointer. */
+        *(__uvisor_config.newlib_impure_ptr) = (uint32_t *) index->bss.address_of.newlib_reent;
     }
 
     /* Set the stack pointer for the source box. This is only needed if the
@@ -273,4 +302,36 @@ TContextPreviousState * context_switch_out(TContextSwitchType context_type)
     }
 
     return previous_state;
+}
+
+typedef struct exception_frame {
+    uint32_t r0;
+    uint32_t r1;
+    uint32_t r2;
+    uint32_t r3;
+    uint32_t r12;
+    uint32_t lr;
+    uint32_t retaddr;
+    uint32_t retpsr;
+} UVISOR_PACKED exception_frame_t;
+
+uint32_t context_forge_initial_frame(uint32_t sp, void (*function)(const void *))
+{
+    /* Compute the secure alias of the NS SP */
+    sp -= sizeof(exception_frame_t);
+
+    exception_frame_t * s_ns_sp = UVISOR_GET_S_ALIAS((exception_frame_t *) sp);
+
+    /* Clear bottom bit of the function to allow the secure side to EXC_RETURN
+     * to the function. */
+    s_ns_sp->retaddr = ((uint32_t) function) & ~1UL;
+
+    /* Set T32 bit in RETPSR to run thumb2 code. */
+    s_ns_sp->retpsr = xPSR_T_Msk;
+
+    s_ns_sp->lr = 0UL; // TODO Call a uvisor_api to
+    // notify uVisor that a box exited. Then uVisor could do something like stop
+    // scheduling the box.
+
+    return sp;
 }

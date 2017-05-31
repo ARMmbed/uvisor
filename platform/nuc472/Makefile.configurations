@@ -16,5 +16,9 @@
 #  limitations under the License.
 #
 ###########################################################################
+
+ARCH_CORE:=CORE_ARMv7M
+ARCH_MPU:=MPU_ARMv7M
+
 CONFIGURATIONS:=\
 	CONFIGURATION_NUC472_CORTEX_M4_0x20000000_0x0

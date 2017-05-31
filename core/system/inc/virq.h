@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-#ifndef __UNVIC_H__
-#define __UNVIC_H__
+#ifndef __VIRQ_H__
+#define __VIRQ_H__
 
 #include "svc.h"
-#include "api/inc/unvic_exports.h"
+#include "api/inc/virq_exports.h"
 
-#define UNVIC_IS_IRQ_ENABLED(irqn) (NVIC->ISER[(((uint32_t) ((int32_t) (irqn))) >> 5UL)] & \
-                                    (uint32_t) (1UL << (((uint32_t) ((int32_t) (irqn))) & 0x1FUL)))
+#define VIRQ_IS_IRQ_ENABLED(irqn) (NVIC->ISER[(((uint32_t) ((int32_t) (irqn))) >> 5UL)] & \
+                                   (uint32_t) (1UL << (((uint32_t) ((int32_t) (irqn))) & 0x1FUL)))
 
 #define ISR_VECTORS ((NVIC_OFFSET) + (NVIC_VECTORS))
 
@@ -37,22 +37,26 @@ typedef struct {
 /* defined in system-specific system.h */
 extern const TIsrVector g_isr_vector[ISR_VECTORS];
 /* unprivileged interrupts */
-extern TIsrUVector g_unvic_vector[NVIC_VECTORS];
+extern TIsrUVector g_virq_vector[NVIC_VECTORS];
 
-extern void     unvic_isr_set(uint32_t irqn, uint32_t vector);
-extern uint32_t unvic_isr_get(uint32_t irqn);
+extern void     virq_isr_set(uint32_t irqn, uint32_t vector);
+extern uint32_t virq_isr_get(uint32_t irqn);
 
-extern void     unvic_irq_enable(uint32_t irqn);
-extern void     unvic_irq_disable(uint32_t irqn);
-extern void     unvic_irq_pending_clr(uint32_t irqn);
-extern void     unvic_irq_pending_set(uint32_t irqn);
-extern uint32_t unvic_irq_pending_get(uint32_t irqn);
-extern void     unvic_irq_priority_set(uint32_t irqn, uint32_t priority);
-extern uint32_t unvic_irq_priority_get(uint32_t irqn);
-extern int      unvic_irq_level_get(void);
-extern int      unvic_default(uint32_t isr_id);
+extern void     virq_irq_enable(uint32_t irqn);
+extern void     virq_irq_disable(uint32_t irqn);
+extern void     virq_irq_pending_clr(uint32_t irqn);
+extern void     virq_irq_pending_set(uint32_t irqn);
+extern uint32_t virq_irq_pending_get(uint32_t irqn);
+extern void     virq_irq_priority_set(uint32_t irqn, uint32_t priority);
+extern uint32_t virq_irq_priority_get(uint32_t irqn);
+extern int      virq_irq_level_get(void);
+extern int      virq_default(uint32_t isr_id);
 
-extern void unvic_init(uint32_t const * const user_vtor);
+extern void virq_init(uint32_t const * const user_vtor);
+extern void virq_switch(uint8_t src_id, uint8_t dst_id);
+
+/** Add an IRQ ACL. */
+void virq_acl_add(uint8_t box_id, uint32_t irqn);
 
 /** Perform a context switch-in as a result of an interrupt request.
  *
@@ -65,7 +69,7 @@ extern void unvic_init(uint32_t const * const user_vtor);
  *
  * @param svc_sp[in]    Unprivileged stack pointer at the time of the interrupt
  * @param svc_pc[in]    Program counter at the time of the interrupt */
-void UVISOR_NAKED unvic_gateway_in(uint32_t svc_sp, uint32_t svc_pc);
+void UVISOR_NAKED virq_gateway_in(uint32_t svc_sp, uint32_t svc_pc);
 
 /** Perform a context switch-out as a result of an interrupt request.
  *
@@ -78,20 +82,20 @@ void UVISOR_NAKED unvic_gateway_in(uint32_t svc_sp, uint32_t svc_pc);
  *
  * @param svc_sp[in]    Unprivileged stack pointer at the time of the interrupt
  *                      return handler (thunk) */
-void UVISOR_NAKED unvic_gateway_out(uint32_t svc_sp);
+void UVISOR_NAKED virq_gateway_out(uint32_t svc_sp);
 
 /** Disable all interrupts for the currently active box.
  *
  * This function selectively disables all interrupts that belong to the current
  * box and keeps a state on whether they were enabled before this operation. The
  * state is then used when re-enabiling the interrupts later on, in
- * ::unvic_irq_enable_all. */
-extern void unvic_irq_disable_all(void);
+ * ::virq_irq_enable_all. */
+extern void virq_irq_disable_all(void);
 
 /** Re-enable all previously interrupts for the currently active box.
  *
  * This function re-enables all interrupts that belong to the current box and
- * that were previously disabled with the ::unvic_irq_disable_all function. */
-extern void unvic_irq_enable_all(void);
+ * that were previously disabled with the ::virq_irq_disable_all function. */
+extern void virq_irq_enable_all(void);
 
-#endif/*__UNVIC_H__*/
+#endif /* __VIRQ_H__ */

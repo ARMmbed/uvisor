@@ -19,7 +19,7 @@
 #include "debug.h"
 #include "halt.h"
 #include "svc.h"
-#include "unvic.h"
+#include "virq.h"
 #include "vmpu.h"
 #include "vmpu_mpu.h"
 #include "page_allocator.h"
@@ -41,18 +41,18 @@ void __svc_not_implemented(void)
 const UvisorSvcTarget g_svc_vtor_tbl = {
     .not_implemented = __svc_not_implemented,
 
-    .irq_enable = unvic_irq_enable,
-    .irq_disable = unvic_irq_disable,
-    .irq_disable_all = unvic_irq_disable_all,
-    .irq_enable_all = unvic_irq_enable_all,
-    .irq_set_vector = unvic_isr_set,
-    .irq_get_vector = unvic_isr_get,
-    .irq_set_pending = unvic_irq_pending_set,
-    .irq_get_pending = unvic_irq_pending_get,
-    .irq_clear_pending = unvic_irq_pending_clr,
-    .irq_set_priority = unvic_irq_priority_set,
-    .irq_get_priority = unvic_irq_priority_get,
-    .irq_get_level = unvic_irq_level_get,
+    .irq_enable = virq_irq_enable,
+    .irq_disable = virq_irq_disable,
+    .irq_disable_all = virq_irq_disable_all,
+    .irq_enable_all = virq_irq_enable_all,
+    .irq_set_vector = virq_isr_set,
+    .irq_get_vector = virq_isr_get,
+    .irq_set_pending = virq_irq_pending_set,
+    .irq_get_pending = virq_irq_pending_get,
+    .irq_clear_pending = virq_irq_pending_clr,
+    .irq_set_priority = virq_irq_priority_set,
+    .irq_get_priority = virq_irq_priority_get,
+    .irq_get_level = virq_irq_level_get,
     .irq_system_reset = debug_reboot,
 
     .page_malloc = page_allocator_malloc,
@@ -132,7 +132,7 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
         "ldr    pc, [r12, r3, lsl #2]\n"            // branch to handler
         ".align 4\n"                                // the jump table must be aligned
     "jump_table_unpriv:\n"
-        ".word  unvic_gateway_out\n"
+        ".word  virq_gateway_out\n"
         ".word  __svc_not_implemented\n" // Deprecated: secure_gateway_in
         ".word  __svc_not_implemented\n" // Deprecated: secure_gateway_out
         ".word  register_gateway_perform_operation\n"
@@ -205,7 +205,7 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
         "ldr    pc, [r12, r3, lsl #2]\n"            // branch to handler
         ".align 4\n"                                // the jump table must be aligned
     "jump_table_priv:\n"
-        ".word  unvic_gateway_in\n"
+        ".word  virq_gateway_in\n"
         ".word  __svc_not_implemented\n"
         ".word  __svc_not_implemented\n"
         ".word  __svc_not_implemented\n"

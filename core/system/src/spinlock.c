@@ -14,25 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "spinlock.h"
+#include "api/inc/uvisor_spinlock_exports.h"
 
-void spin_init(UvisorSpinlock * spinlock)
+void uvisor_spin_init(UvisorSpinlock * spinlock)
 {
     __sync_synchronize();
     spinlock->acquired = false;
 }
 
-bool spin_trylock(UvisorSpinlock * spinlock)
+bool uvisor_spin_trylock(UvisorSpinlock * spinlock)
 {
     return __sync_bool_compare_and_swap(&spinlock->acquired, false, true);
 }
 
-void spin_lock(UvisorSpinlock * spinlock)
+void uvisor_spin_lock(UvisorSpinlock * spinlock)
 {
-    while (spin_trylock(spinlock) == false);
+    while (uvisor_spin_trylock(spinlock) == false);
 }
 
-void spin_unlock(UvisorSpinlock * spinlock)
+void uvisor_spin_unlock(UvisorSpinlock * spinlock)
 {
     __sync_synchronize();
     spinlock->acquired = false;

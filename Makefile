@@ -63,32 +63,40 @@ API_ASM_OUTPUT:=$(CONFIGURATION_PREFIX)/$(API_DIR)/uvisor-output.s
 API_RELEASE:=$(API_DIR)/lib/$(PLATFORM)/$(BUILD_MODE)/$(CONFIGURATION_LOWER).a
 API_VERSION:=$(API_DIR)/lib/$(PLATFORM)/$(BUILD_MODE)/$(CONFIGURATION_LOWER).txt
 
+# Architecture filters.
+ARCH_CORE_LOWER:=$(shell echo $(ARCH_CORE) | tr '[:upper:]' '[:lower:]')
+ARCH_MPU_LOWER:=$(shell echo $(ARCH_MPU) | tr '[:upper:]' '[:lower:]')
+
+# Release library source files directories
+# Note: We assume that the all source files directories follow the src/inc
+#       directory structure, including optional MPU- or core-specific folders.
+API_DIRS:=\
+	$(API_DIR)
+API_SRC_DIRS:=\
+	$(foreach DIR, $(API_DIRS), $(DIR)/src) \
+	$(foreach DIR, $(API_DIRS), $(DIR)/src/$(ARCH_CORE_LOWER)) \
+	$(foreach DIR, $(API_DIRS), $(DIR)/src/$(ARCH_MPU_LOWER)) \
+	$(foreach DIR, $(API_DIRS), $(DIR)/src/$(ARCH_CORE_LOWER)/$(ARCH_MPU_LOWER))
+
 # Release library source files
 # Note: We explicitly remove unsupported.c from the list of source files. It
 #       will be compiled by the host OS in case uVisor is not supported.
-API_SOURCES:=$(wildcard $(API_DIR)/src/*.c)
+API_SOURCES:=$(foreach DIR, $(API_SRC_DIRS), $(wildcard $(DIR)/*.c))
 API_SOURCES:=$(filter-out $(API_DIR)/src/unsupported.c, $(API_SOURCES))
 
 # Release library object files
 API_OBJS:=$(foreach API_SOURCE, $(API_SOURCES), $(CONFIGURATION_PREFIX)/$(API_DIR)/$(notdir $(API_SOURCE:.c=.o))) \
           $(API_ASM_OUTPUT:.s=.o)
 
-# Select the MPU driver.
-# If not set, the ARMv7-M driver is selected by default.
-ifeq ("$(ARCH_MPU)","")
-ARCH_MPU:=ARMv7M
-endif
-ARCH_MPU_LOWER:=$(shell echo $(ARCH_MPU) | tr '[:upper:]' '[:lower:]')
-
 # List of core libraries
 # Note: One could do it in a simpler way but this prevents spurious files in
 #       $(CORE_LIB_DIR) from getting picked.
 CORE_LIBS:=$(notdir $(realpath $(dir $(wildcard $(CORE_LIB_DIR)/*/))))
 
-# Core source files directories.
+# Core source files directories
 # Change this list every time a folder is added or removed.
 # Note: We assume that the all source files directories follow the src/inc
-#       directory structure, including optional MPU-specific folders.
+#       directory structure, including optional MPU- or core-specific folders.
 CORE_DIRS:=\
 	$(CORE_CMSIS_DIR) \
 	$(CORE_DEBUG_DIR) \
@@ -97,14 +105,18 @@ CORE_DIRS:=\
 	$(CORE_VMPU_DIR) \
 	$(PLATFORM_DIR)/$(PLATFORM)
 CORE_INC_DIRS:=\
-	$(foreach DIR, $(CORE_DIRS), $(DIR)/inc)
+	$(foreach DIR, $(CORE_DIRS), $(DIR)/inc) \
+	$(foreach DIR, $(CORE_DIRS), $(DIR)/inc/$(ARCH_CORE_LOWER)) \
+	$(foreach DIR, $(CORE_DIRS), $(DIR)/inc/$(ARCH_MPU_LOWER)) \
+	$(foreach DIR, $(CORE_DIRS), $(DIR)/inc/$(ARCH_CORE_LOWER)/$(ARCH_MPU_LOWER))
 CORE_SRC_DIRS:=\
 	$(foreach DIR, $(CORE_DIRS), $(DIR)/src) \
-	$(foreach DIR, $(CORE_DIRS), $(DIR)/src/$(ARCH_MPU_LOWER))
+	$(foreach DIR, $(CORE_DIRS), $(DIR)/src/$(ARCH_CORE_LOWER)) \
+	$(foreach DIR, $(CORE_DIRS), $(DIR)/src/$(ARCH_MPU_LOWER)) \
+	$(foreach DIR, $(CORE_DIRS), $(DIR)/src/$(ARCH_CORE_LOWER)/$(ARCH_MPU_LOWER))
 
 # Core source files
-CORE_SOURCES:=\
-	$(foreach DIR, $(CORE_SRC_DIRS), $(wildcard $(DIR)/*.c))
+CORE_SOURCES:=$(foreach DIR, $(CORE_SRC_DIRS), $(wildcard $(DIR)/*.c))
 
 # Core object files
 CORE_OBJS:=$(foreach SOURCE, $(CORE_SOURCES), $(CONFIGURATION_PREFIX)/$(CORE_DIR)/$(notdir $(SOURCE:.c=.o)))
@@ -117,8 +129,8 @@ CORE_OBJS:=$(foreach SOURCE, $(CORE_SOURCES), $(CONFIGURATION_PREFIX)/$(CORE_DIR
 # build the core or the release library (so the two can have the same names
 # without collisions).
 ifneq ($(MAKECMDGOALS),build_core)
-vpath %.c $(API_DIR)/src
-vpath %.s $(API_DIR)/src
+vpath %.c $(API_SRC_DIRS)
+vpath %.s $(API_SRC_DIRS)
 else
 vpath %.c $(CORE_SRC_DIRS)
 endif
@@ -140,7 +152,11 @@ ifeq ("$(PROGRAM_VERSION)","")
 PROGRAM_VERSION:='unknown'
 endif
 
-FLAGS_CORE:=-mcpu=cortex-m3 -march=armv7-m -mthumb
+ifeq ("$(ARCH_CORE)","CORE_ARMv8M")
+FLAGS_CORE:=-mthumb -march=armv8-m.main -mcmse
+else
+FLAGS_CORE:=-mthumb -march=armv7-m
+endif
 
 LDFLAGS:=\
         $(FLAGS_CORE) \
@@ -156,9 +172,10 @@ CFLAGS_PRE:=\
         $(DEBUG) \
         $(WARNING) \
         -DUVISOR_PRESENT=1 \
-        -DARCH_MPU_$(ARCH_MPU) \
+        -DUVISOR_CORE_BUILD=$(UVISOR_CORE_BUILD) \
+        -DARCH_$(ARCH_CORE) \
+        -DARCH_$(ARCH_MPU) \
         -D$(CONFIGURATION) \
-        -DPROGRAM_VERSION=\"$(PROGRAM_VERSION)\" \
         $(APP_CFLAGS) \
         -I$(ROOT_DIR) \
         -I$(CORE_DIR) \
@@ -171,6 +188,8 @@ CPPFLAGS:=
 CXXFLAGS:=-fno-exceptions
 
 LINKER_CONFIG:=\
+    -DARCH_$(ARCH_CORE) \
+    -DARCH_$(ARCH_MPU) \
     -D$(CONFIGURATION) \
     -I$(PLATFORM_DIR)/$(PLATFORM)/inc \
     -include $(CORE_DIR)/uvisor-config.h
@@ -224,9 +243,9 @@ ifndef BUILD_MODE
 	$(error "Missing build mode. Use PLATFORM=<platform> BUILD_MODE=<build_mode> make CONFIGURATION_<configuration>")
 endif
 	@# 3rd-level make
-	$(MAKE) BUILD_MODE=$(BUILD_MODE) PLATFORM=$(PLATFORM) CONFIGURATION=$@ build_core
+	$(MAKE) UVISOR_CORE_BUILD=1 BUILD_MODE=$(BUILD_MODE) PLATFORM=$(PLATFORM) CONFIGURATION=$@ build_core
 	@# 3rd-level make
-	$(MAKE) BUILD_MODE=$(BUILD_MODE) PLATFORM=$(PLATFORM) CONFIGURATION=$@ build_api
+	$(MAKE) UVISOR_CORE_BUILD=0 BUILD_MODE=$(BUILD_MODE) PLATFORM=$(PLATFORM) CONFIGURATION=$@ build_api
 
 # This middleware target is needed because the parent make does not know the
 # name to give to the core binary yet.

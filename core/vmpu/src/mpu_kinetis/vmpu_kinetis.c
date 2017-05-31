@@ -17,16 +17,18 @@
 #include <uvisor.h>
 #include "debug.h"
 #include "context.h"
+#include "exc_return.h"
 #include "halt.h"
 #include "memory_map.h"
 #include "svc.h"
-#include "unvic.h"
+#include "virq.h"
 #include "vmpu.h"
 #include "vmpu_mpu.h"
 #include "vmpu_kinetis.h"
 #include "vmpu_kinetis_aips.h"
 #include "vmpu_kinetis_mem.h"
 #include "page_allocator_faults.h"
+#include <stdbool.h>
 
 uint32_t g_box_mem_pos;
 
@@ -52,7 +54,7 @@ static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr
 
 uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
 {
-    uint32_t psp, pc;
+    uint32_t pc;
     uint32_t fault_addr, fault_status;
 
     /* The IPSR enumerates interrupt numbers from 0 up, while *_IRQn numbers
@@ -60,13 +62,25 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
      * convert the IPSR value to this latter encoding */
     int ipsr = ((int) (__get_IPSR() & 0x1FF)) - NVIC_OFFSET;
 
-    /* PSP at fault */
-    psp = __get_PSP();
+    /* Determine the origin of the exception. */
+    bool from_np = EXC_FROM_NP(lr);
+    bool from_psp = EXC_FROM_PSP(lr);
+    uint32_t sp = from_np ? (from_psp ? __get_PSP() : msp) : msp;
 
     switch (ipsr) {
+        case NonMaskableInt_IRQn:
+            HALT_ERROR(NOT_IMPLEMENTED, "No NonMaskableInt IRQ handler registered.");
+            break;
+
+        case HardFault_IRQn:
+            DEBUG_FAULT(FAULT_HARD, lr, sp);
+            HALT_ERROR(FAULT_HARD, "Cannot recover from a hard fault.");
+            lr = debug_box_enter_from_priv(lr);
+            break;
+
         case MemoryManagement_IRQn:
-            DEBUG_FAULT(FAULT_MEMMANAGE, lr, lr & 0x4 ? psp : msp);
-            HALT_ERROR(FAULT_MEMMANAGE, "Cannot recover from a memmanage fault");
+            DEBUG_FAULT(FAULT_MEMMANAGE, lr, sp);
+            HALT_ERROR(FAULT_MEMMANAGE, "Cannot recover from a memory management fault.");
             break;
 
         case BusFault_IRQn:
@@ -92,11 +106,11 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
 
                 /* The stack pointer is at fault. BFAR doesn't contain a
                  * valid fault address. */
-                fault_addr = psp;
+                fault_addr = sp;
             } else {
                 /* pc at fault */
-                if (lr & 0x4) {
-                    pc = vmpu_unpriv_uint32_read(psp + (6 * 4));
+                if (from_np) {
+                    pc = vmpu_unpriv_uint32_read(sp + (6 * 4));
                 } else {
                     /* We can be privileged here if we tried doing an ldrt or
                      * strt to a region not currently loaded in the MPU. In
@@ -118,7 +132,7 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
                 fault_addr = MPU->SP[slave_port].EAR;
 
                 /* Check if we can recover from the MPU fault. */
-                if (!vmpu_fault_recovery_mpu(pc, psp, fault_addr)) {
+                if (!vmpu_fault_recovery_mpu(pc, sp, fault_addr)) {
                     /* We clear the bus fault status anyway. */
                     VMPU_SCB_BFSR = fault_status;
 
@@ -133,44 +147,42 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
             }
 
             /* Check if the fault is the special register corner case. */
-            if (!vmpu_fault_recovery_bus(pc, psp, fault_addr, fault_status)) {
+            if (!vmpu_fault_recovery_bus(pc, sp, fault_addr, fault_status)) {
                 VMPU_SCB_BFSR = fault_status;
                 return lr;
             }
 
             /* If recovery was not successful, throw an error and halt. */
-            DEBUG_FAULT(FAULT_BUS, lr, lr & 0x4 ? psp : msp);
+            DEBUG_FAULT(FAULT_BUS, lr, sp);
             VMPU_SCB_BFSR = fault_status;
-            HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied");
+            HALT_ERROR(PERMISSION_DENIED, "Access to restricted resource denied.");
             lr = debug_box_enter_from_priv(lr);
             break;
 
         case UsageFault_IRQn:
-            DEBUG_FAULT(FAULT_USAGE, lr, lr & 0x4 ? psp : msp);
+            DEBUG_FAULT(FAULT_USAGE, lr, sp);
             HALT_ERROR(FAULT_USAGE, "Cannot recover from a usage fault.");
             break;
 
-        case HardFault_IRQn:
-            DEBUG_FAULT(FAULT_HARD, lr, lr & 0x4 ? psp : msp);
-            HALT_ERROR(FAULT_HARD, "Cannot recover from a hard fault.");
-            lr = debug_box_enter_from_priv(lr);
+        case SVCall_IRQn:
+            HALT_ERROR(NOT_IMPLEMENTED, "No SVCall IRQ handler registered.");
             break;
 
         case DebugMonitor_IRQn:
-            DEBUG_FAULT(FAULT_DEBUG, lr, lr & 0x4 ? psp : msp);
-            HALT_ERROR(FAULT_DEBUG, "Cannot recover from a debug fault.");
+            DEBUG_FAULT(FAULT_DEBUG, lr, sp);
+            HALT_ERROR(FAULT_DEBUG, "Cannot recover from a DebugMonitor fault.");
             break;
 
         case PendSV_IRQn:
-            HALT_ERROR(NOT_IMPLEMENTED, "No PendSV IRQ hook registered");
+            HALT_ERROR(NOT_IMPLEMENTED, "No PendSV IRQ handler registered.");
             break;
 
         case SysTick_IRQn:
-            HALT_ERROR(NOT_IMPLEMENTED, "No SysTick IRQ hook registered");
+            HALT_ERROR(NOT_IMPLEMENTED, "No SysTick IRQ handler registered.");
             break;
 
         default:
-            HALT_ERROR(NOT_ALLOWED, "Active IRQn(%i) is not a system interrupt", ipsr);
+            HALT_ERROR(NOT_ALLOWED, "Active IRQn (%i) is not a system interrupt.", ipsr);
             break;
     }
 
@@ -228,16 +240,9 @@ void vmpu_acl_sram(uint8_t box_id, uint32_t bss_size, uint32_t stack_size, uint3
     g_box_mem_pos += bss_size + UVISOR_STACK_BAND_SIZE;
 }
 
+/* This function assumes that its inputs are validated. */
 void vmpu_switch(uint8_t src_box, uint8_t dst_box)
 {
-    /* Check for errors. */
-    if (!vmpu_is_box_id_valid(src_box)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "vMPU switch: The source box ID is out of range (%u).\r\n", src_box);
-    }
-    if (!vmpu_is_box_id_valid(dst_box)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "vMPU switch: The destination box ID is out of range (%u).\r\n", dst_box);
-    }
-
     /* Switch ACLs for peripherals. */
     vmpu_aips_switch(src_box, dst_box);
 
@@ -266,15 +271,6 @@ uint32_t vmpu_fault_find_acl(uint32_t fault_addr, uint32_t size)
     }
 
     return 0;
-}
-
-void vmpu_load_box(uint8_t box_id)
-{
-    if (box_id != 0) {
-        HALT_ERROR(NOT_IMPLEMENTED, "currently only box 0 can be loaded");
-    }
-    vmpu_aips_switch(box_id, box_id);
-    DPRINTF("%d  box %d loaded \n\r", box_id);
 }
 
 void vmpu_arch_init(void)

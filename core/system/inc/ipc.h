@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, ARM Limited, All Rights Reserved
+ * Copyright (c) 2017, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -14,24 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __RTX_PROCESS_MALLOC_H__
-#define __RTX_PROCESS_MALLOC_H__
+#ifndef __IPC_H__
+#define __IPC_H__
 
-#include "secure_allocator.h"
+void ipc_drain_queue(void);
+void ipc_box_init(uint8_t box_init);
 
-#ifdef __cplusplus
-extern "C" {
 #endif
-
-/* Allocate memory on the process heap. */
-void * malloc_p(size_t size);
-/* Reallocate memory on the process heap. */
-void * realloc_p(void * ptr, size_t size);
-/* Free memory on the process heap. */
-void free_p(void * ptr);
-
-#ifdef __cplusplus
-}   /* extern "C" */
-#endif
-
-#endif  /* __RTX_PROCESS_MALLOC_H__ */

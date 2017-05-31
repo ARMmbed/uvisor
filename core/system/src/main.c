@@ -17,94 +17,28 @@
 #include <uvisor.h>
 #include "debug.h"
 #include "page_allocator.h"
+#if defined(ARCH_CORE_ARMv7M)
+#include "priv_sys_hooks.h"
+#endif /* defined(ARCH_CORE_ARMv7M) */
+#include "scheduler.h"
 #include "svc.h"
-#include "unvic.h"
+#include "virq.h"
 #include "vmpu.h"
+#include <stdbool.h>
 
 UVISOR_NOINLINE void uvisor_init_pre(uint32_t const * const user_vtor)
 {
     /* Reset the uVisor own BSS section. */
-    memset(&__bss_start__, 0, VMPU_REGION_SIZE(&__bss_start__, &__bss_end__));
+    memset(&__uvisor_bss_start__, 0, VMPU_REGION_SIZE(&__uvisor_bss_start__, &__uvisor_bss_end__));
 
     /* Initialize the uVisor own data. */
-    memcpy(&__data_start__, &__data_start_src__, VMPU_REGION_SIZE(&__data_start__, &__data_end__));
+    memcpy(&__uvisor_data_start__, &__uvisor_data_start_src__, VMPU_REGION_SIZE(&__uvisor_data_start__, &__uvisor_data_end__));
 
     /* Initialize the unprivileged NVIC module. */
-    unvic_init(user_vtor);
+    virq_init(user_vtor);
 
     /* Initialize the debugging features. */
     DEBUG_INIT();
-}
-
-static void sanity_check_priv_sys_hooks(UvisorPrivSystemHooks const * priv_sys_hooks)
-{
-    /* Check that the table is in flash. */
-    if (!vmpu_public_flash_addr((uint32_t) priv_sys_hooks) ||
-        !vmpu_public_flash_addr((uint32_t) priv_sys_hooks + sizeof(priv_sys_hooks))) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "priv_sys_hooks (0x%08x) not entirely in public flash\n", priv_sys_hooks);
-    }
-
-    /*
-     * Check that each hook is in flash, if the hook is non-0.
-     */
-    if (__uvisor_config.priv_sys_hooks->priv_svc_0 &&
-        !vmpu_public_flash_addr((uint32_t) __uvisor_config.priv_sys_hooks->priv_svc_0)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "priv_svc_0 (0x%08x) not entirely in public flash\n",
-                   __uvisor_config.priv_sys_hooks->priv_svc_0);
-    }
-
-    if (__uvisor_config.priv_sys_hooks->priv_pendsv &&
-        !vmpu_public_flash_addr((uint32_t) __uvisor_config.priv_sys_hooks->priv_pendsv)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "priv_pendsv (0x%08x) not entirely in public flash\n",
-                   __uvisor_config.priv_sys_hooks->priv_pendsv);
-    }
-
-    if (__uvisor_config.priv_sys_hooks->priv_systick &&
-        !vmpu_public_flash_addr((uint32_t) __uvisor_config.priv_sys_hooks->priv_systick)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "priv_systick (0x%08x) not entirely in public flash\n",
-                   __uvisor_config.priv_sys_hooks->priv_pendsv);
-    }
-
-    if (__uvisor_config.priv_sys_hooks->priv_os_suspend &&
-        !vmpu_public_flash_addr((uint32_t) __uvisor_config.priv_sys_hooks->priv_os_suspend)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "priv_os_suspend (0x%08x) not entirely in public flash\n",
-                   __uvisor_config.priv_sys_hooks->priv_os_suspend);
-    }
-
-    if (__uvisor_config.priv_sys_hooks->priv_uvisor_semaphore_post &&
-        !vmpu_public_flash_addr((uint32_t) __uvisor_config.priv_sys_hooks->priv_uvisor_semaphore_post)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "priv_uvisor_semaphore_post (0x%08x) not entirely in public flash\n",
-                   __uvisor_config.priv_sys_hooks->priv_uvisor_semaphore_post);
-    }
-}
-
-static void load_priv_sys_hooks(void)
-{
-    /* Make sure the hook table is sane. */
-    sanity_check_priv_sys_hooks(__uvisor_config.priv_sys_hooks);
-
-    /*
-     * Register each hook.
-     */
-    if (__uvisor_config.priv_sys_hooks->priv_svc_0) {
-        g_priv_sys_hooks.priv_svc_0 = __uvisor_config.priv_sys_hooks->priv_svc_0;
-    }
-
-    if (__uvisor_config.priv_sys_hooks->priv_pendsv) {
-        g_priv_sys_hooks.priv_pendsv = __uvisor_config.priv_sys_hooks->priv_pendsv;
-    }
-
-    if (__uvisor_config.priv_sys_hooks->priv_systick) {
-        g_priv_sys_hooks.priv_systick = __uvisor_config.priv_sys_hooks->priv_systick;
-    }
-
-    if (__uvisor_config.priv_sys_hooks->priv_os_suspend) {
-        g_priv_sys_hooks.priv_os_suspend = __uvisor_config.priv_sys_hooks->priv_os_suspend;
-    }
-
-    if (__uvisor_config.priv_sys_hooks->priv_uvisor_semaphore_post) {
-        g_priv_sys_hooks.priv_uvisor_semaphore_post = __uvisor_config.priv_sys_hooks->priv_uvisor_semaphore_post;
-    }
 }
 
 UVISOR_NOINLINE void uvisor_init_post(void)
@@ -115,50 +49,128 @@ UVISOR_NOINLINE void uvisor_init_post(void)
     /* Initialize the page allocator. */
     page_allocator_init(__uvisor_config.page_start, __uvisor_config.page_end, __uvisor_config.page_size);
 
+#if defined(ARCH_CORE_ARMv7M)
     /* Initialize the SVCall interface. */
     svc_init();
 
     /* Load the privileged system hooks. */
-    load_priv_sys_hooks();
+    priv_sys_hooks_load();
+#endif /* defined(ARCH_CORE_ARMv7M) */
 
     DPRINTF("uvisor initialized\n");
 }
 
-void main_entry(void)
+UVISOR_NAKED void main_entry(uint32_t caller)
 {
-    /* Return immediately if the magic is invalid or uVisor is disabled.
-     * This ensures that no uVisor feature that could halt the system is
-     * active in disabled mode (for example, printing debug messages to the
-     * semihosting port). */
-    if (__uvisor_config.magic != UVISOR_MAGIC || !__uvisor_config.mode || *(__uvisor_config.mode) == 0) {
-        return;
+    asm volatile(
+        /* Disable all IRQs. They will be re-enabled before de-privileging. */
+        "cpsid i\n"
+        "isb\n"
+
+        /* Store the bootloader lr value. */
+        "push  {r0}\n"
+
+        /* Check if uVisor config is sane and enabled. */
+        "bl    uvisor_config_is_sane_and_enabled\n"
+        "cmp   r0, #0\n"
+        "it    eq\n"
+        "popeq {pc}\n"
+
+        /* Set the MSP. Since we are changing stacks we need to pop and re-push
+         * the lr value. */
+        "pop   {r0}\n"
+        "ldr   r1, =__uvisor_stack_top__\n"
+        "msr   MSP, r1\n"
+        "push  {r0}\n"
+
+        /* First initialization stage. */
+        "bl    main_init\n"
+
+        /* Re-enable all IRQs. */
+        "cpsie i\n"
+        "isb\n"
+
+        /* Pop the lr value. */
+        /* Note: This needs to be done now if we then de-privilege exeuction,
+         *       otherwise the stack will become unaccessible. */
+        "pop   {r0}\n"
+
+#if defined(ARCH_CORE_ARMv7M)
+        /* De-privilege execution (ARMv7-M only). */
+        "mrs   r1, CONTROL\n"
+        "orr   r1, r1, #3\n"
+        "msr   CONTROL, r1\n"
+#endif /* defined(ARCH_CORE_ARMv7M) */
+
+        /* Return to the caller. */
+#if defined(ARCH_CORE_ARMv8M)
+        "bic   r0, r0, #1\n"
+        "bxns  r0\n"
+#else /* defined(ARCH_CORE_ARMv8M) */
+        "bx    r0\n"
+#endif /* defined(ARCH_CORE_ARMv8M) */
+    );
+}
+
+/* Return true if the uvisor_config magic matches. */
+static bool uvisor_config_magic_match(void)
+{
+    return __uvisor_config.magic == UVISOR_MAGIC;
+}
+
+/* Return true if uVisor is enabled. */
+static bool uvisor_config_enabled(void)
+{
+    return __uvisor_config.mode && *(__uvisor_config.mode) != 0;
+}
+
+/* Halt if uVisor magic doesn't match. Return true if uVisor is enabled, false
+ * if disabled. */
+bool uvisor_config_is_sane_and_enabled(void)
+{
+    if (!uvisor_config_magic_match()) {
+        /* uVisor magic didn't match. Halt. */
+        HALT_ERROR(SANITY_CHECK_FAILED, "Bad uVisor config magic");
     }
 
+    return uvisor_config_enabled();
+}
+
+void main_init(void)
+{
     /* Early uVisor initialization. */
     uvisor_init_pre((uint32_t *) SCB->VTOR);
 
     /* Run basic sanity checks. */
-    if (vmpu_init_pre() == 0) {
-        /* Disable all IRQs to perform atomic pointers swaps. */
-        __disable_irq();
+    /* NOTE: This function halts if there is an error. */
+    vmpu_init_pre();
 
-        /* Swap the vector tables. */
-        SCB->VTOR = (uint32_t) &g_isr_vector;
+    /* Stack pointers */
+    /* Note: The uVisor stack pointer is assumed to be already correctly set. */
+    /* Note: We do not need to set the NS NP stack pointer (for the app and the
+     *       private boxes), as it is set during the vMPU initialization. */
+    uint32_t original_sp = ((uint32_t *) SCB->VTOR)[0] - 4;
+#if defined(ARCH_CORE_ARMv8M)
+    /* NS P stack pointer, for the RTOS and the uVisor-ns. */
+    __TZ_set_MSP_NS(original_sp);
 
-        /* Swap the stack pointers. */
-        __set_PSP(__get_MSP());
-        __set_MSP((uint32_t) &__stack_top__);
+    /* S NP stack pointer, for the SDSs and the transition gateways. */
+    __set_PSP((uint32_t) &__uvisor_stack_top_np__);
+#else /* defined(ARCH_CORE_ARMv8M) */
+    /* NP stack pointer, for the RTOS and the uVisor lib. */
+    __set_PSP(original_sp);
+#endif /* defined(ARCH_CORE_ARMv8M) */
 
-        /* Re-enable all IRQs. */
-        __enable_irq();
+    /* Set the uVisor vector table */
+    SCB->VTOR = (uint32_t) &g_isr_vector;
 
-        /* Finish the uVisor initialization */
-        uvisor_init_post();
+    /* Finish the uVisor initialization */
+    uvisor_init_post();
+}
 
-        /* Switch to unprivileged mode.
-         * This is possible as the uVisor code is readable in unprivileged mode. */
-        __set_CONTROL(__get_CONTROL() | 3);
-        __ISB();
-        __DSB();
-    }
+void uvisor_start(void)
+{
+#if defined(ARCH_CORE_ARMv8M)
+    scheduler_start();
+#endif /* defined(ARCH_CORE_ARMv8M) */
 }

@@ -19,12 +19,23 @@
 #include "context.h"
 #include "halt.h"
 #include "svc.h"
-#include "unvic.h"
+#include "virq.h"
 #include "vmpu.h"
 
+/* Define the correct NVIC Priority Register name. */
+#if defined(CORE_CORTEX_M33)
+#define NVIC_IPR NVIC->IPR
+#else /* defined(CORE_CORTEX_M33) */
+#define NVIC_IPR NVIC->IP
+#endif /* defined(CORE_CORTEX_M33) */
+
+#define VIRQ_ISR_OWNER_OTHER 0
+#define VIRQ_ISR_OWNER_NONE  1
+#define VIRQ_ISR_OWNER_SELF  2
+
 /* unprivileged vector table */
-TIsrUVector g_unvic_vector[NVIC_VECTORS];
-uint8_t g_nvic_prio_bits;
+TIsrUVector g_virq_vector[NVIC_VECTORS];
+uint8_t g_virq_prio_bits;
 
 /* Counter to keep track of how many times a disable-all function has been
  * called for each box.
@@ -36,11 +47,7 @@ uint8_t g_nvic_prio_bits;
  * that a nested function re-enables IRQs for the caller. */
 uint32_t g_irq_disable_all_counter[UVISOR_MAX_BOXES];
 
-/* vmpu_acl_irq to unvic_acl_add */
-void vmpu_acl_irq(uint8_t box_id, void *function, uint32_t irqn)
-     UVISOR_LINKTO(unvic_acl_add);
-
-static void unvic_default_check(uint32_t irqn)
+static void virq_default_check(uint32_t irqn)
 {
     /* IRQn goes from 0 to (NVIC_VECTORS - 1) */
     if(irqn >= NVIC_VECTORS)
@@ -57,60 +64,33 @@ static void unvic_default_check(uint32_t irqn)
     }
 }
 
-void unvic_acl_add(uint8_t box_id, void *function, uint32_t irqn)
+static int virq_acl_check(int irqn)
 {
     TIsrUVector *uv;
 
     /* don't allow to modify uVisor-owned IRQs */
-    unvic_default_check(irqn);
+    virq_default_check(irqn);
 
     /* get vector entry */
-    uv = &g_unvic_vector[irqn];
+    uv = &g_virq_vector[irqn];
 
-    /* check if IRQ entry is populated */
-    if(uv->id != UVISOR_BOX_ID_INVALID)
-    {
-        HALT_ERROR(PERMISSION_DENIED,
-                   "Permission denied: IRQ %d is owned by box %d\n\r", irqn,
-                                                                       uv->id);
-    }
-
-    /* save settings, function handler is optional */
-    uv->id = box_id;
-    uv->hdlr = function;
-}
-
-#define UNVIC_ISR_OWNER_OTHER 0
-#define UNVIC_ISR_OWNER_NONE  1
-#define UNVIC_ISR_OWNER_SELF  2
-
-static int unvic_acl_check(int irqn)
-{
-    TIsrUVector *uv;
-
-    /* don't allow to modify uVisor-owned IRQs */
-    unvic_default_check(irqn);
-
-    /* get vector entry */
-    uv = &g_unvic_vector[irqn];
-
-    if (uv->id == g_active_box) {
-        return UNVIC_ISR_OWNER_SELF;
-    }
     if (uv->id == UVISOR_BOX_ID_INVALID) {
-        return UNVIC_ISR_OWNER_NONE;
+        return VIRQ_ISR_OWNER_NONE;
     }
-    return UNVIC_ISR_OWNER_OTHER;
+    if (uv->id == g_active_box) {
+        return VIRQ_ISR_OWNER_SELF;
+    }
+    return VIRQ_ISR_OWNER_OTHER;
 }
 
-static void unvic_isr_register(uint32_t irqn)
+static void virq_isr_register(uint32_t irqn)
 {
-    switch (unvic_acl_check(irqn))
+    switch (virq_acl_check(irqn))
     {
-        case UNVIC_ISR_OWNER_NONE:
-            g_unvic_vector[irqn].id = g_active_box;
+        case VIRQ_ISR_OWNER_NONE:
+            g_virq_vector[irqn].id = g_active_box;
             DPRINTF("IRQ %d registered to box %d\n\r", irqn, g_active_box);
-        case UNVIC_ISR_OWNER_SELF:
+        case VIRQ_ISR_OWNER_SELF:
             return;
         default:
             break;
@@ -118,27 +98,37 @@ static void unvic_isr_register(uint32_t irqn)
     HALT_ERROR(PERMISSION_DENIED, "Permission denied: IRQ %d is owned by another box!\r\n", irqn);
 }
 
-void unvic_isr_set(uint32_t irqn, uint32_t vector)
+void virq_acl_add(uint8_t box_id, uint32_t irqn)
+{
+    /* Only save the IRQ if it's not owned by anybody else. */
+    int owner = virq_acl_check(irqn);
+    if (owner == VIRQ_ISR_OWNER_OTHER) {
+        HALT_ERROR(PERMISSION_DENIED, "vIRQ: IRQ %d is already owned by box %u.\r\n", irqn, g_virq_vector[irqn].id);
+    }
+    g_virq_vector[irqn].id = box_id;
+}
+
+void virq_isr_set(uint32_t irqn, uint32_t vector)
 {
     /* This function halts if the IRQ is owned by another box or by uVisor. */
-    unvic_isr_register(irqn);
+    virq_isr_register(irqn);
 
     /* Save unprivileged handler. */
-    g_unvic_vector[irqn].hdlr = (TIsrVector) vector;
+    g_virq_vector[irqn].hdlr = (TIsrVector) vector;
 }
 
-uint32_t unvic_isr_get(uint32_t irqn)
+uint32_t virq_isr_get(uint32_t irqn)
 {
     /* This function halts if the IRQ is owned by another box or by uVisor. */
-    unvic_isr_register(irqn);
+    virq_isr_register(irqn);
 
-    return (uint32_t) g_unvic_vector[irqn].hdlr;
+    return (uint32_t) g_virq_vector[irqn].hdlr;
 }
 
-void unvic_irq_enable(uint32_t irqn)
+void virq_irq_enable(uint32_t irqn)
 {
     /* This function halts if the IRQ is owned by another box or by uVisor. */
-    unvic_isr_register(irqn);
+    virq_isr_register(irqn);
 
     /* If the counter of nested disable-all IRQs is set to 0, it means that
      * IRQs are not globally disabled for the current box. */
@@ -148,17 +138,17 @@ void unvic_irq_enable(uint32_t irqn)
     } else {
         /* We do not enable the IRQ directly, but notify uVisor to enable it
          * when IRQs will be re-enabled globally for the current box. */
-        g_unvic_vector[irqn].was_enabled = true;
+        g_virq_vector[irqn].was_enabled = true;
     }
     return;
 }
 
-void unvic_irq_disable(uint32_t irqn)
+void virq_irq_disable(uint32_t irqn)
 {
     /* This function halts if the IRQ is owned by another box or by uVisor. */
-    unvic_isr_register(irqn);
+    virq_isr_register(irqn);
 
-    DPRINTF("IRQ %d disabled, but still owned by box %d\n\r", irqn, g_unvic_vector[irqn].id);
+    DPRINTF("IRQ %d disabled, but still owned by box %d\n\r", irqn, g_virq_vector[irqn].id);
     NVIC_DisableIRQ(irqn);
     return;
 }
@@ -168,9 +158,9 @@ void unvic_irq_disable(uint32_t irqn)
  * @internal
  *
  * This function keeps a state in the unprivileged vector table that will be
- * used later on, in ::unvic_irq_enable_all, to re-enabled previously disabled
+ * used later on, in ::virq_irq_enable_all, to re-enabled previously disabled
  * IRQs. */
-void unvic_irq_disable_all(void)
+void virq_irq_disable_all(void)
 {
     int irqn;
 
@@ -180,15 +170,15 @@ void unvic_irq_disable_all(void)
         /* Iterate over all the IRQs owned by the currently active box and
          * disable them if they were active before the function call. */
         for (irqn = 0; irqn < NVIC_VECTORS; irqn++) {
-            if (g_unvic_vector[irqn].id == g_active_box && UNVIC_IS_IRQ_ENABLED(irqn)) {
+            if (g_virq_vector[irqn].id == g_active_box && VIRQ_IS_IRQ_ENABLED(irqn)) {
                 /* Remember the state for this IRQ. The state is the NVIC one,
                  * so we are sure we don't enable spurious interrupts. */
-                g_unvic_vector[irqn].was_enabled = true;
+                g_virq_vector[irqn].was_enabled = true;
 
                 /* Disable the IRQ. */
                 NVIC_DisableIRQ(irqn);
             } else {
-                g_unvic_vector[irqn].was_enabled = false;
+                g_virq_vector[irqn].was_enabled = false;
             }
         }
     }
@@ -212,13 +202,13 @@ void unvic_irq_disable_all(void)
  *
  * @internal
  *
- * The state that was previously set in ::unvic_irq_enable_all is reset, so that
+ * The state that was previously set in ::virq_irq_enable_all is reset, so that
  * spurious calls to this function do not mistakenly enable IRQs that are
  * supposed to be disabled.
  *
  * IRQs are only re-enabled if the internal counter set by
- * ::unvic_irq_disable_all reaches 0. */
-void unvic_irq_enable_all(void)
+ * ::virq_irq_disable_all reaches 0. */
+void virq_irq_enable_all(void)
 {
     int irqn;
 
@@ -229,14 +219,14 @@ void unvic_irq_enable_all(void)
          * re-enable them if they were either (i.) enabled before the
          * disable-all phase, or (ii.) enabled during the disable-all phase. */
         for (irqn = 0; irqn < NVIC_VECTORS; irqn++) {
-            if (g_unvic_vector[irqn].id == g_active_box && g_unvic_vector[irqn].was_enabled) {
+            if (g_virq_vector[irqn].id == g_active_box && g_virq_vector[irqn].was_enabled) {
                 /* Re-enable the IRQ. */
                 NVIC_EnableIRQ(irqn);
 
                 /* Reset the state. This is only needed in case someone calls
                  * this function without having previously called the
                  * disable-all one. */
-                g_unvic_vector[irqn].was_enabled = false;
+                g_virq_vector[irqn].was_enabled = false;
             }
         }
     }
@@ -257,39 +247,39 @@ void unvic_irq_enable_all(void)
     }
 }
 
-void unvic_irq_pending_clr(uint32_t irqn)
+void virq_irq_pending_clr(uint32_t irqn)
 {
     /* This function halts if the IRQ is owned by another box or by uVisor. */
-    unvic_isr_register(irqn);
+    virq_isr_register(irqn);
 
     /* Clear pending IRQ. */
     DPRINTF("IRQ %d pending status cleared\n\r", irqn);
     NVIC_ClearPendingIRQ(irqn);
 }
 
-void unvic_irq_pending_set(uint32_t irqn)
+void virq_irq_pending_set(uint32_t irqn)
 {
     /* This function halts if the IRQ is owned by another box or by uVisor. */
-    unvic_isr_register(irqn);
+    virq_isr_register(irqn);
 
     /* Set pending IRQ. */
     DPRINTF("IRQ %d pending status set (will be served as soon as possible)\n\r", irqn);
     NVIC_SetPendingIRQ(irqn);
 }
 
-uint32_t unvic_irq_pending_get(uint32_t irqn)
+uint32_t virq_irq_pending_get(uint32_t irqn)
 {
     /* This function halts if the IRQ is owned by another box or by uVisor. */
-    unvic_isr_register(irqn);
+    virq_isr_register(irqn);
 
     /* Get priority for device specific interrupts. */
     return NVIC_GetPendingIRQ(irqn);
 }
 
-void unvic_irq_priority_set(uint32_t irqn, uint32_t priority)
+void virq_irq_priority_set(uint32_t irqn, uint32_t priority)
 {
     /* This function halts if the IRQ is owned by another box or by uVisor. */
-    unvic_isr_register(irqn);
+    virq_isr_register(irqn);
 
     /* Check for maximum priority. */
     if (priority > UVISOR_VIRQ_MAX_PRIORITY) {
@@ -302,16 +292,16 @@ void unvic_irq_priority_set(uint32_t irqn, uint32_t priority)
     NVIC_SetPriority(irqn, __UVISOR_NVIC_MIN_PRIORITY + priority);
 }
 
-uint32_t unvic_irq_priority_get(uint32_t irqn)
+uint32_t virq_irq_priority_get(uint32_t irqn)
 {
     /* This function halts if the IRQ is owned by another box or by uVisor. */
-    unvic_isr_register(irqn);
+    virq_isr_register(irqn);
 
     /* Get priority for device specific interrupts. */
     return NVIC_GetPriority(irqn) - __UVISOR_NVIC_MIN_PRIORITY;
 }
 
-int unvic_irq_level_get(void)
+int virq_irq_level_get(void)
 {
     /* Gather IPSR from exception stack frame. */
     /* The currently active IRQn is the one of the SVCall, while instead we want
@@ -327,7 +317,7 @@ int unvic_irq_level_get(void)
 
     /* Check that the IRQn is not owned by uVisor. */
     /* This also checks that the IRQn is in the correct range. */
-    unvic_default_check(irqn);
+    virq_default_check(irqn);
 
     /* If an IRQn is active, return the (virtualised, i.e. shifted) priority level
      * of the interrupt, which goes from 0 up. */
@@ -340,10 +330,10 @@ int unvic_irq_level_get(void)
  *
  * This function is implemented as a wrapper, needed to make sure that the lr
  * register doesn't get polluted and to provide context privacy during a context
- * switch. The actual function is ::unvic_gateway_context_switch_in. The wrapper
+ * switch. The actual function is ::virq_gateway_context_switch_in. The wrapper
  * also changes the lr register so that we can return to a different privilege
  * level. */
-void UVISOR_NAKED unvic_gateway_in(uint32_t svc_sp, uint32_t svc_pc)
+void UVISOR_NAKED virq_gateway_in(uint32_t svc_sp, uint32_t svc_pc)
 {
     /* According to the ARM ABI, r0 and r1 will have the following values when
      * this function is called:
@@ -352,9 +342,9 @@ void UVISOR_NAKED unvic_gateway_in(uint32_t svc_sp, uint32_t svc_pc)
     asm volatile(
         "push {r4 - r11}\n"                             /* Store the callee-saved registers on the MSP (privileged). */
         "push {lr}\n"                                   /* Preserve the lr register. */
-        "bl   unvic_gateway_context_switch_in\n"        /* privacy = unvic_context_switch_in(svc_sp, svc_pc) */
+        "bl   virq_gateway_context_switch_in\n"         /* privacy = virq_context_switch_in(svc_sp, svc_pc) */
         "cmp  r0, #0\n"                                 /* if (privacy)  */
-        "beq  unvic_gateway_no_regs_clearing\n"         /* {             */
+        "beq  virq_gateway_no_regs_clearing\n"          /* {             */
         "mov  r4,  #0\n"                                /*     Clear r4  */
         "mov  r5,  #0\n"                                /*     Clear r5  */
         "mov  r6,  #0\n"                                /*     Clear r6  */
@@ -363,7 +353,7 @@ void UVISOR_NAKED unvic_gateway_in(uint32_t svc_sp, uint32_t svc_pc)
         "mov  r9,  #0\n"                                /*     Clear r9  */
         "mov  r10, #0\n"                                /*     Clear r10 */
         "mov  r11, #0\n"                                /*     Clear r11 */
-        "unvic_gateway_no_regs_clearing:\n"             /* } else { ; }  */
+        "virq_gateway_no_regs_clearing:\n"              /* } else { ; }  */
         "pop  {lr}\n"                                   /* Restore the lr register. */
         "orr  lr, #0x1C\n"                              /* Return to unprivileged mode, using the PSP, 8 words stack. */
         "bx   lr\n"                                     /* Return. Note: Callee-saved registers are not popped here. */
@@ -376,19 +366,19 @@ void UVISOR_NAKED unvic_gateway_in(uint32_t svc_sp, uint32_t svc_pc)
  *
  * @internal
  *
- * This function implements ::unvic_gateway_in, which is instead only a wrapper.
+ * This function implements ::virq_gateway_in, which is instead only a wrapper.
  *
  * @warning This function trusts the SVCall parameters that are passed to it.
  *
  * @param svc_sp[in]    Unprivileged stack pointer at the time of the interrupt
  * @param svc_pc[in]    Program counter at the time of the interrupt */
-uint32_t unvic_gateway_context_switch_in(uint32_t svc_sp, uint32_t svc_pc)
+uint32_t virq_gateway_context_switch_in(uint32_t svc_sp, uint32_t svc_pc)
 {
     uint8_t dst_id;
     uint32_t dst_fn;
     uint32_t src_sp, dst_sp, msp;
     uint32_t ipsr, irqn, xpsr;
-    uint32_t unvic_thunk;
+    uint32_t virq_thunk;
 
     /* This handler is always executed from privileged code, so the SVCall stack
      * pointer is the MSP. */
@@ -397,13 +387,13 @@ uint32_t unvic_gateway_context_switch_in(uint32_t svc_sp, uint32_t svc_pc)
     /* Destination box: Gather information from the IRQn. */
     ipsr = ((uint32_t *) msp)[7];
     irqn = (ipsr & 0x1FF) - NVIC_OFFSET;
-    dst_id = g_unvic_vector[irqn].id;
-    dst_fn = (uint32_t) g_unvic_vector[irqn].hdlr;
+    dst_id = g_virq_vector[irqn].id;
+    dst_fn = (uint32_t) g_virq_vector[irqn].hdlr;
 
     /* Verify the IRQn access privileges. */
     /* Note: Only default basic checks are performed, since the remaining
      * information is fetched from our trusted vector table. */
-    unvic_default_check(irqn);
+    virq_default_check(irqn);
 
     /* Check if the ISR is registered. */
     if(!dst_fn) {
@@ -420,10 +410,10 @@ uint32_t unvic_gateway_context_switch_in(uint32_t svc_sp, uint32_t svc_pc)
 
     /* The stacked return value is the second SVCall in the uVisor default ISR
      * handler. */
-    unvic_thunk = (uint32_t) (svc_pc + 2);
+    virq_thunk = (uint32_t) (svc_pc + 2);
 
     /* Forge a stack frame for the destination box. */
-    dst_sp = context_forge_exc_sf(src_sp, dst_id, dst_fn, unvic_thunk, xpsr, 0);
+    dst_sp = context_forge_exc_sf(src_sp, dst_id, dst_fn, virq_thunk, xpsr, 0);
 
     /* Perform the context switch-in to the destination box. */
     /* This function halts if it finds an error. */
@@ -443,10 +433,10 @@ uint32_t unvic_gateway_context_switch_in(uint32_t svc_sp, uint32_t svc_pc)
  *
  * This function is implemented as a wrapper, needed to make sure that the lr
  * register doesn't get polluted and to provide context privacy during a context
- * switch. The actual function is ::unvic_gateway_context_switch_out. The
+ * switch. The actual function is ::virq_gateway_context_switch_out. The
  * wrapper also changes the lr register so that we can return to a different
  * privilege level. */
-void UVISOR_NAKED unvic_gateway_out(uint32_t svc_sp)
+void UVISOR_NAKED virq_gateway_out(uint32_t svc_sp)
 {
     /* According to the ARM ABI, r0 will have the following value when this
      * function is called:
@@ -457,7 +447,7 @@ void UVISOR_NAKED unvic_gateway_out(uint32_t svc_sp)
         "mrs r1, MSP\n"                             /* Read the MSP. */
         "add r1, #32\n"                             /* Account for the previously pushed callee-saved registers. */
         "push {lr}\n"                               /* Save the lr register for later. */
-        "bl unvic_gateway_context_switch_out\n"     /* unvic_gateway_context_switch_out(svc_sp, msp) */
+        "bl virq_gateway_context_switch_out\n"      /* virq_gateway_context_switch_out(svc_sp, msp) */
         "pop  {lr}\n"                               /* Restore the lr register. */
         "pop  {r4-r11}\n"                           /* Restore the previously saved callee-saved registers. */
         "orr lr, #0x10\n"                           /* Return to unprivileged mode, using the MSP, 8 words stack */
@@ -471,7 +461,7 @@ void UVISOR_NAKED unvic_gateway_out(uint32_t svc_sp)
  *
  * @internal
  *
- * This function implements ::unvic_gateway_out, which is instead only a
+ * This function implements ::virq_gateway_out, which is instead only a
  * wrapper.
  *
  * @warning This function trusts the SVCall parameters that are passed to it.
@@ -479,7 +469,7 @@ void UVISOR_NAKED unvic_gateway_out(uint32_t svc_sp)
  * @param svc_sp[in]    Unprivileged stack pointer at the time of the interrupt
  *                      return handler (thunk)
  * @param msp[in]       Value of the MSP register at the time of the SVcall */
-void unvic_gateway_context_switch_out(uint32_t svc_sp, uint32_t msp)
+void virq_gateway_context_switch_out(uint32_t svc_sp, uint32_t msp)
 {
     uint32_t dst_sp;
 
@@ -493,13 +483,13 @@ void unvic_gateway_context_switch_out(uint32_t svc_sp, uint32_t msp)
     context_discard_exc_sf(g_active_box, dst_sp);
 
     /* Perform the context switch back to the previous state. */
-    context_switch_out(CONTEXT_SWITCH_FUNCTION_GATEWAY);
+    context_switch_out(CONTEXT_SWITCH_FUNCTION_ISR);
 
     /* Re-privilege execution. */
     __set_CONTROL(__get_CONTROL() & ~2);
 }
 
-void unvic_init(uint32_t const * const user_vtor)
+void virq_init(uint32_t const * const user_vtor)
 {
     uint8_t prio_bits;
     uint8_t volatile *prio;
@@ -508,23 +498,23 @@ void unvic_init(uint32_t const * const user_vtor)
      * The architecture specifies that unused/not implemented bits in the
      * NVIC IP registers read back as 0. */
     __disable_irq();
-    prio = (uint8_t volatile *) &(NVIC->IP[0]);
+    prio = (uint8_t volatile *) &(NVIC_IPR[0]);
     prio_bits = *prio;
     *prio = 0xFFU;
-    g_nvic_prio_bits = (uint8_t) __builtin_popcount(*prio);
+    g_virq_prio_bits = (uint8_t) __builtin_popcount(*prio);
     *prio = prio_bits;
     __enable_irq();
 
     /* Verify that the priority bits read at runtime are realistic. */
-    assert(g_nvic_prio_bits > 0 && g_nvic_prio_bits <= 8);
+    assert(g_virq_prio_bits > 0 && g_virq_prio_bits <= 8);
 
     /* Check that minimum priority is still in the range of possible priority
      * levels. */
     assert(__UVISOR_NVIC_MIN_PRIORITY < UVISOR_VIRQ_MAX_PRIORITY);
 
     /* Set the priority of each exception. SVC is lower priority than
-     * MemManage, BusFault, and UsageFault, so that we can recover from
-     * stacking MemManage faults more simply. */
+     * MemManage, BusFault, UsageFault, and SecureFault_IRQn, so that we can
+     * recover from security violations more simply. */
     static const uint32_t priority_0 = __UVISOR_NVIC_MIN_PRIORITY - 2;
     static const uint32_t priority_1 = __UVISOR_NVIC_MIN_PRIORITY - 1;
     assert(priority_0 < __UVISOR_NVIC_MIN_PRIORITY);
@@ -550,8 +540,8 @@ void unvic_init(uint32_t const * const user_vtor)
      * _before_ the user has had a chance to set a custom (runtime) handler.
      * This mirrors hardware behavior. */
     for (uint32_t ii = 0; ii < NVIC_VECTORS; ii++) {
-        g_unvic_vector[ii].id = UVISOR_BOX_ID_INVALID;
-        g_unvic_vector[ii].hdlr = (TIsrVector) user_vtor[ii + NVIC_OFFSET];
+        g_virq_vector[ii].id = UVISOR_BOX_ID_INVALID;
+        g_virq_vector[ii].hdlr = (TIsrVector) user_vtor[ii + NVIC_OFFSET];
         /* Set default priority (SVC must always be higher). */
         NVIC_SetPriority(ii, __UVISOR_NVIC_MIN_PRIORITY);
     }

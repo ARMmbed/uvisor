@@ -15,15 +15,19 @@
  * limitations under the License.
  */
 #include <uvisor.h>
+#include "api/inc/box_config.h"
+#include "box_init.h"
 #include "debug.h"
 #include "context.h"
 #include "halt.h"
 #include "memory_map.h"
 #include "svc.h"
+#include "virq.h"
 #include "vmpu.h"
 #include "vmpu_mpu.h"
+#include <sys/reent.h>
 
-uint32_t  g_vmpu_box_count;
+uint8_t g_vmpu_box_count;
 bool g_vmpu_boxes_counted;
 
 static int vmpu_check_sanity(void)
@@ -36,11 +40,7 @@ static int vmpu_check_sanity(void)
     }
 
     /* Make sure the UVISOR_BOX_ID_INVALID is definitely NOT a valid box id. */
-    if (vmpu_is_box_id_valid(UVISOR_BOX_ID_INVALID)) {
-        HALT_ERROR(SANITY_CHECK_FAILED,
-            "UVISOR_BOX_ID_INVALID (%u) must not be a valid box id!\n",
-            UVISOR_BOX_ID_INVALID);
-    }
+    assert(!vmpu_is_box_id_valid(UVISOR_BOX_ID_INVALID));
 
     /* Verify basic assumptions about vmpu_bits/__builtin_clz. */
     assert(__builtin_clz(0) == 32);
@@ -112,12 +112,12 @@ static int vmpu_check_sanity(void)
     }
 
     /* Verify SRAM sections are within uVisor's own SRAM. */
-    assert(&__bss_start__ >= __uvisor_config.bss_main_start);
-    assert(&__bss_end__ <= __uvisor_config.bss_main_end);
-    assert(&__data_start__ >= __uvisor_config.bss_main_start);
-    assert(&__data_end__ <= __uvisor_config.bss_main_end);
-    assert(&__stack_start__ >= __uvisor_config.bss_main_start);
-    assert(&__stack_end__ <= __uvisor_config.bss_main_end);
+    assert(&__uvisor_bss_start__ >= UVISOR_GET_S_ALIAS(__uvisor_config.bss_main_start));
+    assert(&__uvisor_bss_end__ <= UVISOR_GET_S_ALIAS(__uvisor_config.bss_main_end));
+    assert(&__uvisor_data_start__ >= UVISOR_GET_S_ALIAS(__uvisor_config.bss_main_start));
+    assert(&__uvisor_data_end__ <= UVISOR_GET_S_ALIAS(__uvisor_config.bss_main_end));
+    assert(&__uvisor_stack_start__ >= UVISOR_GET_S_ALIAS(__uvisor_config.bss_main_start));
+    assert(&__uvisor_stack_end__ <= UVISOR_GET_S_ALIAS(__uvisor_config.bss_main_end));
 
     /* Verify that the secure flash area is accessible and after public code. */
     assert(!vmpu_public_flash_addr((uint32_t) __uvisor_config.secure_start));
@@ -278,7 +278,8 @@ static void vmpu_box_index_init(uint8_t box_id, UvisorBoxConfig const * const bo
 
     /* Assign the pointers to the BSS sections. */
     for (int i = 0; i < UVISOR_BSS_SECTIONS_COUNT; i++) {
-        size_t size = box_cfgtbl->bss.sizes[i];
+        /* Round size up to a multiple of 4. */
+        size_t size = __UVISOR_BOX_ROUND_4(box_cfgtbl->bss.sizes[i]);
         index->bss.pointers[i] = (size ? box_bss : NULL);
         box_bss += size;
     }
@@ -301,6 +302,17 @@ static void vmpu_box_index_init(uint8_t box_id, UvisorBoxConfig const * const bo
         index->bss.address_of.heap = (uint32_t) ((void *) heap_start + bss_size);
     } else {
         heap_size = box_cfgtbl->bss.size_of.heap;
+
+        /* TODO: Move this into box_init on NS side. */
+        /* The _REENT_INIT_PTR points these buffers to other parts of the struct,
+         * which, since this is executed in S-mode, aliases to the secure addresses.
+         * That has to be corrected. The rest of the reent struct is initialized to
+         * zero by _REENT_INIT_PTR, but this is newlib implementation defined. */
+        struct _reent * reent = (struct _reent *) index->bss.address_of.newlib_reent;
+        _REENT_INIT_PTR(UVISOR_GET_S_ALIAS(reent));
+        UVISOR_GET_S_ALIAS(reent)->_stdin  = UVISOR_GET_NS_ALIAS(UVISOR_GET_S_ALIAS(reent)->_stdin);
+        UVISOR_GET_S_ALIAS(reent)->_stdout = UVISOR_GET_NS_ALIAS(UVISOR_GET_S_ALIAS(reent)->_stdout);
+        UVISOR_GET_S_ALIAS(reent)->_stderr = UVISOR_GET_NS_ALIAS(UVISOR_GET_S_ALIAS(reent)->_stderr);
     }
     index->box_heap_size = heap_size;
 
@@ -327,7 +339,7 @@ static void vmpu_configure_box_peripherals(uint8_t box_id, UvisorBoxConfig const
 
             /* Add the ACL and force the entry as user-provided. */
             if (region->acl & UVISOR_TACL_IRQ) {
-                vmpu_acl_irq(box_id, region->param1, region->param2);
+                virq_acl_add(box_id, (uint32_t) region->param1);
             } else {
                 vmpu_region_add_static_acl(
                     box_id,
@@ -364,7 +376,11 @@ static void vmpu_configure_box_sram(uint8_t box_id, UvisorBoxConfig const * box_
         /* Note: This relies on the assumption that all supported MPU
          *       architectures allow us to setup a background region somehow. */
         bss_start = (uint32_t) __uvisor_config.heap_start;
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+        stack_pointer = __TZ_get_PSP_NS();
+#else
         stack_pointer = __get_PSP();
+#endif
     } else {
         uint32_t stack_size = box_cfgtbl->stack_size;
         vmpu_acl_sram(box_id, bss_size, stack_size, &bss_start, &stack_pointer);
@@ -410,11 +426,12 @@ static void vmpu_enumerate_boxes(void)
 
         /* Add the box ACLs for peripherals. */
         vmpu_configure_box_peripherals(box_id, box_cfgtbl);
+
+        box_init(box_id, box_cfgtbl);
     }
 
     /* Load box 0. */
-    vmpu_load_box(0);
-    *(__uvisor_config.uvisor_box_context) = (uint32_t *) g_context_current_states[0].bss;
+    context_switch_in(CONTEXT_SWITCH_UNBOUND_FIRST, 0, 0, 0);
 
     DPRINTF("vmpu_enumerate_boxes [DONE]\n");
 }

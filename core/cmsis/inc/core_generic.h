@@ -27,11 +27,14 @@
  * we use theirs. */
 #if defined(ARCH_MPU_ARMv7M)
 #define __MPU_PRESENT 1
+#elif defined(ARCH_MPU_ARMv8M)
+#define __MPU_PRESENT 1
+#define __SAUREGION_PRESENT 1
 #elif defined(ARCH_MPU_KINETIS)
 #define __MPU_PRESENT 0
-#else
+#else /* MPU configuration */
 #error "Unknown MPU architecture. Check your Makefile."
-#endif /* defined(ARCH_MPU_ARMv7M) || defined(ARCH_MPU_KINETIS) */
+#endif /* MPU configuration */
 
 /* We don't need the SysTick configurtion. */
 #define __Vendor_SysTickConfig 0
@@ -40,12 +43,16 @@
  * will be detected at runtime. */
 #define __FPU_PRESENT 0
 
+/* We assume no DSP is present. This disables possible optimizations but allows
+ * for more generality in our targets (Cortex-M3, M4 and M33). */
+#define __DSP_PRESENT 0
+
 /* Redefine the macro to a custom variable that is written at startup time by
  * uVisor.
  * This allows us to remove the __NVIC_PRIO_BITS axis from the release binaries
  * matrix */
-extern uint8_t g_nvic_prio_bits;
-#define __NVIC_PRIO_BITS g_nvic_prio_bits
+extern uint8_t g_virq_prio_bits;
+#define __NVIC_PRIO_BITS g_virq_prio_bits
 
 /* This ensures that the CMSIS header files actively check for our
  * configurations. If a symbol is not configured, a warning is issued. */
@@ -62,6 +69,9 @@ typedef enum IRQn {
   MemoryManagement_IRQn = -12,
   BusFault_IRQn         = -11,
   UsageFault_IRQn       = -10,
+#if defined(ARCH_CORE_ARMv8M)
+  SecureFault_IRQn      = -9,
+#endif /* defined(ARCH_CORE_ARMv8M) */
   SVCall_IRQn           = -5,
   DebugMonitor_IRQn     = -4,
   PendSV_IRQn           = -2,
@@ -74,9 +84,11 @@ typedef enum IRQn {
 #include "core_cm3.h"
 #elif defined(CORE_CORTEX_M4)
 #include "core_cm4.h"
-#else /* defined(CORE_CORTEX_M3) || defined(CORE_CORTEX_M4) */
+#elif defined(CORE_CORTEX_M33)
+#include "core_cm33.h"
+#else /* Core selection */
 #error "Unsupported ARM core. Make sure CORE_* is defined in your workspace."
-#endif /* unsupported ARM core */
+#endif /* Core selection */
 
 /* Optional MPU headers for the NXP Kinetis MPU */
 #ifdef ARCH_MPU_KINETIS

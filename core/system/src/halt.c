@@ -53,7 +53,7 @@ void halt_error(THaltError reason, const char *fmt, ...)
     default_putc('\n');
 
     /* Die. */
-    debug_halt_error(reason);
+    halt(reason);
 }
 
 void halt_line(const char *file, uint32_t line, THaltError reason,
@@ -71,7 +71,7 @@ void halt_line(const char *file, uint32_t line, THaltError reason,
     default_putc('\n');
 
     /* Die. */
-    debug_halt_error(reason);
+    halt(reason);
 }
 
 void halt_user_error(THaltUserError reason)

@@ -17,12 +17,9 @@
 #include <uvisor.h>
 #include "semaphore.h"
 
-int semaphore_init(UvisorSemaphore * semaphore, int32_t count)
+int semaphore_init(UvisorSemaphore * semaphore, uint32_t initial_count, uint32_t max_count)
 {
-    /* If privileged mode, die because of uVisor programmer error. Semaphores
-     * must be initialized from outside of uVisor. */
-    assert(__get_IPSR() == 0U);
-    return __uvisor_config.lib_hooks->semaphore_init(semaphore, count);
+    return __uvisor_config.lib_hooks->semaphore_init(semaphore, initial_count, max_count);
 }
 
 int semaphore_pend(UvisorSemaphore * semaphore, uint32_t timeout_ms)

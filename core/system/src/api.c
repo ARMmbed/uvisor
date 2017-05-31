@@ -16,15 +16,39 @@
  */
 #include <uvisor.h>
 #include "api/inc/api.h"
+#include "api/inc/uvisor_spinlock_exports.h"
 #include "box_init.h"
 #include "debug.h"
 #include "halt.h"
 #include "svc.h"
-#include "unvic.h"
+#include "virq.h"
 #include "vmpu.h"
 #include "page_allocator.h"
 #include "thread.h"
 #include "box_init.h"
+
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+/* FIXME: Blank all registers before returning! */
+#define transition_np_to_p(fn_target, fn_ret, fn_name, ...) \
+    __attribute__((section(".entry_points"), naked)) \
+    fn_ret fn_target ## _transition(__VA_ARGS__) { \
+        asm volatile( \
+            "sg                  \n" \
+            "cpsid i             \n" \
+            "push {lr}           \n" \
+            "ldr r3,=" #fn_name "\n" \
+            "blx r3              \n" \
+            "pop {lr}            \n" \
+            "cpsie i             \n" \
+            "bxns lr             \n" \
+        ); \
+        __builtin_unreachable(); \
+    }
+
+#define transition_p_to_p(fn_target, fn_ret, fn_name, ...) \
+    transition_np_to_p(fn_target, fn_ret, fn_name, ##__VA_ARGS__)
+
+#else
 
 #define transition_np_to_p(fn_target, fn_ret, fn_name, ...) \
     UVISOR_NAKED static \
@@ -47,30 +71,32 @@
         __builtin_unreachable(); \
     }
 
+#endif
 
 transition_np_to_p(debug_init,       void, debug_register_driver, const TUvisorDebugDriver * const driver);
 transition_np_to_p(irq_system_reset, void, debug_reboot,          TResetReason reason);
 transition_np_to_p(error,            void, halt_user_error,       THaltUserError reason);
+transition_p_to_p(start,             void, uvisor_start,          void);
 
-transition_np_to_p(vmpu_mem_invalidate, void, vmpu_mem_invalidate, void);
+transition_np_to_p(vmpu_mem_invalidate, void, vmpu_mpu_invalidate, void);
 
 transition_np_to_p(box_namespace, int,  vmpu_box_namespace_from_id, int box_id, char * box_namespace, size_t length);
 
 transition_np_to_p(page_malloc, int,  page_allocator_malloc,       UvisorPageTable * const table);
 transition_np_to_p(page_free,   int,  page_allocator_free,   const UvisorPageTable * const table);
 
-transition_np_to_p(irq_set_vector,    void,     unvic_isr_set,          uint32_t irqn, uint32_t vector);
-transition_np_to_p(irq_get_vector,    uint32_t, unvic_isr_get,          uint32_t irqn);
-transition_np_to_p(irq_enable,        void,     unvic_irq_enable,       uint32_t irqn);
-transition_np_to_p(irq_disable,       void,     unvic_irq_disable,      uint32_t irqn);
-transition_np_to_p(irq_clear_pending, void,     unvic_irq_pending_clr,  uint32_t irqn);
-transition_np_to_p(irq_set_pending,   void,     unvic_irq_pending_set,  uint32_t irqn);
-transition_np_to_p(irq_get_pending,   uint32_t, unvic_irq_pending_get,  uint32_t irqn);
-transition_np_to_p(irq_set_priority,  void,     unvic_irq_priority_set, uint32_t irqn, uint32_t priority);
-transition_np_to_p(irq_get_priority,  uint32_t, unvic_irq_priority_get, uint32_t irqn);
-transition_np_to_p(irq_get_level,     int,      unvic_irq_level_get,    void);
-transition_np_to_p(irq_disable_all,   void,     unvic_irq_disable_all,  void);
-transition_np_to_p(irq_enable_all,    void,     unvic_irq_enable_all,   void);
+transition_np_to_p(irq_set_vector,    void,     virq_isr_set,          uint32_t irqn, uint32_t vector);
+transition_np_to_p(irq_get_vector,    uint32_t, virq_isr_get,          uint32_t irqn);
+transition_np_to_p(irq_enable,        void,     virq_irq_enable,       uint32_t irqn);
+transition_np_to_p(irq_disable,       void,     virq_irq_disable,      uint32_t irqn);
+transition_np_to_p(irq_clear_pending, void,     virq_irq_pending_clr,  uint32_t irqn);
+transition_np_to_p(irq_set_pending,   void,     virq_irq_pending_set,  uint32_t irqn);
+transition_np_to_p(irq_get_pending,   uint32_t, virq_irq_pending_get,  uint32_t irqn);
+transition_np_to_p(irq_set_priority,  void,     virq_irq_priority_set, uint32_t irqn, uint32_t priority);
+transition_np_to_p(irq_get_priority,  uint32_t, virq_irq_priority_get, uint32_t irqn);
+transition_np_to_p(irq_get_level,     int,      virq_irq_level_get,    void);
+transition_np_to_p(irq_disable_all,   void,     virq_irq_disable_all,  void);
+transition_np_to_p(irq_enable_all,    void,     virq_irq_enable_all,   void);
 
 transition_p_to_p(pre_start,       void,   boxes_init, void);
 transition_p_to_p(thread_create,   void *, thread_create, int id, void * c);
@@ -112,6 +138,7 @@ const UvisorApi __uvisor_api = {
 
     .debug_init = debug_init_transition,
     .error = error_transition,
+    .start = start_transition,
 
     .vmpu_mem_invalidate = vmpu_mem_invalidate_transition,
 
@@ -123,6 +150,11 @@ const UvisorApi __uvisor_api = {
     .pool_queue_dequeue = uvisor_pool_queue_dequeue,
     .pool_queue_dequeue_first = uvisor_pool_queue_dequeue_first,
     .pool_queue_find_first = uvisor_pool_queue_find_first,
+
+    .spin_init = uvisor_spin_init,
+    .spin_trylock = uvisor_spin_trylock,
+    .spin_lock = uvisor_spin_lock,
+    .spin_unlock = uvisor_spin_unlock,
 
     .os_event_observer = {
         .version = 0,

@@ -25,8 +25,12 @@
  *
  * @warning Currently only the FPU-disabled case is supported. Exceptions that
  * generates when the FPU is enabled will escalate to a hard fault. */
-#define CONTEXT_SWITCH_EXC_SF_WORDS 8
-#define CONTEXT_SWITCH_EXC_SF_BYTES (CONTEXT_SWITCH_EXC_SF_WORDS * sizeof(uint32_t))
+#define CONTEXT_SWITCH_EXC_SF_WORDS             8
+#define CONTEXT_SWITCH_EXC_SF_BYTES             (CONTEXT_SWITCH_EXC_SF_WORDS * sizeof(uint32_t))
+#if defined(ARCH_CORE_ARMv8M)
+#define CONTEXT_SWITCH_EXC_SF_ADDITIONAL_WORDS  10
+#define CONTEXT_SWITCH_EXC_SF_ADDITIONAL_BYTES  (CONTEXT_SWITCH_EXC_SF_ADDITIONAL_WORDS * sizeof(uint32_t))
+#endif /* defined(ARCH_CORE_ARMv8M) */
 
 /** Maximum number of arguments that can be passed to a function-bound context
  * switch. */
@@ -46,6 +50,7 @@ typedef enum {
     CONTEXT_SWITCH_FUNCTION_ISR,     /**< Bound to an ISR. Does not allow arguments, nor a return value. */
     CONTEXT_SWITCH_FUNCTION_DEBUG,   /**< Bound to debug handler. Uses the format specified by the debug box driver. */
     CONTEXT_SWITCH_UNBOUND_THREAD,   /**< Not bound to a handler. Used for thread switching. No switch-out. */
+    CONTEXT_SWITCH_UNBOUND_FIRST,    /**< Not bound to a handler. Used for the very first box switch. No switch-out. */
 } TContextSwitchType;
 
 /** Snapshot of a previous context state
@@ -79,6 +84,41 @@ typedef struct {
     uint32_t sp;        /**< Stack pointer */
     uint32_t bss;       /**< Bss pointer */
     uint32_t bss_size;  /**< Bss size */
+    uint32_t lr;        /**< EXC_RETURN */
+    int32_t  remaining_ms; /**< Remaining miliseconds of run-time */
+
+    /* These are registers that we must save on behalf of the src box when
+     * switching from the secure side. */
+    uint32_t r0;
+    uint32_t r1;
+    uint32_t r2;
+    uint32_t r3;
+    uint32_t r12;
+    uint32_t retaddr;
+    uint32_t retlr;
+    uint32_t retpsr;
+
+    /* These are registers that we must save on behalf of the src box when
+     * switching from either the secure or non-secure sides. */
+    uint32_t psp;
+    uint32_t msp;
+    uint32_t r4;
+    uint32_t r5;
+    uint32_t r6;
+    uint32_t r7;
+    uint32_t r8;
+    uint32_t r9;
+    uint32_t r10;
+    uint32_t r11;
+    uint32_t psplim;
+    uint32_t msplim;
+    uint32_t control;
+    uint32_t basepri;
+    uint32_t faultmask;
+    uint32_t primask;
+    // TODO SCB registers (pendsv, systick enable state stuff)
+    // TODO Allow pre-empting a NS box running its own NS memmanagefault
+    // handler.
 } TContextCurrentState;
 
 /** Currently active box */
@@ -181,5 +221,10 @@ void context_switch_in(TContextSwitchType context_type, uint8_t dst_id, uint32_t
  * @param context_type  Type of context switch to perform
  * @returns the pointer to the previous box context state. */
 TContextPreviousState * context_switch_out(TContextSwitchType context_type);
+
+/* Create an initial exception stack frame at the specified sp that will run
+ * the provided function.
+ * @return new sp (top of exception frame). */
+uint32_t context_forge_initial_frame(uint32_t sp, void (*function)(const void *));
 
 #endif /* __CONTEXT_H__ */

@@ -17,6 +17,7 @@
 #include <uvisor.h>
 #include "debug.h"
 #include "context.h"
+#include "exc_return.h"
 #include "halt.h"
 #include "memory_map.h"
 #include "svc.h"
@@ -63,34 +64,92 @@ UVISOR_WEAK void default_putc(uint8_t data)
 
 static void debug_exception_stack_frame(uint32_t lr, uint32_t sp)
 {
-    int i;
-    int mode = lr & 0x4;
+    dprintf("* EXCEPTION STACK FRAME\r\n");
+    dprintf("\r\n");
 
+    /* Determine the exception origin. */
+    bool from_np = EXC_FROM_NP(lr);
+    bool from_psp = EXC_FROM_PSP(lr);
+#if defined(ARCH_MPU_ARMv8M)
+    bool from_s = EXC_FROM_S(lr);
+    bool to_s = EXC_TO_S(lr);
+#endif /* defined(ARCH_MPU_ARMv8M) */
+
+    /* Debug the value of EXC_RETURN. */
+    dprintf("  lr: 0x%08X\r\n", lr);
+#if defined(ARCH_MPU_ARMv8M)
+    dprintf("  --> Exception from %s mode, handled in %s mode.\r\n", from_s ? "S" : "NS", to_s ? "S" : "NS");
+    dprintf("  --> R4-R11 %sstacked.\r\n", (lr & EXC_RETURN_DCRS_Msk) ? "" : "not ");
+#endif /* defined(ARCH_MPU_ARMv8M) */
+    dprintf("  --> FP stack frame %ssaved.\r\n", (lr & EXC_RETURN_FType_Msk) ? "not " : "");
+    dprintf("  --> Exception from %s mode.\r\n", from_np ? "NP" : "P");
+    dprintf("  --> Return to %cSP.\r\n", from_psp ? 'P' : 'M');
+    dprintf("\r\n");
+
+    /* Debug the exception stack frame. */
+
+    /* Names of the default stack frame elements. */
     char exc_sf_verbose[CONTEXT_SWITCH_EXC_SF_WORDS + 1][6] = {
         "r0", "r1", "r2", "r3", "r12",
         "lr", "pc", "xPSR", "align"
     };
+    dprintf("  sp: 0x%08X\r\n", sp);
 
-    dprintf("* EXCEPTION STACK FRAME\n");
-    dprintf("  Exception from %s code\n", mode ? "unprivileged" : "privileged");
-    dprintf("    %csp:     0x%08X\r\n", mode ? 'p' : 'm', sp);
-    dprintf("    lr:      0x%08X\r\n", lr);
+    /* The regular exception stack frame might be preceded by an additional one
+     * on ARMv8-M. */
+#if defined(ARCH_MPU_ARMv8M)
+    int offset = ((lr & EXC_RETURN_DCRS_Msk) ? CONTEXT_SWITCH_EXC_SF_ADDITIONAL_WORDS : 0);
+#else
+    int offset = 0;
+#endif /* defined(ARCH_MPU_ARMv8M) */
 
-    /* Print the exception stack frame. */
-    dprintf("  Exception stack frame:\n");
-    i = CONTEXT_SWITCH_EXC_SF_WORDS;
-    if (((uint32_t *) sp)[8] & (1 << 9)) {
-        dprintf("    %csp[%02d]: 0x%08X | %s\n", mode ? 'p' : 'm', i, ((uint32_t *) sp)[i], exc_sf_verbose[i]);
+    /* Print the alignment field, if required. */
+    if (((uint32_t *) sp)[offset + CONTEXT_SWITCH_EXC_SF_WORDS - 1] & (1 << 9)) {
+        dprintf("      sp[%02d]: 0x%08X | %s\r\n",
+                offset + CONTEXT_SWITCH_EXC_SF_WORDS,
+                ((uint32_t *) sp)[offset + CONTEXT_SWITCH_EXC_SF_WORDS],
+                exc_sf_verbose[CONTEXT_SWITCH_EXC_SF_WORDS]
+        );
     }
-    for (i = CONTEXT_SWITCH_EXC_SF_WORDS - 1; i >= 0; --i) {
-        dprintf("    %csp[%02d]: 0x%08X | %s\n", mode ? 'p' : 'm', i, ((uint32_t *) sp)[i], exc_sf_verbose[i]);
+
+    /* Dump the regular exception stack frame. */
+    int i = CONTEXT_SWITCH_EXC_SF_WORDS - 1;
+    for (; i >= 0; --i) {
+        dprintf("      sp[%02d]: 0x%08X | %s\r\n",
+                offset + i,
+                ((uint32_t *) sp)[offset + i],
+                exc_sf_verbose[i]
+        );
     }
-    dprintf("\n");
+
+    /* On ARMv8-M, dump an additional stack frame when needed. */
+#if defined(ARCH_MPU_ARMv8M)
+    if (lr & EXC_RETURN_DCRS_Msk) {
+        char exc_sf_additional_verbose[CONTEXT_SWITCH_EXC_SF_ADDITIONAL_WORDS+ 1][6] = {
+            "sign", "align",
+            "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        };
+        for (i = CONTEXT_SWITCH_EXC_SF_ADDITIONAL_WORDS - 1; i >= 0; --i) {
+            dprintf("      sp[%02d]: 0x%08X | %s\n",
+                    i,
+                    ((uint32_t *) sp)[i],
+                    exc_sf_additional_verbose[i]
+            );
+        }
+    }
+#endif /* defined(ARCH_MPU_ARMv8M) */
+
+    dprintf("\r\n");
+
+    dprintf("\r\n");
 }
 
 /* Specific architectures/ports can provide additional debug handlers. */
 UVISOR_WEAK void debug_fault_memmanage_hw(void) {}
 UVISOR_WEAK void debug_fault_bus_hw(void) {}
+#if defined(ARCH_MPU_ARMv8M)
+UVISOR_WEAK void debug_fault_secure_hw(void) {}
+#endif /* defined(ARCH_MPU_ARMv8M) */
 
 static void debug_fault_memmanage(void)
 {
@@ -201,12 +260,59 @@ static void debug_fault_usage(void)
     dprintf("\r\n");
 }
 
+#if defined(ARCH_MPU_ARMv8M)
+static void debug_fault_secure(void)
+{
+    dprintf("* FAULT SYNDROME REGISTERS\r\n");
+    dprintf("\r\n");
+
+    uint32_t sfsr = SAU->SFSR;
+    dprintf("  SFSR: 0x%08X\r\n", sfsr);
+    if (sfsr & SAU_SFSR_SFARVALID_Msk) {
+        dprintf("  SFAR: 0x%08X\r\n", SAU->SFAR);
+    } else {
+        dprintf("  --> SFAR not valid.\r\n");
+    }
+    if (sfsr & SAU_SFSR_LSERR_Msk) {
+        dprintf("  --> LSERR: lazy state preservation.\r\n");
+    }
+#if defined(__FPU_PRESENT) && (__FPU_PRESENT == 1)
+    if (sfsr & SAU_SFSR_LSPERR_Msk) {
+        dprintf("  --> LSPERR: lazy FP state preservation.\r\n");
+    }
+#endif /* defined(__FPU_PRESENT) && __FPU_PRESENT == 1 */
+    if (sfsr & SAU_SFSR_INVTRAN_Msk) {
+        dprintf("  --> INVTRAN: invalid transition (branch not flagged for transition).\r\n");
+    }
+    if (sfsr & SAU_SFSR_AUVIOL_Msk) {
+        dprintf("  --> AUVIOL: attribution unit violation.\r\n");
+    }
+    if (sfsr & SAU_SFSR_INVER_Msk) {
+        dprintf("  --> INVER: invalid EXC_RETURN (S/NS state bit).\r\n");
+    }
+    if (sfsr & SAU_SFSR_INVIS_Msk) {
+        dprintf("  --> INVIS: invalid integrity signature in exception stack frame.\r\n");
+    }
+    if (sfsr & SAU_SFSR_INVEP_Msk) {
+        dprintf("  --> INVEP: invalid entry point NS->S (no SG or no matching SAU/IDAU region found).\r\n");
+    }
+    dprintf("\r\n");
+
+    /* Call the MPU-specific debug handler. */
+    debug_fault_secure_hw();
+}
+#endif /* defined(ARCH_MPU_ARMv8M) */
+
 static void debug_fault_debug(void)
 {
     dprintf("* FAULT SYNDROME REGISTERS\r\n");
     dprintf("\r\n");
 
     dprintf("  DFSR  : 0x%08X\r\n\r\n", SCB->DFSR);
+}
+
+static void debug_box_id(void) {
+    dprintf("* Active Box ID: %u\r\n", g_active_box);
 }
 
 static void debug_fault_hard(void)
@@ -272,31 +378,47 @@ void debug_fault(THaltError reason, uint32_t lr, uint32_t sp)
     switch (reason) {
         case FAULT_HARD:
             DEBUG_PRINT_HEAD("HARD FAULT");
+            debug_box_id();
             debug_fault_hard();
             break;
         case FAULT_MEMMANAGE:
             DEBUG_PRINT_HEAD("MEMMANAGE FAULT");
+            debug_box_id();
             debug_fault_memmanage();
             break;
         case FAULT_BUS:
             DEBUG_PRINT_HEAD("BUS FAULT");
+            debug_box_id();
             debug_fault_bus();
             break;
         case FAULT_USAGE:
             DEBUG_PRINT_HEAD("USAGE FAULT");
+            debug_box_id();
             debug_fault_usage();
             break;
+#if defined(ARCH_MPU_ARMv8M)
+        case FAULT_SECURE:
+            DEBUG_PRINT_HEAD("SECURE FAULT");
+            debug_box_id();
+            debug_fault_secure();
+            break;
+#endif /* defined(ARCH_MPU_ARMv8M) */
         case FAULT_DEBUG:
             DEBUG_PRINT_HEAD("DEBUG FAULT");
+            debug_box_id();
             debug_fault_debug();
             break;
         default:
             DEBUG_PRINT_HEAD("[unknown fault]");
+            debug_box_id();
             break;
     }
 
     /* Blue screen messages shared by all faults */
     debug_exception_stack_frame(lr, sp);
     debug_mpu_config();
+#if defined(ARCH_MPU_ARMv8M)
+    debug_sau_config();
+#endif /* defined(ARCH_MPU_ARMv8M) */
     DEBUG_PRINT_END();
 }

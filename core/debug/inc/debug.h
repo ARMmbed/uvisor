@@ -33,6 +33,9 @@ TDebugBox g_debug_box;
 
 void debug_init(void);
 void debug_mpu_config(void);
+#if defined(ARCH_MPU_ARMv8M)
+void debug_sau_config(void);
+#endif /* defined(ARCH_MPU_ARMv8M) */
 void debug_fault(THaltError reason, uint32_t lr, uint32_t sp);
 void debug_map_addr_to_periph(uint32_t address);
 
@@ -48,6 +51,10 @@ void debug_reboot(TResetReason reason);
  * vmpu_sys_mux_handler. If called from outside a privileged mode exception
  * handler, this function does nothing. */
 uint32_t debug_box_enter_from_priv(uint32_t lr);
+
+void debug_die(void);
+void debug_deprivilege_and_return(void * debug_handler, void * return_handler,
+                                  uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3);
 
 #ifdef  NDEBUG
 
