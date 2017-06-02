@@ -53,6 +53,12 @@ void debug_deprivilege_and_return(void * debug_handler, void * return_handler,
     /* Suspend the OS. */
     g_priv_sys_hooks.priv_os_suspend();
 
+    /* Stop all lower-than-SVC-priority interrupts. FIXME Enable debug box to
+     * do things that require interrupts. One idea would be to provide an SVC
+     * to re-enable interrupts that can only be called by the debug box during
+     * debug handling. */
+    __set_BASEPRI(__UVISOR_NVIC_MIN_PRIORITY << (8U - __NVIC_PRIO_BITS));
+
     context_switch_in(CONTEXT_SWITCH_FUNCTION_DEBUG, dst_id, src_sp, dst_sp);
 
     /* Upon execution return debug_handler will be executed. Upon return from

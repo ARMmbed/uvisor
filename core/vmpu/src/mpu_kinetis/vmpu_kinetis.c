@@ -146,8 +146,11 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
                 DPRINTF("Multiple MPU violations found.\r\n");
             }
 
-            /* Check if the fault is the special register corner case. */
-            if (!vmpu_fault_recovery_bus(pc, sp, fault_addr, fault_status)) {
+            /* Check if the fault is the special register corner case. uVisor
+             * won't fault if it tries to access the special registers, so we
+             * must not handle the special register case when we are from
+             * privileged mode. */
+            if (from_psp && !vmpu_fault_recovery_bus(pc, sp, fault_addr, fault_status)) {
                 VMPU_SCB_BFSR = fault_status;
                 return lr;
             }
