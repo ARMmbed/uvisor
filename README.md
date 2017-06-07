@@ -2,7 +2,7 @@
 
 The uVisor is a self-contained software hypervisor that creates independent secure domains on ARM Cortex&reg;-M3 and Cortex&reg;-M4 microcontrollers. It increases resilience against malware and protects secrets from leaking even among different modules of the same application. You can find a [high-level overview here](http://www.slideshare.net/FoolsDelight/practical-realtime-operating-system-security-for-the-masses) ([Download PDF](https://github.com/ARMmbed/uvisor/raw/docs/uVisorSecurity-TechCon2016.pdf)).
 
-To start using uVisor, you need to include it as a library in your design. We release the uVisor library periodically into the mbed OS repository, [ARMmbed/mbed-os](https://github.com/ARMmbed/mbed-os). Review it to learn more about the uVisor security model and see an overview of its features.
+To start using uVisor, you need to include it as a library in your design. We release the uVisor library periodically into the mbed OS repository, [ARMmbed/mbed-os](https://github.com/ARMmbed/mbed-os).
 
 You can find most of the uVisor documentation in the [docs](docs) folder. Please look at the [getting started guide](docs/lib/QUICKSTART.md) for an introduction to uVisor application development. If you are interested in uVisor internals, please refer to the [OS-level introduction](https://github.com/ARMmbed/uvisor/raw/docs/uvisor-rtos-docs.pdf) and the [uVisor API docs](docs/lib/API.md).
 
@@ -37,9 +37,9 @@ The uVisor core supports the following platforms:
 - [STMicroelectronics STM32F429I-DISCO](http://www.st.com/web/catalog/tools/FM116/SC959/SS1532/PF259090).
 - [Silicon Labs EFM32 Gecko](http://www.silabs.com/products/mcu/32-bit/efm32-gecko/pages/efm32-gecko.aspx) (Cortex&reg;-M3 and Cortex&reg;-M4 devices).
 
-To use uVisor on a specific OS, you must complete the porting process for that OS. This requires an additional porting step, which the [uVisor porting guide for mbed OS](docs/core/PORTING.md) documents. uVisor supports the following operating system:
+To use uVisor on a specific OS, you must complete the porting process for that OS. This requires an additional porting step, which the [uVisor porting guide for mbed OS](docs/core/PORTING.md) documents. 
 
-- mbed OS: [NXP FRDM-K64F](http://developer.mbed.org/platforms/FRDM-K64F/).
+Currently, uVisor only supports mbed OS.
 
 The Launchpad [GNU ARM Embedded](https://launchpad.net/gcc-arm-embedded) Toolchain builds the uVisor prelinked binary images. Currently, uVisor only supports applications built with this toolchain. The minimum required version is 5.4-2016q3.
 
