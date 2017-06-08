@@ -137,7 +137,7 @@ endif
 
 SYSLIBS:=-lgcc -lc -lnosys
 DEBUG:=-g3
-WARNING:=-Wall -Werror
+WARNING:=-Wall -Wstrict-overflow=3 -Werror
 
 # Select optimizations depending on the build mode.
 ifeq ("$(BUILD_MODE)","debug")
