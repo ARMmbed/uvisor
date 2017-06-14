@@ -23,6 +23,8 @@
 #include "svc.h"
 #include "vmpu.h"
 
+TDebugBox g_debug_box;
+
 void debug_reboot(TResetReason reason)
 {
     if (!g_debug_box.initialized || g_active_box != g_debug_box.box_id || reason >= __TRESETREASON_MAX) {
