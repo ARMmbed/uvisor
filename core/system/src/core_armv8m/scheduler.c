@@ -23,7 +23,7 @@
 #include "vmpu.h"
 
 /* The box to switch to when the current one runs out of time. */
-static int g_next_box_id = 1;
+static int g_next_box_id;
 
 /* Set the desired time slice. */
 static const int32_t time_slice_ms = 100;
@@ -186,10 +186,8 @@ static void scheduler_delta_add(uint32_t delta_ms, saved_reg_t * reg)
 
     g_context_current_states[src_box_id].remaining_ms -= delta_ms;
     if (g_context_current_states[src_box_id].remaining_ms <= 0) {
-        int dst_box_id = g_next_box_id;
         g_next_box_id = (g_next_box_id + 1) % g_vmpu_box_count; /* Cycle through the boxes. */
-
-        dispatch(dst_box_id, src_box_id, reg);
+        dispatch(g_next_box_id, src_box_id, reg);
         g_context_current_states[src_box_id].remaining_ms = time_slice_ms;
     }
 }
