@@ -29,7 +29,7 @@ typedef struct TDebugBox {
     int initialized;
     uint8_t box_id;
 } TDebugBox;
-TDebugBox g_debug_box;
+extern TDebugBox g_debug_box;
 
 void debug_init(void);
 void debug_mpu_config(void);
