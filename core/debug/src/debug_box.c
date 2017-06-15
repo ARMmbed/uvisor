@@ -63,6 +63,8 @@ void debug_halt_error(THaltError reason)
     }
 }
 
+uint32_t g_debug_interrupt_sp[UVISOR_MAX_BOXES];
+
 void debug_register_driver(const TUvisorDebugDriver * const driver)
 {
     int i;
@@ -93,6 +95,11 @@ void debug_register_driver(const TUvisorDebugDriver * const driver)
         if (!*((uint32_t *) driver + i)) {
             HALT_ERROR(SANITY_CHECK_FAILED, "Handlers in the debug box driver cannot be initialized with a NULL pointer.\r\n");
         }
+    }
+
+    for (int ii = 0; ii < UVISOR_MAX_BOXES; ii++)
+    {
+        g_debug_interrupt_sp[ii] = g_context_current_states[ii].sp;
     }
 
     /* Register the debug box.

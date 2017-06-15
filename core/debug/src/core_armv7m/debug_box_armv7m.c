@@ -24,6 +24,8 @@ void debug_die(void)
     UVISOR_SVC(UVISOR_SVC_ID_GET(error), "", DEBUG_BOX_HALT);
 }
 
+extern uint32_t g_debug_interrupt_sp[];
+
 /* FIXME: Currently it is not possible to return to a regular execution flow
  *        after the execution of the debug box handler. */
 /* Note: On ARMv7-M the return_handler is executed in NP mode. */
@@ -40,6 +42,9 @@ void debug_deprivilege_and_return(void * debug_handler, void * return_handler,
 
     /* Copy the xPSR from the source exception stack frame. */
     uint32_t xpsr = vmpu_unpriv_uint32_read((uint32_t) &((uint32_t *) src_sp)[7]);
+
+    /* FIXME: This makes the debug box overwrite the top of the interrupt stack! */
+    g_context_current_states[dst_id].sp = g_debug_interrupt_sp[dst_id];
 
     /* Destination box: Forge the destination stack frame. */
     /* Note: We manually have to set the 4 parameters on the destination stack,
