@@ -20,7 +20,6 @@ The remainder of this guide assumes:
 You can use these instructions as guidelines in the case of other targets on other host OSs.
 
 ### Start with the `blinky` app
-[Go to top](#overview)
 
 Create a new mbed application called `uvisor-example` by running the following commands:
 
@@ -33,9 +32,11 @@ $ cd uvisor-example
 The mbed CLI tools automatically fetch the mbed codebase. By default, Git tracks your code changes, so you can push your application to a Git server if you want to.
 
 Once the import process finishes, create a `source` folder:
+
 ```bash
 $ mkdir ~/code/uvisor-example/source
 ```
+
 Place a new file `main.cpp` in it:
 
 ```C
@@ -75,7 +76,6 @@ The resulting binary is located at:
 Drag and drop it onto the USB device mounted on your computer to flash the device. When the flashing process is complete, press the reset button on the device. The device's LED blinks.
 
 ### Enable uVisor
-[Go to top](#overview)
 
 To enable the uVisor on the app, add these lines to the beginning of the `main.cpp` file:
 
@@ -156,7 +156,6 @@ If you enable uVisor in the `blinky` app as it was written above, you do not get
 A lot happens unseen, though. All the user code now runs in unprivileged mode, and the systems services, such as the `NVIC` APIs and the OS SVCalls, are routed through the uVisor.
 
 ### Add a secure box
-[Go to top](#overview)
 
 Now that uVisor is enabled, you can finally add a *secure box*.
 
@@ -289,7 +288,7 @@ A few things to note in the code above:
 - The `InterruptIn` object triggers the registration of an interrupt slot. Because that code runs in the context of the `private_button` box, the push-button IRQ belongs to that box. If you want to use the IRQ APIs directly, read the [NVIC APIs section](#the-nvic-apis) below.
 - Even if the `private_button_on_press` function runs in the context of `private_button`, you can still use the `printf` function, which accesses the `UART0` peripheral, owned by the public box. This is because all ACLs declared in the public box are by default shared with all the other secure boxes. This also means that the messages we are printing on the serial port are not secure because other boxes have access to that peripheral.
 
-> **Warning**: Instantiating an object in the `secure_box.cpp` global scope automatically maps it to the public box context, not the `private_button` one. If you want an object to be private to a box, you need to instantiate it inside the code that runs in the context of that box (such as the `InterruptIn` object), or alternatively statically initialize it in the box private static memory (such as the `buffer`, `index` and `counter` variables in `PrivateButtonStaticMemory`).
+<span class="warnings">**Warning**: Instantiating an object in the `secure_box.cpp` global scope automatically maps it to the public box context, not the `private_button` one. If you want an object to be private to a box, you need to instantiate it inside the code that runs in the context of that box (such as the `InterruptIn` object), or alternatively statically initialize it in the box private static memory (such as the `buffer`, `index` and `counter` variables in `PrivateButtonStaticMemory`).</span>
 
 ---
 
@@ -308,7 +307,6 @@ If the LED doens't blink, it means the application halted somewhere, probably be
 If the LED is blinking, the app is running correctly. If you press the `SW2` button on the NXP FRDM-K64F board, the `private_button_on_press` function executes, printing the values in the timer buffer after `PRIVATE_BUTTON_BUFFER_COUNT` presses. You can observe these values by opening a serial port connection to the device, with a baud rate of 9600.
 
 ### Expose public secure entry points to the secure box
-[Go to top](#overview)
 
 So far, the code in the secure box cannot communicate to other boxes. To let other boxes call functions in our secure box, you can define public secure entry points. These entry points can map to private functions within the context of a secure box, and an RPC protocol automatically serializes the arguments and return values to ensure no private memory can leak to external boxes.
 
@@ -441,7 +439,7 @@ NVIC_SetPriority(MY_IRQ, 3);
 NVIC_EnableIRQ(MY_IRQ);
 ```
 
-> **Note**: In this model, a call to `NVIC_SetVector` must happen before an IRQ state changes. In platforms that don't relocate the interrupt vector table, such a call might be absent and must be added to work with uVisor.
+<span class="notes">**Note**: In this model, a call to `NVIC_SetVector` must happen before an IRQ state changes. In platforms that don't relocate the interrupt vector table, such a call might be absent and must be added to work with uVisor.</span>
 
 ### The *public box* ACLs
 
@@ -482,14 +480,13 @@ static const UvisorBoxAclItem g_public_box_acls[] = {
 };
 ```
 
-> **Note**: If the fault debug screen does not show the name of the peripheral, look it up in the target device reference manual.
+<span class="notes">**Note**: If the fault debug screen does not show the name of the peripheral, look it up in the target device reference manual.</span>
 
 For readability, do not use the hard-coded addresses of your peripherals. Instead, use the symbols that the target CMSIS module provides.
 
 Repeat the process multiple times until all ACLs have been added to the list. When no other ACL is needed, the system runs without hitting a uVisor fault.
 
 ### Additional resources
-[Go to top](#overview)
 
 - [uVisor API documentation](API.md).
 - [Debugging uVisor on mbed OS](DEBUGGING.md).
