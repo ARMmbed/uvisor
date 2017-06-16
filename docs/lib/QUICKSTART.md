@@ -57,7 +57,6 @@ int main(void)
 
 This application blinks an LED from the main thread, which the OS creates by default.
 
----
 
 **Checkpoint**
 
@@ -131,7 +130,7 @@ Before compiling, you need to override the original `K64F` target to enable the 
 
 The macros `FEATURE_UVISOR` and `TARGET_UVISOR_SUPPORTED` in the configuration file above are automatically defined for C and C++ files but not for assembly files. Because the uVisor relies on those symbols in some assembly code, you need to define them manually.
 
----
+
 
 **Checkpoint**
 
@@ -149,7 +148,7 @@ The binary is located at:
 
 Reflash the device, and press the reset button. The device LED blinks as in the previous case.
 
----
+
 
 If you enable uVisor in the `blinky` app as it was written above, you do not get any particular security feature. All code and resources share the same security context, which we call the *public box*.
 
@@ -290,7 +289,7 @@ A few things to note in the code above:
 
 <span class="warnings">**Warning**: Instantiating an object in the `secure_box.cpp` global scope automatically maps it to the public box context, not the `private_button` one. If you want an object to be private to a box, you need to instantiate it inside the code that runs in the context of that box (such as the `InterruptIn` object), or alternatively statically initialize it in the box private static memory (such as the `buffer`, `index` and `counter` variables in `PrivateButtonStaticMemory`).</span>
 
----
+
 
 **Checkpoint**
 
