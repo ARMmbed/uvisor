@@ -33,6 +33,16 @@ extern uint32_t vmpu_unpriv_access(uint32_t addr, uint32_t size, uint32_t data);
 
 #endif
 
+typedef enum
+{
+    XPRIV_MEMCMP_ADDR1_UNPRIVILEGED = 0,
+    XPRIV_MEMCMP_ADDR1_PRIVILEGED = 0b10,
+    XPRIV_MEMCMP_ADDR2_UNPRIVILEGED = 0,
+    XPRIV_MEMCMP_ADDR2_PRIVILEGED = 0b01,
+} XPrivMemCmpType;
+
+extern int vmpu_xpriv_memcmp(uint32_t addr1, uint32_t addr2, size_t length, XPrivMemCmpType type);
+
 /** Write an 8-bit value to an address as if in unprivileged mode.
  *
  * This function can be used even if the MPU is disabled, but the architectural
@@ -177,6 +187,26 @@ static UVISOR_FORCEINLINE uint32_t vmpu_unpriv_uint32_read(uint32_t addr)
     );
     return res;
 #endif
+}
+
+static UVISOR_FORCEINLINE int vmpu_unpriv_unpriv_memcmp(uint32_t addr1, uint32_t addr2, size_t length)
+{
+    return vmpu_xpriv_memcmp(addr1, addr2, length, XPRIV_MEMCMP_ADDR1_UNPRIVILEGED | XPRIV_MEMCMP_ADDR2_UNPRIVILEGED);
+}
+
+static UVISOR_FORCEINLINE int vmpu_unpriv_priv_memcmp(uint32_t addr1, uint32_t addr2, size_t length)
+{
+    return vmpu_xpriv_memcmp(addr1, addr2, length, XPRIV_MEMCMP_ADDR1_UNPRIVILEGED | XPRIV_MEMCMP_ADDR2_PRIVILEGED);
+}
+
+static UVISOR_FORCEINLINE int vmpu_priv_unpriv_memcmp(uint32_t addr1, uint32_t addr2, size_t length)
+{
+    return vmpu_xpriv_memcmp(addr1, addr2, length, XPRIV_MEMCMP_ADDR1_PRIVILEGED | XPRIV_MEMCMP_ADDR2_UNPRIVILEGED);
+}
+
+static UVISOR_FORCEINLINE int vmpu_priv_priv_memcmp(uint32_t addr1, uint32_t addr2, size_t length)
+{
+    return vmpu_xpriv_memcmp(addr1, addr2, length, XPRIV_MEMCMP_ADDR1_PRIVILEGED | XPRIV_MEMCMP_ADDR2_PRIVILEGED);
 }
 
 #endif /* __VMPU_UNPRIV_ACCESS_H__ */

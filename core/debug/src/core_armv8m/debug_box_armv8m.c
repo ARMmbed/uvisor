@@ -33,7 +33,7 @@ void debug_deprivilege_and_return(void * debug_handler, void * return_handler,
      * We use a regular process switch, so we don't need a dedicated stack for
      * the debug box. */
     uint8_t box_id = g_debug_box.box_id;
-    context_switch_in(CONTEXT_SWITCH_UNBOUND_THREAD, box_id, 0, 0);
+    context_switch_in(CONTEXT_SWITCH_FUNCTION_DEBUG, box_id, __TZ_get_SP_NS(), g_context_current_states[box_id].sp);
 
     /* De-privilege, call the debug box handler, re-privilege, call the return
      * handler. */

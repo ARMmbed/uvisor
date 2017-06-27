@@ -229,7 +229,13 @@ void context_switch_in(TContextSwitchType context_type, uint8_t dst_id, uint32_t
         context_type == CONTEXT_SWITCH_FUNCTION_ISR     ||
         context_type == CONTEXT_SWITCH_FUNCTION_DEBUG) {
         context_state_push(context_type, src_id, src_sp);
+#if defined(ARCH_CORE_ARMv8M)
+        /* FIXME: Set the right LR value depending on which NS SP is actually used. */
+        __TZ_set_MSP_NS(dst_sp);
+        __TZ_set_PSP_NS(dst_sp);
+#else
         __set_PSP(dst_sp);
+#endif
     }
 }
 

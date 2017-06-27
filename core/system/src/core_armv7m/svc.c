@@ -59,6 +59,7 @@ const UvisorSvcTarget g_svc_vtor_tbl = {
     .page_free = page_allocator_free,
 
     .box_namespace = vmpu_box_namespace_from_id,
+    .box_id_for_namespace = vmpu_box_id_from_namespace,
 
     .debug_init = debug_register_driver,
     .error = halt_user_error,
