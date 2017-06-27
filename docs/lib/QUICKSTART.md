@@ -2,13 +2,13 @@
 
 This guide will help you start uVisor on mbed OS by showing you how to create a sample application for the NXP FRDM-K64F board.
 
-The uVisor provides sandboxed environments and resources protection for applications built for ARM Cortex-M3 and Cortex-M4 devices. This guide will show you how to enable the uVisor and configure a secure box to access some exclusive resources (memory, peripherals, interrupts). For more information about the uVisor design philosophy, please see the uVisor [introductory document](../../README.md).
+The uVisor provides sandboxed environments and resources protection for applications built for ARM Cortex-M3 and Cortex-M4 devices. This guide will show you how to enable the uVisor and configure a secure box to access some exclusive resources (memory, peripherals, interrupts). For more information about the uVisor design philosophy, please see the uVisor [introductory document](README.md).
 
 ## Requirements
 
 To run the `blinky` application on mbed OS with uVisor enabled, you need:
 
-- A platform and a toolchain that uVisor on mbed OS supports. You can verify this on [the official list](../README.md#supported-platforms). If uVisor supports your platform internally but not on mbed OS, the porting process is incomplete. To port your platform to uVisor and enable it on mbed OS, please follow the [uVisor porting guide for mbed OS](../core/PORTING.md).
+- A platform and a toolchain that uVisor on mbed OS supports. You can verify this on [the official list](README.md#supported-platforms). If uVisor supports your platform internally but not on mbed OS, the porting process is incomplete. To port your platform to uVisor and enable it on mbed OS, please follow the [uVisor porting guide for mbed OS](../core/PORTING.md).
 - Git.
 - mbed CLI. Run `pip install mbed-cli` to install it.
 

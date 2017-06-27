@@ -9,13 +9,13 @@ This guide will show you a different way of obtaining the uVisor libraries, by b
 There are several reasons to build uVisor locally:
 
 - Reproduce a publicly released build.
-- Make modifications and test them before contributing to uVisor on GitHub. Read the [contribution guidelines](../../CONTRIBUTING.md) for more details.
+- Make modifications and test them before contributing to uVisor on GitHub. Read the [contribution guidelines](CONTRIBUTING.md) for more details.
 - Preview the latest uVisor features before they are packaged and released.
 - Play and experiment with uVisor.
 
 You will need:
 
-- A [target](../../README.md#supported-platforms) uVisor supports on mbed OS. If your target is not supported yet, you can follow the [uVisor porting guide for mbed OS](PORTING.md).
+- A [target](README.md#supported-platforms) uVisor supports on mbed OS. If your target is not supported yet, you can follow the [uVisor porting guide for mbed OS](PORTING.md).
 - The Launchpad [GNU ARM Embedded](https://launchpad.net/gcc-arm-embedded) Toolchain.
 - GNU Make.
 - Git.

@@ -1,6 +1,6 @@
 # The uVisor Documentation
 
-The uVisor documentation consists of two sections, API documentation and core documentation. You can find descriptions of these domains below. If you instead are interested in the general uVisor design philosophy, see the [high-level introduction to mbed uVisor](https://github.com/ARMmbed/uvisor/raw/docs/uVisorSecurity-TechCon2016.pdf) or refer to the uVisor [GitHub documentation](../README.md).
+The uVisor documentation consists of two sections, API documentation and core documentation. You can find descriptions of these domains below. If you instead are interested in the general uVisor design philosophy, see the [high-level introduction to mbed uVisor](https://github.com/ARMmbed/uvisor/raw/docs/uVisorSecurity-TechCon2016.pdf) or refer to the uVisor [GitHub documentation](README.md).
 
 ## API documentation
 
@@ -22,4 +22,4 @@ These documents describe the uVisor internals in more detail. They are useful if
 | Understand uVisor integration    | [mbed uVisor integration in mbed OS](https://github.com/ARMmbed/uvisor/raw/docs/uvisor-rtos-docs.pdf) |
 | Port uVisor to my platform/OS    | [uVisor porting guide for mbed OS](core/PORTING.md)                                                   |
 | Test and experiment with uVisor  | [Developing with uVisor locally on mbed OS](core/DEVELOPING_LOCALLY.md)                               |
-| Contribute to uVisor             | [Contributing to uVisor](../CONTRIBUTING.md)   
+| Contribute to uVisor             | [Contributing to uVisor](CONTRIBUTING.md)   

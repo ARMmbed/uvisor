@@ -4,7 +4,7 @@ The uVisor is a self-contained software hypervisor that creates independent secu
 
 To start using uVisor, you need to include it as a library in your design. We release the uVisor library periodically into the mbed OS repository, [ARMmbed/mbed-os](https://github.com/ARMmbed/mbed-os). Review it to learn more about the uVisor security model and see an overview of its features.
 
-You can find most of the uVisor documentation in the [docs](docs) folder. Please look at the [getting started guide](docs/lib/QUICKSTART.md) for an introduction to uVisor application development. If you are interested in uVisor internals, please refer to the [OS-level introduction](https://github.com/ARMmbed/uvisor/raw/docs/uvisor-rtos-docs.pdf) and the [uVisor API docs](docs/lib/API.md).
+You can find most of the uVisor documentation in the [docs](https://github.com/ARMmbed/uvisor/tree/master/docs) folder. Please look at the [getting started guide](../lib/QUICKSTART.md) for an introduction to uVisor application development. If you are interested in uVisor internals, please refer to the [OS-level introduction](https://github.com/ARMmbed/uvisor/raw/docs/uvisor-rtos-docs.pdf) and the [uVisor API docs](../lib/API.md).
 
 Contributions to this repository in the form of issue reporting and pull requests are welcome! Please read our [contribution guidelines](CONTRIBUTING.md) first.
 
@@ -37,7 +37,7 @@ The uVisor core supports the following platforms:
 - [STMicroelectronics STM32F429I-DISCO](http://www.st.com/web/catalog/tools/FM116/SC959/SS1532/PF259090).
 - [Silicon Labs EFM32 Gecko](http://www.silabs.com/products/mcu/32-bit/efm32-gecko/pages/efm32-gecko.aspx) (Cortex&reg;-M3 and Cortex&reg;-M4 devices).
 
-To use uVisor on a specific OS, you must complete the porting process for that OS. This requires an additional porting step, which the [uVisor porting guide for mbed OS](docs/core/PORTING.md) documents. uVisor supports the following operating system:
+To use uVisor on a specific OS, you must complete the porting process for that OS. This requires an additional porting step, which the [uVisor porting guide for mbed OS](../core/PORTING.md) documents. uVisor supports the following operating system:
 
 - mbed OS: [NXP FRDM-K64F](http://developer.mbed.org/platforms/FRDM-K64F/).
 
@@ -81,13 +81,13 @@ All the code that is not explicitly part of the uVisor is generally referred to 
 
 The unprivileged code can be made of mutually untrusted isolated modules (or boxes). This way, even if all are running with unprivileged permissions, different modules can protect their own secrets and execute critical code securely.
 
-For more details about how to setup a secure box and protect memories and peripherals, please read the [getting started guide](docs/lib/QUICKSTART.md).
+For more details about how to setup a secure box and protect memories and peripherals, please read the [getting started guide](../lib/QUICKSTART.md).
 
 ### Memory layout
 
 Different memory layouts can be used on different platforms, depending on the implemented memory protection scheme and the MPU architecture. The following figure shows the memory layout of a system where the uVisor shares the SRAM module with the operating system (ARMv7-M MPU).
 
-[uVisor memory layout](docs/img/memory_layout.png)
+[uVisor memory layout](../img/memory_layout.png)
 
 The uVisor secures two main memory blocks, in flash and SRAM respectively. In both cases, it protects its own data and the data of the secure boxes it manages for the unprivileged code. For a more detailed view, please refer to the interactive [linker section visualization](https://meriac.github.io/mbed-os-linker-report/).
 
@@ -124,7 +124,7 @@ This table details the main memory sections that the uVisor protects:
   </tbody>
 </table>
 
-To use the uVisor APIs to set up a secure box, please refer to the [getting started guide](docs/lib/QUICKSTART.md) and the full [uVisor API documentation](docs/lib/API.md).
+To use the uVisor APIs to set up a secure box, please refer to the [getting started guide](../lib/QUICKSTART.md) and the full [uVisor API documentation](API.md).
 
 ### The boot process
 

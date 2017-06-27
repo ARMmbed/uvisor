@@ -735,4 +735,4 @@ It is time to test your application. We suggest that you use the example app, [`
 In both cases, please:
 
 - Run uVisor at least once in debug mode to ensure all runtime sanity checks pass. You can also use this round of checks to confirm your linker script and uVisor ports are structurally correct. For more information about the uVisor debug mode, please read [Debugging uVisor on mbed OS](../lib/DEBUGGING.md).
-- Ensure that your app has the relevant ACLs to work with uVisor enabled. This requires you to run uVisor in debug mode multiple times and find all the faulting peripherals. Read a more detailed description of this procedure in [the final section](../lib/QUICKSTART.md#the-main-box-acls) of the [getting started guide](../lib/QUICKSTART.md).
+- Ensure that your app has the relevant ACLs to work with uVisor enabled. This requires you to run uVisor in debug mode multiple times and find all the faulting peripherals. Read a more detailed description of this procedure in [the final section](../lib/QUICKSTART.md#the-public-box-acls) of the [getting started guide](../lib/QUICKSTART.md).

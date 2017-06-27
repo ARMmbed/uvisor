@@ -7,8 +7,8 @@ If you want to use the uVisor debug features on an already supported platform, y
 This guide will show you how to enable the default debug features on uVisor and how to use it to get even more debug information. You will need:
 
 - A GDB-enabled board (and the related tools).
-- A [target](../../README.md#supported-platforms) uVisor supports on mbed OS. If uVisor does not support your target yet, you can follow the [uVisor porting guide for mbed OS](../core/PORTING.md).
-- The Launchpad [GNU ARM Embedded](https://launchpad.net/-arm-embedded) Toolchain.
+- A [target](README.md#supported-platforms) uVisor supports on mbed OS. If uVisor does not support your target yet, you can follow the [uVisor porting guide for mbed OS](../core/PORTING.md).
+- The Launchpad [GNU ARM Embedded](https://launchpad.net/gcc-arm-embedded) Toolchain.
 - GNU Make.
 - Git.
 
