@@ -48,6 +48,23 @@ uint32_t page_allocator_get_faults(uint8_t page)
     return 0;
 }
 
+
+int page_allocator_check_range_for_box(int box_id, uint32_t start_addr, uint32_t end_addr)
+{
+    uint8_t pa = page_allocator_get_page_from_address(start_addr);
+    uint8_t pe = page_allocator_get_page_from_address(end_addr);
+    if (pa != pe) {
+        /* Range is spread of two or more pages, we're not testing that! */
+        return UVISOR_ERROR_PAGE_INVALID_PAGE_OWNER;
+    }
+    else if (pa != UVISOR_PAGE_UNUSED && page_allocator_map_get(g_page_owner_map[box_id], pa)) {
+        /* Range is in page and accessible by box. */
+        return UVISOR_ERROR_PAGE_OK;
+    }
+    /* Range is not in page heap */
+    return UVISOR_ERROR_PAGE_INVALID_PAGE_ORIGIN;
+}
+
 int page_allocator_get_active_region_for_address(uint32_t address, uint32_t * start_addr, uint32_t * end_addr, uint8_t * page)
 {
     const page_owner_t box_id = g_active_box;
