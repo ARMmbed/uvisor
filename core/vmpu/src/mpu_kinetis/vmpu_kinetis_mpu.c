@@ -19,6 +19,7 @@
 #include "context.h"
 #include "halt.h"
 #include "memory_map.h"
+#include "page_allocator_faults.h"
 #include "vmpu.h"
 #include "vmpu_mpu.h"
 #include "vmpu_kinetis_aips.h"
@@ -26,6 +27,31 @@
 
 /* This file contains the configuration-specific symbols. */
 #include "configurations.h"
+
+/* The K64F has 12 MPU regions, however, we use region 0 as the background
+ * region with `UVISOR_TACL_BACKGROUND` as permissions.
+ * Region 1 and 2 are used to unlock Application SRAM and Flash.
+ * Therefore 9 MPU regions are available for user ACLs.
+ * Region 3 and 4 are used to protect the current box stack and context.
+ * This leaves 6 MPU regions for round robin scheduling:
+ *
+ *     12      <-- End of MPU regions, K64F_MPU_REGIONS_MAX
+ * .---------.
+ * |   11    |
+ * |   ...   |
+ * |    5    | <-- Box Pages, K64F_MPU_REGIONS_USER
+ * +---------+
+ * |    4    | <-- Box Context
+ * |    3    | <-- Box Stack, K64F_MPU_REGIONS_STATIC
+ * +---------+
+ * |    2    | <-- Application SRAM unlock
+ * |    1    | <-- Application Flash unlock
+ * |    0    | <-- Background region
+ * '---------'
+ */
+#define K64F_MPU_REGIONS_STATIC 3
+#define K64F_MPU_REGIONS_USER 5
+#define K64F_MPU_REGIONS_MAX 12
 
 typedef struct
 {
@@ -36,6 +62,9 @@ typedef struct
 static uint16_t g_mpu_region_count;
 static MpuRegion g_mpu_region[UVISOR_MAX_ACLS];
 static MpuRegionSlice g_mpu_box_region[UVISOR_MAX_BOXES];
+
+static uint8_t g_mpu_slot = K64F_MPU_REGIONS_STATIC;
+static uint8_t g_mpu_priority[K64F_MPU_REGIONS_MAX];
 
 int vmpu_is_region_size_valid(uint32_t size)
 {
@@ -267,7 +296,7 @@ MpuRegion * vmpu_region_find_for_address(uint8_t box_id, uint32_t address)
     count = g_mpu_box_region[box_id].count;
     region = g_mpu_box_region[box_id].regions;
     for (; count-- > 0; region++) {
-        if ((region->start <= address) && (address < region->end)) {
+        if (vmpu_value_in_range(region->start, region->end, address)) {
             return region;
         }
     }
@@ -277,35 +306,79 @@ MpuRegion * vmpu_region_find_for_address(uint8_t box_id, uint32_t address)
 
 /* Region management */
 
+static bool vmpu_buffer_access_is_ok_static(uint32_t start_addr, uint32_t end_addr)
+{
+    /* NOTE: Buffers are not allowed to span more than 1 region. If they do
+     * span more than one region, access will be denied. */
+
+    /* Search through all static regions programmed into the MPU, until we find
+     * a region that contains both the start and end of our buffer. */
+    for (uint8_t slot = 0; slot < K64F_MPU_REGIONS_STATIC; ++slot) {
+        MPU_Region * mpu_region = (MPU_Region *) MPU->WORD[slot];
+        uint32_t start = mpu_region->STARTADDR;
+        uint32_t end = mpu_region->ENDADDR;
+
+        /* Test that the buffer is fully contained in the region. */
+        if (vmpu_value_in_range(start, end, start_addr) && vmpu_value_in_range(start, end, end_addr)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool vmpu_buffer_access_is_ok(int box_id, const void * addr, size_t size)
+{
+    uint32_t start_addr = (uint32_t) addr;
+    uint32_t end_addr = start_addr + size - 1;
+
+    /* NOTE: Buffers are not allowed to span more than 1 region. If they do
+     * span more than one region, access will be denied. */
+
+    if (box_id != 0) {
+        /* Check the public box as well as the specified box, since public box
+         * memories are accessible by all boxes. */
+        if (vmpu_buffer_access_is_ok(0, addr, size)) {
+            return true;
+        }
+    } else {
+        /* Check static regions. */
+        if (vmpu_buffer_access_is_ok_static(start_addr, end_addr)) {
+            return true;
+        }
+    }
+
+    assert(start_addr <= end_addr);
+    if (start_addr > end_addr) {
+        /* We couldn't determine the end of the buffer. */
+        return false;
+    }
+
+    /* Check if addr range lies in AIPS */
+    if (vmpu_fault_find_acl_aips(box_id, start_addr, size)) {
+        return true;
+    }
+
+    /* Check if addr range lies in page heap. */
+    int error = page_allocator_check_range_for_box(box_id, start_addr, end_addr);
+    if (error == UVISOR_ERROR_PAGE_OK) {
+        return true;
+    } else if (error != UVISOR_ERROR_PAGE_INVALID_PAGE_ORIGIN) {
+        return false;
+    }
+
+    MpuRegion * region = vmpu_region_find_for_address(box_id, start_addr);
+    if (!region) {
+        /* No region contained the start of the buffer. */
+        return false;
+    }
+
+    /* If the end address is also within the region, and the region is NS
+     * accessible, then access to the buffer is OK. */
+    return vmpu_value_in_range(region->start, region->end, end_addr);
+}
+
 /* MPU access */
-
-/* The K64F has 12 MPU regions, however, we use region 0 as the background
- * region with `UVISOR_TACL_BACKGROUND` as permissions.
- * Region 1 and 2 are used to unlock Application SRAM and Flash.
- * Therefore 9 MPU regions are available for user ACLs.
- * Region 3 and 4 are used to protect the current box stack and context.
- * This leaves 6 MPU regions for round robin scheduling:
- *
- *     12      <-- End of MPU regions, K64F_MPU_REGIONS_MAX
- * .---------.
- * |   11    |
- * |   ...   |
- * |    5    | <-- Box Pages, K64F_MPU_REGIONS_USER
- * +---------+
- * |    4    | <-- Box Context
- * |    3    | <-- Box Stack, K64F_MPU_REGIONS_STATIC
- * +---------+
- * |    2    | <-- Application SRAM unlock
- * |    1    | <-- Application Flash unlock
- * |    0    | <-- Background region
- * '---------'
- */
-#define K64F_MPU_REGIONS_STATIC 3
-#define K64F_MPU_REGIONS_USER 5
-#define K64F_MPU_REGIONS_MAX 12
-
-static uint8_t g_mpu_slot = K64F_MPU_REGIONS_STATIC;
-static uint8_t g_mpu_priority[K64F_MPU_REGIONS_MAX];
 
 void vmpu_mpu_init(void)
 {
