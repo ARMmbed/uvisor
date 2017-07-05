@@ -19,6 +19,7 @@
 #include "context.h"
 #include "halt.h"
 #include "memory_map.h"
+#include "page_allocator_faults.h"
 #include "vmpu.h"
 #include "vmpu_mpu.h"
 
@@ -280,6 +281,14 @@ bool vmpu_buffer_access_is_ok(int box_id, const void * addr, size_t size)
     assert(start_addr <= end_addr);
     if (start_addr > end_addr) {
         /* We couldn't determine the end of the buffer. */
+        return false;
+    }
+
+    /* Check if addr range lies in page heap. */
+    int error = page_allocator_check_range_for_box(box_id, start_addr, end_addr);
+    if (error == UVISOR_ERROR_PAGE_OK) {
+        return true;
+    } else if (error != UVISOR_ERROR_PAGE_INVALID_PAGE_ORIGIN) {
         return false;
     }
 
