@@ -28,6 +28,19 @@ void page_allocator_register_fault(uint8_t page);
 /** @returns the number of faults on this page. */
 uint32_t page_allocator_get_faults(uint8_t page);
 
+/** Check if a box is allowed to access a address range.
+ * Note that the address range must be contained inside one page.
+ *
+ * @param box_id       the id of the box to query for
+ * @param start_addr   the start address of the range
+ * @param end_addr     the end address of the range
+ * @retval
+ *  - `UVISOR_ERROR_PAGE_OK`  range is contained in one page owned by the box id
+ *  - `UVISOR_ERROR_PAGE_INVALID_PAGE_OWNER` range is spread over multiple pages or owners
+ *  - `UVISOR_ERROR_PAGE_INVALID_PAGE_ORIGIN` range is not outside of in page heap
+ */
+int page_allocator_check_range_for_box(int box_id, uint32_t start_addr, uint32_t end_addr);
+
 /** Map an address to the start and end addresses of a page.
  * If the address is not part of any page, or the page does not belong to the
  * active box or box 0 an error is returned and `start`, `end` and `page` are invalid.

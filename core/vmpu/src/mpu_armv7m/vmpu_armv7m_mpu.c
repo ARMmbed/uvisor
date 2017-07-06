@@ -19,6 +19,7 @@
 #include "context.h"
 #include "halt.h"
 #include "memory_map.h"
+#include "page_allocator_faults.h"
 #include "vmpu.h"
 #include "vmpu_mpu.h"
 
@@ -35,6 +36,39 @@
 #define ARMv7M_MPU_ALIGNMENT_BITS 5
 #endif/*ARMv7M_MPU_ALIGNMENT_BITS*/
 
+/* set default MPU region count */
+#ifndef ARMv7M_MPU_REGIONS
+#define ARMv7M_MPU_REGIONS 8
+#endif/*ARMv7M_MPU_REGIONS*/
+
+/* The ARMv7-M MPU has 8 MPU regions plus one background region.
+ * Region 0 and 1 are used to unlock Application RAM and Flash.
+ * When switching into a secure box, region 2 is used to protect the boxes
+ * stack and context.
+ * If a box uses the page heap, the next region is used to protect it.
+ * This leaves 4 to 6 MPU regions for round robin scheduling:
+ *
+ *      8      <-- End of MPU regions, ARMv7M_MPU_REGIONS_MAX
+ * +---------+
+ * |    7    |
+ * |   ...   |
+ * |  2/3/4  | <-- Start of round robin
+ * +---------+
+ * |   2/3   | <-- Optional Box Pages
+ * +---------+
+ * |    2    | <-- Secure Box Stack + Context, ARMv7M_MPU_REGIONS_STATIC
+ * +---------+
+ * |    1    | <-- Application SRAM unlock
+ * |    0    | <-- Application Flash unlock
+ * +---------+
+ */
+#define ARMv7M_MPU_REGIONS_STATIC 2
+#define ARMv7M_MPU_REGIONS_MAX (ARMv7M_MPU_REGIONS)
+
+/* MPU helper macros */
+#define MPU_RBAR(region,addr)   (((uint32_t)(region))|MPU_RBAR_VALID_Msk|addr)
+#define MPU_RBAR_RNR(addr)     (addr)
+
 typedef struct
 {
     MpuRegion * regions;
@@ -44,6 +78,9 @@ typedef struct
 static uint16_t g_mpu_region_count;
 static MpuRegion g_mpu_region[MPU_ACL_COUNT];
 static MpuRegionSlice g_mpu_box_region[UVISOR_MAX_BOXES];
+
+static uint8_t g_mpu_slot = ARMv7M_MPU_REGIONS_STATIC;
+static uint8_t g_mpu_priority[ARMv7M_MPU_REGIONS_MAX];
 
 /* various MPU flags */
 #define MPU_RASR_AP_PNO_UNO (0x00UL<<MPU_RASR_AP_Pos)
@@ -282,7 +319,7 @@ MpuRegion * vmpu_region_find_for_address(uint8_t box_id, uint32_t address)
     count = g_mpu_box_region[box_id].count;
     region = g_mpu_box_region[box_id].regions;
     for (; count-- > 0; region++) {
-        if ((region->start <= address) && (address < region->end)) {
+        if (vmpu_value_in_range(region->start, region->end, address)) {
             return region;
         }
     }
@@ -292,43 +329,99 @@ MpuRegion * vmpu_region_find_for_address(uint8_t box_id, uint32_t address)
 
 /* Region management */
 
+static bool vmpu_buffer_access_is_ok_static(uint32_t start_addr, uint32_t end_addr)
+{
+    /* NOTE: Buffers are not allowed to span more than 1 region. If they do
+     * span more than one region, access will be denied. */
+
+    /* Search through all static regions programmed into the MPU, until we find
+     * a region that contains both the start and end of our buffer. */
+    for (uint8_t slot = 0; slot < ARMv7M_MPU_REGIONS_STATIC; ++slot) {
+        MPU->RNR = slot;
+        uint32_t rasr = MPU->RASR;
+
+        /* Is the region enabled? */
+        if (!(rasr & MPU_RASR_ENABLE_Msk)) {
+            continue;
+        }
+
+        uint32_t rbar = MPU->RBAR;
+        uint32_t size = (1UL << ((rasr & MPU_RASR_SIZE_Msk) >> MPU_RASR_SIZE_Pos));
+        uint32_t start = rbar & ~(size - 1);
+        uint32_t end = start + size;
+        /* Check entire region if no subregion is disabled. */
+        if (!(rasr & MPU_RASR_SRD_Msk)) {
+            /* Test that the buffer is fully contained in the region. */
+            if (vmpu_value_in_range(start, end, start_addr) && vmpu_value_in_range(start, end, end_addr)) {
+                return true;
+            }
+        } else {
+            /* Check each subregion separately. */
+            uint32_t sub_size = size / 8UL;
+            for (uint8_t ii = 0; ii < 8UL; ii++) {
+                /* Is this subregion enabled (= NOT disabled)? */
+                if (!(rasr & (1UL << (ii + MPU_RASR_SRD_Pos)))) {
+                    uint32_t sub_start = start + sub_size * ii;
+                    uint32_t sub_end = sub_start + sub_size;
+                    /* Test that the buffer is fully contained in the region. */
+                    if (vmpu_value_in_range(sub_start, sub_end, start_addr) && vmpu_value_in_range(sub_start, sub_end, end_addr)) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+bool vmpu_buffer_access_is_ok(int box_id, const void * addr, size_t size)
+{
+    uint32_t start_addr = (uint32_t) addr;
+    uint32_t end_addr = start_addr + size - 1;
+
+    /* NOTE: Buffers are not allowed to span more than 1 region. If they do
+     * span more than one region, access will be denied. */
+
+    if (box_id != 0) {
+        /* Check the public box as well as the specified box, since public box
+         * memories are accessible by all boxes. */
+        if (vmpu_buffer_access_is_ok(0, addr, size)) {
+            return true;
+        }
+    } else {
+        /* Check static regions. */
+        if (vmpu_buffer_access_is_ok_static(start_addr, end_addr)) {
+            return true;
+        }
+    }
+
+    assert(start_addr <= end_addr);
+    if (start_addr > end_addr) {
+        /* We couldn't determine the end of the buffer. */
+        return false;
+    }
+
+    /* Check if addr range lies in page heap. */
+    int error = page_allocator_check_range_for_box(box_id, start_addr, end_addr);
+    if (error == UVISOR_ERROR_PAGE_OK) {
+        return true;
+    } else if (error != UVISOR_ERROR_PAGE_INVALID_PAGE_ORIGIN) {
+        return false;
+    }
+
+    MpuRegion * region = vmpu_region_find_for_address(box_id, start_addr);
+    if (!region) {
+        /* No region contained the start of the buffer. */
+        return false;
+    }
+
+    /* If the end address is also within the region, and the region is NS
+     * accessible, then access to the buffer is OK. */
+    return vmpu_value_in_range(region->start, region->end, end_addr);
+}
+
 /* MPU access */
-
-/* set default MPU region count */
-#ifndef ARMv7M_MPU_REGIONS
-#define ARMv7M_MPU_REGIONS 8
-#endif/*ARMv7M_MPU_REGIONS*/
-
-/* The ARMv7-M MPU has 8 MPU regions plus one background region.
- * Region 0 and 1 are used to unlock Application RAM and Flash.
- * When switching into a secure box, region 2 is used to protect the boxes
- * stack and context.
- * If a box uses the page heap, the next region is used to protect it.
- * This leaves 4 to 6 MPU regions for round robin scheduling:
- *
- *      8      <-- End of MPU regions, ARMv7M_MPU_REGIONS_MAX
- * +---------+
- * |    7    |
- * |   ...   |
- * |  2/3/4  | <-- Start of round robin
- * +---------+
- * |   2/3   | <-- Optional Box Pages
- * +---------+
- * |    2    | <-- Secure Box Stack + Context, ARMv7M_MPU_REGIONS_STATIC
- * +---------+
- * |    1    | <-- Application SRAM unlock
- * |    0    | <-- Application Flash unlock
- * +---------+
- */
-#define ARMv7M_MPU_REGIONS_STATIC 2
-#define ARMv7M_MPU_REGIONS_MAX (ARMv7M_MPU_REGIONS)
-
-/* MPU helper macros */
-#define MPU_RBAR(region,addr)   (((uint32_t)(region))|MPU_RBAR_VALID_Msk|addr)
-#define MPU_RBAR_RNR(addr)     (addr)
-
-static uint8_t g_mpu_slot = ARMv7M_MPU_REGIONS_STATIC;
-static uint8_t g_mpu_priority[ARMv7M_MPU_REGIONS_MAX];
 
 void vmpu_mpu_init(void)
 {

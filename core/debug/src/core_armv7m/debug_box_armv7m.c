@@ -18,6 +18,7 @@
 #include "context.h"
 #include "debug.h"
 #include "vmpu.h"
+#include "vmpu_mpu.h"
 
 void debug_die(void)
 {
@@ -41,7 +42,11 @@ void debug_deprivilege_and_return(void * debug_handler, void * return_handler,
     uint8_t dst_id = g_debug_box.box_id;
 
     /* Copy the xPSR from the source exception stack frame. */
-    uint32_t xpsr = vmpu_unpriv_uint32_read((uint32_t) &((uint32_t *) src_sp)[7]);
+    uint32_t * xpsr_p = &((uint32_t *) src_sp)[7];
+    uint32_t xpsr = xPSR_T_Msk;
+    if (vmpu_buffer_access_is_ok(g_active_box, xpsr_p, sizeof(*xpsr_p))) {
+        xpsr = vmpu_unpriv_uint32_read((uint32_t) xpsr_p);
+    }
 
     /* FIXME: This makes the debug box overwrite the top of the interrupt stack! */
     g_context_current_states[dst_id].sp = g_debug_interrupt_sp[dst_id];

@@ -19,6 +19,7 @@
 #include "context.h"
 #include "halt.h"
 #include "memory_map.h"
+#include "page_allocator_faults.h"
 #include "vmpu.h"
 #include "vmpu_mpu.h"
 
@@ -199,11 +200,6 @@ bool vmpu_region_get_for_box(uint8_t box_id, const MpuRegion * * const region, u
     return false;
 }
 
-static bool value_in_range(size_t start, size_t end, size_t value)
-{
-    return start <= value && value < end;
-}
-
 MpuRegion * vmpu_region_find_for_address(uint8_t box_id, uint32_t address)
 {
     int count;
@@ -212,7 +208,7 @@ MpuRegion * vmpu_region_find_for_address(uint8_t box_id, uint32_t address)
     count = g_mpu_box_region[box_id].count;
     region = g_mpu_box_region[box_id].regions;
     for (; count-- > 0; region++) {
-        if (value_in_range(region->start, region->end, address)) {
+        if (vmpu_value_in_range(region->start, region->end, address)) {
             return region;
         }
     }
@@ -248,7 +244,7 @@ static bool vmpu_buffer_access_is_ok_static(uint32_t start_addr, uint32_t end_ad
         uint32_t end = rlar | 0x1F; /* The bottom 5 bits are not part of the limit. */
 
         /* Test that the buffer is fully contained in the region. */
-        if (value_in_range(start, end, start_addr) && value_in_range(start, end, end_addr)) {
+        if (vmpu_value_in_range(start, end, start_addr) && vmpu_value_in_range(start, end, end_addr)) {
             return true;
         }
     }
@@ -283,6 +279,14 @@ bool vmpu_buffer_access_is_ok(int box_id, const void * addr, size_t size)
         return false;
     }
 
+    /* Check if addr range lies in page heap. */
+    int error = page_allocator_check_range_for_box(box_id, start_addr, end_addr);
+    if (error == UVISOR_ERROR_PAGE_OK) {
+        return true;
+    } else if (error != UVISOR_ERROR_PAGE_INVALID_PAGE_ORIGIN) {
+        return false;
+    }
+
     MpuRegion * region = vmpu_region_find_for_address(box_id, start_addr);
     if (!region) {
         /* No region contained the start of the buffer. */
@@ -291,7 +295,7 @@ bool vmpu_buffer_access_is_ok(int box_id, const void * addr, size_t size)
 
     /* If the end address is also within the region, and the region is NS
      * accessible, then access to the buffer is OK. */
-    return value_in_range(region->start, region->end, end_addr) &&
+    return vmpu_value_in_range(region->start, region->end, end_addr) &&
            vmpu_region_is_ns(region->config);
 }
 
