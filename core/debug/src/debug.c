@@ -37,28 +37,34 @@
  * overwritten to provide a different mechanism for printing messages (e.g. the
  * UART port instead of semihosting). */
 #define DEBUG_MAX_BUFFER 128
-uint8_t g_buffer[DEBUG_MAX_BUFFER];
-int g_buffer_pos;
+static uint8_t g_semihosting_buffer[DEBUG_MAX_BUFFER];
+static int g_semihosting_buffer_pos;
+
+volatile bool g_semihosting_enabled = true;
 
 UVISOR_WEAK void default_putc(uint8_t data)
 {
-    if (g_buffer_pos < (DEBUG_MAX_BUFFER - 1)) {
-        g_buffer[g_buffer_pos++] = data;
+    if (!g_semihosting_enabled){
+        return;
+    }
+    
+    if (g_semihosting_buffer_pos < (DEBUG_MAX_BUFFER - 1)) {
+        g_semihosting_buffer[g_semihosting_buffer_pos++] = data;
     } else {
         data = '\n';
     }
 
     if (data == '\n') {
-        g_buffer[g_buffer_pos] = 0;
+        g_semihosting_buffer[g_semihosting_buffer_pos] = 0;
         asm volatile(
             "mov r0, #4\n"
             "mov r1, %[data]\n"
             "bkpt #0xAB\n"
             :
-            : [data] "r" (&g_buffer)
+            : [data] "r" (&g_semihosting_buffer)
             : "r0", "r1"
         );
-        g_buffer_pos = 0;
+        g_semihosting_buffer_pos = 0;
     }
 }
 
