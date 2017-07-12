@@ -454,8 +454,15 @@ void vmpu_mpu_init(void)
 
 void vmpu_mpu_lock(void)
 {
+    /* DMB to ensure MPU update after all transfer to memory completed */
+    __DMB();
+
     /* Finally enable the MPU. */
     MPU->CTRL = MPU_CTRL_ENABLE_Msk | MPU_CTRL_PRIVDEFENA_Msk;
+
+    /* DSB & ISB to ensure subsequent data & instruction transfers are using updated MPU settings */
+    __DSB();
+    __ISB();
 }
 
 uint32_t vmpu_mpu_set_static_acl(uint8_t index, uint32_t start, uint32_t size,

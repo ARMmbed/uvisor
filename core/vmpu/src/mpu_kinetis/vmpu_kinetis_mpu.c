@@ -388,10 +388,17 @@ void vmpu_mpu_init(void)
 
 void vmpu_mpu_lock(void)
 {
+    /* DMB to ensure MPU update after all transfer to memory completed */
+    __DMB();
+
     /* MPU background region permission mask
      *   this mask must be set as last one, since the background region gives no
      *   executable privileges to neither user nor supervisor modes */
     MPU->RGDAAC[0] = UVISOR_TACL_BACKGROUND;
+
+    /* DSB & ISB to ensure subsequent data & instruction transfers are using updated MPU settings */
+    __DSB();
+    __ISB();
 }
 
 uint32_t vmpu_mpu_set_static_acl(uint8_t index, uint32_t start, uint32_t size,
