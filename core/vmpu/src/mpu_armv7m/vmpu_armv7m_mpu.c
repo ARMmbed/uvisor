@@ -346,7 +346,7 @@ static bool vmpu_buffer_access_is_ok_static(uint32_t start_addr, uint32_t end_ad
         }
 
         uint32_t rbar = MPU->RBAR;
-        uint32_t size = (1UL << ((rasr & MPU_RASR_SIZE_Msk) >> MPU_RASR_SIZE_Pos));
+        uint32_t size = (1UL << (((rasr & MPU_RASR_SIZE_Msk) >> MPU_RASR_SIZE_Pos) + 1UL));
         uint32_t start = rbar & ~(size - 1);
         uint32_t end = start + size;
         /* Check entire region if no subregion is disabled. */
