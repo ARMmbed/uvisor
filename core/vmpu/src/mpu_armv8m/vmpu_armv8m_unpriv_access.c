@@ -93,7 +93,7 @@ extern int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr
 
 uint32_t vmpu_unpriv_access(uint32_t addr, uint32_t size, uint32_t data)
 {
-    int tries = 0;
+    unsigned int tries = 0;
     while(1) {
         if ((vmpu_unpriv_test_range(addr, UVISOR_UNPRIV_ACCESS_SIZE(size)) & (TT_RESP_NSRW_Msk | TT_RESP_SRVALID_Msk)) == (TT_RESP_NSRW_Msk | TT_RESP_SRVALID_Msk)) {
             switch(size) {
