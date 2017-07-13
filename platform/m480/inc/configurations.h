@@ -31,7 +31,7 @@
  *   FLASH_LENGTH_MIN = min(FLASH_LENGTH_i) for i in family
  *   SRAM_LENGTH_MIN = min(SRAM_LENGTH_i) for i in family */
 #define FLASH_LENGTH_MIN 0x40000
-#define SRAM_LENGTH_MIN  0x20000
+#define SRAM_LENGTH_MIN  0x18000
 
 /* The symbols below can be either configuration-specific or family-wide,
  * depending on your requirements. See the porting guide for more details. */
