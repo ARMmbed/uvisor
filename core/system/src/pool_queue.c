@@ -51,7 +51,10 @@ int uvisor_pool_init(uvisor_pool_t * pool, void * array, size_t stride, size_t n
 
 int uvisor_pool_queue_init(uvisor_pool_queue_t * pool_queue, uvisor_pool_t * pool, void * array, size_t stride, size_t num)
 {
-    uvisor_pool_init(pool, array, stride, num);
+    int pool_init_ret = uvisor_pool_init(pool, array, stride, num);
+    if (pool_init_ret) {
+        return pool_init_ret;
+    }
     pool_queue->magic = UVISOR_POOL_QUEUE_MAGIC;
     pool_queue->head = UVISOR_POOL_SLOT_INVALID;
     pool_queue->tail = UVISOR_POOL_SLOT_INVALID;
