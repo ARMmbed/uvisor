@@ -111,8 +111,13 @@ static int ipc_waitfor(int (*cond)(uint32_t have, uint32_t expect), uint32_t wai
     uint32_t completed_tokens;
     bool condition_met;
     for (;;) {
-        /* Read the current tokens and clear any we were waiting on. */
         uvisor_spin_lock(ipc_tokens_lock());
+        /* Check we are not waiting for some unallocated tokens */
+        if ((wait_tokens & *ipc_allocated_tokens()) != wait_tokens) {
+            uvisor_spin_unlock(ipc_tokens_lock());
+            return UVISOR_ERROR_INVALID_PARAMETERS;
+        }
+        /* Read the current tokens and clear any we were waiting on. */
         completed_tokens = *ipc_completed_tokens() & wait_tokens;
         condition_met = cond(completed_tokens, wait_tokens);
         if (condition_met) {
