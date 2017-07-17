@@ -64,7 +64,7 @@ static uvisor_ipc_io_t * ipc_recv_array(void)
 /** Allocate a token
  * @param    tokens[in,out] allocate an available token from tokens, atomically modifying tokens
  * @return   the token, or 0 if no token available */
-uint32_t ipc_allocate_token(uint32_t * tokens)
+static uint32_t ipc_allocate_token(uint32_t * tokens)
 {
     uint32_t token;
     uint32_t bit;
@@ -95,7 +95,7 @@ uint32_t ipc_allocate_token(uint32_t * tokens)
  * @param    tokens[in,out] free the specified tokens_to_free from tokens, atomically modifying tokens
  * @param    tokens_to_free[in] the tokens to free (represented by 1 bits)
  * @return   the token, or 0 if no token available */
-void ipc_free_tokens(uint32_t * tokens, uint32_t tokens_to_free)
+static void ipc_free_tokens(uint32_t * tokens, uint32_t tokens_to_free)
 {
     *tokens &= ~tokens_to_free;
 }
