@@ -162,6 +162,7 @@ bool box_init_context_switch_next(uint32_t src_svc_sp)
      * not allowed to have a box initialization function. */
     if (g_vmpu_box_count == 1) {
         g_box_init_happened = true;
+        box_init_post();
         return g_box_init_happened;
     }
 
