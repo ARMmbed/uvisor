@@ -98,7 +98,40 @@ static void ipc_free_allocated_completed_tokens(uint32_t tokens)
     ipc_free_tokens(ipc_completed_tokens(), tokens);
 }
 
-static int ipc_waitfor(int (*cond)(uint32_t have, uint32_t expect), uint32_t wait_tokens, uint32_t * done_tokens, uint32_t timeout_ms)
+static uvisor_pool_slot_t get_slot_from_token(uint16_t half_token)
+{
+    return half_token ? __builtin_ctz(half_token) : UVISOR_POOL_SLOT_INVALID;
+}
+
+static void process_token(uint16_t half_token, uint32_t *succeeded_tokens, bool is_sending)
+{
+    uvisor_pool_queue_t * queue = is_sending ? ipc_send_queue() : ipc_recv_queue();
+    uvisor_ipc_io_t * array = is_sending ? ipc_send_array() : ipc_recv_array();
+    uint32_t token;
+    while (half_token) {
+        uvisor_pool_slot_t slot = get_slot_from_token(half_token);
+        /* Slot must be valid, this is guaranteed by loop condition */
+        assert(slot < queue->pool->num);
+        uvisor_pool_queue_free(queue, slot);
+        token = 1U << (slot + (is_sending ? UVISOR_IPC_SEND_SLOTS : 0));
+        half_token &= (uint16_t) ~token;
+        if (array[slot].state == UVISOR_IPC_IO_STATE_DELIVERED) {
+            *succeeded_tokens |= token;
+        }
+    }
+}
+
+static void post_wait(uint32_t token, uint32_t * succeeded_tokens)
+{
+    *succeeded_tokens = 0;
+    process_token(token & 0xFFFFU, succeeded_tokens, true);
+    process_token(token >> UVISOR_IPC_SEND_SLOTS, succeeded_tokens, false);
+
+}
+
+static int ipc_waitfor(int (*cond)(uint32_t have, uint32_t expect),
+                       uint32_t wait_tokens, uint32_t * done_tokens,
+                       uint32_t * succeeded_tokens, uint32_t timeout_ms)
 {
     uint32_t completed_tokens;
     bool condition_met;
@@ -126,6 +159,7 @@ static int ipc_waitfor(int (*cond)(uint32_t have, uint32_t expect), uint32_t wai
     /* Communicate which tokens actually finished. */
     *done_tokens = completed_tokens;
 
+    post_wait(completed_tokens, succeeded_tokens);
     return 0;
 }
 

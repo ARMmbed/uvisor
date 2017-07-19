@@ -352,19 +352,8 @@ void ipc_drain_queue(void)
 #endif
         DPRINTF("Delivered [b%d:s%d].t0x%08x to [b%d:s%d].t0x%08x\r\n", send_box_id, send_slot, send_desc->token, recv_box_id, recv_slot, recv_desc->token);
 
-        /* Free the slots, as we have consumed the IOs. */
-        send_slot = uvisor_pool_queue_try_free(send_queue, send_slot);
-        recv_slot = uvisor_pool_queue_try_free(recv_queue, recv_slot);
-        if ((send_slot >= send_queue->pool->num) ||
-            (recv_slot >= recv_queue->pool->num)) {
-            /* The queue is empty or busy. This should never happen. We were
-             * able to dequeue a result message, but weren't able to free the
-             * result message. It is bad to take down the entire system. It is
-             * also bad to never free slots in the outgoing result queue.
-             * However, if we could dequeue the slot we should have no trouble
-             * freeing the slot here. */
-            assert(false);
-        }
+    /* No need to free the slots, let user wait call free them */
+
     } while (1);
 }
 
