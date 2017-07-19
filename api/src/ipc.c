@@ -141,13 +141,13 @@ static int all(uint32_t have, uint32_t expect)
     return (have & expect) == expect;
 }
 
-int ipc_waitforany(uint32_t wait_tokens, uint32_t * done_tokens, uint32_t timeout_ms) {
-    return ipc_waitfor(any, wait_tokens, done_tokens, timeout_ms);
+int ipc_waitforany(uint32_t wait_tokens, uint32_t * done_tokens, uint32_t * succeeded_tokens, uint32_t timeout_ms) {
+    return ipc_waitfor(any, wait_tokens, done_tokens, succeeded_tokens, timeout_ms);
 }
 
-int ipc_waitforall(uint32_t wait_tokens, uint32_t * done_tokens, uint32_t timeout_ms)
+int ipc_waitforall(uint32_t wait_tokens, uint32_t * done_tokens, uint32_t * succeeded_tokens, uint32_t timeout_ms)
 {
-    return ipc_waitfor(all, wait_tokens, done_tokens, timeout_ms);
+    return ipc_waitfor(all, wait_tokens, done_tokens, succeeded_tokens, timeout_ms);
 }
 
 static int ipc_io(uvisor_ipc_desc_t * desc, const void * msg, bool is_sending)
