@@ -256,8 +256,18 @@ void ipc_drain_queue(void)
         uvisor_ipc_desc_t * send_desc = send_io->desc;
 
         /* Ready to send? */
-        if (send_io->state != UVISOR_IPC_IO_STATE_READY_TO_SEND) {
-            put_it_back(send_queue, send_slot);
+        if (send_io->state != UVISOR_IPC_IO_STATE_READY) {
+            if (send_io->state == UVISOR_IPC_IO_STATE_ERROR) {
+                /* Try to set completed tokens for requests with error */
+                if (uvisor_spin_trylock(&send_ipc->tokens_lock)) {
+                    send_ipc->completed_tokens |= send_desc->token;
+                    uvisor_spin_unlock(&send_ipc->tokens_lock);
+                } else {
+                    /* Try again next time if we cannot lock */
+                    put_it_back(send_queue, send_slot);
+                }
+            }
+            /* Do not put back if delivered or state is corrupted value */
             continue; /* Try the next message */
         }
 
@@ -265,6 +275,9 @@ void ipc_drain_queue(void)
         const int recv_box_id = send_desc->box_id;
         if (recv_box_id < 0 || recv_box_id >= g_vmpu_box_count) {
             /* Ignore messages sent to boxes we don't know. */
+            send_io->state = UVISOR_IPC_IO_STATE_ERROR;
+            /* Put it back so that we can set tokens */
+            put_it_back(send_queue, send_slot);
             continue;
         }
 
