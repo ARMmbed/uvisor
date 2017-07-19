@@ -530,8 +530,8 @@ static uint32_t __vmpu_order_boxes(int * const box_order, int * const best_order
             int index = box_order[i];
             UvisorBoxConfig const * box_cfgtbl = ((UvisorBoxConfig const * *) __uvisor_config.cfgtbl_ptr_start)[index];
             uint32_t bss_size = 0;
-            for (int i = 0; i < UVISOR_BSS_SECTIONS_COUNT; ++i) {
-                bss_size += box_cfgtbl->bss.sizes[i];
+            for (int j = 0; j < UVISOR_BSS_SECTIONS_COUNT; ++j) {
+                bss_size += box_cfgtbl->bss.sizes[j];
             }
             uint32_t stack_size = box_cfgtbl->stack_size;
             /* This function automatically updates the sram_offset parameter to
