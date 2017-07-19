@@ -150,9 +150,10 @@ int ipc_waitforall(uint32_t wait_tokens, uint32_t * done_tokens, uint32_t timeou
     return ipc_waitfor(all, wait_tokens, done_tokens, timeout_ms);
 }
 
-static int ipc_io(uvisor_ipc_desc_t * desc, const void * msg,
-                  uvisor_pool_queue_t * queue, uvisor_ipc_io_t * array, uvisor_ipc_io_state_t new_state)
+static int ipc_io(uvisor_ipc_desc_t * desc, const void * msg, bool is_sending)
 {
+    uvisor_pool_queue_t * queue = is_sending ? ipc_send_queue() : ipc_recv_queue();
+    uvisor_ipc_io_t * array = is_sending ? ipc_send_array() : ipc_recv_array();
     uvisor_pool_slot_t slot;
     uvisor_ipc_io_t * io;
     uint32_t new_token;
@@ -167,7 +168,7 @@ static int ipc_io(uvisor_ipc_desc_t * desc, const void * msg,
     }
 
     /* Set the correspondent token according to slot allocated */
-    new_token = ipc_set_token_bit(ipc_allocated_tokens(), slot, new_state == UVISOR_IPC_IO_STATE_READY_TO_SEND);
+    new_token = ipc_set_token_bit(ipc_allocated_tokens(), slot, is_sending);
     if (!new_token) {
         /* This should not happen. This occurring means the pool allocates a
          * slot that has already been allocated */
@@ -193,10 +194,10 @@ static int ipc_io(uvisor_ipc_desc_t * desc, const void * msg,
 
 int ipc_send(uvisor_ipc_desc_t * desc, const void * msg)
 {
-    return ipc_io(desc, msg, ipc_send_queue(), ipc_send_array(), UVISOR_IPC_IO_STATE_READY_TO_SEND);
+    return ipc_io(desc, msg, true);
 }
 
 int ipc_recv(uvisor_ipc_desc_t * desc, void * msg)
 {
-    return ipc_io(desc, msg, ipc_recv_queue(), ipc_recv_array(), UVISOR_IPC_IO_STATE_READY_TO_RECV);
+    return ipc_io(desc, msg, false);
 }
