@@ -418,17 +418,19 @@ static void vmpu_enumerate_boxes(void)
 
         /* Verify the box configuration table. */
         /* Note: This function halts if a sanity check fails. */
-        vmpu_check_sanity_box_cfgtbl(box_id, box_cfgtbl);
+        vmpu_check_sanity_box_cfgtbl(index, box_cfgtbl);
 
-        DPRINTF("Box %i ACLs:\r\n", box_id);
+        DPRINTF("Box %i ACLs:\r\n", index);
 
         /* Add the box ACL for the static SRAM memories. */
-        vmpu_configure_box_sram(box_id, box_cfgtbl);
+        vmpu_configure_box_sram(index, box_cfgtbl);
 
         /* Add the box ACLs for peripherals. */
-        vmpu_configure_box_peripherals(box_id, box_cfgtbl);
+        /* MUST call this function with the new indexing since it is a stateful */
+        /*   as it is increments g_mpu_region in call order */
+        vmpu_configure_box_peripherals(index, box_cfgtbl);
 
-        box_init(box_id, box_cfgtbl);
+        box_init(index, box_cfgtbl);
     }
 
     /* Load box 0. */
