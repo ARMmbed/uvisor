@@ -48,7 +48,7 @@ static int recv_match(uvisor_pool_slot_t slot, void * context)
     int send_box_id = c->send_box_id;
 
     /* Ready to receive? */
-    if (recv_io->state != UVISOR_IPC_IO_STATE_READY_TO_RECV) {
+    if (recv_io->state != UVISOR_IPC_IO_STATE_READY) {
         return 0; /* The receive IO is not ready */
     }
 
@@ -150,6 +150,10 @@ static int ipc_deliver(uvisor_ipc_t * send_ipc, uvisor_ipc_t * recv_ipc,
     recv_ipc->completed_tokens |= recv_desc->token;
 
     status = 0;
+
+    /* Update state of requests */
+    send_io->state = UVISOR_IPC_IO_STATE_DELIVERED;
+    recv_io->state = UVISOR_IPC_IO_STATE_DELIVERED;
 
     if (recv_lock != send_lock) {
         uvisor_spin_unlock(recv_lock);

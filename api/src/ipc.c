@@ -182,7 +182,8 @@ static int ipc_io(uvisor_ipc_desc_t * desc, const void * msg,
     io = UVISOR_GET_NS_ALIAS(&array[slot]);
     io->desc = desc;
     io->msg = (void *) msg;
-    io->state = new_state;
+    /* New requests will have READY state */
+    io->state = UVISOR_IPC_IO_STATE_READY;
 
     /* Place the IPC request into the outgoing queue. */
     uvisor_pool_queue_enqueue(queue, slot);
