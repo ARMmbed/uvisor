@@ -396,7 +396,7 @@ To call the public secure entry point from any other box, you can use the `secur
 ```cpp
 /* ~/code/uvisor-example/source/main.cpp */
 
-#include "secure-box.h"
+#include "secure_box.h"
 ```
 
 Then replace the `main` function with:
