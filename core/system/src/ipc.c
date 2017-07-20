@@ -48,7 +48,7 @@ static int recv_match(uvisor_pool_slot_t slot, void * context)
     int send_box_id = c->send_box_id;
 
     /* Ready to receive? */
-    if (recv_io->state != UVISOR_IPC_IO_STATE_READY_TO_RECV) {
+    if (recv_io->state != UVISOR_IPC_IO_STATE_READY) {
         return 0; /* The receive IO is not ready */
     }
 
@@ -151,6 +151,10 @@ static int ipc_deliver(uvisor_ipc_t * send_ipc, uvisor_ipc_t * recv_ipc,
 
     status = 0;
 
+    /* Update state of requests */
+    send_io->state = UVISOR_IPC_IO_STATE_DELIVERED;
+    recv_io->state = UVISOR_IPC_IO_STATE_DELIVERED;
+
     if (recv_lock != send_lock) {
         uvisor_spin_unlock(recv_lock);
     }
@@ -252,8 +256,18 @@ void ipc_drain_queue(void)
         uvisor_ipc_desc_t * send_desc = send_io->desc;
 
         /* Ready to send? */
-        if (send_io->state != UVISOR_IPC_IO_STATE_READY_TO_SEND) {
-            put_it_back(send_queue, send_slot);
+        if (send_io->state != UVISOR_IPC_IO_STATE_READY) {
+            if (send_io->state == UVISOR_IPC_IO_STATE_ERROR) {
+                /* Try to set completed tokens for requests with error */
+                if (uvisor_spin_trylock(&send_ipc->tokens_lock)) {
+                    send_ipc->completed_tokens |= send_desc->token;
+                    uvisor_spin_unlock(&send_ipc->tokens_lock);
+                } else {
+                    /* Try again next time if we cannot lock */
+                    put_it_back(send_queue, send_slot);
+                }
+            }
+            /* Do not put back if delivered or state is corrupted value */
             continue; /* Try the next message */
         }
 
@@ -261,6 +275,9 @@ void ipc_drain_queue(void)
         const int recv_box_id = send_desc->box_id;
         if (recv_box_id < 0 || recv_box_id >= g_vmpu_box_count) {
             /* Ignore messages sent to boxes we don't know. */
+            send_io->state = UVISOR_IPC_IO_STATE_ERROR;
+            /* Put it back so that we can set tokens */
+            put_it_back(send_queue, send_slot);
             continue;
         }
 
@@ -335,19 +352,8 @@ void ipc_drain_queue(void)
 #endif
         DPRINTF("Delivered [b%d:s%d].t0x%08x to [b%d:s%d].t0x%08x\r\n", send_box_id, send_slot, send_desc->token, recv_box_id, recv_slot, recv_desc->token);
 
-        /* Free the slots, as we have consumed the IOs. */
-        send_slot = uvisor_pool_queue_try_free(send_queue, send_slot);
-        recv_slot = uvisor_pool_queue_try_free(recv_queue, recv_slot);
-        if ((send_slot >= send_queue->pool->num) ||
-            (recv_slot >= recv_queue->pool->num)) {
-            /* The queue is empty or busy. This should never happen. We were
-             * able to dequeue a result message, but weren't able to free the
-             * result message. It is bad to take down the entire system. It is
-             * also bad to never free slots in the outgoing result queue.
-             * However, if we could dequeue the slot we should have no trouble
-             * freeing the slot here. */
-            assert(false);
-        }
+    /* No need to free the slots, let user wait call free them */
+
     } while (1);
 }
 

@@ -61,33 +61,25 @@ static uvisor_ipc_io_t * ipc_recv_array(void)
     return uvisor_ipc(__uvisor_ps)->recv_queue.io;
 }
 
-/** Allocate a token
- * @param    tokens[in,out] allocate an available token from tokens, atomically modifying tokens
- * @return   the token, or 0 if no token available */
-uint32_t ipc_allocate_token(uint32_t * tokens)
+/** Allocate a token according to the position in the ipc queue
+ * @param tokens[in,out] allocate the token slot from tokens, atomically modifying tokens
+ * @param slot           slot number inside the queue
+ * @param is_sending     whether the slot number is from sending queue
+ * @return               the token, or 0 if token already allocated */
+static uint32_t ipc_set_token_bit(uint32_t * tokens, uvisor_pool_slot_t slot, bool is_sending)
 {
-    uint32_t token;
-    uint32_t bit;
-
-    /* Read the current tokens and allocate a new token. Both reading and
-     * allocating must be done while holding the spin lock to prevent two (or
-     * more) concurrent allocations from grabbing the same token. */
+    /* TODO: Make this a static assert */
+    assert(UVISOR_IPC_SEND_SLOTS + UVISOR_IPC_RECV_SLOTS == 32);
     uvisor_spin_lock(ipc_tokens_lock());
-    /* FIXME Optimize, to lessen the time holding the spin lock. */
-    bit = 0x1;
-    while (*tokens & bit) {
-        bit <<= 1;
+    /* Higher 16 bits for receiving, Lower 16 bits for sending */
+    uint32_t token = 1U << (slot + (is_sending ? 0 : UVISOR_IPC_SEND_SLOTS));
+    if (*tokens | token) {
+        /* Already allocated */
+        uvisor_spin_unlock(ipc_tokens_lock());
+        return 0;
     }
-    token = bit;
     *tokens |= token; /* Allocate the token. */
     uvisor_spin_unlock(ipc_tokens_lock());
-
-    /* NOTE: This function depends on UVISOR_IPC_INVALID_TOKEN being defined to
-     * 0. This is because if no bits are available in the bitfield, this
-     * function returns 0. In order for the user of this API to interpret this
-     * failure correctly, UVISOR_IPC_INVALID_TOKEN must be 0. */
-    /* TODO Make this a static assert. */
-    assert(UVISOR_IPC_INVALID_TOKEN == 0);
     return token;
 }
 
@@ -106,7 +98,40 @@ static void ipc_free_allocated_completed_tokens(uint32_t tokens)
     ipc_free_tokens(ipc_completed_tokens(), tokens);
 }
 
-static int ipc_waitfor(int (*cond)(uint32_t have, uint32_t expect), uint32_t wait_tokens, uint32_t * done_tokens, uint32_t timeout_ms)
+static uvisor_pool_slot_t get_slot_from_token(uint16_t half_token)
+{
+    return half_token ? __builtin_ctz(half_token) : UVISOR_POOL_SLOT_INVALID;
+}
+
+static void process_token(uint16_t half_token, uint32_t *succeeded_tokens, bool is_sending)
+{
+    uvisor_pool_queue_t * queue = is_sending ? ipc_send_queue() : ipc_recv_queue();
+    uvisor_ipc_io_t * array = is_sending ? ipc_send_array() : ipc_recv_array();
+    uint32_t token;
+    while (half_token) {
+        uvisor_pool_slot_t slot = get_slot_from_token(half_token);
+        /* Slot must be valid, this is guaranteed by loop condition */
+        assert(slot < queue->pool->num);
+        uvisor_pool_queue_free(queue, slot);
+        token = 1U << (slot + (is_sending ? UVISOR_IPC_SEND_SLOTS : 0));
+        half_token &= (uint16_t) ~token;
+        if (array[slot].state == UVISOR_IPC_IO_STATE_DELIVERED) {
+            *succeeded_tokens |= token;
+        }
+    }
+}
+
+static void post_wait(uint32_t token, uint32_t * succeeded_tokens)
+{
+    *succeeded_tokens = 0;
+    process_token(token & 0xFFFFU, succeeded_tokens, true);
+    process_token(token >> UVISOR_IPC_SEND_SLOTS, succeeded_tokens, false);
+
+}
+
+static int ipc_waitfor(int (*cond)(uint32_t have, uint32_t expect),
+                       uint32_t wait_tokens, uint32_t * done_tokens,
+                       uint32_t * succeeded_tokens, uint32_t timeout_ms)
 {
     uint32_t completed_tokens;
     bool condition_met;
@@ -134,6 +159,7 @@ static int ipc_waitfor(int (*cond)(uint32_t have, uint32_t expect), uint32_t wai
     /* Communicate which tokens actually finished. */
     *done_tokens = completed_tokens;
 
+    post_wait(completed_tokens, succeeded_tokens);
     return 0;
 }
 
@@ -149,27 +175,22 @@ static int all(uint32_t have, uint32_t expect)
     return (have & expect) == expect;
 }
 
-int ipc_waitforany(uint32_t wait_tokens, uint32_t * done_tokens, uint32_t timeout_ms) {
-    return ipc_waitfor(any, wait_tokens, done_tokens, timeout_ms);
+int ipc_waitforany(uint32_t wait_tokens, uint32_t * done_tokens, uint32_t * succeeded_tokens, uint32_t timeout_ms) {
+    return ipc_waitfor(any, wait_tokens, done_tokens, succeeded_tokens, timeout_ms);
 }
 
-int ipc_waitforall(uint32_t wait_tokens, uint32_t * done_tokens, uint32_t timeout_ms)
+int ipc_waitforall(uint32_t wait_tokens, uint32_t * done_tokens, uint32_t * succeeded_tokens, uint32_t timeout_ms)
 {
-    return ipc_waitfor(all, wait_tokens, done_tokens, timeout_ms);
+    return ipc_waitfor(all, wait_tokens, done_tokens, succeeded_tokens, timeout_ms);
 }
 
-static int ipc_io(uvisor_ipc_desc_t * desc, const void * msg,
-                  uvisor_pool_queue_t * queue, uvisor_ipc_io_t * array, uvisor_ipc_io_state_t new_state)
+static int ipc_io(uvisor_ipc_desc_t * desc, const void * msg, bool is_sending)
 {
+    uvisor_pool_queue_t * queue = is_sending ? ipc_send_queue() : ipc_recv_queue();
+    uvisor_ipc_io_t * array = is_sending ? ipc_send_array() : ipc_recv_array();
     uvisor_pool_slot_t slot;
     uvisor_ipc_io_t * io;
     uint32_t new_token;
-
-    /* Allocate a token. If none left, err. */
-    new_token = ipc_allocate_token(ipc_allocated_tokens());
-    if (new_token == UVISOR_IPC_INVALID_TOKEN) {
-        return UVISOR_ERROR_OUT_OF_STRUCTURES;
-    }
 
     /* Claim a slot in the IPC queue. */
     slot = uvisor_pool_queue_allocate(queue);
@@ -180,6 +201,14 @@ static int ipc_io(uvisor_ipc_desc_t * desc, const void * msg,
         return UVISOR_ERROR_OUT_OF_STRUCTURES;
     }
 
+    /* Set the correspondent token according to slot allocated */
+    new_token = ipc_set_token_bit(ipc_allocated_tokens(), slot, is_sending);
+    if (!new_token) {
+        /* This should not happen. This occurring means the pool allocates a
+         * slot that has already been allocated */
+        assert(false);
+    }
+
     /* The message will be sent at this point. Communicate the allocated token
      * through the descriptor. */
     desc->token = new_token;
@@ -188,7 +217,8 @@ static int ipc_io(uvisor_ipc_desc_t * desc, const void * msg,
     io = UVISOR_GET_NS_ALIAS(&array[slot]);
     io->desc = desc;
     io->msg = (void *) msg;
-    io->state = new_state;
+    /* New requests will have READY state */
+    io->state = UVISOR_IPC_IO_STATE_READY;
 
     /* Place the IPC request into the outgoing queue. */
     uvisor_pool_queue_enqueue(queue, slot);
@@ -198,10 +228,10 @@ static int ipc_io(uvisor_ipc_desc_t * desc, const void * msg,
 
 int ipc_send(uvisor_ipc_desc_t * desc, const void * msg)
 {
-    return ipc_io(desc, msg, ipc_send_queue(), ipc_send_array(), UVISOR_IPC_IO_STATE_READY_TO_SEND);
+    return ipc_io(desc, msg, true);
 }
 
 int ipc_recv(uvisor_ipc_desc_t * desc, void * msg)
 {
-    return ipc_io(desc, msg, ipc_recv_queue(), ipc_recv_array(), UVISOR_IPC_IO_STATE_READY_TO_RECV);
+    return ipc_io(desc, msg, false);
 }

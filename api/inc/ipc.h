@@ -27,27 +27,29 @@
  *
  * @note  This function currently spins, burning through power.
  *
- * @param[in]  wait_tokens  a bitfield of tokens to wait on
- * @param[out] done_tokens  a bitfield which tokens completed
- * @param[in]  timeout_ms   how long to wait (in ms) for an IPC operation
- *                          before returning. 0 means don't wait at all. Any
- *                          other value means wait forever.
+ * @param[in]  wait_tokens       a bitfield of tokens to wait on
+ * @param[out] done_tokens       a bitfield which tokens completed
+ * @param[out] succeeded_tokens  a bitfield which tokens completed with success
+ * @param[in]  timeout_ms        how long to wait (in ms) for an IPC operation
+ *                               before returning. 0 means don't wait at all. Any
+ *                               other value means wait forever.
  * @return     0 on success, non-zero error code otherwise
  */
-UVISOR_EXTERN int ipc_waitforany(uint32_t wait_tokens, uint32_t * done_tokens, uint32_t timeout_ms);
+UVISOR_EXTERN int ipc_waitforany(uint32_t wait_tokens, uint32_t * done_tokens, uint32_t * succeeded_tokens, uint32_t timeout_ms);
 
 /** Wait for all of the specified IPC operations to complete.
  *
  * @note  This function currently spins, burning through power.
  *
- * @param[in]  wait_tokens  a bitfield of tokens to wait on
- * @param[out] done_tokens  a bitfield which tokens completed
- * @param[in]  timeout_ms   how long to wait (in ms) for an IPC operation
- *                          before returning. 0 means don't wait at all.
- *                          Any other value means wait forever.
+ * @param[in]  wait_tokens       a bitfield of tokens to wait on
+ * @param[out] done_tokens       a bitfield which tokens completed
+ * @param[out] succeeded_tokens  a bitfield which tokens completed with success
+ * @param[in]  timeout_ms        how long to wait (in ms) for an IPC operation
+ *                               before returning. 0 means don't wait at all. Any
+ *                               other value means wait forever.
  * @return     0 on success, non-zero error code otherwise
  */
-UVISOR_EXTERN int ipc_waitforall(uint32_t wait_tokens, uint32_t * done_tokens, uint32_t timeout_ms);
+UVISOR_EXTERN int ipc_waitforall(uint32_t wait_tokens, uint32_t * done_tokens, uint32_t * succeeded_tokens, uint32_t timeout_ms);
 
 /** Asynchronously send an IPC message
  *

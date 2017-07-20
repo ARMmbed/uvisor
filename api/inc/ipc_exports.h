@@ -39,11 +39,9 @@
 #define UVISOR_IPC_INVALID_TOKEN 0
 
 typedef enum uvisor_ipc_io_state {
-    UVISOR_IPC_IO_STATE_INVALID,
-    UVISOR_IPC_IO_STATE_IDLE,
-    UVISOR_IPC_IO_STATE_READY_TO_SEND, /* Enqueued and waiting for delivery */
-    UVISOR_IPC_IO_STATE_READY_TO_RECV, /* Enqueued and waiting for delivery */
-    UVISOR_IPC_IO_STATE_VALID, /* uVisor has copied the message */
+    UVISOR_IPC_IO_STATE_READY,      /* A message is inside a queue to process */
+    UVISOR_IPC_IO_STATE_DELIVERED,  /* A message is delivered */
+    UVISOR_IPC_IO_STATE_ERROR,      /* Error occurred when delivering message */
 } uvisor_ipc_io_state_t;
 
 /* IPC Descriptor Structure
