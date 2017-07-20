@@ -55,9 +55,9 @@ static int recv_match(uvisor_pool_slot_t slot, void * context)
     /* Source box ID permitted, or any box permitted to send? */
     if (send_box_id != recv_desc->box_id)
     {
-        /* Souce box ID was not permitted explicitly. Is any box permitted to
+        /* Source box ID was not permitted explicitly. Is any box permitted to
          * fulfil with receive request? */
-        if (recv_desc->box_id != UVISOR_BOX_ID_INVALID) {
+        if (recv_desc->box_id != UVISOR_BOX_ID_ANY) {
             /* No. The ID must explicitly match and it doesn't match. */
             return 0;
         }
