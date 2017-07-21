@@ -92,9 +92,9 @@ uint32_t ipc_allocate_token(uint32_t * tokens)
 }
 
 /** Free tokens
+ *  The token lock must have been already acquired
  * @param    tokens[in,out] free the specified tokens_to_free from tokens, atomically modifying tokens
- * @param    tokens_to_free[in] the tokens to free (represented by 1 bits)
- * @return   the token, or 0 if no token available */
+ * @param    tokens_to_free[in] the tokens to free (represented by bits) */
 void ipc_free_tokens(uint32_t * tokens, uint32_t tokens_to_free)
 {
     *tokens &= ~tokens_to_free;
@@ -149,7 +149,8 @@ static int all(uint32_t have, uint32_t expect)
     return (have & expect) == expect;
 }
 
-int ipc_waitforany(uint32_t wait_tokens, uint32_t * done_tokens, uint32_t timeout_ms) {
+int ipc_waitforany(uint32_t wait_tokens, uint32_t * done_tokens, uint32_t timeout_ms)
+{
     return ipc_waitfor(any, wait_tokens, done_tokens, timeout_ms);
 }
 
