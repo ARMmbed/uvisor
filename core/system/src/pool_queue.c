@@ -23,7 +23,7 @@ int uvisor_pool_init(uvisor_pool_t * pool, void * array, size_t stride, size_t n
 {
     uvisor_pool_slot_t i;
 
-    if (num >= UVISOR_POOL_MAX_VALID) {
+    if (num == 0 || num >= UVISOR_POOL_MAX_VALID) {
         return -1;
     }
 
