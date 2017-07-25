@@ -175,7 +175,7 @@ extern uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp);
  * boxes are enumerated from 0 to (g_vmpu_box_count - 1) and the following
  * condition must hold: g_vmpu_box_count < UVISOR_MAX_BOXES */
 extern uint8_t g_vmpu_box_count;
-bool g_vmpu_boxes_counted;
+extern bool g_vmpu_boxes_counted;
 
 extern int vmpu_box_namespace_from_id(int box_id, char *box_name, size_t length);
 extern int vmpu_box_id_from_namespace(int * const box_id, const char * const box_name);
