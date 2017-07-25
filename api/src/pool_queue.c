@@ -40,9 +40,19 @@ uvisor_pool_slot_t uvisor_pool_allocate(uvisor_pool_t * pool)
     return uvisor_api.pool_allocate(pool);
 }
 
+uvisor_pool_slot_t uvisor_pool_try_allocate(uvisor_pool_t * pool)
+{
+    return uvisor_api.pool_try_allocate(pool);
+}
+
 void uvisor_pool_queue_enqueue(uvisor_pool_queue_t * pool_queue, uvisor_pool_slot_t slot)
 {
     uvisor_api.pool_queue_enqueue(pool_queue, slot);
+}
+
+int uvisor_pool_queue_try_enqueue(uvisor_pool_queue_t * pool_queue, uvisor_pool_slot_t slot)
+{
+    return uvisor_api.pool_queue_try_enqueue(pool_queue, slot);
 }
 
 uvisor_pool_slot_t uvisor_pool_free(uvisor_pool_t * pool, uvisor_pool_slot_t slot)
@@ -50,9 +60,19 @@ uvisor_pool_slot_t uvisor_pool_free(uvisor_pool_t * pool, uvisor_pool_slot_t slo
     return uvisor_api.pool_free(pool, slot);
 }
 
+uvisor_pool_slot_t uvisor_pool_try_free(uvisor_pool_t * pool, uvisor_pool_slot_t slot)
+{
+    return uvisor_api.pool_try_free(pool, slot);
+}
+
 uvisor_pool_slot_t uvisor_pool_queue_dequeue(uvisor_pool_queue_t * pool_queue, uvisor_pool_slot_t slot)
 {
     return uvisor_api.pool_queue_dequeue(pool_queue, slot);
+}
+
+uvisor_pool_slot_t uvisor_pool_queue_try_dequeue(uvisor_pool_queue_t * pool_queue, uvisor_pool_slot_t slot)
+{
+    return uvisor_api.pool_queue_try_dequeue(pool_queue, slot);
 }
 
 uvisor_pool_slot_t uvisor_pool_queue_dequeue_first(uvisor_pool_queue_t * pool_queue)
@@ -60,9 +80,19 @@ uvisor_pool_slot_t uvisor_pool_queue_dequeue_first(uvisor_pool_queue_t * pool_qu
     return uvisor_api.pool_queue_dequeue_first(pool_queue);
 }
 
+uvisor_pool_slot_t uvisor_pool_queue_try_dequeue_first(uvisor_pool_queue_t * pool_queue)
+{
+    return uvisor_api.pool_queue_try_dequeue_first(pool_queue);
+}
+
 uvisor_pool_slot_t uvisor_pool_queue_find_first(uvisor_pool_queue_t * pool_queue, TQueryFN_Ptr query_fn, void * context)
 {
     return uvisor_api.pool_queue_find_first(pool_queue,query_fn, context);
+}
+
+uvisor_pool_slot_t uvisor_pool_queue_try_find_first(uvisor_pool_queue_t * pool_queue, TQueryFN_Ptr query_fn, void * context)
+{
+    return uvisor_api.pool_queue_try_find_first(pool_queue, query_fn, context);
 }
 
 #endif
