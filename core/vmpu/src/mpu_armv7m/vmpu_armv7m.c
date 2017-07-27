@@ -117,7 +117,7 @@ static int vmpu_fault_recovery_mpu(uint32_t pc, uint32_t sp, uint32_t fault_addr
 
     return 1;
 }
-
+extern volatile bool g_semihosting_enabled;
 uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
 {
     uint32_t pc;
@@ -138,7 +138,17 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
             break;
 
         case HardFault_IRQn:
-            DEBUG_FAULT(FAULT_HARD, lr, sp);
+        	pc = vmpu_unpriv_uint32_read(sp + (6 * 4));
+        	uint16_t the_opcode = vmpu_unpriv_uint16_read(pc);
+
+        	if (0xBEAB == the_opcode) {
+
+        		*((uint32_t*)(sp + (6 * 4))) = pc + 4;
+        		g_semihosting_enabled = false;
+        		break;
+        	}
+
+        	DEBUG_FAULT(FAULT_HARD, lr, sp);
             HALT_ERROR(FAULT_HARD, "Cannot recover from a hard fault.");
             lr = debug_box_enter_from_priv(lr);
             break;
