@@ -38,13 +38,12 @@
  * UART port instead of semihosting). */
 #define DEBUG_MAX_BUFFER 128
 uint8_t g_buffer[DEBUG_MAX_BUFFER];
-int g_buffer_pos;
+int g_buffer_pos = 0;
 
 UVISOR_WEAK void default_putc(uint8_t data)
 {
-    if (g_buffer_pos < (DEBUG_MAX_BUFFER - 1)) {
-        g_buffer[g_buffer_pos++] = data;
-    } else {
+    g_buffer[g_buffer_pos++] = data;
+    if (g_buffer_pos == (DEBUG_MAX_BUFFER - 1)) {
         data = '\n';
     }
 
