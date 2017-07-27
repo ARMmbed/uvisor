@@ -100,6 +100,9 @@ UVISOR_NAKED void main_entry(uint32_t caller)
         "mrs   r1, CONTROL\n"
         "orr   r1, r1, #3\n"
         "msr   CONTROL, r1\n"
+
+        /* ISB to ensure subsequent instructions are fetched with the correct privilege level */
+        "isb\n"
 #endif /* defined(ARCH_CORE_ARMv7M) */
 
         /* Return to the caller. */

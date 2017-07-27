@@ -422,6 +422,9 @@ uint32_t virq_gateway_context_switch_in(uint32_t svc_sp, uint32_t svc_pc)
     /* De-privilege execution. */
     __set_CONTROL(__get_CONTROL() | 3);
 
+    /* ISB to ensure subsequent instructions are fetched with the correct privilege level */
+    __ISB();
+
     /* Return whether the destination box requires privacy or not. */
     /* TODO: Context privacy is currently unsupported. */
     return 0;
@@ -487,6 +490,9 @@ void virq_gateway_context_switch_out(uint32_t svc_sp, uint32_t msp)
 
     /* Re-privilege execution. */
     __set_CONTROL(__get_CONTROL() & ~2);
+
+    /* ISB to ensure subsequent instructions are fetched with the correct privilege level */
+    __ISB();
 }
 
 void virq_init(uint32_t const * const user_vtor)
