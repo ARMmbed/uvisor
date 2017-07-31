@@ -332,6 +332,12 @@ bool vmpu_buffer_access_is_ok(int box_id, const void * addr, size_t size)
     uint32_t start_addr = (uint32_t) addr;
     uint32_t end_addr = start_addr + size - 1;
 
+    assert(start_addr <= end_addr);
+    if (start_addr > end_addr) {
+        /* We couldn't determine the end of the buffer. */
+        return false;
+    }
+
     /* NOTE: Buffers are not allowed to span more than 1 region. If they do
      * span more than one region, access will be denied. */
 
@@ -346,12 +352,6 @@ bool vmpu_buffer_access_is_ok(int box_id, const void * addr, size_t size)
         if (vmpu_buffer_access_is_ok_static(start_addr, end_addr)) {
             return true;
         }
-    }
-
-    assert(start_addr <= end_addr);
-    if (start_addr > end_addr) {
-        /* We couldn't determine the end of the buffer. */
-        return false;
     }
 
     /* Check if addr range lies in AIPS */
