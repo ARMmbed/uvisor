@@ -500,16 +500,17 @@ void virq_init(uint32_t const * const user_vtor)
     uint8_t prio_bits;
     uint8_t volatile *prio;
 
+    /* Insure interrupts are disabled at this point. */
+    assert(__get_PRIMASK());
+
     /* Detect the number of implemented priority bits.
      * The architecture specifies that unused/not implemented bits in the
      * NVIC IP registers read back as 0. */
-    __disable_irq();
     prio = (uint8_t volatile *) &(NVIC_IPR[0]);
     prio_bits = *prio;
     *prio = 0xFFU;
     g_virq_prio_bits = (uint8_t) __builtin_popcount(*prio);
     *prio = prio_bits;
-    __enable_irq();
 
     /* Verify that the priority bits read at runtime are realistic. */
     assert(g_virq_prio_bits > 0 && g_virq_prio_bits <= 8);
