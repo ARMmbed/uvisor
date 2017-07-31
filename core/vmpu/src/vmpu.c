@@ -407,7 +407,7 @@ static void vmpu_enumerate_boxes(void)
     g_vmpu_boxes_counted = TRUE;
 
     /* Get the boxes order. This is MPU-specific. */
-    int box_order[UVISOR_MAX_BOXES];
+    int box_order[UVISOR_MAX_BOXES] = {0};
     vmpu_order_boxes(box_order, g_vmpu_box_count);
 
     /* Initialize the boxes. */

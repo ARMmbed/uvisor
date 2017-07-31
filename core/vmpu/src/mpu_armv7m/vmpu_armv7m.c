@@ -566,12 +566,14 @@ void vmpu_order_boxes(int * const best_order, int box_count)
     for (int i = 0; i < box_count; ++i) {
         box_order[i] = i;
     }
-
-    /* Find the total amount of SRAM used by all the boxes.
-     * This function also updates the best_order array with the configuration
-     * that minimizes the SRAM usage. */
-    uint32_t total_sram_size = __vmpu_order_boxes(box_order, best_order, 1, box_count - 1, UINT32_MAX);
-
+    
+    uint32_t total_sram_size = 0;
+    if (box_count > 1) {
+        /* Find the total amount of SRAM used by all the boxes.
+         * This function also updates the best_order array with the configuration
+         * that minimizes the SRAM usage. */
+        total_sram_size = __vmpu_order_boxes(box_order, best_order, 1, box_count - 1, UINT32_MAX);
+    }
     /* This helper message allows people to work around the linker script
      * limitation that prevents us from allocating the correct amount of memory
      * at link time. */
