@@ -361,10 +361,11 @@ static uvisor_pool_slot_t find_first(uvisor_pool_queue_t * pool_queue,
 {
     uvisor_pool_slot_t slot;
     uvisor_pool_t * pool = UVISOR_AUTO_NS_ALIAS(pool_queue->pool);
+    uvisor_pool_slot_t iterated = 0;
 
     /* Walk the queue, looking for the first slot that matches the query. */
     slot = pool_queue->head;
-    while (slot != UVISOR_POOL_SLOT_INVALID)
+    while (slot != UVISOR_POOL_SLOT_INVALID && iterated <= UVISOR_POOL_MAX_VALID)
     {
         uvisor_pool_queue_entry_t * entry = &pool->management_array[slot];
 
@@ -378,6 +379,7 @@ static uvisor_pool_slot_t find_first(uvisor_pool_queue_t * pool_queue,
         }
 
         slot = entry->queued.next;
+        iterated++;
     }
 
     /* We didn't find a match. */
