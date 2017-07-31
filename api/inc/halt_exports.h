@@ -72,4 +72,33 @@ typedef struct {
     uint32_t retpsr;
 } UVISOR_PACKED exception_frame_t;
 
+/* A pointer to this structure will be given to halt_error() handler
+ * of the debug box driver. */
+typedef struct {
+    /* A basic exception stack frame that is always present with a valid stack. */
+    exception_frame_t stack_frame;
+
+    /* A few registers that may be useful for debug. */
+    uint32_t lr;
+    uint32_t control;
+    uint32_t ipsr;
+    
+    /* Fault status registers. */
+    uint32_t mmfar;
+    uint32_t bfar;
+    uint32_t cfsr;
+    uint32_t hfsr;
+    uint32_t dfsr;
+    uint32_t afsr;
+    
+    /* Bitmask telling which of the above regions are valid. */
+    uint32_t valid_data;
+} UVISOR_PACKED THaltInfo;
+
+/* Bitmask to specify which HaltInfo regions are valid. */
+typedef enum {
+    HALT_INFO_STACK_FRAME = 0x1,
+    HALT_INFO_REGISTERS   = 0x2
+} THaltInfoValidMask;
+
 #endif /* __UVISOR_API_HALT_EXPORTS_H__ */

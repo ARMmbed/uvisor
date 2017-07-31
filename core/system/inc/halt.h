@@ -20,16 +20,19 @@
 #include "api/inc/halt_exports.h"
 
 #ifdef  NDEBUG
-#define HALT_ERROR(reason, ...) halt(reason)
+#define HALT_ERROR(reason, ...) halt(reason, NULL)
+#define HALT_ERROR_EXTENDED(reason, halt_info, ...) halt(reason, halt_info)
 #else /*NDEBUG*/
 #define HALT_ERROR(reason, ...) \
-        halt_line(__FILE__, __LINE__, reason, ##__VA_ARGS__)
+        halt_line(__FILE__, __LINE__, reason, NULL, ##__VA_ARGS__)
+#define HALT_ERROR_EXTENDED(reason, halt_info, ...) \
+        halt_line(__FILE__, __LINE__, reason, halt_info, ##__VA_ARGS__)
 #endif/*NDEBUG*/
 
 extern void halt_user_error(THaltUserError reason);
-extern void halt(THaltError reason);
-extern void halt_error(THaltError reason, const char *fmt, ...);
+extern void halt(THaltError reason, const THaltInfo *halt_info);
+extern void halt_error(THaltError reason, const THaltInfo *halt_info, const char *fmt, ...);
 extern void halt_line(const char *file, uint32_t line, THaltError reason,
-                      const char *fmt, ...);
+                      const THaltInfo *halt_info, const char *fmt, ...);
 
 #endif/*__HALT_H__*/
