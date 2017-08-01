@@ -375,6 +375,10 @@ static uvisor_pool_slot_t find_first(uvisor_pool_queue_t * pool_queue,
         }
 
         slot = entry->queued.next;
+        if (slot >= pool->num) {
+            /* Queue corrupted or end of queue */
+            break;
+        }
         iterated++;
     }
 
