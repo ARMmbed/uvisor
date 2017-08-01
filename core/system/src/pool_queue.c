@@ -171,16 +171,30 @@ int uvisor_pool_queue_try_enqueue(uvisor_pool_queue_t * pool_queue, uvisor_pool_
     return 0;
 }
 
-static void pool_free(uvisor_pool_t * pool, uvisor_pool_slot_t slot)
+static uvisor_pool_slot_t pool_free(uvisor_pool_t * pool, uvisor_pool_slot_t slot)
 {
     uvisor_pool_queue_entry_t * slot_entry = &pool->management_array[slot];
+    uvisor_pool_slot_t state = slot_entry->dequeued.state;
+    if (state == UVISOR_POOL_SLOT_IS_FREE) {
+        /* Already freed. Return. */
+        return state;
+    } else if (state == UVISOR_POOL_SLOT_IS_DEQUEUED) {
+        /* Slot to free is a dequeued slot. Free the slot */
+        slot_entry->dequeued.next = pool->first_free;
+        slot_entry->dequeued.state = UVISOR_POOL_SLOT_IS_FREE;
 
-    slot_entry->dequeued.next = pool->first_free;
-    slot_entry->dequeued.state = UVISOR_POOL_SLOT_IS_FREE;
+        pool->first_free = slot;
 
-    pool->first_free = slot;
+        --pool->num_allocated;
 
-    --pool->num_allocated;
+        return slot;
+    } else {
+        /* If state of the queue is not free or dequeued, the slot must have
+         * been used as an enqueued slot. In this case, freeing the slot will
+         * lead to corruption of the data structure. Reject. */
+        return UVISOR_POOL_SLOT_INVALID;
+    }
+
 }
 
 static void dequeue(uvisor_pool_queue_t * pool_queue, uvisor_pool_slot_t slot)
@@ -217,16 +231,8 @@ uvisor_pool_slot_t uvisor_pool_free(uvisor_pool_t * pool, uvisor_pool_slot_t slo
         return UVISOR_POOL_SLOT_INVALID;
     }
 
-    uvisor_pool_queue_entry_t * slot_entry = &pool->management_array[slot];
     uvisor_spin_lock(&pool->spinlock);
-    uvisor_pool_slot_t state = slot_entry->dequeued.state;
-    if (state == UVISOR_POOL_SLOT_IS_FREE) {
-        /* Already freed. Return. */
-        uvisor_spin_unlock(&pool->spinlock);
-        return state;
-    }
-
-    pool_free(pool, slot);
+    slot = pool_free(pool, slot);
     uvisor_spin_unlock(&pool->spinlock);
 
     return slot;
@@ -239,20 +245,12 @@ uvisor_pool_slot_t uvisor_pool_try_free(uvisor_pool_t * pool, uvisor_pool_slot_t
         return UVISOR_POOL_SLOT_INVALID;
     }
 
-    uvisor_pool_queue_entry_t * slot_entry = &pool->management_array[slot];
     bool locked = uvisor_spin_trylock(&pool->spinlock);
     if (!locked) {
         /* We couldn't get the lock. */
         return UVISOR_POOL_SLOT_INVALID;
     }
-    uvisor_pool_slot_t state = slot_entry->dequeued.state;
-    if (state == UVISOR_POOL_SLOT_IS_FREE) {
-        /* Already freed. Return. */
-        uvisor_spin_unlock(&pool->spinlock);
-        return state;
-    }
-
-    pool_free(pool, slot);
+    slot = pool_free(pool, slot);
     uvisor_spin_unlock(&pool->spinlock);
 
     return slot;
