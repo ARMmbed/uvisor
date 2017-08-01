@@ -19,6 +19,8 @@
 
 #include "api/inc/svc_exports.h"
 
+void debug_semihosting_enable(void);
+
 #define UVISOR_SVC_ID_GET(target) UVISOR_SVC_CUSTOM_TABLE(offsetof(UvisorSvcTarget, target) / sizeof(uint32_t))
 
 /* macro to execute an SVCall; additional metadata can be provided, which will

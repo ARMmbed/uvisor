@@ -45,6 +45,7 @@ typedef struct {
     void (*debug_init)(const TUvisorDebugDriver * const driver);
     void (*error)(THaltUserError reason);
     void (*vmpu_mem_invalidate)(void);
+    void (*debug_semihosting_enable)(void);
 } UVISOR_PACKED UvisorSvcTarget;
 
 #endif /* __SVC_v7M_H__ */

@@ -37,27 +37,39 @@
  * overwritten to provide a different mechanism for printing messages (e.g. the
  * UART port instead of semihosting). */
 #define DEBUG_MAX_BUFFER 128
-uint8_t g_buffer[DEBUG_MAX_BUFFER];
-int g_buffer_pos = 0;
+#define DEBUG_SEMIHOSTING_MAGIC 0xDEADD00D
+
+static uint8_t g_buffer[DEBUG_MAX_BUFFER];
+static uint32_t g_buffer_pos = 0;
+
+__attribute__((section(".uninitialized"))) static uint32_t g_semihosting_magic;
+
+void debug_semihosting_enable(void)
+{
+    g_semihosting_magic = DEBUG_SEMIHOSTING_MAGIC;
+}
 
 UVISOR_WEAK void default_putc(uint8_t data)
 {
-    g_buffer[g_buffer_pos++] = data;
-    if (g_buffer_pos == (DEBUG_MAX_BUFFER - 1)) {
-        data = '\n';
-    }
+    if (DEBUG_SEMIHOSTING_MAGIC == g_semihosting_magic) {
 
-    if (data == '\n') {
-        g_buffer[g_buffer_pos] = 0;
-        asm volatile(
-            "mov r0, #4\n"
-            "mov r1, %[data]\n"
-            "bkpt #0xAB\n"
-            :
-            : [data] "r" (&g_buffer)
-            : "r0", "r1"
-        );
-        g_buffer_pos = 0;
+        g_buffer[g_buffer_pos++] = data;
+        if (g_buffer_pos == (DEBUG_MAX_BUFFER - 1)) {
+            data = '\n';
+        }
+
+        if (data == '\n') {
+            g_buffer[g_buffer_pos] = 0;
+            asm volatile(
+                "mov r0, #4\n"
+                "mov r1, %[data]\n"
+                "bkpt #0xAB\n"
+                :
+                : [data] "r" (&g_buffer)
+                : "r0", "r1"
+            );
+            g_buffer_pos = 0;
+        }
     }
 }
 

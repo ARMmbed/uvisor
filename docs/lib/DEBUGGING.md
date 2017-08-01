@@ -73,7 +73,9 @@ The following is the minimum set of commands you need to send to the device to f
 (gdb) monitor flash device = ${device_name}
 (gdb) load BUILD/${target}/${your_app}.elf
 (gdb) file BUILD/${target}/${your_app}.elf
+(gdb) call uvisor_api.debug_semihosting_enable()
 ```
+the call to 'uvisor_api.debug_semihosting_enable' is required to enable semihosting debug printing.
 
 From here on, if you send the `c` command, the program will run indefinitely. Of course, you can configure other addresses and ports for the target. Please refer to the [GDB documentation](http://www.gnu.org/software/gdb/documentation/) for details about the GDB commands.
 
@@ -198,3 +200,4 @@ This board provides both an on-board proprietary debugging port (ST-LINK) and a 
 If you are using ST-LINK, please refer to the [STMicroelectronics website](http://www.st.com/web/catalog/tools/FM146/CL1984/SC724/SS1677/PF251168?sc=internet/evalboard/product/251168.jsp) for information about the tools and drivers you need. Please note we have not tested this debugger with uVisor.
 
 If instead you want to connect your debugger to the JTAG port, you must wire the needed pins to your connector. This [guide](https://www.segger.com/admin/uploads/evalBoardDocs/AN00015_ConnectingJLinkToSTM32F429Discovery.pdf) explains how to do that in detail. The guide is specific to the J-Link connectors, but you can apply it to other connectors.
+
