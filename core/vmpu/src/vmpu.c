@@ -44,7 +44,6 @@ static int vmpu_check_sanity(void)
     assert(!vmpu_is_box_id_valid(UVISOR_BOX_ID_INVALID));
 
     /* Verify basic assumptions about vmpu_bits/__builtin_clz. */
-    assert(__builtin_clz(0) == 32);
     assert(__builtin_clz(1UL << 31) == 0);
     assert(vmpu_bits(0) == 0);
     assert(vmpu_bits(1UL << 31) == 32);
