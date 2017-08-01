@@ -88,9 +88,9 @@ static int callee_box_id(const TRPCGateway * gateway)
 
 static int put_it_back(uvisor_pool_queue_t * queue, uvisor_pool_slot_t slot)
 {
-    int status;
+    uvisor_pool_slot_t status;
     status = uvisor_pool_queue_try_enqueue(queue, slot);
-    if (status) {
+    if (status != slot) {
         /* We could dequeue an RPC message, but couldn't put it back. */
         /* It is bad to take down the entire system. It is also bad
          * to lose messages due to not being able to put them back in
@@ -103,7 +103,7 @@ static int put_it_back(uvisor_pool_queue_t * queue, uvisor_pool_slot_t slot)
      * still be valid. Nobody else will have run at the same time that could
      * have messed it up. */
 
-     return status;
+     return 0;
 }
 
 /* Return true iff gateway is valid. */

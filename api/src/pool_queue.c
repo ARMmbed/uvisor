@@ -45,12 +45,12 @@ uvisor_pool_slot_t uvisor_pool_try_allocate(uvisor_pool_t * pool)
     return uvisor_api.pool_try_allocate(pool);
 }
 
-void uvisor_pool_queue_enqueue(uvisor_pool_queue_t * pool_queue, uvisor_pool_slot_t slot)
+uvisor_pool_slot_t uvisor_pool_queue_enqueue(uvisor_pool_queue_t * pool_queue, uvisor_pool_slot_t slot)
 {
-    uvisor_api.pool_queue_enqueue(pool_queue, slot);
+    return uvisor_api.pool_queue_enqueue(pool_queue, slot);
 }
 
-int uvisor_pool_queue_try_enqueue(uvisor_pool_queue_t * pool_queue, uvisor_pool_slot_t slot)
+uvisor_pool_slot_t uvisor_pool_queue_try_enqueue(uvisor_pool_queue_t * pool_queue, uvisor_pool_slot_t slot)
 {
     return uvisor_api.pool_queue_try_enqueue(pool_queue, slot);
 }

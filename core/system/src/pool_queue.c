@@ -96,10 +96,24 @@ static uvisor_pool_slot_t pool_alloc(uvisor_pool_t * pool)
 }
 
 /* Add an element to the back of the queue. */
-static void enqueue(uvisor_pool_queue_t * pool_queue, uvisor_pool_slot_t slot)
+static uvisor_pool_slot_t enqueue(uvisor_pool_queue_t * pool_queue, uvisor_pool_slot_t slot)
 {
     uvisor_pool_t * pool = UVISOR_AUTO_NS_ALIAS(pool_queue->pool);
+    if (slot >= pool->num) {
+        /* Reject out of bound access */
+        return UVISOR_POOL_SLOT_INVALID;
+    }
     uvisor_pool_queue_entry_t * slot_entry = &pool->management_array[slot];
+
+    if (slot_entry->dequeued.state == UVISOR_POOL_SLOT_IS_FREE) {
+        /* Reject if a free slot is being enqueued */
+        return UVISOR_POOL_SLOT_IS_FREE;
+    }
+    if (slot_entry->queued.prev < pool->num
+            || slot_entry->queued.prev == UVISOR_POOL_SLOT_INVALID) {
+        /* Reject enqueuing a slot twice */
+        return UVISOR_POOL_SLOT_INVALID;
+    }
 
     /* If this is the first allocated slot. */
     if (pool_queue->head == UVISOR_POOL_SLOT_INVALID) {
@@ -117,6 +131,8 @@ static void enqueue(uvisor_pool_queue_t * pool_queue, uvisor_pool_slot_t slot)
     /* Add slot to the end of the queue. */
     slot_entry->queued.next = UVISOR_POOL_SLOT_INVALID;
     pool_queue->tail = slot;
+
+    return slot;
 }
 
 uvisor_pool_slot_t uvisor_pool_allocate(uvisor_pool_t * pool)
@@ -143,32 +159,35 @@ uvisor_pool_slot_t uvisor_pool_try_allocate(uvisor_pool_t * pool)
     return fresh;
 }
 
-void uvisor_pool_queue_enqueue(uvisor_pool_queue_t * pool_queue, uvisor_pool_slot_t slot)
+uvisor_pool_slot_t uvisor_pool_queue_enqueue(uvisor_pool_queue_t * pool_queue, uvisor_pool_slot_t slot)
 {
     uvisor_pool_t * pool = UVISOR_AUTO_NS_ALIAS(pool_queue->pool);
+    uvisor_pool_slot_t ret = UVISOR_POOL_SLOT_INVALID;
 
     if (slot != UVISOR_POOL_SLOT_INVALID) {
         uvisor_spin_lock(&pool->spinlock);
-        enqueue(pool_queue, slot);
+        ret = enqueue(pool_queue, slot);
         uvisor_spin_unlock(&pool->spinlock);
     }
+    return ret;
 }
 
-int uvisor_pool_queue_try_enqueue(uvisor_pool_queue_t * pool_queue, uvisor_pool_slot_t slot)
+uvisor_pool_slot_t uvisor_pool_queue_try_enqueue(uvisor_pool_queue_t * pool_queue, uvisor_pool_slot_t slot)
 {
     uvisor_pool_t * pool = UVISOR_AUTO_NS_ALIAS(pool_queue->pool);
+    uvisor_pool_slot_t ret = UVISOR_POOL_SLOT_INVALID;
 
     if (slot != UVISOR_POOL_SLOT_INVALID) {
         bool locked = uvisor_spin_trylock(&pool->spinlock);
         if (!locked) {
             /* We couldn't lock. */
-            return -1;
+            return ret;
         }
-        enqueue(pool_queue, slot);
+        ret = enqueue(pool_queue, slot);
         uvisor_spin_unlock(&pool->spinlock);
     }
 
-    return 0;
+    return ret;
 }
 
 static uvisor_pool_slot_t pool_free(uvisor_pool_t * pool, uvisor_pool_slot_t slot)
