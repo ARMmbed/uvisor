@@ -56,19 +56,6 @@ typedef struct saved_reg {
     uint32_t retpsr;
 } UVISOR_PACKED saved_reg_t;
 
-/* Stacked by architecture */
-typedef struct exception_frame {
-    uint32_t r0;
-    uint32_t r1;
-    uint32_t r2;
-    uint32_t r3;
-    uint32_t r12;
-    uint32_t retlr;
-    uint32_t retaddr;
-    uint32_t retpsr;
-} UVISOR_PACKED exception_frame_t;
-
-
 /* Return to the destination box. Return the LR that should be used to enter
  * the destination box via `reg->lr`. */
 static void dispatch(int dst_box_id, int src_box_id, saved_reg_t * reg)
