@@ -18,7 +18,7 @@
 #define __RTX_BOX_INDEX_H__
 
 #include "cmsis_os2.h"
-#include "rtx_os.h"
+#include "mbed_rtos_storage.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,7 +36,7 @@ typedef struct
     osMutexAttr_t mutex_attr;
 
     /* Internal data of the mutex */
-    osRtxMutex_t mutex_data;
+    mbed_rtos_storage_mutex_t mutex_data;
 } RtxBoxIndex;
 
 #ifdef __cplusplus
