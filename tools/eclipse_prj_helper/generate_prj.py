@@ -109,7 +109,8 @@ def patch_debug_launcher(workspace, target, toolchain, uvisor_dir):
     assert other_run_commands is not None
     other_run_commands.set(
         'value',
-        'add-symbol-file {} __uvisor_main_start'.format(get_uvisor_elf_name(uvisor_dir, target))
+        """add-symbol-file {} __uvisor_main_start
+	call uvisor_api.debug_semihosting_enable()""".format(get_uvisor_elf_name(uvisor_dir, target))
     )
 
     stop_at = tree.find(".//stringAttribute[@key='org.eclipse.cdt.debug.gdbjtag.core.stopAt']")

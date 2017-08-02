@@ -171,4 +171,6 @@ const UvisorApi __uvisor_api = {
         .thread_destroy = thread_destroy_transition,
         .thread_switch = thread_switch_transition,
     },
+
+    .debug_semihosting_enable = debug_semihosting_enable,
 };

@@ -33,6 +33,11 @@
 UVISOR_EXTERN_C_BEGIN
 
 extern void uvisor_init(void);
+/* This method is an api method which initializes the g_semihosting_magic variable.
+ * This function will only work if called in privileged mode or from secure code,
+ * it is only intended to be called by debugger after reset.
+ */
+void debug_semihosting_enable(void);
 
 typedef struct {
     uint32_t magic;
@@ -84,6 +89,8 @@ typedef struct {
     bool (*spin_trylock)(UvisorSpinlock * spinlock);
     void (*spin_lock)(UvisorSpinlock * spinlock);
     void (*spin_unlock)(UvisorSpinlock * spinlock);
+
+    void (*debug_semihosting_enable)(void);
 
     OsEventObserver os_event_observer;
 } UVISOR_PACKED UvisorApi;

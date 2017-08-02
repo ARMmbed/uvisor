@@ -65,6 +65,8 @@ const UvisorSvcTarget g_svc_vtor_tbl = {
     .error = halt_user_error,
 
     .vmpu_mem_invalidate = vmpu_mpu_invalidate,
+
+    .debug_semihosting_enable = debug_semihosting_enable,
 };
 
 /*******************************************************************************

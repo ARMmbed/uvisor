@@ -155,4 +155,14 @@ SECTIONS
         . += STACK_GUARD_BAND;
         __uvisor_stack_end__ = .;
     } > STACK_S
+
+    .uninitialized (NOLOAD):
+    {
+        . = ALIGN(32);
+        __uninitialized_start = .;
+        *(.uninitialized)
+        KEEP(*(.keep.uninitialized))
+        . = ALIGN(32);
+        __uninitialized_end = .;
+    } > RAM_S
 }
