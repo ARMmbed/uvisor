@@ -54,9 +54,9 @@ void box_init(uint8_t box_id, UvisorBoxConfig const * box_cfgtbl)
 
     /* On v7-M, return to threaded mode, with MSP as stack pointer. */
     /* On v8-M, return to NS threaded mode, with MSP as stack pointer. */
-    state->lr = 0xFFFFFFFD;
-    state->lr &= ~EXC_RETURN_SPSEL_Msk; /* Use MSP */
-    state->lr &= ~EXC_RETURN_S_Msk; /* Use NS. This does nothing on ARMv7-M. */
+    state->saved_on_stack.lr = 0xFFFFFFFD;
+    state->saved_on_stack.lr &= ~EXC_RETURN_SPSEL_Msk; /* Use MSP */
+    state->saved_on_stack.lr &= ~EXC_RETURN_S_Msk; /* Use NS. This does nothing on ARMv7-M. */
 
     /* The stack must be 8-byte aligned after an exception (see ARM DDI
      * 0553A.a, paragraph RKQFB). */

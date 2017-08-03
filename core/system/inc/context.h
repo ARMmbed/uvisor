@@ -71,6 +71,29 @@ typedef struct {
     uint32_t src_sp;  /**< Stack pointer to restore for the context */
 } UVISOR_PACKED TContextPreviousState;
 
+/** A part of the box state saved on MSP_S stack upon entry to SysTick_IRQn_Handler
+ *
+ * There're two blocks in this structure - the first one (R4-R11, LR) is always
+ * saved by by the SW inside the handler, the second one is only saved by HW when
+ * it used MSP_S at the time of the interrupt. */
+typedef struct {
+     /* Saved by the SW within SysTick handler. */
+    uint32_t r4;
+    uint32_t r5;
+    uint32_t r6;
+    uint32_t r7;
+    uint32_t r8;
+    uint32_t r9;
+    uint32_t r10;
+    uint32_t r11;
+    uint32_t lr;
+
+    /* Stacked by architecture if S bit set in LR. This space is always
+     * available to write to as our SysTick handler reserves this space even
+     * when S bit is not set in the src LR. */
+     exception_frame_t hw_saved_exception_frame;
+} UVISOR_PACKED saved_reg_t;
+
 /** Current state of a box
  *
  * This struct contains the stack pointer and the bss pointer for all boxes.
@@ -84,32 +107,15 @@ typedef struct {
     uint32_t sp;        /**< Stack pointer */
     uint32_t bss;       /**< Bss pointer */
     uint32_t bss_size;  /**< Bss size */
-    uint32_t lr;        /**< EXC_RETURN */
     int32_t  remaining_ms; /**< Remaining miliseconds of run-time */
 
-    /* These are registers that we must save on behalf of the src box when
-     * switching from the secure side. */
-    uint32_t r0;
-    uint32_t r1;
-    uint32_t r2;
-    uint32_t r3;
-    uint32_t r12;
-    uint32_t retaddr;
-    uint32_t retlr;
-    uint32_t retpsr;
+    /* These are registers saved on stack by SysTick_IRQn_Handler. */
+    saved_reg_t saved_on_stack;
 
     /* These are registers that we must save on behalf of the src box when
      * switching from either the secure or non-secure sides. */
     uint32_t psp;
     uint32_t msp;
-    uint32_t r4;
-    uint32_t r5;
-    uint32_t r6;
-    uint32_t r7;
-    uint32_t r8;
-    uint32_t r9;
-    uint32_t r10;
-    uint32_t r11;
     uint32_t psplim;
     uint32_t msplim;
     uint32_t control;
@@ -119,7 +125,7 @@ typedef struct {
     // TODO SCB registers (pendsv, systick enable state stuff)
     // TODO Allow pre-empting a NS box running its own NS memmanagefault
     // handler.
-} TContextCurrentState;
+} UVISOR_PACKED TContextCurrentState;
 
 /** Currently active box */
 uint8_t g_active_box;
