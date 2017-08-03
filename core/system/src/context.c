@@ -310,17 +310,6 @@ TContextPreviousState * context_switch_out(TContextSwitchType context_type)
     return previous_state;
 }
 
-typedef struct exception_frame {
-    uint32_t r0;
-    uint32_t r1;
-    uint32_t r2;
-    uint32_t r3;
-    uint32_t r12;
-    uint32_t lr;
-    uint32_t retaddr;
-    uint32_t retpsr;
-} UVISOR_PACKED exception_frame_t;
-
 uint32_t context_forge_initial_frame(uint32_t sp, void (*function)(const void *))
 {
     /* Compute the secure alias of the NS SP */

@@ -31,44 +31,6 @@ static const int32_t time_slice_ms = 100;
 /* 10 ms time slice is 250,000 ticks on 25MHz the fast model. */
 static const uint32_t time_slice_ticks = 250000;
 
-/* Stacked by us in SysTick_IRQn_Handler */
-typedef struct saved_reg {
-    uint32_t r4;
-    uint32_t r5;
-    uint32_t r6;
-    uint32_t r7;
-    uint32_t r8;
-    uint32_t r9;
-    uint32_t r10;
-    uint32_t r11;
-    uint32_t lr;
-
-    /* Stacked by architecture if S bit set in LR. This space is always
-     * available to write to as our SysTick handler reserves this space even
-     * when S bit is not set in the src LR. */
-    uint32_t r0;
-    uint32_t r1;
-    uint32_t r2;
-    uint32_t r3;
-    uint32_t r12;
-    uint32_t retlr;
-    uint32_t retaddr;
-    uint32_t retpsr;
-} UVISOR_PACKED saved_reg_t;
-
-/* Stacked by architecture */
-typedef struct exception_frame {
-    uint32_t r0;
-    uint32_t r1;
-    uint32_t r2;
-    uint32_t r3;
-    uint32_t r12;
-    uint32_t retlr;
-    uint32_t retaddr;
-    uint32_t retpsr;
-} UVISOR_PACKED exception_frame_t;
-
-
 /* Return to the destination box. Return the LR that should be used to enter
  * the destination box via `reg->lr`. */
 static void dispatch(int dst_box_id, int src_box_id, saved_reg_t * reg)
@@ -96,31 +58,21 @@ static void dispatch(int dst_box_id, int src_box_id, saved_reg_t * reg)
      *    state.
      */
 
-    // TODO copy state with memcpy by sharing the struct type in both places
-    // (put saved_reg_t into TContextCurrentState)
     TContextCurrentState * src_state = &g_context_current_states[src_box_id];
     src_from_s = EXC_FROM_S(reg->lr);
-    /* If we came from the secure side, we have to save the register values in
-     * the struct so we can later restore them. */
-    if (src_from_s) {
-        src_state->r0 = reg->r0;
-        src_state->r1 = reg->r1;
-        src_state->r2 = reg->r2;
-        src_state->r3 = reg->r3;
-        src_state->r12 = reg->r12;
-        src_state->retlr = reg->retlr;
-        src_state->retaddr = reg->retaddr;
-        src_state->retpsr = reg->retpsr;
-    }
-    src_state->r4 = reg->r4;
-    src_state->r5 = reg->r5;
-    src_state->r6 = reg->r6;
-    src_state->r7 = reg->r7;
-    src_state->r8 = reg->r8;
-    src_state->r9 = reg->r9;
-    src_state->r10 = reg->r10;
-    src_state->r11 = reg->r11;
-    src_state->lr = reg->lr;
+
+    /* If we came from the secure side, we have to copy the register values
+     * saved by HW on MSP_S into the struct so we can later restore them.
+     * The registers pushed to the stack by the SW within
+     * SysTick_IRQn_Handler must be always saved. */
+
+    uint32_t bytes_to_copy = src_from_s ?
+        sizeof(saved_reg_t) :
+        sizeof(saved_reg_t) - sizeof(exception_frame_t);
+
+    /* Copy the register values saved on stack. */
+    memcpy((void *)&src_state->saved_on_stack, (void *)reg, bytes_to_copy);
+
     src_state->sp = __TZ_get_SP_NS();
     src_state->psp = __TZ_get_PSP_NS();
     src_state->msp = __TZ_get_MSP_NS();
@@ -139,34 +91,18 @@ static void dispatch(int dst_box_id, int src_box_id, saved_reg_t * reg)
 
     /* Restore state */
     TContextCurrentState * dst_state = &g_context_current_states[dst_box_id];
-    dst_from_s = EXC_FROM_S(dst_state->lr);
-    /* If we are going to the secure side, we have to restore the register
-     * values from the struct to the secure stack frame (and we always have a
-     * secure stack frame, even when we don't use it-- our SysTick_IRQn_Handler
-     * makes certain of this). */
-    if (dst_from_s) {
-        /* Populate the secure exception frame so that when we return from the
-         * SysTick handler (not this function) we end up with a proper
-         * exception stack frame on the secure stack and use it to restore the
-         * state of r0-r3, r12, retlr, retaddr, and xpsr. */
-        reg->r0 = dst_state->r0;
-        reg->r1 = dst_state->r1;
-        reg->r2 = dst_state->r2;
-        reg->r3 = dst_state->r3;
-        reg->r12 = dst_state->r12;
-        reg->retlr = dst_state->retlr;
-        reg->retaddr = dst_state->retaddr;
-        reg->retpsr = dst_state->retpsr;
-    }
-    reg->r4 = dst_state->r4;
-    reg->r5 = dst_state->r5;
-    reg->r6 = dst_state->r6;
-    reg->r7 = dst_state->r7;
-    reg->r8 = dst_state->r8;
-    reg->r9 = dst_state->r9;
-    reg->r10 = dst_state->r10;
-    reg->r11 = dst_state->r11;
-    reg->lr = dst_state->lr;
+    dst_from_s = EXC_FROM_S(dst_state->saved_on_stack.lr);
+
+    /* If we are going to the secure side, we have to restore all the register
+     * values from the struct, otherwise only the registers saved by the SW
+     * within SysTick_IRQn_Handler must be restored. */
+    bytes_to_copy = dst_from_s ?
+        sizeof(saved_reg_t) :
+        sizeof(saved_reg_t) - sizeof(exception_frame_t);
+
+    /* Restore the register values saved on stack. */
+    memcpy((void *)reg, (void *)&dst_state->saved_on_stack, bytes_to_copy);
+
     __TZ_set_PSP_NS(dst_state->psp);
     __TZ_set_MSP_NS(dst_state->msp);
     __TZ_set_PSPLIM_NS(dst_state->psplim);

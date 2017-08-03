@@ -53,4 +53,23 @@ typedef enum {
     __THALTERROR_MAX /* always keep as the last element of the enum */
 } THaltError;
 
+/** A basic exception frame
+ *
+ * This struct contains the registers always saved during an exception in the
+ * order they are placed in the memory.
+ * If FPU state is also saved it's placed after this register block.
+ * On ARMv8-M in certain cases an additional state context may be placed on
+ * the stack before this block.
+ */
+typedef struct {
+    uint32_t r0;
+    uint32_t r1;
+    uint32_t r2;
+    uint32_t r3;
+    uint32_t r12;
+    uint32_t lr;
+    uint32_t retaddr;
+    uint32_t retpsr;
+} UVISOR_PACKED exception_frame_t;
+
 #endif /* __UVISOR_API_HALT_EXPORTS_H__ */
