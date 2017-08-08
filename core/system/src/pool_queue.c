@@ -114,6 +114,11 @@ static uvisor_pool_slot_t enqueue(uvisor_pool_queue_t * pool_queue, uvisor_pool_
         /* Reject enqueuing a slot twice */
         return UVISOR_POOL_SLOT_INVALID;
     }
+    if (slot_entry->queued.prev < pool->num
+            || slot_entry->queued.prev == UVISOR_POOL_SLOT_INVALID) {
+        /* Reject enqueuing a slot twice */
+        return -1;
+    }
 
     /* If this is the first allocated slot. */
     if (pool_queue->head == UVISOR_POOL_SLOT_INVALID) {
