@@ -366,7 +366,7 @@ static uvisor_pool_slot_t find_first(uvisor_pool_queue_t * pool_queue,
 
     /* Walk the queue, looking for the first slot that matches the query. */
     slot = pool_queue->head;
-    while (slot != UVISOR_POOL_SLOT_INVALID && iterated <= UVISOR_POOL_MAX_VALID)
+    while (slot != UVISOR_POOL_SLOT_INVALID && iterated < UVISOR_POOL_MAX_VALID)
     {
         uvisor_pool_queue_entry_t * entry = &pool->management_array[slot];
 
