@@ -20,31 +20,6 @@
 #include "memory_map.h"
 #include "vmpu_kinetis_map.h"
 
-static uint32_t debug_aips_slot_from_addr(uint32_t aips_addr)
-{
-    return ((aips_addr & 0xFFF000) >> 12);
-}
-
-static uint32_t debug_aips_bitn_from_alias(uint32_t alias, uint32_t aips_addr)
-{
-    uint32_t bitn;
-
-    bitn = ((alias - MEMORY_MAP_BITBANDING_START) -
-           ((aips_addr - MEMORY_MAP_PERIPH_START) << 5)) >> 2;
-
-    return bitn;
-}
-
-static uint32_t debug_aips_addr_from_alias(uint32_t alias)
-{
-    uint32_t aips_addr;
-
-    aips_addr  = ((((alias - MEMORY_MAP_BITBANDING_START) >> 2) & ~0x1F) >> 3);
-    aips_addr += MEMORY_MAP_PERIPH_START;
-
-    return aips_addr;
-}
-
 static void debug_fault_mpu(void)
 {
     uint32_t cesr = MPU->CESR;
@@ -101,46 +76,6 @@ static void debug_fault_mpu(void)
     dprintf("\n\r");
 }
 
-void debug_map_addr_to_periph(uint32_t address)
-{
-    uint32_t aips_addr;
-    const MemMap *map;
-
-    dprintf("* MEMORY MAP\n");
-    dprintf("  Address:           0x%08X\n", address);
-
-    /* find system memory region */
-    if((map = memory_map_name(address)) != NULL)
-    {
-        dprintf("  Region/Peripheral: %s\n", map->name);
-        dprintf("    Base address:    0x%08X\n", map->base);
-        dprintf("    End address:     0x%08X\n", map->end);
-
-        if(address >= MEMORY_MAP_PERIPH_START &&
-           address <= MEMORY_MAP_PERIPH_END)
-        {
-            dprintf("    AIPS slot:       %d\n",
-                    debug_aips_slot_from_addr(map->base));
-        }
-        else if(address >= MEMORY_MAP_BITBANDING_START &&
-                address <= MEMORY_MAP_BITBANDING_END)
-        {
-            dprintf("    Before bitband:  0x%08X\n",
-                    (aips_addr = debug_aips_addr_from_alias(address)));
-            map = memory_map_name(aips_addr);
-            dprintf("    Alias:           %s\n", map->name);
-            dprintf("      Base address:  0x%08X\n", map->base);
-            dprintf("      End address:   0x%08X\n", map->end);
-            dprintf("    Accessed bit:    %d\n",
-                     debug_aips_bitn_from_alias(address, aips_addr));
-            dprintf("    AIPS slot:       %d\n",
-                     debug_aips_slot_from_addr(aips_addr));
-        }
-
-        dprintf("\n");
-    }
-}
-
 void debug_mpu_config(void)
 {
     int i, j;
@@ -176,5 +111,4 @@ void debug_mpu_config(void)
 void debug_fault_bus_hw(void)
 {
     debug_fault_mpu();
-    debug_map_addr_to_periph(SCB->BFAR);
 }

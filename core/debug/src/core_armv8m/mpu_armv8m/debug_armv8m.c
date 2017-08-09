@@ -26,11 +26,6 @@ static void debug_fault_sau(void)
     /* FIXME: This function must be implemented for the vMPU port to be complete. */
 }
 
-void debug_map_addr_to_periph(uint32_t address)
-{
-    /* FIXME: This function must be implemented for the vMPU port to be complete. */
-}
-
 void debug_mpu_config(void)
 {
     /* On ARMv8-M we have 2 MPUs (S, NS). */
@@ -145,11 +140,9 @@ void debug_sau_config(void)
 void debug_fault_memmanage_hw(void)
 {
     debug_fault_mpu();
-    debug_map_addr_to_periph(0);
 }
 
 void debug_fault_secure_hw(void)
 {
     debug_fault_sau();
-    debug_map_addr_to_periph(0);
 }

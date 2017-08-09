@@ -37,7 +37,6 @@ void debug_mpu_config(void);
 void debug_sau_config(void);
 #endif /* defined(ARCH_MPU_ARMv8M) */
 void debug_fault(THaltError reason, uint32_t lr, uint32_t sp);
-void debug_map_addr_to_periph(uint32_t address);
 
 /* Debug box */
 void debug_register_driver(const TUvisorDebugDriver * const driver);
