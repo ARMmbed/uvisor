@@ -95,7 +95,9 @@ static void debug_fault_mpu(void)
         }
     }
     else
+    {
         dprintf("* No MPU violation found\n\r");
+    }
     dprintf("\n\r");
 }
 
