@@ -310,7 +310,7 @@ void vmpu_arch_init(void)
     vmpu_mpu_set_static_acl(1, (uint32_t) &__uvisor_entry_points_start__,
         ((uint32_t) &__uvisor_entry_points_end__) - ((uint32_t) &__uvisor_entry_points_start__),
         UVISOR_TACL_SEXECUTE | UVISOR_TACL_UEXECUTE,
-        2
+        SAU_RLAR_NSC_Msk /* Entry point is non-secure callable */
     );
     /* Public flash */
     vmpu_mpu_set_static_acl(2, (uint32_t) &__uvisor_entry_points_end__,
