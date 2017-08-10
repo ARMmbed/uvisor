@@ -435,7 +435,9 @@ void vmpu_mpu_init(void)
     MPU->RBAR = 0;
 
     /* Enable mem, bus and usage faults. */
-    SCB->SHCSR |= 0x70000;
+    SCB->SHCSR |= (SCB_SHCSR_USGFAULTENA_Msk) |
+                  (SCB_SHCSR_BUSFAULTENA_Msk) |
+                  (SCB_SHCSR_MEMFAULTENA_Msk);
 
     /* show basic mpu settings */
     DPRINTF("MPU.REGIONS=%i\r\n", (uint8_t)(MPU->TYPE >> MPU_TYPE_DREGION_Pos));

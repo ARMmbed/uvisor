@@ -380,7 +380,7 @@ void debug_init(void)
     /* Debugging bus faults requires them to be precise, so write buffering is
      * disabled when debug is enabled. */
     /* Note: This slows down execution. */
-    SCnSCB->ACTLR |= 0x2;
+    SCnSCB->ACTLR |= SCnSCB_ACTLR_DISDEFWBUF_Msk;
 #endif
 }
 

@@ -382,7 +382,9 @@ bool vmpu_buffer_access_is_ok(int box_id, const void * addr, size_t size)
 void vmpu_mpu_init(void)
 {
     /* Enable mem, bus and usage faults. */
-    SCB->SHCSR |= 0x70000;
+    SCB->SHCSR |= (SCB_SHCSR_USGFAULTENA_Msk) |
+                  (SCB_SHCSR_BUSFAULTENA_Msk) |
+                  (SCB_SHCSR_MEMFAULTENA_Msk);
 }
 
 void vmpu_mpu_lock(void)

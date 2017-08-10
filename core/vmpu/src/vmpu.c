@@ -620,7 +620,7 @@ void vmpu_init_post(void)
     /* Enable non-base thread mode (NONBASETHRDENA).
      * Exceptions can now return to thread mode regardless their origin
      * (supervisor or thread mode); the opposite is not true. */
-    SCB->CCR |= 1;
+    SCB->CCR |= SCB_CCR_NONBASETHRDENA_Msk;
 #endif
 
     /* init memory protection */
