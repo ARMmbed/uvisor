@@ -16,7 +16,6 @@
  */
 #include <uvisor.h>
 #include "debug.h"
-#include "memory_map.h"
 #include "halt.h"
 #include "vmpu.h"
 

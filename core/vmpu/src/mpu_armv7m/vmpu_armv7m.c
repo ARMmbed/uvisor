@@ -19,7 +19,6 @@
 #include "context.h"
 #include "exc_return.h"
 #include "halt.h"
-#include "memory_map.h"
 #include "svc.h"
 #include "virq.h"
 #include "vmpu.h"
