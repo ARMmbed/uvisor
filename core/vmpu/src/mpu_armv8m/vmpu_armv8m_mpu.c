@@ -352,8 +352,8 @@ void vmpu_mpu_invalidate(void)
          * other modification, hence we cannot select the SAU region using the
          * region number field in the RBAR register. */
         SAU->RNR = slot;
-        SAU->RBAR = 0;
         SAU->RLAR = 0;
+        SAU->RBAR = 0;
         g_mpu_priority[slot] = 0;
         slot++;
     }
