@@ -17,7 +17,6 @@
 #include <uvisor.h>
 #include "debug.h"
 #include "halt.h"
-#include "memory_map.h"
 #include "vmpu_kinetis_map.h"
 
 static void debug_fault_mpu(void)

@@ -18,7 +18,6 @@
 #include "debug.h"
 #include "context.h"
 #include "halt.h"
-#include "memory_map.h"
 #include "page_allocator_faults.h"
 #include "vmpu.h"
 #include "vmpu_mpu.h"
