@@ -17,6 +17,7 @@
 #include "api/inc/linker_exports.h"
 #include "api/inc/pool_queue_exports.h"
 #include "api/inc/uvisor_spinlock_exports.h"
+#include <stddef.h>
 #include <string.h>
 
 int uvisor_pool_init(uvisor_pool_t * pool, void * array, size_t stride, size_t num)
@@ -45,6 +46,10 @@ int uvisor_pool_init(uvisor_pool_t * pool, void * array, size_t stride, size_t n
     pool->management_array[num - 1].dequeued.next = UVISOR_POOL_SLOT_INVALID;
 
     uvisor_spin_init(&pool->spinlock);
+
+    UVISOR_STATIC_ASSERT(
+            sizeof(uvisor_pool_t) == offsetof(uvisor_pool_t, management_array),
+            management_array_offset_must_be_aligned_to_pool_structure_size);
 
     return 0;
 }
