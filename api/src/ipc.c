@@ -86,8 +86,7 @@ uint32_t ipc_allocate_token(uint32_t * tokens)
      * 0. This is because if no bits are available in the bitfield, this
      * function returns 0. In order for the user of this API to interpret this
      * failure correctly, UVISOR_IPC_INVALID_TOKEN must be 0. */
-    /* TODO Make this a static assert. */
-    assert(UVISOR_IPC_INVALID_TOKEN == 0);
+    UVISOR_STATIC_ASSERT(UVISOR_IPC_INVALID_TOKEN == 0, UVISOR_IPC_INVALID_TOKEN_should_be_zero);
     return token;
 }
 
