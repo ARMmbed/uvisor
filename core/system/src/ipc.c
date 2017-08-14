@@ -166,7 +166,7 @@ static bool ipc_is_ok(int box_id, const uvisor_ipc_t * ipc) {
 }
 
 static bool ipc_io_array_is_ok(int box_id, const uvisor_ipc_io_t * array) {
-    assert(UVISOR_IPC_SEND_SLOTS == UVISOR_IPC_RECV_SLOTS);
+    UVISOR_STATIC_ASSERT(UVISOR_IPC_SEND_SLOTS == UVISOR_IPC_RECV_SLOTS, UVISOR_IPC_SEND_SLOTS_should_be_equal_to_UVISOR_IPC_RECV_SLOTS);
 
     return array &&
            vmpu_buffer_access_is_ok(box_id, array, sizeof(*array) * UVISOR_IPC_SEND_SLOTS);
