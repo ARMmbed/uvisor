@@ -119,7 +119,7 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp_s)
     bool from_psp = EXC_FROM_PSP(lr);
     uint32_t sp = from_s ? (from_np ? (from_psp ? __get_PSP() : msp_s) : msp_s) :
                            (from_np ? (from_psp ? __TZ_get_PSP_NS() : __TZ_get_MSP_NS()) : __TZ_get_MSP_NS());
-                           
+
     /* Collect fault information that will be given to the halt handler in case of halt. */
     THaltInfo info, *halt_info = NULL;
     if (debug_collect_halt_info(lr, sp, &info)) {

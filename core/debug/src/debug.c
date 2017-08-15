@@ -453,7 +453,7 @@ bool debug_collect_halt_info(uint32_t lr, uint32_t sp, THaltInfo *halt_info)
     halt_info->lr = lr;
     halt_info->ipsr = __get_IPSR();
     halt_info->control = __get_CONTROL();
-    
+
     /* Save the status registers in the halt info. */
     halt_info->mmfar = SCB->MMFAR;
     halt_info->bfar = SCB->BFAR;
@@ -462,7 +462,7 @@ bool debug_collect_halt_info(uint32_t lr, uint32_t sp, THaltInfo *halt_info)
     halt_info->dfsr = SCB->DFSR;
     halt_info->afsr = SCB->AFSR;
     halt_info->valid_data |= HALT_INFO_REGISTERS;
-    
+
     /* Copy the exception stack frame into the halt info.
      * Make sure that we're not dealing with stacking error in which case we
      * don't have a valid exception stack frame.

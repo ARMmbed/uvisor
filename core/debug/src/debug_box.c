@@ -59,7 +59,7 @@ void debug_halt_error(THaltError reason, const THaltInfo *halt_info)
     } else {
         /* Remember that debug_deprivilege_and_return() has been called once. */
         debugged_once_before = 1;
-        
+
         /* Place the halt info on the interrupt stack. */
         if (halt_info) {
             g_debug_interrupt_sp[g_debug_box.box_id] -= sizeof(THaltInfo);

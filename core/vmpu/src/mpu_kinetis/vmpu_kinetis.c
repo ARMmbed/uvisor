@@ -65,13 +65,13 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
     bool from_np = EXC_FROM_NP(lr);
     bool from_psp = EXC_FROM_PSP(lr);
     uint32_t sp = from_np ? (from_psp ? __get_PSP() : msp) : msp;
-    
+
     /* Collect fault information that will be given to the halt handler in case of halt. */
     THaltInfo info, *halt_info = NULL;
     if (debug_collect_halt_info(lr, sp, &info)) {
         halt_info = &info;
     }
-    
+
     switch (ipsr) {
         case NonMaskableInt_IRQn:
             HALT_ERROR_EXTENDED(NOT_IMPLEMENTED, halt_info, "No NonMaskableInt IRQ handler registered.");

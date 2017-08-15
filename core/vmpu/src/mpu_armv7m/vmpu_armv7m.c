@@ -130,7 +130,7 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
     /* Determine the origin of the exception. */
     bool from_psp = EXC_FROM_PSP(lr);
     uint32_t sp = from_psp ? __get_PSP() : msp;
-    
+
     /* Collect fault information that will be given to the halt handler in case of halt. */
     THaltInfo info, *halt_info = NULL;
     if (debug_collect_halt_info(lr, sp, &info)) {

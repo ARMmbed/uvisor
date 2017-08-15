@@ -82,7 +82,7 @@ typedef struct {
     uint32_t lr;
     uint32_t control;
     uint32_t ipsr;
-    
+
     /* Fault status registers. */
     uint32_t mmfar;
     uint32_t bfar;
@@ -90,7 +90,7 @@ typedef struct {
     uint32_t hfsr;
     uint32_t dfsr;
     uint32_t afsr;
-    
+
     /* Bitmask telling which of the above regions are valid. */
     uint32_t valid_data;
 } UVISOR_PACKED THaltInfo;
