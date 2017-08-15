@@ -27,7 +27,7 @@ TDebugBox g_debug_box;
 void debug_reboot(TResetReason reason)
 {
     if (!g_debug_box.initialized || g_active_box != g_debug_box.box_id || reason >= __TRESETREASON_MAX) {
-        halt(NOT_ALLOWED);
+        halt(NOT_ALLOWED, NULL);
     }
 
     /* Note: Currently we do not act differently based on the reset reason. */
@@ -45,9 +45,12 @@ uint32_t debug_get_version(void)
     return 0;
 }
 
-void debug_halt_error(THaltError reason)
+uint32_t g_debug_interrupt_sp[UVISOR_MAX_BOXES];
+
+void debug_halt_error(THaltError reason, const THaltInfo *halt_info)
 {
     static int debugged_once_before = 0;
+    void *info = NULL;
 
     /* If the debug box does not exist (or it has not been initialized yet), or
      * the debug box was already called once, just loop forever. */
@@ -56,15 +59,21 @@ void debug_halt_error(THaltError reason)
     } else {
         /* Remember that debug_deprivilege_and_return() has been called once. */
         debugged_once_before = 1;
+        
+        /* Place the halt info on the interrupt stack. */
+        if (halt_info) {
+            g_debug_interrupt_sp[g_debug_box.box_id] -= sizeof(THaltInfo);
+            info = (void *)g_debug_interrupt_sp[g_debug_box.box_id];
+            memcpy(info, halt_info, sizeof(THaltInfo));
+        }
 
         /* The following arguments are passed to the destination function:
          *   1. reason
+         *   2. halt info
          * Upon return from the debug handler, the system will die. */
-        debug_deprivilege_and_return(g_debug_box.driver->halt_error, debug_die, reason, 0, 0, 0);
+        debug_deprivilege_and_return(g_debug_box.driver->halt_error, debug_die, reason, (uint32_t)info, 0, 0);
     }
 }
-
-uint32_t g_debug_interrupt_sp[UVISOR_MAX_BOXES];
 
 void debug_register_driver(const TUvisorDebugDriver * const driver)
 {

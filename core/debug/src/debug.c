@@ -432,3 +432,48 @@ void debug_fault(THaltError reason, uint32_t lr, uint32_t sp)
 #endif /* defined(ARCH_MPU_ARMv8M) */
     DEBUG_PRINT_END();
 }
+
+bool debug_collect_halt_info(uint32_t lr, uint32_t sp, THaltInfo *halt_info)
+{
+    /* For security reasons we don't want to print uVisor faults, since it
+     * could expose secrets. To debug uVisor faults users will have to use
+     * a uVisor debug build with semihosting. */
+#if defined(ARCH_MPU_ARMv8M)
+    bool no_halt_info = EXC_FROM_S(lr);
+#else
+    bool no_halt_info = !EXC_FROM_PSP(lr);
+#endif /* defined(ARCH_MPU_ARMv8M) */
+
+    halt_info->valid_data = 0;
+    if (no_halt_info) {
+        return false;
+    }
+
+    /* CPU registers useful for debug. */
+    halt_info->lr = lr;
+    halt_info->ipsr = __get_IPSR();
+    halt_info->control = __get_CONTROL();
+    
+    /* Save the status registers in the halt info. */
+    halt_info->mmfar = SCB->MMFAR;
+    halt_info->bfar = SCB->BFAR;
+    halt_info->cfsr = SCB->CFSR;
+    halt_info->hfsr = SCB->HFSR;
+    halt_info->dfsr = SCB->DFSR;
+    halt_info->afsr = SCB->AFSR;
+    halt_info->valid_data |= HALT_INFO_REGISTERS;
+    
+    /* Copy the exception stack frame into the halt info.
+     * Make sure that we're not dealing with stacking error in which case we
+     * don't have a valid exception stack frame.
+     * Stacking error may happen in case of Bus Fault, MemManage Fault or
+     * their escalation to Hard Fault. */
+    static const uint32_t stack_error_msk = SCB_CFSR_MSTKERR_Msk | SCB_CFSR_STKERR_Msk;
+    if (!(halt_info->cfsr & stack_error_msk)) {
+        memcpy((void *)&halt_info->stack_frame, (void *)sp,
+            CONTEXT_SWITCH_EXC_SF_BYTES);
+        halt_info->valid_data |= HALT_INFO_STACK_FRAME;
+    }
+
+    return true;
+}
