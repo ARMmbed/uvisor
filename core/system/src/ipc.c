@@ -267,7 +267,7 @@ void ipc_drain_queue(void)
         }
 
         if (!ipc_io_token_is_ok(send_ipc, send_io)) {
-            /* The token of the IO request is invalid. Ignore it, don't put it
+            /* The token of the send IO is invalid. Ignore it, don't put it
              * back. This shouldn't happen in a non-malicious box. */
             continue;
         }
@@ -334,15 +334,17 @@ void ipc_drain_queue(void)
          * of the descriptor, and clearing of the token. */
         uvisor_ipc_io_t * recv_io = &recv_array[recv_slot];
         if (!ipc_io_is_ok(recv_box_id, recv_io)) {
-            /* The IO is not entirely within the send box. Ignore it, and don't
-             * put it back. */
+            /* The receive IO is not entirely within the send box. Ignore it,
+             * and don't put it back. Put the send IO back because it is not
+             * malicious. */
             put_it_back(send_queue, send_slot);
             continue;
         }
 
         if (!ipc_io_token_is_ok(recv_ipc, recv_io)) {
-            /* The token of the IO request is invalid. Ignore it, don't put it
-             * back. This shouldn't happen in a non-malicious box. */
+            /* The token of the receive IO is invalid. Ignore it, don't put it
+             * back. This shouldn't happen in a non-malicious box. Put the send
+             * IO back because it is not malicious. */
             put_it_back(send_queue, send_slot);
             continue;
         }
