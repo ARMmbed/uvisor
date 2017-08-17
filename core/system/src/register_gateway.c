@@ -99,6 +99,7 @@ void register_gateway_perform_operation(uint32_t svc_sp, uint32_t svc_pc)
     if (status != REGISTER_GATEWAY_STATUS_OK) {
         HALT_ERROR(PERMISSION_DENIED, "Register gateway 0x%08X not allowed. Error: %d.",
                    (uint32_t) register_gateway, status);
+        return;
     }
 
     /* From now on we can assume the register_gateway structure and the address
