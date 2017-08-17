@@ -127,56 +127,7 @@ The debug handler — `halt_error` — only executes once, so if another fault o
 
 Debug box handlers can also reset the device by calling the `NVIC_SystemReset()` API. This API cannot be called from other secure boxes.
 
-```C
-typedef struct TUvisorDebugDriver {
-  uint32_t (*get_version)(void);      /* 0. Return the implemented driver version. */
-  void (*halt_error)(int);            /* 1. Halt on error. Halt upon return. */
-}
-```
-
-This is an example of how to implement and configure a debug box.
-
-```C
-#include "mbed.h"
-#include "uvisor-lib/uvisor-lib.h"
-
-static const UvisorBoxAclItem acl[] = {
-    /* No specific ACL required. */
-};
-
-static void box_debug_main(const void *);
-
-/* Configure the debug box. */
-UVISOR_BOX_NAMESPACE(NULL);
-UVISOR_BOX_HEAPSIZE(2048);
-UVISOR_BOX_MAIN(box_debug_main, osPriorityNormal, 1024);
-UVISOR_BOX_CONFIG(box_debug, 1024);
-
-static uint32_t get_version(void) {
-    return 0;
-}
-
-static void halt_error(int reason) {
-    printf("We halted with reason %i\r\n", reason);
-
-    /* If we don't do anything, the system will halt upon return. */
-    /* A debug box handler such as this one can also decide to reboot the whole
-     * system. This is only allowed from the debug box. */
-    NVIC_SystemReset();
-}
-
-static void box_debug_main(const void *)
-{
-    /* Debug box driver -- Version 0 */
-    static const TUvisorDebugDriver driver = {
-        get_version,
-        halt_error
-    };
-
-    /* Register the debug box with uVisor. */
-    uvisor_debug_init(&driver);
-}
-```
+For a reference implementation of a debug box please refer to [mbed-os-example-uvisor-debug-fault repository](https://github.com/ARMmbed/mbed-os-example-uvisor-debug-fault)
 
 ## Platform-specific details
 
