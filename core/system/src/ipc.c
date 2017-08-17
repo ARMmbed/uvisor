@@ -142,7 +142,7 @@ static int ipc_deliver(uvisor_ipc_t * send_ipc, uvisor_ipc_t * recv_ipc,
     }
 
     size_t len = send_desc->len;
-    memcpy(recv_io->msg, send_io->msg, len);
+    memmove(recv_io->msg, send_io->msg, len);
     send_ipc->completed_tokens |= send_desc->token;
 
     recv_desc->box_id = send_box_id;
