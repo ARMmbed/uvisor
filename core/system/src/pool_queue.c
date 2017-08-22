@@ -375,7 +375,6 @@ static uvisor_pool_slot_t find_first(uvisor_pool_queue_t * pool_queue,
         int query_result = query_fn(slot, context);
 
         if (query_result) {
-            uvisor_spin_unlock(&pool->spinlock);
             return slot;
         }
 
