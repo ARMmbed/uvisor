@@ -98,7 +98,10 @@ static int send_outgoing_rpc(uint32_t p0, uint32_t p1, uint32_t p2, uint32_t p3,
     msg->state = UVISOR_RPC_MESSAGE_STATE_READY_TO_SEND;
 
     /* Put the slot into the queue. */
-    uvisor_pool_queue_enqueue(outgoing_message_queue(), slot);
+    if (slot != uvisor_pool_queue_enqueue(outgoing_message_queue(), slot)) {
+        /* Enqueue failed */
+        return UVISOR_ERROR_OUT_OF_STRUCTURES;
+    }
 
     /* Notify the caller of this function of the slot that was allocated for
      * sending this RPC message. */
@@ -224,7 +227,10 @@ static uvisor_rpc_fn_group_t * allocate_function_group(const TFN_Ptr fn_ptr_arra
     fn_group->fn_ptr_array = fn_ptr_array;
     fn_group->fn_count = fn_count;
 
-    uvisor_pool_queue_enqueue(fn_group_queue(), slot);
+    if (slot != uvisor_pool_queue_enqueue(fn_group_queue(), slot)) {
+        /* Enqueue failed */
+        return NULL;
+    }
 
     return fn_group;
 }
@@ -325,7 +331,10 @@ static int handle_incoming_rpc(uvisor_rpc_fn_group_t * fn_group, int * box_id_ca
     msg->state = UVISOR_RPC_MESSAGE_STATE_DONE;
 
     /* Send the result back to the caller. */
-    uvisor_pool_queue_enqueue(incoming_message_done_queue(), msg_slot);
+    if (msg_slot != uvisor_pool_queue_enqueue(incoming_message_done_queue(), msg_slot)) {
+        /* Enqueue failed */
+        return 0;
+    }
 
     return 1;
 }

@@ -196,7 +196,10 @@ static int ipc_io(uvisor_ipc_desc_t * desc, const void * msg,
     io->state = new_state;
 
     /* Place the IPC request into the outgoing queue. */
-    uvisor_pool_queue_enqueue(queue, slot);
+    if (slot != uvisor_pool_queue_enqueue(queue, slot)) {
+        /* Enqueue failed */
+        return UVISOR_ERROR_OUT_OF_STRUCTURES;
+    }
 
     return 0;
 }

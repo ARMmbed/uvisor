@@ -74,8 +74,8 @@ typedef struct {
     int                (*pool_queue_init)(uvisor_pool_queue_t *, uvisor_pool_t *, void *, size_t, size_t);
     uvisor_pool_slot_t (*pool_allocate)(uvisor_pool_t *);
     uvisor_pool_slot_t (*pool_try_allocate)(uvisor_pool_t *);
-    void               (*pool_queue_enqueue)(uvisor_pool_queue_t *, uvisor_pool_slot_t);
-    int                (*pool_queue_try_enqueue)(uvisor_pool_queue_t *, uvisor_pool_slot_t);
+    uvisor_pool_slot_t (*pool_queue_enqueue)(uvisor_pool_queue_t *, uvisor_pool_slot_t);
+    uvisor_pool_slot_t (*pool_queue_try_enqueue)(uvisor_pool_queue_t *, uvisor_pool_slot_t);
     uvisor_pool_slot_t (*pool_free)(uvisor_pool_t *, uvisor_pool_slot_t);
     uvisor_pool_slot_t (*pool_try_free)(uvisor_pool_t *, uvisor_pool_slot_t);
     uvisor_pool_slot_t (*pool_queue_dequeue)(uvisor_pool_queue_t *, uvisor_pool_slot_t);
