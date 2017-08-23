@@ -35,6 +35,16 @@ int uvisor_pool_queue_init(uvisor_pool_queue_t * pool_queue, uvisor_pool_t * poo
     return uvisor_api.pool_queue_init(pool_queue, pool, array, stride, num);
 }
 
+int uvisor_pool_sanity_check(uvisor_pool_t * pool, void * array, size_t stride, size_t num)
+{
+    return uvisor_api.pool_sanity_check(pool, array, stride, num);
+}
+
+int uvisor_pool_queue_sanity_check(uvisor_pool_queue_t * pool_queue, uvisor_pool_t * pool, void * array, size_t stride, size_t num)
+{
+    return uvisor_api.pool_queue_sanity_check(pool_queue, pool, array, stride, num);
+}
+
 uvisor_pool_slot_t uvisor_pool_allocate(uvisor_pool_t * pool)
 {
     return uvisor_api.pool_allocate(pool);

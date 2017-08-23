@@ -104,6 +104,16 @@ UVISOR_EXTERN int uvisor_pool_init(uvisor_pool_t * pool, void * array, size_t st
  * Return 0 on success, non-zero otherwise. */
 UVISOR_EXTERN int uvisor_pool_queue_init(uvisor_pool_queue_t * pool_queue, uvisor_pool_t * pool, void * array, size_t stride, size_t num);
 
+/* Sanity check a pool.
+ * Returns 0 for a sane pool initialized from given parameters, non-zero error
+ * code otherwise */
+UVISOR_EXTERN int uvisor_pool_sanity_check(uvisor_pool_t * pool, void * array, size_t stride, size_t num);
+
+/* Sanity check a pool queue.
+ * Returns 0 for a sane pool queue initialized from given parameters, non-zero
+ * error code otherwise */
+UVISOR_EXTERN int uvisor_pool_queue_sanity_check(uvisor_pool_queue_t * queue, uvisor_pool_t * pool, void * array, size_t stride, size_t num);
+
 /* Allocate a slot from the pool. This doesn't put anything in the slot for
  * you. It's up to you to do that. Return the index of the allocated slot, or
  * UVISOR_POOL_SLOT_INVALID if there is no available slot. This function will

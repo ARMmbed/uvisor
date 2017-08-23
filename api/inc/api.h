@@ -83,6 +83,8 @@ typedef struct {
     uvisor_pool_slot_t (*pool_queue_try_dequeue_first)(uvisor_pool_queue_t *);
     uvisor_pool_slot_t (*pool_queue_find_first)(uvisor_pool_queue_t *, TQueryFN_Ptr, void *);
     uvisor_pool_slot_t (*pool_queue_try_find_first)(uvisor_pool_queue_t *, TQueryFN_Ptr, void *);
+    int                (*pool_sanity_check)(uvisor_pool_t *, void *, size_t, size_t);
+    int                (*pool_queue_sanity_check)(uvisor_pool_queue_t *, uvisor_pool_t *, void *, size_t, size_t);
 
     void (*spin_init)(UvisorSpinlock * spinlock);
     bool (*spin_trylock)(UvisorSpinlock * spinlock);

@@ -156,6 +156,8 @@ const UvisorApi __uvisor_api = {
     .pool_queue_try_dequeue_first = uvisor_pool_queue_try_dequeue_first,
     .pool_queue_find_first = uvisor_pool_queue_find_first,
     .pool_queue_try_find_first = uvisor_pool_queue_try_find_first,
+    .pool_sanity_check = uvisor_pool_sanity_check,
+    .pool_queue_sanity_check = uvisor_pool_queue_sanity_check,
 
     .spin_init = uvisor_spin_init,
     .spin_trylock = uvisor_spin_trylock,

@@ -17,6 +17,7 @@
 #include "api/inc/linker_exports.h"
 #include "api/inc/pool_queue_exports.h"
 #include "api/inc/uvisor_spinlock_exports.h"
+#include "api/inc/halt_exports.h"
 #include <stddef.h>
 #include <string.h>
 
@@ -418,4 +419,176 @@ uvisor_pool_slot_t uvisor_pool_queue_find_first(uvisor_pool_queue_t * pool_queue
     uvisor_spin_unlock(&pool->spinlock);
 
     return slot;
+}
+
+static bool pool_sane(uvisor_pool_t * pool, void * array,
+                      size_t stride, size_t num)
+{
+    /* Invalid num can never be sane */
+    if (num == 0 || num >= UVISOR_POOL_MAX_VALID) {
+        return false;
+    }
+
+    /* Check magic value */
+    if (pool->magic != UVISOR_POOL_MAGIC) {
+        return false;
+    }
+
+    /* Check pool size */
+    if (pool->num != num) {
+        return false;
+    }
+
+    /* Check array pointer */
+    if (pool->array != array) {
+        return false;
+    }
+
+    /* Check stride */
+    if (pool->stride != stride) {
+        return false;
+    }
+
+    /* Allocated count cannot be larger than size */
+    if (pool->num_allocated > num) {
+        return false;
+    }
+
+    /* Use a larger uint size to prevent overflow wraparound */
+    uint32_t num_free = 0;
+    uvisor_pool_slot_t i = pool->first_free;
+
+    /* Cycle detection: If there has been a cycle in the free list and there is
+     * an upper bound for num_free and a check of allocated count can indicate
+     * a cycle or corrupted value */
+    while (i < num && num_free < num) {
+        uvisor_pool_queue_entry_t * slot = &pool->management_array[i];
+        /* Check state */
+        if (slot->dequeued.state != UVISOR_POOL_SLOT_IS_FREE) {
+            return false;
+        }
+        num_free++;
+        i = slot->dequeued.next;
+    }
+
+    /* Check the whether the last element in the free list has correct `next`
+     * value */
+    if (i != UVISOR_POOL_SLOT_INVALID) {
+        return false;
+    }
+
+    /* Check allocated count */
+    if (pool->num_allocated + num_free != num) {
+        return false;
+    }
+
+    return true;
+}
+
+int uvisor_pool_sanity_check(uvisor_pool_t * pool, void * array,
+                             size_t stride, size_t num)
+{
+    /* Although we will acquire the lock, it does not prevent malicious user
+     * from modifying the internals of data structure */
+    if (!uvisor_spin_trylock(&pool->spinlock)) {
+        return UVISOR_ERROR_CANNOT_LOCK;
+    }
+    bool is_sane = pool_sane(pool, array, stride, num);
+    uvisor_spin_unlock(&pool->spinlock);
+    return is_sane ? 0 : UVISOR_ERROR_OUT_OF_STRUCTURES;
+}
+
+int uvisor_pool_queue_sanity_check(uvisor_pool_queue_t * queue,
+                                   uvisor_pool_t * pool, void * array,
+                                   size_t stride, size_t num)
+{
+    bool visited[num];
+    int status = UVISOR_ERROR_OUT_OF_STRUCTURES;
+    /* Although we will acquire the lock, it does not prevent malicious user
+     * from modifying the internals of data structure */
+
+    /* Check magic value */
+    if (queue->magic != UVISOR_POOL_QUEUE_MAGIC) {
+        return status;
+    }
+
+    /* Check pool pointer */
+    if (queue->pool != pool) {
+        return status;
+    }
+
+    /* Cannot check sanity if lock is held by others */
+    if (!uvisor_spin_trylock(&queue->pool->spinlock)) {
+        return UVISOR_ERROR_CANNOT_LOCK;
+    }
+
+    /* Check head/tail, it must be within range [0, num) or INVALID */
+    if (!((queue->head < num) || (queue->head == UVISOR_POOL_SLOT_INVALID))) {
+        goto unlock;
+    }
+
+    if (!((queue->tail < num) || (queue->tail == UVISOR_POOL_SLOT_INVALID))) {
+        goto unlock;
+    }
+
+    /* Check pool sanity */
+    if (!pool_sane(pool, array, stride, num)) {
+        goto unlock;
+    }
+
+    uvisor_pool_slot_t i;
+    for (i = 0; i < num; i++) {
+        visited[i] = false;
+    }
+
+    i = queue->head;
+    uvisor_pool_slot_t prev = UVISOR_POOL_SLOT_INVALID;
+    /* Cycle detection: If there has been a cycle, at least one slot has two
+     * edges in, but there is only one prev field. The mismatch of prev field
+     * will indicate a loop or corrupted data structure. */
+    while (i < num) {
+        uvisor_pool_queue_entry_t * slot = &pool->management_array[i];
+        /* Check prev index */
+        if (slot->queued.prev != prev) {
+            goto unlock;
+        }
+        visited[i] = true;
+        prev = i;
+        i = slot->queued.next;
+    }
+
+    /* Check tail */
+    if (queue->tail != prev) {
+        goto unlock;
+    }
+
+    /* Check the whether the last element in the free list has correct `next`
+     * value */
+    if (i != UVISOR_POOL_SLOT_INVALID) {
+        goto unlock;
+    }
+
+    i = pool->first_free;
+    while (i != UVISOR_POOL_SLOT_INVALID) {
+        visited[i] = true;
+        i = pool->management_array[i].dequeued.next;
+    }
+
+    for (i = 0; i < num; i++) {
+        if (!visited[i]) {
+            /* A slot must be dequeued if not enqueued or free */
+            uvisor_pool_queue_entry_t * slot = &pool->management_array[i];
+            if (slot->dequeued.state != UVISOR_POOL_SLOT_IS_DEQUEUED) {
+                goto unlock;
+            }
+            if (slot->dequeued.next != UVISOR_POOL_SLOT_INVALID) {
+                goto unlock;
+            }
+        }
+    }
+    status = 0;
+
+unlock:
+    uvisor_spin_unlock(&queue->pool->spinlock);
+    return status;
 }
