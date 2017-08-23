@@ -1,5 +1,7 @@
 # The uVisor
 
+[![Build Status](https://travis-ci.org/ARMmbed/uvisor.svg?branch=master)](https://travis-ci.org/ARMmbed/uvisor)
+
 The uVisor is a self-contained software hypervisor that creates independent secure domains on ARM Cortex&reg;-M3 and Cortex&reg;-M4 microcontrollers. It increases resilience against malware and protects secrets from leaking even among different modules of the same application. You can find a [high-level overview here](http://www.slideshare.net/FoolsDelight/practical-realtime-operating-system-security-for-the-masses) ([Download PDF](https://github.com/ARMmbed/uvisor/raw/docs/uVisorSecurity-TechCon2016.pdf)).
 
 To start using uVisor, you need to include it as a library in your design. We release the uVisor library periodically into the mbed OS repository, [ARMmbed/mbed-os](https://github.com/ARMmbed/mbed-os).
