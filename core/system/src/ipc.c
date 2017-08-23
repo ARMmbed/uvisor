@@ -214,6 +214,15 @@ void ipc_drain_queue(void)
         return;
     }
 
+    if (uvisor_pool_queue_sanity_check(send_queue,
+                                       send_queue->pool,
+                                       send_array,
+                                       sizeof(*send_array),
+                                       UVISOR_IPC_SEND_SLOTS)) {
+        /* This means either the send queue is malicious, or we cannot lock. */
+        return;
+    }
+
     /*
      * Loop over all outgoing messages for this box, looking for a matching
      * receive in a destination box. If any matches are found, deliver the
@@ -286,6 +295,17 @@ void ipc_drain_queue(void)
             /* This shouldn't happen in a non-malicious box. */
             put_it_back(send_queue, send_slot);
             continue; /* Try the next send IO. */
+        }
+
+        if (uvisor_pool_queue_sanity_check(recv_queue,
+                                           recv_queue->pool,
+                                           recv_array,
+                                           sizeof(*recv_array),
+                                           UVISOR_IPC_RECV_SLOTS)) {
+            /* This means either the receive queue is malicious, or we cannot
+             * lock. */
+            put_it_back(send_queue, send_slot);
+            continue; /* Try the next send IO */
         }
 
         /* Find the first recv IO in the recv_queue that matches the port and
