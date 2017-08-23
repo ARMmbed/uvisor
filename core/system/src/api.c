@@ -73,7 +73,6 @@
 
 #endif
 
-transition_np_to_p(debug_init,       void, debug_register_driver, const TUvisorDebugDriver * const driver);
 transition_np_to_p(irq_system_reset, void, debug_reboot,          TResetReason reason);
 transition_np_to_p(error,            void, halt_user_error,       THaltUserError reason);
 transition_p_to_p(start,             void, uvisor_start,          void);
@@ -138,7 +137,6 @@ const UvisorApi __uvisor_api = {
     .box_namespace = box_namespace_transition,
     .box_id_for_namespace = box_id_for_namespace_transition,
 
-    .debug_init = debug_init_transition,
     .error = error_transition,
     .start = start_transition,
 

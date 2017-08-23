@@ -65,7 +65,6 @@ typedef struct {
     int (*box_namespace)(int box_id, char *box_namespace, size_t length);
     int (*box_id_for_namespace)(int * const box_id, const char * const box_namespace);
 
-    void (*debug_init)(const TUvisorDebugDriver * const driver);
     void (*error)(THaltUserError reason);
     void (*start)(void);
     void (*vmpu_mem_invalidate)(void);

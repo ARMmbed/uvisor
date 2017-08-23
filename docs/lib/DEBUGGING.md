@@ -121,9 +121,9 @@ The uVisor code is instrumented to output debug information when it is relevant.
 
 Instead, debug events and messages are forwarded to a special unprivileged box, called a *debug box*. A debug box is configured just like any other secure box, but it registers with uVisor to handle debug callbacks. These callbacks must adhere to a format that uVisor provides, in the form of a debug box driver.
 
-The debug box driver is encoded in a standard table (a C `struct`) that a debug box must populate at initialization time. A debug box can decide to implement only some of the available handlers though they must all exist at least as empty functions. Otherwise, the program behavior might be unpredictable.
+The debug box driver is encoded in a standard table (a C `struct`) that a debug box must populate statically. A debug box can decide to implement only some of the available handlers though they must all exist at least as empty functions. Otherwise, the program behavior might be unpredictable.
 
-The debug handler — `halt_error` — only executes once, so if another fault occurs during its execution, the uVisor does not deprivilege again. It halts instead. A debug box driver also expects a `get_version()` handler in position 0 of the function table:
+The debug handler — `halt_error` — only executes once, so if another fault occurs during its execution, the uVisor does not deprivilege again. It halts instead.
 
 Debug box handlers can also reset the device by calling the `NVIC_SystemReset()` API. This API cannot be called from other secure boxes.
 

@@ -37,14 +37,6 @@ void debug_reboot(TResetReason reason)
     NVIC_SystemReset();
 }
 
-uint32_t debug_get_version(void)
-{
-    /* TODO: This function cannot be implemented without a mechanism for
-     *       de-privilege, execute, return, and re-privilege. */
-    HALT_ERROR(NOT_IMPLEMENTED, "This handler is not implemented yet. Only version 0 is supported.\n\r");
-    return 0;
-}
-
 uint32_t g_debug_interrupt_sp[UVISOR_MAX_BOXES];
 
 void debug_halt_error(THaltError reason, const THaltInfo *halt_info)
@@ -73,50 +65,6 @@ void debug_halt_error(THaltError reason, const THaltInfo *halt_info)
          * Upon return from the debug handler, the system will die. */
         debug_deprivilege_and_return(g_debug_box.driver->halt_error, debug_die, reason, (uint32_t)info, 0, 0);
     }
-}
-
-void debug_register_driver(const TUvisorDebugDriver * const driver)
-{
-    int i;
-
-    /* Check if already initialized. */
-    if (g_debug_box.initialized) {
-        HALT_ERROR(NOT_ALLOWED, "The debug box has already been initialized.\n\r");
-    }
-
-    /* Check the driver version. */
-    /* FIXME: Currently we cannot de-privilege, execute, and return to a
-     *        user-provided handler, so we are not calling the get_version()
-     *        handler. The version of the driver will be assumed to be 0. */
-
-    /* Check that the debug driver table and all its entries are in public
-     * flash. */
-    if (!vmpu_public_flash_addr((uint32_t) driver) ||
-        !vmpu_public_flash_addr((uint32_t) driver + sizeof(TUvisorDebugDriver))) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "The debug box driver struct must be stored in public flash.\n\r");
-    }
-    if (!driver) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "The debug box driver cannot be initialized with a NULL pointer.\r\n");
-    }
-    for (i = 0; i < DEBUG_BOX_HANDLERS_NUMBER; i++) {
-        if (!vmpu_public_flash_addr(*((uint32_t *) driver + i))) {
-            HALT_ERROR(SANITY_CHECK_FAILED, "Each handler in the debug box driver struct must be stored in public flash.\n\r");
-        }
-        if (!*((uint32_t *) driver + i)) {
-            HALT_ERROR(SANITY_CHECK_FAILED, "Handlers in the debug box driver cannot be initialized with a NULL pointer.\r\n");
-        }
-    }
-
-    for (int ii = 0; ii < UVISOR_MAX_BOXES; ii++)
-    {
-        g_debug_interrupt_sp[ii] = g_context_current_states[ii].sp;
-    }
-
-    /* Register the debug box.
-     * The caller of this function is considered the owner of the debug box. */
-    g_debug_box.driver = driver;
-    g_debug_box.box_id = g_active_box;
-    g_debug_box.initialized = 1;
 }
 
 /* FIXME This is a bit platform specific. Consider moving to a platform

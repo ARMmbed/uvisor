@@ -20,6 +20,7 @@
 .weak  __uvisor_mode
 .weak  __uvisor_page_size
 .globl __uvisor_priv_sys_hooks
+.weak  __uvisor_debug_driver
 
 .section .uvisor.main, "x"
 
@@ -110,6 +111,9 @@ uvisor_config:
      * */
     .long __uvisor_lib_hooks
 
+    /* Debug driver pointer */
+    .long __uvisor_debug_driver
+
 /* uVisor mode of operation
  * Modes available: UVISOR_ENABLED, UVISOR_DISABLED, UVISOR_PERMISSIVE. */
 __uvisor_mode:
@@ -121,6 +125,14 @@ __uvisor_page_size:
     /* uVisor default page size: 16kB.
      * The user can override this weak reference. */
     .long 16384
+
+__uvisor_debug_driver:
+    /* No debug driver by default.
+     * Populated per request by the application */
+    .long 0
+    .long 0
+    .long 0
+    .long 0
 
 /* __uvisor_ps is written inside uvisor_init. It must not be
  * overwritten by libc init and therefore is placed in .uninitialized. */

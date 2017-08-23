@@ -39,8 +39,6 @@ void debug_sau_config(void);
 void debug_fault(THaltError reason, uint32_t lr, uint32_t sp);
 
 /* Debug box */
-void debug_register_driver(const TUvisorDebugDriver * const driver);
-uint32_t debug_get_version(void);
 void debug_halt_error(THaltError reason, const THaltInfo *halt_info);
 void debug_reboot(TResetReason reason);
 
