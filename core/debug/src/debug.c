@@ -376,10 +376,12 @@ static void debug_fault_hard(void)
 
 void debug_init(void)
 {
+#if !defined(ARCH_MPU_ARMv8M)
     /* Debugging bus faults requires them to be precise, so write buffering is
      * disabled when debug is enabled. */
     /* Note: This slows down execution. */
     SCnSCB->ACTLR |= 0x2;
+#endif
 }
 
 void debug_fault(THaltError reason, uint32_t lr, uint32_t sp)

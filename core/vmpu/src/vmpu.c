@@ -616,10 +616,12 @@ int vmpu_init_pre(void)
 
 void vmpu_init_post(void)
 {
+#if !defined(ARCH_MPU_ARMv8M)
     /* Enable non-base thread mode (NONBASETHRDENA).
      * Exceptions can now return to thread mode regardless their origin
      * (supervisor or thread mode); the opposite is not true. */
     SCB->CCR |= 1;
+#endif
 
     /* init memory protection */
     vmpu_arch_init();
