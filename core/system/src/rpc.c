@@ -88,9 +88,8 @@ static int callee_box_id(const TRPCGateway * gateway)
 
 static int put_it_back(uvisor_pool_queue_t * queue, uvisor_pool_slot_t slot)
 {
-    uvisor_pool_slot_t status;
-    status = uvisor_pool_queue_try_enqueue(queue, slot);
-    if (status != slot) {
+    uvisor_pool_slot_t enqueued_slot = uvisor_pool_queue_try_enqueue(queue, slot);
+    if (enqueued_slot != slot) {
         /* We could dequeue an RPC message, but couldn't put it back. */
         /* It is bad to take down the entire system. It is also bad
          * to lose messages due to not being able to put them back in
@@ -285,7 +284,6 @@ void drain_message_queue(void)
         /* If the queue is not busy and there is space in the callee queue: */
         if (callee_slot < callee_queue->pool->num)
         {
-            int status;
             uvisor_rpc_message_t * callee_msg = &callee_array[callee_slot];
 
             /* Deliver the message. */
@@ -303,11 +301,11 @@ void drain_message_queue(void)
             caller_msg->state = UVISOR_RPC_MESSAGE_STATE_SENT;
 
             /* Enqueue the message */
-            status = uvisor_pool_queue_try_enqueue(callee_queue, callee_slot);
+            uvisor_pool_slot_t enqueued_slot = uvisor_pool_queue_try_enqueue(callee_queue, callee_slot);
             /* We should always be able to enqueue, since we were able to
              * allocate the slot. Nobody else should have been able to run and
              * take the spin lock. */
-            if (status) {
+            if (enqueued_slot != callee_slot) {
                 /* We were able to get the callee RPC slot allocated, but
                  * couldn't enqueue the message. It is bad to take down the
                  * entire system. It is also bad to keep the allocated slot
