@@ -19,7 +19,6 @@
 
 #include "api/inc/magic_exports.h"
 #include "api/inc/uvisor_exports.h"
-#include "api/inc/uvisor_semaphore_exports.h"
 #include "api/inc/uvisor_spinlock_exports.h"
 #include <stdint.h>
 #include <stddef.h>
