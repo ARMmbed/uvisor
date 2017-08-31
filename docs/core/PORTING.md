@@ -212,18 +212,18 @@ This file contains uVisor customizations that are not hardware-specific but can 
 
 This table lists symbols that you can specify.
 
-| Symbol                        | Description                    |
-|-------------------------------|--------------------------------|
-| `STACK_SIZE`                  | The size of uVisor's own stack |
-| `NDEBUG`                      | TODO                           |
-| `DEBUG_MAX_BUFFER`            | TODO                           |
-| `CHANNEL_DEBUG`               | TODO                           |
-| `MPU_MAX_PRIVATE_FUNCTIONS`   | TODO                           |
-| `MPU_REGION_COUNT`            | TODO                           |
-| `ARMv7M_MPU_REGIONS`          | TODO                           |
-| `ARMv7M_ALIGNMENR_BITS`       | TODO                           |
-| `ARMv7M_MPU_RESERVED_REGIONS` | TODO                           |
-| `UVISOR_MAX_ACLS`             | TODO                           |
+| Symbol                        | Description                                           |
+|-------------------------------|-------------------------------------------------------|
+| `TOTAL_STACK_SIZE`            | The size of uVisor's own stack, including guard bands |
+| `NDEBUG`                      | TODO                                                  |
+| `DEBUG_MAX_BUFFER`            | TODO                                                  |
+| `CHANNEL_DEBUG`               | TODO                                                  |
+| `MPU_MAX_PRIVATE_FUNCTIONS`   | TODO                                                  |
+| `MPU_REGION_COUNT`            | TODO                                                  |
+| `ARMv7M_MPU_REGIONS`          | TODO                                                  |
+| `ARMv7M_ALIGNMENR_BITS`       | TODO                                                  |
+| `ARMv7M_MPU_RESERVED_REGIONS` | TODO                                                  |
+| `UVISOR_MAX_ACLS`             | TODO                                                  |
 
 **Table 3**. Optional hardware-specific `config.h` symbols
 
