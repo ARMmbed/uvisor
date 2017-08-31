@@ -26,8 +26,8 @@ void debug_die(void)
 }
 
 /* Note: On ARMv8-M the return_handler is executed in S mode. */
-void debug_deprivilege_and_return(void * debug_handler, void * return_handler,
-                                  uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3)
+void debug_deprivilege_and_die(void * debug_handler, void * return_handler,
+                               uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3)
 {
     /* Switch to the debug box.
      * We use a regular process switch, so we don't need a dedicated stack for

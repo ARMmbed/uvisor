@@ -30,8 +30,8 @@ extern uint32_t g_debug_interrupt_sp[];
 /* FIXME: Currently it is not possible to return to a regular execution flow
  *        after the execution of the debug box handler. */
 /* Note: On ARMv7-M the return_handler is executed in NP mode. */
-void debug_deprivilege_and_return(void * debug_handler, void * return_handler,
-                                  uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3)
+void debug_deprivilege_and_die(void * debug_handler, void * return_handler,
+                               uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3)
 {
     /* Source box: Get the current stack pointer. */
     /* Note: The source stack pointer is only used to assess the stack

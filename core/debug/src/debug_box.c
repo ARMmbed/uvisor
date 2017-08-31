@@ -63,7 +63,7 @@ void debug_halt_error(THaltError reason, const THaltInfo *halt_info)
          *   1. reason
          *   2. halt info
          * Upon return from the debug handler, the system will die. */
-        debug_deprivilege_and_return(g_debug_box.driver->halt_error, debug_die, reason, (uint32_t)info, 0, 0);
+        debug_deprivilege_and_die(g_debug_box.driver->halt_error, debug_die, reason, (uint32_t)info, 0, 0);
     }
 }
 
