@@ -301,7 +301,7 @@ uint32_t vmpu_region_add_static_acl(uint8_t box_id, uint32_t start, uint32_t siz
 bool vmpu_region_get_for_box(uint8_t box_id, const MpuRegion * * const region, uint32_t * const count)
 {
     if (!g_mpu_region_count) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "No available MPU regions.\r\n");
+        HALT_ERROR(SANITY_CHECK_FAILED, "No available MPU regions.\n");
     }
 
     if (box_id < UVISOR_MAX_BOXES) {
@@ -442,16 +442,16 @@ void vmpu_mpu_init(void)
                   (SCB_SHCSR_MEMFAULTENA_Msk);
 
     /* show basic mpu settings */
-    DPRINTF("MPU.REGIONS=%i\r\n", (uint8_t)(MPU->TYPE >> MPU_TYPE_DREGION_Pos));
-    DPRINTF("MPU.ALIGNMENT=0x%08X\r\n", aligment_mask);
-    DPRINTF("MPU.ALIGNMENT_BITS=%i\r\n", vmpu_bits(aligment_mask));
+    DPRINTF("MPU.REGIONS=%i\n", (uint8_t)(MPU->TYPE >> MPU_TYPE_DREGION_Pos));
+    DPRINTF("MPU.ALIGNMENT=0x%08X\n", aligment_mask);
+    DPRINTF("MPU.ALIGNMENT_BITS=%i\n", vmpu_bits(aligment_mask));
 
     /* Perform sanity checks. */
     if (ARMv7M_MPU_REGIONS != ((MPU->TYPE >> MPU_TYPE_DREGION_Pos) & 0xFF)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "ARMv7M_MPU_REGIONS is inconsistent with actual region count.\n\r");
+        HALT_ERROR(SANITY_CHECK_FAILED, "ARMv7M_MPU_REGIONS is inconsistent with actual region count.\n");
     }
     if (ARMv7M_MPU_ALIGNMENT_BITS != vmpu_bits(aligment_mask)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "ARMv7M_MPU_ALIGNMENT_BITS are inconsistent with actual MPU alignment\n\r");
+        HALT_ERROR(SANITY_CHECK_FAILED, "ARMv7M_MPU_ALIGNMENT_BITS are inconsistent with actual MPU alignment\n");
     }
 }
 

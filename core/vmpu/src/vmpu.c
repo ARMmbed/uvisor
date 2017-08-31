@@ -57,7 +57,7 @@ static int vmpu_check_sanity(void)
     /* Verify that the core version is the same as expected. */
     if (!CORE_VERSION_CHECK() || !CORE_REVISION_CHECK()) {
         HALT_ERROR(SANITY_CHECK_FAILED, "This core is unsupported or there is a mismatch between the uVisor "
-                                        "configuration you are using and the core this configuration supports.\n\r");
+                                        "configuration you are using and the core this configuration supports.\n");
     }
 
     /* Verify that the known hard-coded symbols are equal to the ones taken from
@@ -161,13 +161,13 @@ static int vmpu_check_sanity(void)
     uint32_t const heap_end = (uint32_t) __uvisor_config.heap_end;
     uint32_t const heap_start = (uint32_t) __uvisor_config.heap_start;
     if (!heap_start || !vmpu_public_sram_addr(heap_start)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "Heap start pointer (0x%08x) is not in SRAM memory.\r\n", heap_start);
+        HALT_ERROR(SANITY_CHECK_FAILED, "Heap start pointer (0x%08x) is not in SRAM memory.\n", heap_start);
     }
     if (!heap_end || !vmpu_public_sram_addr(heap_end)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "Heap end pointer (0x%08x) is not in SRAM memory.\r\n", heap_end);
+        HALT_ERROR(SANITY_CHECK_FAILED, "Heap end pointer (0x%08x) is not in SRAM memory.\n", heap_end);
     }
     if (heap_end < heap_start) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "Heap end pointer (0x%08x) is smaller than heap start pointer (0x%08x).\r\n",
+        HALT_ERROR(SANITY_CHECK_FAILED, "Heap end pointer (0x%08x) is smaller than heap start pointer (0x%08x).\n",
                    heap_end, heap_start);
     }
 
@@ -223,31 +223,31 @@ static void vmpu_check_sanity_box_cfgtbl(uint8_t box_id, UvisorBoxConfig const *
     /* Ensure that the configuration table resides in flash. */
     if (!(vmpu_flash_addr((uint32_t) box_cfgtbl) &&
         vmpu_flash_addr((uint32_t) ((uint8_t *) box_cfgtbl + (sizeof(*box_cfgtbl) - 1))))) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: The box configuration table is not in flash.\r\n",
+        HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: The box configuration table is not in flash.\n",
                    box_id, (uint32_t) box_cfgtbl);
     }
 
     /* Check the magic value in the box configuration table. */
     if (box_cfgtbl->magic != UVISOR_BOX_MAGIC) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: Invalid magic number (found: 0x%08X, exepcted 0x%08X).\r\n",
+        HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: Invalid magic number (found: 0x%08X, exepcted 0x%08X).\n",
                    box_id, (uint32_t) box_cfgtbl, box_cfgtbl->magic, UVISOR_BOX_MAGIC);
     }
 
     /* Check the box configuration table version. */
     if (box_cfgtbl->version != UVISOR_BOX_VERSION) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: Invalid version number (found: 0x%04X, expected: 0x%04X).\r\n",
+        HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: Invalid version number (found: 0x%04X, expected: 0x%04X).\n",
                    box_id, (uint32_t) box_cfgtbl, box_cfgtbl->version, UVISOR_BOX_VERSION);
     }
 
     /* Check the minimal size of the box index size. */
     if (box_cfgtbl->bss.size_of.index < sizeof(UvisorBoxIndex)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: Index size (%uB) < sizeof(UvisorBoxIndex) (%uB).\r\n",
+        HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: Index size (%uB) < sizeof(UvisorBoxIndex) (%uB).\n",
                    box_id, (uint32_t) box_cfgtbl, box_cfgtbl->bss.size_of.index, sizeof(UvisorBoxIndex));
     }
 
     /* Check the minimal size of the box stack. */
     if (box_id != 0 && (box_cfgtbl->stack_size < UVISOR_MIN_STACK_SIZE)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: Stack size (%uB) < UVISOR_MIN_STACK_SIZE (%uB).\r\n",
+        HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: Stack size (%uB) < UVISOR_MIN_STACK_SIZE (%uB).\n",
                    box_id, (uint32_t) box_cfgtbl, box_cfgtbl->stack_size, UVISOR_MIN_STACK_SIZE);
     }
 
@@ -260,11 +260,11 @@ static void vmpu_check_sanity_box_cfgtbl(uint8_t box_id, UvisorBoxConfig const *
          *        to zero and then determine them at runtime (see code in box
          *        index initialization). We should remove this dependency. */
         if (box_cfgtbl->stack_size != 0) {
-            HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: The public box stack size must be set to 0 (found %uB).\r\n",
+            HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: The public box stack size must be set to 0 (found %uB).\n",
                        box_id, (uint32_t) box_cfgtbl, box_cfgtbl->stack_size);
         }
         if (box_cfgtbl->bss.size_of.heap != 0) {
-            HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: The public box heap size must be set to 0 (found %uB).\r\n",
+            HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: The public box heap size must be set to 0 (found %uB).\n",
                        box_id, (uint32_t) box_cfgtbl, box_cfgtbl->bss.size_of.heap);
         }
     }
@@ -336,7 +336,7 @@ static void vmpu_configure_box_peripherals(uint8_t box_id, UvisorBoxConfig const
         for (int i = 0; i < count; i++) {
             /* Ensure that the ACL resides in public flash. */
             if (!vmpu_public_flash_addr((uint32_t) region)) {
-                HALT_ERROR(SANITY_CHECK_FAILED, "box[%i]:acl[%i] must be in code section (@0x%08X)i\r\n",
+                HALT_ERROR(SANITY_CHECK_FAILED, "box[%i]:acl[%i] must be in code section (@0x%08X)i\n",
                            box_id, i, box_cfgtbl);
             }
 
@@ -351,7 +351,7 @@ static void vmpu_configure_box_peripherals(uint8_t box_id, UvisorBoxConfig const
                     region->acl | UVISOR_TACL_USER,
                     0
                 );
-                DPRINTF("  - Peripheral: 0x%08X - 0x%08X (permissions: 0x%04X)\r\n",
+                DPRINTF("  - Peripheral: 0x%08X - 0x%08X (permissions: 0x%04X)\n",
                         (uint32_t) region->param1, (uint32_t) region->param1 + region->param2,
                         region->acl | UVISOR_TACL_USER);
             }
@@ -435,11 +435,11 @@ static void vmpu_enumerate_boxes(void)
 
             /* Before g_debug_box initialization, verify magic and version of the debug box. */
             if (debug_driver->magic != UVISOR_DEBUG_BOX_MAGIC) {
-                HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: Wrong debug box magic.\r\n",
+                HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: Wrong debug box magic.\n",
                         box_id, (uint32_t) box_cfgtbl);
             }
             if (debug_driver->version != UVISOR_DEBUG_BOX_VERSION) {
-                HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: Wrong debug box version.\r\n",
+                HALT_ERROR(SANITY_CHECK_FAILED, "Box %i @0x%08X: Wrong debug box version.\n",
                         box_id, (uint32_t) box_cfgtbl);
             }
 
@@ -454,7 +454,7 @@ static void vmpu_enumerate_boxes(void)
         /* Note: This function halts if a sanity check fails. */
         vmpu_check_sanity_box_cfgtbl(index, box_cfgtbl);
 
-        DPRINTF("Box %i ACLs:\r\n", index);
+        DPRINTF("Box %i ACLs:\n", index);
 
         /* Add the box ACL for the static SRAM memories. */
         vmpu_configure_box_sram(index, box_cfgtbl);
@@ -551,7 +551,7 @@ int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint3
                         break;
                 }
                 if (found) {
-                    /* DPRINTF("Executed privileged access: 0x%08X written to 0x%08X\n\r", r1, r0); */
+                    /* DPRINTF("Executed privileged access: 0x%08X written to 0x%08X\n", r1, r0); */
                 }
                 break;
 
@@ -583,7 +583,7 @@ int vmpu_fault_recovery_bus(uint32_t pc, uint32_t sp, uint32_t fault_addr, uint3
                 if (found) {
                     /* The result is stored back to the stack (r0). */
                     vmpu_unpriv_uint32_write(sp, r1);
-                    /* DPRINTF("Executed privileged access: read 0x%08X from 0x%08X\n\r", r1, r0); */
+                    /* DPRINTF("Executed privileged access: read 0x%08X from 0x%08X\n", r1, r0); */
                 }
                 break;
 
@@ -649,7 +649,7 @@ static int copy_box_namespace(const char *src, char *dst)
      * in vmpu_box_namespace_from_id as being in the box config table. It is a
      * programmer error if the namespace in the box config table is not
      * null-terminated, so we halt. */
-    HALT_ERROR(SANITY_CHECK_FAILED, "vmpu: Box namespace missing terminating-null\r\n");
+    HALT_ERROR(SANITY_CHECK_FAILED, "vmpu: Box namespace missing terminating-null\n");
 
 done:
     return bytes_copied;
