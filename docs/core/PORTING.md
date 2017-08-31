@@ -214,7 +214,7 @@ This table lists symbols that you can specify.
 
 | Symbol                        | Description                    |
 |-------------------------------|--------------------------------|
-| `STACK_SIZE`                  | The size of uVisor's own stack |
+| `TOTAL_STACK_SIZE`            | The size of uVisor's own stack |
 | `NDEBUG`                      | TODO                           |
 | `DEBUG_MAX_BUFFER`            | TODO                           |
 | `CHANNEL_DEBUG`               | TODO                           |

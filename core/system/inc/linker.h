@@ -23,6 +23,7 @@
 #include "api/inc/linker_exports.h"
 
 extern uint32_t const __uvisor_code_end__;
+extern uint32_t const __uvisor_stack_start_boundary__;
 extern uint32_t const __uvisor_stack_start__;
 extern uint32_t const __uvisor_stack_top__;
 extern uint32_t const __uvisor_stack_end__;

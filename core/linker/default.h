@@ -36,17 +36,67 @@ ENTRY(main_entry)
 #error "uVisor does not fit into the target memory. UVISOR_SRAM_LENGTH_USED must be smaller than UVISOR_SRAM_LENGTH_AVAIL."
 #endif /* UVISOR_SRAM_LENGTH_USED > UVISOR_SRAM_LENGTH_AVAIL */
 
+
+#ifdef ARCH_MPU_ARMv7M
+
+/* uVisor stack on MPU_ARMv7M MPU architecture:
+*
+* .---------------------.    --
+* |        Guard        |       \
+* |  [STACK_GUARD_BAND] |       |
+* +---------------------+       |
+* |                     |       |
+* |        Stack        |        } => [TOTAL_STACK_SIZE]
+* |     [STACK_SIZE]    |       |
+* |                     |       |
+* +---------------------+       |
+* |        Guard        |       |
+* |  [STACK_GUARD_BAND] |       /
+* '---------------------'    --
+*/
+
+/* Default total stack size including guard bands
+ * Must be a power of 2 for MPU configurations. */
+#if !defined(TOTAL_STACK_SIZE)
+#define TOTAL_STACK_SIZE 2048
+#endif
+
+/* uVisor own stack guard band
+ * Note: Currently we use the stack guard to isolate the uVisor stack on
+ *       MPU_ARMv7M MPU architecture only.
+ *       In order to use SRD (sub region disabled) we set each guard
+ *       (top & bottom) to be 1/8th of the total stack size */
+#define STACK_GUARD_BAND (TOTAL_STACK_SIZE >> 3)
+
+/* uVisor stack size
+ * Note: This is uVisor own stack, not the boxes' stack. */
+#define STACK_SIZE (TOTAL_STACK_SIZE - STACK_GUARD_BAND - STACK_GUARD_BAND)
+
+#else   /* ARCH_MPU_ARMv7M */
+
 /* Default uVisor stack size
  * Note: This is uVisor own stack, not the boxes' stack. */
-#if !defined(STACK_SIZE)
-#define STACK_SIZE 2048
-#endif /* !defined(STACK_SIZE) */
+#if !defined(TOTAL_STACK_SIZE)
+#define TOTAL_STACK_SIZE 2080
+#endif
+
+/* Default uVisor own stack guard band
+ * Note: For MPU architectures other than MPU_ARMv7M, we do not actively use
+ *       the stack guard to isolate the uVisor stack from the rest of the
+ *       protected memories.
+ *       For this reason the symbol is arbitrarily small and cannot be defined
+ *       by the platform-specific configurations. */
+#define STACK_GUARD_BAND 32
+
+#define STACK_SIZE (TOTAL_STACK_SIZE - STACK_GUARD_BAND)
+
+#endif  /* ARCH_MPU_ARMv7M */
 
 #if !defined(SECURE_ALIAS_OFFSET)
 #define SECURE_ALIAS_OFFSET 0
 #endif /* !defined(SECURE_ALIAS_OFFSET) */
 
-/* Default uVisor non-priviledged stack size for v8-M only. */
+/* Default uVisor non-privileged stack size for v8-M only. */
 #if !defined(STACK_SIZE_NP)
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
 #define STACK_SIZE_NP 256 /* TODO: choose better default. */
@@ -55,13 +105,6 @@ ENTRY(main_entry)
 #endif /* defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U) */
 #endif /* !defined(STACK_SIZE_NP) */
 
-/* Default uVisor own stack guard band
- * Note: Currently we do not actively use the stack guard to isolate the uVisor
- *       stack from the rest of the protected memories. For this reason the
- *       symbol is arbitrarily small and cannot be defined by the
- *       platform-specific configurations. */
-#define STACK_GUARD_BAND 32
-
 MEMORY
 {
   FLASH_NS (r x) : ORIGIN = (FLASH_ORIGIN + FLASH_OFFSET),
@@ -69,7 +112,7 @@ MEMORY
   FLASH_S  (r x) : ORIGIN = (FLASH_ORIGIN + SECURE_ALIAS_OFFSET + FLASH_OFFSET),
                    LENGTH = UVISOR_FLASH_LENGTH_MAX
   RAM_S    (rwx) : ORIGIN = (SRAM_ORIGIN + SECURE_ALIAS_OFFSET + SRAM_OFFSET),
-                   LENGTH = UVISOR_SRAM_LENGTH_USED - (STACK_SIZE + STACK_GUARD_BAND) - (STACK_SIZE_NP ? (STACK_SIZE_NP + STACK_GUARD_BAND) : 0)
+                   LENGTH = UVISOR_SRAM_LENGTH_USED - TOTAL_STACK_SIZE - (STACK_SIZE_NP ? (STACK_SIZE_NP + STACK_GUARD_BAND) : 0)
   STACK_S  (rw ) : ORIGIN = ORIGIN(RAM_S) + LENGTH(RAM_S),
                    LENGTH = UVISOR_SRAM_LENGTH_PROTECTED - LENGTH(RAM_S)
 }
@@ -149,6 +192,11 @@ SECTIONS
         __uvisor_stack_end_np__ = .;
 
         /* Privileged stack for v7-M and v8-M. */
+#ifdef ARCH_MPU_ARMv7M
+        . = ALIGN(TOTAL_STACK_SIZE);
+        __uvisor_stack_start_boundary__ = .;
+        . += STACK_GUARD_BAND;
+#endif
         __uvisor_stack_start__ = .;
         . += STACK_SIZE;
         __uvisor_stack_top__ = .;

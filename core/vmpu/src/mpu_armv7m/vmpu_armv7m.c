@@ -515,6 +515,19 @@ void vmpu_arch_init_hw(void)
                    "The page size (%ukB) must not be larger than 1/8th of SRAM (%ukB).",
                    *__uvisor_config.page_size / 1024, subregions_size / 1024);
     }
+
+    /* Set a static MPU region for uVisor's stack with guard bands
+     * protecting stack overflow / underflow.
+     */
+    vmpu_mpu_set_static_acl(
+        2,
+        (uint32_t) &__uvisor_stack_start_boundary__,
+        (uint32_t) &__uvisor_stack_end__ - (uint32_t) &__uvisor_stack_start_boundary__,
+        0,      /* No access */
+        0x7E    /* 0b01111110: Sub region disable:
+                               * Stack guard on top and on bottom remain with "No access" permissions.
+                               * uVisor stack memory inherits access permissions of "Privileged access only" */
+    );
 }
 
 static void swap_boxes(int * const b1, int * const b2)
