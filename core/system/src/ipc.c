@@ -124,6 +124,8 @@ static int ipc_deliver(uvisor_ipc_t * send_ipc, uvisor_ipc_t * recv_ipc,
     uvisor_ipc_desc_t * recv_desc = recv_io->desc;
     UvisorSpinlock * send_lock = &send_ipc->tokens_lock;
     UvisorSpinlock * recv_lock = &recv_ipc->tokens_lock;
+    void * recv_msg = UVISOR_GET_S_ALIAS(recv_io->msg);
+    void * send_msg = UVISOR_GET_S_ALIAS(send_io->msg);
 
     /* We have to hold both the send and recv token locks when delivering the
      * message so that we don't ever partially deliver a message. The locks are
@@ -142,7 +144,7 @@ static int ipc_deliver(uvisor_ipc_t * send_ipc, uvisor_ipc_t * recv_ipc,
     }
 
     size_t len = send_desc->len;
-    memmove(recv_io->msg, send_io->msg, len);
+    memmove(recv_msg, send_msg, len);
     send_ipc->completed_tokens |= send_desc->token;
 
     recv_desc->box_id = send_box_id;
