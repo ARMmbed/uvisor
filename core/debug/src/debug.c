@@ -50,15 +50,15 @@ void debug_semihosting_enable(void)
 
 UVISOR_WEAK void default_putc(uint8_t data)
 {
-    if (DEBUG_SEMIHOSTING_MAGIC == g_semihosting_magic) {
+    g_buffer[g_buffer_pos++] = data;
+    if (g_buffer_pos == (DEBUG_MAX_BUFFER - 1)) {
+        data = '\n';
+    }
 
-        g_buffer[g_buffer_pos++] = data;
-        if (g_buffer_pos == (DEBUG_MAX_BUFFER - 1)) {
-            data = '\n';
-        }
+    if (data == '\n') {
+        g_buffer[g_buffer_pos] = 0;
 
-        if (data == '\n') {
-            g_buffer[g_buffer_pos] = 0;
+        if (DEBUG_SEMIHOSTING_MAGIC == g_semihosting_magic) {
             asm volatile(
                 "mov r0, #4\n"
                 "mov r1, %[data]\n"
@@ -67,8 +67,12 @@ UVISOR_WEAK void default_putc(uint8_t data)
                 : [data] "r" (&g_buffer)
                 : "r0", "r1"
             );
-            g_buffer_pos = 0;
         }
+
+        /* Print the buffer also using the debug box. */
+        debug_print(g_buffer, g_buffer_pos + 1);
+
+        g_buffer_pos = 0;
     }
 }
 

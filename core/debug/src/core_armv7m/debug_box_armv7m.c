@@ -68,3 +68,77 @@ void debug_deprivilege_and_die(void * debug_handler, void * return_handler,
      * debug_handler, return_handler will be executed. */
     return;
 }
+
+/* This function is called by the user to return to uvisor after deprivileging. */
+void UVISOR_NAKED UVISOR_NORETURN debug_return(void)
+{
+    asm volatile(
+        "svc %[retn]"
+
+        ::[retn] "i" ((UVISOR_SVC_ID_RETURN) & 0xFF)
+    );
+}
+
+void debug_deprivilege_and_return(void * debug_handler, void * return_handler,
+                                  uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3)
+{
+    /* We're going to switch into the debug box. */
+    uint8_t dst_id = g_debug_box.box_id;
+
+    /* Use the interrupt stack during deprivileging. */
+    g_context_current_states[dst_id].sp = g_debug_interrupt_sp[dst_id];
+
+    /* Forge the stack frame for deprivileging with up to 4 parameters to
+     * pass. The stack memory is managed by uVisor itself and is supposed to
+     * be accessible by debug box, so there's no need for the access check. */
+    uint32_t dst_sp = context_forge_exc_sf(0, dst_id, (uint32_t)debug_handler, (uint32_t)return_handler, xPSR_T_Msk, 0);
+    ((uint32_t *)dst_sp)[0] = a0;
+    ((uint32_t *)dst_sp)[1] = a1;
+    ((uint32_t *)dst_sp)[2] = a2;
+    ((uint32_t *)dst_sp)[3] = a3;
+
+    context_switch_in(CONTEXT_SWITCH_FUNCTION_DEBUG, dst_id, __get_PSP(), dst_sp);
+
+    /* Save the current context on the stack, deprivilege and restore the context upon return. */
+    asm volatile(
+        /* Save general purpose registers that won't be saved by the following SVC. */
+        "push {r4 - r11}\n"
+
+        /* Remember the current active bit settings. The values are located in
+         * SCB->SHCSR register (address 0xe000ed24). */
+        "ldr r4, =0xe000ed24\n"
+        "ldr r5, [r4]\n"
+        "push {r5}\n"
+
+        /* Clear active bits for exceptions with priority above or equal to
+         * SVC. */
+        "bic r5, %[excp_msk]\n"
+        "str r5, [r4]\n"
+
+        /* Execute SVC that will perform the deprivileging. We'll return to
+         * the next instruction after reprivileging. */
+        "svc %[depriv]\n"
+
+        /* Read the current value of SCB->SHCSR. */
+        "ldr r4, =0xe000ed24\n"
+        "ldr r5, [r4]\n"
+
+        /* Find the active bits we cleaned before the deprivileging. */
+        "pop {r6}\n"
+        "and r6, r6, %[excp_msk]\n"
+
+        /* Restore the active bits. */
+        "orr r5, r6\n"
+        "str r5, [r4]\n"
+
+        /* At this moment a part of the context will be restored from the
+         * stack frame created by the above SVC. The remaining general purpose
+         * registers will be restored now. */
+        "pop {r4 - r11}\n"
+
+        ::[depriv] "i" ((UVISOR_SVC_ID_DEPRIVILEGE) & 0xFF),
+          [excp_msk] "i" (SCB_SHCSR_SVCALLACT_Msk | SCB_SHCSR_USGFAULTACT_Msk | SCB_SHCSR_BUSFAULTACT_Msk | SCB_SHCSR_MEMFAULTACT_Msk)
+    );
+
+    context_switch_out(CONTEXT_SWITCH_FUNCTION_DEBUG);
+}

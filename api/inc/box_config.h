@@ -173,19 +173,20 @@ UVISOR_EXTERN void const * const public_box_cfg_ptr;
 
 /* Use this macro after calling the box configuration macro, in order to register your box as a debug box.
  * It will create a valid debug driver struct with the halt_error_func parameter as its halt_error() function */
-#define UVISOR_DEBUG_DRIVER(box_name, halt_error_func) \
+#define UVISOR_DEBUG_DRIVER(box_name, halt_error_func, debug_print_func) \
         UVISOR_EXTERN TUvisorDebugDriver const __uvisor_debug_driver; \
         TUvisorDebugDriver const __uvisor_debug_driver = { \
             UVISOR_DEBUG_BOX_MAGIC, \
             UVISOR_DEBUG_BOX_VERSION, \
             &box_name ## _cfg, \
-            halt_error_func \
+            halt_error_func, \
+            debug_print_func \
         };
 
 /* Use this macro after calling the box configuration macro, in order to
  * register the public box as a debug box. */
-#define UVISOR_PUBLIC_BOX_DEBUG_DRIVER(halt_error_func) \
-        UVISOR_DEBUG_DRIVER(public_box, halt_error_func)
+#define UVISOR_PUBLIC_BOX_DEBUG_DRIVER(halt_error_func, debug_print_func) \
+        UVISOR_DEBUG_DRIVER(public_box, halt_error_func, debug_print_func)
 
 
 #endif /* __UVISOR_API_BOX_CONFIG_H__ */
