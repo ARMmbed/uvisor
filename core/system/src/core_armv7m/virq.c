@@ -324,6 +324,27 @@ int virq_irq_level_get(void)
     return (int) NVIC_GetPriority(irqn) - __UVISOR_NVIC_MIN_PRIORITY;
 }
 
+/* Jump to unprivileged thread mode, the stack frame is already prepared on PSP. */
+void UVISOR_NAKED virq_gateway_deprivilege(uint32_t svc_sp, uint32_t svc_pc)
+{
+    /* Return to thread mode with PSP using a basic stack frame. */
+    asm volatile(
+        "ldr lr, =0xfffffffd\n"
+        "bx lr\n"
+    );
+}
+
+/* Restore the execution right after the point of deprivilege, the needed stack frame
+ * was created on MSP by SVC used for deprivileging. */
+void UVISOR_NAKED virq_gateway_return(uint32_t svc_sp, uint32_t svc_pc)
+{
+    /* Return to handler mode with MSP using a basic stack frame. */
+    asm volatile(
+        "ldr lr, =0xfffffff1\n"
+        "bx lr\n"
+    );
+}
+
 /** Perform a context switch-in as a result of an interrupt request.
  *
  * @internal

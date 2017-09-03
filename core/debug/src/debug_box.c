@@ -39,6 +39,51 @@ void debug_reboot(TResetReason reason)
 
 uint32_t g_debug_interrupt_sp[UVISOR_MAX_BOXES];
 
+void debug_print(const uint8_t * message_buffer, uint32_t size)
+{
+    /* Abort printing if debug box wasn't initialized yet. */
+    if (!g_debug_box.initialized) {
+        return;
+    }
+
+    /* Debug print relies on "deprivilege and return" flow that will currently
+     * only work if:
+     * - executed with exceptions enabled
+     * - executed from within the exception context, i.e. when IPSR isn't 0
+     * - the current exception priority is lower than of Hard Fault
+     * These limitation are dictated by the fact that SVC is used for
+     * deprivileging and in order for it to work SVC must be executed with
+     * exceptions enabled and its priority must be higher than of the current exception.
+     * SVC's priority is set to be higher than of any other exception with
+     * programmable priority but this still can't beat NMI and Hard Fault.
+     */
+
+    /* Make sure we're within an exception and exception are enabled. */
+    int exception = (int)(__get_IPSR() & 0x1FF);
+    if (!exception || __get_PRIMASK() || __get_FAULTMASK())    {
+        return;
+    }
+
+    /* Bring exception number to CMSIS format and check exception's priority. */
+    exception -= NVIC_OFFSET;
+    if (exception == NonMaskableInt_IRQn || exception == HardFault_IRQn) {
+        return;
+    }
+
+    /* Place the message on the interrupts stack allocating
+     * the size rounded up to the next value divisible by 4. */
+    uint32_t sp = g_debug_interrupt_sp[g_debug_box.box_id];
+    g_debug_interrupt_sp[g_debug_box.box_id] -= ((size + 3) / 4) * 4;
+    void *message = (void *)g_debug_interrupt_sp[g_debug_box.box_id];
+    memcpy(message, message_buffer, size);
+
+    /* Call debug driver's print function. */
+    debug_deprivilege_and_return(g_debug_box.driver->debug_print, debug_return, (uint32_t)message, 0, 0, 0);
+
+    /* Pop the message off the stack. */
+    g_debug_interrupt_sp[g_debug_box.box_id] = sp;
+}
+
 void debug_halt_error(THaltError reason, const THaltInfo *halt_info)
 {
     static int debugged_once_before = 0;
@@ -49,7 +94,7 @@ void debug_halt_error(THaltError reason, const THaltInfo *halt_info)
     if (!g_debug_box.initialized || debugged_once_before) {
         while (1);
     } else {
-        /* Remember that debug_deprivilege_and_return() has been called once. */
+        /* Remember that debug_deprivilege_and_die() has been called once. */
         debugged_once_before = 1;
 
         /* Place the halt info on the interrupt stack. */

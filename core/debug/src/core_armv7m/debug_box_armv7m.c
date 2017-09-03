@@ -68,3 +68,50 @@ void debug_deprivilege_and_die(void * debug_handler, void * return_handler,
      * debug_handler, return_handler will be executed. */
     return;
 }
+
+/* This function is called by the user to return to uvisor after deprivileging. */
+void UVISOR_NAKED UVISOR_NORETURN debug_return(void)
+{
+    asm volatile(
+        "svc %[retn]"
+
+        ::[retn] "i" ((UVISOR_SVC_ID_RETURN) & 0xFF)
+    );
+}
+
+void debug_deprivilege_and_return(void * debug_handler, void * return_handler,
+                                  uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3)
+{
+    /* We're going to switch into the debug box. */
+    uint8_t dst_id = g_debug_box.box_id;
+
+    /* Use the interrupt stack during deprivileging. */
+    g_context_current_states[dst_id].sp = g_debug_interrupt_sp[dst_id];
+
+    /* Forge the stack frame for deprivileging with up to 4 parameters to pass. */
+    uint32_t dst_sp = context_forge_exc_sf(0, dst_id, (uint32_t)debug_handler, (uint32_t)return_handler, xPSR_T_Msk, 0);
+    ((uint32_t *)dst_sp)[0] = a0;
+    ((uint32_t *)dst_sp)[1] = a1;
+    ((uint32_t *)dst_sp)[2] = a2;
+    ((uint32_t *)dst_sp)[3] = a3;
+
+    context_switch_in(CONTEXT_SWITCH_FUNCTION_DEBUG, dst_id, __get_PSP(), dst_sp);
+
+    /* Save the current context on the stack, deprivilege and restore the context upon return. */
+    asm volatile(
+        /* Save general purpose registers that won't be saved by the following SVC. */
+        "push {r4 - r11}\n"
+        
+        /* Execute SVC that will perform the deprivileging. */
+        "svc %[depriv]\n"
+        
+        /* We'll return to this point after reprivileging.
+         * At this moment a part of the context will be restored from the stack frame created by the above SVC.
+         * The remaining general purpose registers will be restored now. */
+        "pop {r4 - r11}\n"
+
+        ::[depriv] "i" ((UVISOR_SVC_ID_DEPRIVILEGE) & 0xFF)
+    );
+
+    context_switch_out(CONTEXT_SWITCH_FUNCTION_DEBUG);
+}

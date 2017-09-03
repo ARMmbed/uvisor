@@ -58,6 +58,9 @@ extern void virq_switch(uint8_t src_id, uint8_t dst_id);
 /** Add an IRQ ACL. */
 void virq_acl_add(uint8_t box_id, uint32_t irqn);
 
+void UVISOR_NAKED virq_gateway_return(uint32_t svc_sp, uint32_t svc_pc);
+void UVISOR_NAKED virq_gateway_deprivilege(uint32_t svc_sp, uint32_t svc_pc);
+
 /** Perform a context switch-in as a result of an interrupt request.
  *
  * This function uses information from an SVCall to retrieve an interrupt

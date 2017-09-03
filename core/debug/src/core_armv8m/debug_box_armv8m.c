@@ -37,7 +37,21 @@ void debug_deprivilege_and_die(void * debug_handler, void * return_handler,
 
     /* De-privilege, call the debug box handler, re-privilege, call the return
      * handler. */
+    /* FIXME: the below way of deprivileging may be problematic when executed from an exception handler
+     * since we're going to stay in the context of the exception with IPSR reflecting that.
+     * We need to do deprivileging in a way similar to ARMv7 when an exception frame is forged
+     * for that purpose. */
     uint32_t caller = UVISOR_GET_NS_ALIAS(UVISOR_GET_NS_ADDRESS((uint32_t) debug_handler));
     SECURE_TRANSITION_S_TO_NS(caller, a0, a1, a2, a3);
     ((void (*)(void)) return_handler)();
+}
+
+/* FIXME: replace these stubs by the actual implementation. */
+void UVISOR_NAKED UVISOR_NORETURN debug_return(void)
+{
+}
+
+void debug_deprivilege_and_return(void * debug_handler, void * return_handler,
+                                  uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3)
+{
 }

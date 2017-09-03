@@ -91,7 +91,7 @@
 
 /* SVC immediate values for hardcoded table (call from unprivileged) */
 #define UVISOR_SVC_ID_UNVIC_OUT           UVISOR_SVC_FIXED_TABLE(0, 0)
-/* Deprecated: UVISOR_SVC_ID_CX_IN(nargs) UVISOR_SVC_FIXED_TABLE(1, nargs) */
+#define UVISOR_SVC_ID_RETURN              UVISOR_SVC_FIXED_TABLE(1, 0)
 /* Deprecated: UVISOR_SVC_ID_CX_OUT       UVISOR_SVC_FIXED_TABLE(2, 0) */
 #define UVISOR_SVC_ID_REGISTER_GATEWAY    UVISOR_SVC_FIXED_TABLE(3, 0)
 #define UVISOR_SVC_ID_BOX_INIT_FIRST      UVISOR_SVC_FIXED_TABLE(4, 0)
@@ -99,5 +99,6 @@
 
 /* SVC immediate values for hardcoded table (call from privileged) */
 #define UVISOR_SVC_ID_UNVIC_IN         UVISOR_SVC_FIXED_TABLE(0, 0)
+#define UVISOR_SVC_ID_DEPRIVILEGE      UVISOR_SVC_FIXED_TABLE(1, 0)
 
 #endif /* __UVISOR_API_SVC_EXPORTS_H__ */

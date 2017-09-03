@@ -135,7 +135,11 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
         ".align 4\n"                                // the jump table must be aligned
     "jump_table_unpriv:\n"
         ".word  virq_gateway_out\n"
+#ifdef NDEBUG
         ".word  __svc_not_implemented\n" // Deprecated: secure_gateway_in
+#else /*NDEBUG*/
+        ".word  virq_gateway_return\n"
+#endif /*NDEBUG*/
         ".word  __svc_not_implemented\n" // Deprecated: secure_gateway_out
         ".word  register_gateway_perform_operation\n"
         ".word  box_init_first\n"
@@ -208,7 +212,11 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
         ".align 4\n"                                // the jump table must be aligned
     "jump_table_priv:\n"
         ".word  virq_gateway_in\n"
+#ifdef NDEBUG
         ".word  __svc_not_implemented\n"
+#else /*NDEBUG*/
+        ".word  virq_gateway_deprivilege\n"
+#endif /*NDEBUG*/
         ".word  __svc_not_implemented\n"
         ".word  __svc_not_implemented\n"
         ".word  __svc_not_implemented\n"
