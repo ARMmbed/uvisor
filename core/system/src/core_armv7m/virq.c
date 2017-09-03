@@ -519,17 +519,17 @@ void virq_init(uint32_t const * const user_vtor)
      * levels. */
     assert(__UVISOR_NVIC_MIN_PRIORITY < UVISOR_VIRQ_MAX_PRIORITY);
 
-    /* Set the priority of each exception. SVC is lower priority than
-     * MemManage, BusFault, UsageFault, and SecureFault_IRQn, so that we can
-     * recover from security violations more simply. */
+    /* Set the priority of each exception. SVC is set to higher priority than
+     * MemManage, BusFault, UsageFault so that it can be used for deprivileging
+     * and reprivileging from their exception handlers. */
     static const uint32_t priority_0 = __UVISOR_NVIC_MIN_PRIORITY - 2;
     static const uint32_t priority_1 = __UVISOR_NVIC_MIN_PRIORITY - 1;
     assert(priority_0 < __UVISOR_NVIC_MIN_PRIORITY);
     assert(priority_1 < __UVISOR_NVIC_MIN_PRIORITY);
-    NVIC_SetPriority(MemoryManagement_IRQn, priority_0);
-    NVIC_SetPriority(BusFault_IRQn, priority_0);
-    NVIC_SetPriority(UsageFault_IRQn, priority_0);
-    NVIC_SetPriority(SVCall_IRQn, priority_1);
+    NVIC_SetPriority(MemoryManagement_IRQn, priority_1);
+    NVIC_SetPriority(BusFault_IRQn, priority_1);
+    NVIC_SetPriority(UsageFault_IRQn, priority_1);
+    NVIC_SetPriority(SVCall_IRQn, priority_0);
     NVIC_SetPriority(DebugMonitor_IRQn, __UVISOR_NVIC_MIN_PRIORITY);
     NVIC_SetPriority(PendSV_IRQn, UVISOR_VIRQ_MAX_PRIORITY);
     NVIC_SetPriority(SysTick_IRQn, UVISOR_VIRQ_MAX_PRIORITY);
