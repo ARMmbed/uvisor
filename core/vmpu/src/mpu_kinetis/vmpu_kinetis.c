@@ -72,6 +72,11 @@ uint32_t vmpu_sys_mux_handler(uint32_t lr, uint32_t msp)
         halt_info = &info;
     }
 
+    /* If we have a Hard Fault due to the Bus Fault escalation we'll try to treat it as the Bus Fault. */
+    if (ipsr == HardFault_IRQn && (SCB->HFSR & SCB_HFSR_FORCED_Msk) && VMPU_SCB_BFSR) {
+        ipsr = BusFault_IRQn;
+    }
+
     switch (ipsr) {
         case NonMaskableInt_IRQn:
             HALT_ERROR_EXTENDED(NOT_IMPLEMENTED, halt_info, "No NonMaskableInt IRQ handler registered.");
