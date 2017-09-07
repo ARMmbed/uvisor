@@ -75,7 +75,7 @@ static void context_state_push(TContextSwitchType context_type, uint8_t src_id, 
 static TContextPreviousState * context_state_pop(void)
 {
     /* Check that the state stack does not underflow. */
-    if (!g_context_p) {
+    if (0 == g_context_p) {
         HALT_ERROR(SANITY_CHECK_FAILED, "Context state stack underflow");
     }
 
@@ -87,7 +87,7 @@ static TContextPreviousState * context_state_pop(void)
 /* Return a pointer to the previous box context state. */
 TContextPreviousState * context_state_previous(void)
 {
-    if (!g_context_p) {
+    if (0 == g_context_p) {
         /* There is no previous state */
         return NULL;
     } else {

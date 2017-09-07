@@ -282,7 +282,7 @@ void vmpu_switch(uint8_t src_box, uint8_t dst_box)
 
     /* Only write stack and context ACL for secure boxes. */
     if (dst_box) {
-        assert(dst_count);
+        assert(dst_count > 0);
         /* Push the stack and context protection ACL into ARMv7M_MPU_REGIONS_STATIC. */
         vmpu_mpu_push(region, 255);
         region++;
