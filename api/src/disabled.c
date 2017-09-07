@@ -80,7 +80,7 @@ TUserIrq g_uvisor_disabled_vectors[NVIC_VECTORS];
 
 static void __not_implemented(void)
 {
-    while(1);
+    uvisor_noreturn();
 }
 
 static void uvisor_disabled_init_context(void)

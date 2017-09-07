@@ -77,5 +77,5 @@ void halt_line(const char *file, uint32_t line, THaltError reason,
 void halt_user_error(THaltUserError reason)
 {
     /* Die. */
-    while(1);
+    uvisor_noreturn();
 }
