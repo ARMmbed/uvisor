@@ -40,13 +40,21 @@ $ mbed compile -m ${your_target} -t GCC_ARM -c --profile mbed-os/tools/profiles/
 
 The `--profile mbed-os/tools/profiles/debug.json` option ensures that the build system enables debug symbols and disables optimizations. In addition, it ensures the selection of the debug build of uVisor, which enables the uVisor runtime messages.
 
-Now start the GDB server. This step changes depending on which debugger you are using. If you are using a J-Link debugger, run:
+Now start the GDB server. This step changes depending on which debugger you are using.
 
-```bash
-$ JLinkGDBServer -device ${device_name} -if ${interface}
-```
+* If you are using a J-Link debugger, run:
 
-In the command above, `${device_name}` and `${interface}` are J-Link-specific. Please see the [J-Link documentation](https://www.segger.com/admin/uploads/productDocs/UM08001_JLink.pdf) and the list of [supported devices](https://www.segger.com/jlink_supported_devices.html).
+  ```bash
+  $ JLinkGDBServer -device ${device_name} -if ${interface}
+  ```
+
+  In the command above, `${device_name}` and `${interface}` are J-Link-specific. Please see the [J-Link documentation](https://www.segger.com/admin/uploads/productDocs/UM08001_JLink.pdf) and the list of [supported devices](https://www.segger.com/jlink_supported_devices.html).
+
+* If you are using a PyOCD debugger, run:
+
+  ```bash
+  $ pyocd-gdbserver --semihosting
+  ```
 
 To flash the device, use GDB, even if your device allows drag and drop flashing. This allows you to potentially group several commands together into a startup GDB script.
 
@@ -60,22 +68,47 @@ License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
 (gdb) ...
 ```
 
-The following is the minimum set of commands you need to send to the device to flash and run the binary (replace '2331' by '3333' if you use pyOCD or OpenOCD as a debug server):
+The following is the minimum set of commands you need to send to the device to flash and run the binary:
 
-```bash
-(gdb) target remote localhost:2331
-(gdb) monitor endian little
-(gdb) monitor reset
-(gdb) monitor halt
-(gdb) monitor semihosting enable
-(gdb) monitor speed 1000
-(gdb) monitor loadbin BUILD/${target}/${your_app}.bin 0
-(gdb) monitor flash device = ${device_name}
-(gdb) load BUILD/${target}/${your_app}.elf
-(gdb) file BUILD/${target}/${your_app}.elf
-(gdb) call uvisor_api.debug_semihosting_enable()
-```
-the call to 'uvisor_api.debug_semihosting_enable' is required to enable semihosting debug printing.
+* For J-Link debugger:
+
+  ```bash
+  (gdb) target remote localhost:2331
+  (gdb) monitor endian little
+  (gdb) monitor reset
+  (gdb) monitor halt
+  (gdb) monitor semihosting enable
+  (gdb) monitor speed 1000
+  (gdb) monitor loadbin BUILD/${target}/${your_app}.bin 0
+  (gdb) monitor flash device = ${device_name}
+  (gdb) load BUILD/${target}/${your_app}.elf
+  (gdb) file BUILD/${target}/${your_app}.elf
+  (gdb) call uvisor_api.debug_semihosting_enable()
+  ```
+
+* For PyOCD debugger:
+
+  ```bash
+  (gdb) target remote localhost:3333
+  (gdb) monitor reset
+  (gdb) monitor halt
+  (gdb) load BUILD/${target}/${your_app}.elf
+  (gdb) file BUILD/${target}/${your_app}.elf
+  (gdb) call uvisor_api.debug_semihosting_enable()
+  ```
+
+---
+**IMPORTANT**
+* The call to `uvisor_api.debug_semihosting_enable()` is required to enable semihosting debug printing from uVisor core.
+  The reason for this "safety latch" is that the device faults on semihosting prints while the debugger is not connected.
+  On some devices it's hard to reliably discover whether a debugger is connected, so semihosting prints are disabled by default.
+  You can enable them by calling `uvisor_api.debug_semihosting_enable()` from the debugger.
+
+* If you also wish to debug the uVisor core, you must add the uVisor symbols:
+  ```bash
+  (gdb) add-symbol-file mbedos/features/FEATURE_UVISOR/importer/TARGET_IGNORE/uvisor/platform/${family}/debug/configuration_${family}_${core_version}_${sram_origin}.elf __uvisor_main_start
+  ```
+---
 
 From here on, if you send the `c` command, the program will run indefinitely. Of course, you can configure other addresses and ports for the target. Please refer to the [GDB documentation](http://www.gnu.org/software/gdb/documentation/) for details about the GDB commands.
 
@@ -152,3 +185,54 @@ If you are using ST-LINK, please refer to the [STMicroelectronics website](http:
 
 If instead you want to connect your debugger to the JTAG port, you must wire the needed pins to your connector. This [guide](https://www.segger.com/admin/uploads/evalBoardDocs/AN00015_ConnectingJLinkToSTM32F429Discovery.pdf) explains how to do that in detail. The guide is specific to the J-Link connectors, but you can apply it to other connectors.
 
+## Debugging with Eclipse
+
+* Make sure [GNU ARM Eclipse plugins](http://gnuarmeclipse.sourceforge.net/updates) are installed. You can install them with:
+
+  `help -> Install New software -> Add http://gnuarmeclipse.sourceforge.net/updates`
+
+### Eclipse PyOCD debugger configuration
+
+* Create a new *GDB PyOCD Debugging* configuration (or *GDB SEGGER J-Link Debugging* for J-Link debugger):
+
+  `Run -> Debug configurations -> New`
+  
+  ![](../img/new_pyocd_cfg.png)
+  
+* **Main** tab configuration
+  * Give the path to the `.elf` of the application in *C/C++ Application*.
+  * Set *Disable auto build* if your eclipse project does not build the application.
+  
+  ![](../img/pyocd_cfg_main.png)
+  
+* **Debugger** tab configuration
+  * PyOCD
+    * Keep *pyOCD Setup* as is (make sure `${pyocd_path}` is set to the correct path in *Variables...*).
+    * In *GDB Client Setup*, set the *Executable* to **arm-none-eabi-gdb** (which needs to be in the `PATH`).
+  
+    ![](../img/pyocd_cfg_debugger.png)
+
+  * J-Link
+    * Keep *J-Link GDB Server Setup* as is (make sure `${jlink_path}` is set to the correct path in *Variables...*).
+    * In *Device name*, write the device name.
+    * In *GDB Client Setup*, set the *Executable* to **arm-none-eabi-gdb** (which needs to be in the `PATH`).
+  
+    ![](../img/jlink_cfg_debugger.png)
+  
+* **Startup** tab configuration
+  * In *load Symbols and Executable*, set both to the location of the application `.elf` file.
+  * In *Run/Restart Commands*, add `call uvisor_api.debug_semihosting_enable()` to the text box.
+    * If you also wish to debug the uVisor core, you must add the uVisor symbols, so add this to the text box:
+    ```bash
+    add-symbol-file mbedos/features/FEATURE_UVISOR/importer/TARGET_IGNORE/uvisor/platform/${family}/debug/configuration_${family}_${core_version}_${sram_origin}.elf __uvisor_main_start
+    ```
+  * For J-link debugger, unset the *Enable SWO* checkbox.
+  
+  **PyOCD**
+  
+  ![](../img/pyocd_cfg_startup.png)
+
+  **J-Link**
+  
+  ![](../img/jlink_cfg_startup.png)
+* Now press **Debug**, and the debugger starts and stops at a breakpoint in `main()`.
