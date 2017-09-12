@@ -1,10 +1,10 @@
-# The uVisor
+# The Arm Mbed uVisor
 
 [![Build Status](https://travis-ci.org/ARMmbed/uvisor.svg?branch=master)](https://travis-ci.org/ARMmbed/uvisor)
 
-The uVisor is a self-contained software hypervisor that creates independent secure domains on ARM Cortex&reg;-M3 and Cortex&reg;-M4 microcontrollers. It increases resilience against malware and protects secrets from leaking even among different modules of the same application. You can find a [high-level overview here](http://www.slideshare.net/FoolsDelight/practical-realtime-operating-system-security-for-the-masses) ([Download PDF](https://github.com/ARMmbed/uvisor/raw/docs/uVisorSecurity-TechCon2016.pdf)).
+The uVisor is a self-contained software hypervisor that creates independent secure domains on Arm Cortex&reg;-M3 and Cortex&reg;-M4 microcontrollers. It increases resilience against malware and protects secrets from leaking even among different modules of the same application. You can find a [high-level overview here](http://www.slideshare.net/FoolsDelight/practical-realtime-operating-system-security-for-the-masses) ([Download PDF](https://github.com/ARMmbed/uvisor/raw/docs/uVisorSecurity-TechCon2016.pdf)).
 
-To start using uVisor, you need to include it as a library in your design. We release the uVisor library periodically into the mbed OS repository, [ARMmbed/mbed-os](https://github.com/ARMmbed/mbed-os).
+To start using uVisor, you need to include it as a library in your design. We release the uVisor library periodically into the Mbed OS repository, [ARMmbed/mbed-os](https://github.com/ARMmbed/mbed-os).
 
 You can find most of the uVisor documentation in the [docs](docs) folder. Please look at the [getting started guide](docs/lib/QUICKSTART.md) for an introduction to uVisor application development. If you are interested in uVisor internals, please refer to the [OS-level introduction](https://github.com/ARMmbed/uvisor/raw/docs/uvisor-rtos-docs.pdf) and the [uVisor API docs](docs/lib/API.md).
 
@@ -27,9 +27,9 @@ You can find some of the open uVisor issues here:
 
 ### Further reading
 
-- [Practical real-time operating system security for the masses](https://github.com/ARMmbed/uvisor/raw/docs/uVisorSecurity-TechCon2016.pdf): ARM TechCon 2016 PDF presentation of the uVisor design philosophy and technical overview.
-- [mbed uVisor integration in mbed OS](https://github.com/ARMmbed/uvisor/raw/docs/uvisor-rtos-docs.pdf) in PDF format.
-- [Q&A with ARM](http://eecatalog.com/IoT/2015/08/18/qa-with-arm-securing-the-iot-using-arm-cortex-processors-and-a-growing-mbed-platform-suite/): Securing the IoT using ARM Cortex&reg; processors and a growing mbed platform suite.
+- [Practical real-time operating system security for the masses](https://github.com/ARMmbed/uvisor/raw/docs/uVisorSecurity-TechCon2016.pdf): Arm TechCon 2016 PDF presentation of the uVisor design philosophy and technical overview.
+- [Mbed uVisor integration in Mbed OS](https://github.com/ARMmbed/uvisor/raw/docs/uvisor-rtos-docs.pdf) in PDF format.
+- [Q&A with Arm](http://eecatalog.com/IoT/2015/08/18/qa-with-arm-securing-the-iot-using-arm-cortex-processors-and-a-growing-mbed-platform-suite/): Securing the IoT using Arm Cortex&reg; processors and a growing mbed platform suite.
 
 ### Supported platforms
 
@@ -39,11 +39,11 @@ The uVisor core supports the following platforms:
 - [STMicroelectronics STM32F429I-DISCO](http://www.st.com/web/catalog/tools/FM116/SC959/SS1532/PF259090).
 - [Silicon Labs EFM32 Gecko](http://www.silabs.com/products/mcu/32-bit/efm32-gecko/pages/efm32-gecko.aspx) (Cortex&reg;-M3 and Cortex&reg;-M4 devices).
 
-To use uVisor on a specific OS, you must complete the porting process for that OS. This requires an additional porting step, which the [uVisor porting guide for mbed OS](docs/core/PORTING.md) documents. 
+To use uVisor on a specific OS, you must complete the porting process for that OS. This requires an additional porting step, which the [uVisor porting guide for Mbed OS](docs/core/PORTING.md) documents. 
 
-Currently, uVisor only supports mbed OS.
+Currently, uVisor only supports Mbed OS.
 
-The Launchpad [GNU ARM Embedded](https://launchpad.net/gcc-arm-embedded) Toolchain builds the uVisor prelinked binary images. Currently, uVisor only supports applications built with this toolchain. The minimum required version is 5.4-2016q3.
+The Launchpad [GNU Arm Embedded](https://launchpad.net/gcc-arm-embedded) Toolchain builds the uVisor prelinked binary images. Currently, uVisor only supports applications built with this toolchain. The minimum required version is 5.4-2016q3.
 
 ## The uVisor design philosophy
 
@@ -63,7 +63,7 @@ The uVisor:
 
 - Is initialized right after device startup.
 - Runs in privileged mode.
-- Sets up a protected environment using a Memory Protection Unit (MPU), such as the ARM Cortex&reg;-M MPU or a vendor-specific alternative. In particular:
+- Sets up a protected environment using a Memory Protection Unit (MPU), such as the Arm Cortex&reg;-M MPU or a vendor-specific alternative. In particular:
     - Its own memories and the security-critical peripherals are protected from the unprivileged code.
     - Access Control Lists (ACLs) limit unprivileged access to selected hardware peripherals and memories.
 - Allows interaction from the unprivileged code by exposing SVCall-based APIs.
@@ -141,7 +141,7 @@ The uVisor is initialized right after device startup and takes ownership of its 
         - Access Control Lists (ACLs) are registered.
         - Stacks are initialized.
         - A private box context is initialized, if required.
-    - The MPU (ARM or third-party) is configured.
+    - The MPU (Arm or third-party) is configured.
 1. Privileged and unprivileged stack pointers are initialized.
 1. Execution is deprivileged and handed over to the unprivileged code.
 
