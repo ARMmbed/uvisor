@@ -177,6 +177,18 @@ The OpenSDA port provides a debugger interface, which is compatible with the Seg
 
 To use the JTAG port instead, download the tools and drivers for the debugger of your choice.
 
+#### ULINKpro configuration for NXP FRDM-K64F
+
+Configure the NXP FRDM-K64F according to the pdf document from the Arm Keil [application note](http://www.keil.com/appnotes/docs/apnt_287.asp).
+
+In order to add an example to uVision, run the `mbed export -i UVISION5 -m K64F` command, and open the project from uVision with the `.uvprojx` file created.
+For more information, check [Exporting to uVision](https://developer.mbed.org/handbook/Exporting-to-uVision).
+
+The application note describes the configuration for most ULINKpro features. It does not include a description of Instruction trace, which cortex-M devices [do not officially support](http://www.keil.com/support/man/docs/ulinkpro/ulinkpro_trace_instruction_trace.htm)  You can bypass this with the PC SAMPLING option, which the image below describes.
+
+![](../img/ULINKpro.png)
+
+Choose a prescaler, so the period is shorter than the core clock time (1/frequency). The core clock frequency is set to 120MHz, so the core clock time is 8.3us. The period should be shorter than 8.3us (prescaler of 64x15 provides a period of 8us). Mark Periodic, and approve.
 ### STMicroelectronics STM32F429I-DISCO
 
 This board provides both an on-board proprietary debugging port (ST-LINK) and a JTAG port. The latter is spread out across the GPIO pins on the board.
