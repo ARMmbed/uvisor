@@ -37,7 +37,7 @@ static void uvisor_sanity_check_api_load(void)
          * uVisor API working. */
 
         /* We can't call uvisor_error either, because the API is messed up. */
-        for (;;);
+        uvisor_noreturn();
     }
 }
 
@@ -47,7 +47,7 @@ static void uvisor_sanity_check_api_version()
     if (uvisor_api.get_version(UVISOR_API_VERSION) != UVISOR_API_VERSION) {
         /* We can't call any uVisor APIs other than get_version (which is a
          * backwards and forwards compatible API), so we must halt. */
-        for (;;);
+        uvisor_noreturn();
     }
 }
 

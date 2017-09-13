@@ -47,7 +47,7 @@ void debug_halt_error(THaltError reason, const THaltInfo *halt_info)
     /* If the debug box does not exist (or it has not been initialized yet), or
      * the debug box was already called once, just loop forever. */
     if (!g_debug_box.initialized || debugged_once_before) {
-        while (1);
+        uvisor_noreturn();
     } else {
         /* Remember that debug_deprivilege_and_return() has been called once. */
         debugged_once_before = 1;

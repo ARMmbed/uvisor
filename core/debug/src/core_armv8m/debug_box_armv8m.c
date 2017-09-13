@@ -22,7 +22,7 @@
 
 void debug_die(void)
 {
-    while (1);
+    uvisor_noreturn();
 }
 
 /* Note: On ARMv8-M the return_handler is executed in S mode. */
