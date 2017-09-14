@@ -136,9 +136,9 @@ uint32_t vmpu_round_up_region(uint32_t addr, uint32_t size)
 
 uint8_t vmpu_region_bits(uint32_t size)
 {
-    uint8_t bits;
+    assert(0 != size);
 
-    bits = vmpu_bits(size) - 1;
+    uint8_t bits = vmpu_bits(size) - 1;
 
     /* round up if needed */
     if((1UL << bits) != size) {
