@@ -144,7 +144,7 @@ static int ipc_waitfor(int (*cond)(uint32_t have, uint32_t expect), uint32_t wai
 /* We have at least one of what we expect. */
 static int any(uint32_t have, uint32_t expect)
 {
-    return have & expect;
+    return (expect == 0) || have & expect;
 }
 
 /* We have at least all of what we expect (and maybe more). */
