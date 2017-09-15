@@ -190,6 +190,21 @@ static bool ipc_io_is_ok(int box_id, const uvisor_ipc_io_t * io) {
            vmpu_buffer_access_is_ok(box_id, io->msg, io->desc->len);
 }
 
+static bool ipc_io_token_is_ok(uvisor_ipc_t * ipc, const uvisor_ipc_io_t * io) {
+    const uint32_t token = io->desc->token;
+    if (__builtin_popcount(token) != 1) {
+        return false;
+    }
+    UvisorSpinlock * lock = &ipc->tokens_lock;
+    bool status = false;
+    if (!uvisor_spin_trylock(lock)) {
+        return status;
+    }
+    status = (token & ipc->allocated_tokens) == token;
+    uvisor_spin_unlock(lock);
+    return status;
+}
+
 void ipc_drain_queue(void)
 {
     uint8_t send_box_id = g_active_box;
@@ -248,6 +263,12 @@ void ipc_drain_queue(void)
         if (!ipc_io_is_ok(send_box_id, send_io)) {
             /* The IO is not entirely within the send box. Ignore it, and don't
              * put it back. This shouldn't happen in a non-malicious box. */
+            continue;
+        }
+
+        if (!ipc_io_token_is_ok(send_ipc, send_io)) {
+            /* The token of the send IO is invalid. Ignore it, don't put it
+             * back. This shouldn't happen in a non-malicious box. */
             continue;
         }
 
@@ -313,8 +334,17 @@ void ipc_drain_queue(void)
          * of the descriptor, and clearing of the token. */
         uvisor_ipc_io_t * recv_io = &recv_array[recv_slot];
         if (!ipc_io_is_ok(recv_box_id, recv_io)) {
-            /* The IO is not entirely within the send box. Ignore it, and don't
-             * put it back. */
+            /* The receive IO is not entirely within the send box. Ignore it,
+             * and don't put it back. Put the send IO back because it is not
+             * malicious. */
+            put_it_back(send_queue, send_slot);
+            continue;
+        }
+
+        if (!ipc_io_token_is_ok(recv_ipc, recv_io)) {
+            /* The token of the receive IO is invalid. Ignore it, don't put it
+             * back. This shouldn't happen in a non-malicious box. Put the send
+             * IO back because it is not malicious. */
             put_it_back(send_queue, send_slot);
             continue;
         }
