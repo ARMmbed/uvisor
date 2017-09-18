@@ -34,7 +34,7 @@ UVISOR_EXTERN const uint32_t jump_table_priv_end;
 /* default function for not implemented handlers */
 void __svc_not_implemented(void)
 {
-    HALT_ERROR(NOT_IMPLEMENTED, "function not implemented\n\r");
+    HALT_ERROR(NOT_IMPLEMENTED, "function not implemented\n");
 }
 
 /* SVC handlers */
@@ -135,7 +135,7 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
         ".align 4\n"                                // the jump table must be aligned
     "jump_table_unpriv:\n"
         ".word  virq_gateway_out\n"
-        ".word  __svc_not_implemented\n" // Deprecated: secure_gateway_in
+        ".word  debug_uvisor_return\n"
         ".word  __svc_not_implemented\n" // Deprecated: secure_gateway_out
         ".word  register_gateway_perform_operation\n"
         ".word  box_init_first\n"
@@ -208,7 +208,7 @@ void UVISOR_NAKED SVCall_IRQn_Handler(void)
         ".align 4\n"                                // the jump table must be aligned
     "jump_table_priv:\n"
         ".word  virq_gateway_in\n"
-        ".word  __svc_not_implemented\n"
+        ".word  debug_uvisor_deprivilege\n"
         ".word  __svc_not_implemented\n"
         ".word  __svc_not_implemented\n"
         ".word  __svc_not_implemented\n"

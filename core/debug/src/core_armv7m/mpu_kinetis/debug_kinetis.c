@@ -36,9 +36,9 @@ static void debug_fault_mpu(void)
                 ear = MPU->SP[4 - s].EAR;
                 eacd = edr >> 20;
 
-                dprintf("* MPU FAULT:\n\r");
-                dprintf("  Slave port:       %d\n\r", 4 - s);
-                dprintf("  Address:          0x%08X\n\r", ear);
+                dprintf("* MPU FAULT:\n");
+                dprintf("  Slave port:       %d\n", 4 - s);
+                dprintf("  Address:          0x%08X\n", ear);
                 dprintf("  Faulting regions: ");
                 found = 0;
                 for(r = 11; r >= 0; r--)
@@ -47,20 +47,20 @@ static void debug_fault_mpu(void)
                     {
                         if(!found)
                         {
-                            dprintf("\n\r");
+                            default_putc('\n');
                             found = 1;
                         }
                         dprintf("    R%02d:", 11 - r);
                         for (i = 0; i < 4; i++) {
                             dprintf(" 0x%08X", MPU->WORD[11 - r][i]);
                         }
-                        dprintf("\n\r");
+                        default_putc('\n');
                     }
                 }
                 if(!found)
-                    dprintf("[none]\n\r");
-                dprintf("  Master port:      %d\n\r", (edr >> 4) & 0xF);
-                dprintf("  Error attribute:  %s %s (%s mode)\n\r",
+                    dprintf("[none]\n");
+                dprintf("  Master port:      %d\n", (edr >> 4) & 0xF);
+                dprintf("  Error attribute:  %s %s (%s mode)\n",
                         edr & 0x2 ? "Data" : "Instruction",
                         edr & 0x1 ? "WRITE" : "READ",
                         edr & 0x4 ? "supervisor" : "user");
@@ -70,9 +70,9 @@ static void debug_fault_mpu(void)
     }
     else
     {
-        dprintf("* No MPU violation found\n\r");
+        dprintf("* No MPU violation found\n");
     }
-    dprintf("\n\r");
+    default_putc('\n');
 }
 
 void debug_mpu_config(void)
@@ -93,7 +93,7 @@ void debug_mpu_config(void)
     for (i = 0; i < 5; i++) {
         dprintf(" 0x%08X", MPU->SP[i].EDR);
     }
-    dprintf("\n");
+    default_putc('\n');
     /* region descriptors */
     dprintf("       Start      End        Perm.      Valid\n");
     for (i = 0; i < 12; i++) {
@@ -101,9 +101,9 @@ void debug_mpu_config(void)
         for (j = 0; j < 4; j++) {
             dprintf(" 0x%08X", MPU->WORD[i][j]);
         }
-        dprintf("\n");
+        default_putc('\n');
     }
-    dprintf("\n");
+    default_putc('\n');
     /* the alternate view is not printed */
 }
 

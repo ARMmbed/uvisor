@@ -244,7 +244,7 @@ uint32_t vmpu_region_add_static_acl(uint8_t box_id, uint32_t start, uint32_t siz
 
     /* check for maximum box ID */
     if (!vmpu_is_box_id_valid(box_id)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "ACL add: The box ID is out of range (%u).\r\n", box_id);
+        HALT_ERROR(SANITY_CHECK_FAILED, "ACL add: The box ID is out of range (%u).\n", box_id);
     }
 
     /* check for alignment to 32 bytes */
@@ -276,7 +276,7 @@ uint32_t vmpu_region_add_static_acl(uint8_t box_id, uint32_t start, uint32_t siz
 bool vmpu_region_get_for_box(uint8_t box_id, const MpuRegion * * const region, uint32_t * const count)
 {
     if (!g_mpu_region_count) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "No available MPU regions.\r\n");
+        HALT_ERROR(SANITY_CHECK_FAILED, "No available MPU regions.\n");
     }
 
     if (box_id < UVISOR_MAX_BOXES) {

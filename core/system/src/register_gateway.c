@@ -44,13 +44,13 @@ static int register_gateway_check(TRegisterGateway const * const register_gatewa
      * that all of it is in public flash. */
     if (!vmpu_public_flash_addr((uint32_t) register_gateway) ||
         !vmpu_public_flash_addr((uint32_t) ((void *) register_gateway + sizeof(TRegisterGateway) - 1))) {
-        DPRINTF("Register gateway 0x%08X is not in public flash.\r\n", (uint32_t) register_gateway);
+        DPRINTF("Register gateway 0x%08X is not in public flash.\n", (uint32_t) register_gateway);
         return REGISTER_GATEWAY_STATUS_ERROR_FLASH;
     }
 
     /* Verify that the register gateway magic is present. */
     if (register_gateway->magic != UVISOR_REGISTER_GATEWAY_MAGIC) {
-        DPRINTF("Register gateway 0x%08X does not contain a valid magic (0x%08X).\r\n",
+        DPRINTF("Register gateway 0x%08X does not contain a valid magic (0x%08X).\n",
                 (uint32_t) register_gateway, register_gateway->magic);
         return REGISTER_GATEWAY_STATUS_ERROR_MAGIC;
     }
@@ -61,7 +61,7 @@ static int register_gateway_check(TRegisterGateway const * const register_gatewa
      * pointer region. The subsequent substraction that we do to calculate the
      * box ID is then guaranteed to be sane. */
     if (register_gateway->box_ptr < (uint32_t) __uvisor_config.cfgtbl_ptr_start) {
-        DPRINTF("The pointer (0x%08X) in the register gateway 0x%08X is not a valid box configuration pointer.\r\n",
+        DPRINTF("The pointer (0x%08X) in the register gateway 0x%08X is not a valid box configuration pointer.\n",
                 register_gateway->box_ptr, (uint32_t) register_gateway);
         return REGISTER_GATEWAY_STATUS_ERROR_BOX_PTR;
     }
@@ -71,7 +71,7 @@ static int register_gateway_check(TRegisterGateway const * const register_gatewa
      * shared. */
     uint8_t box_id = (uint8_t) ((uint32_t *) register_gateway->box_ptr - __uvisor_config.cfgtbl_ptr_start);
     if (!(register_gateway->operation & __UVISOR_RGW_OP_SHARED_MASK) && (box_id != g_active_box)) {
-        DPRINTF("Register gateway is owned by box %d, while the active box is %d.\r\n", box_id, g_active_box);
+        DPRINTF("Register gateway is owned by box %d, while the active box is %d.\n", box_id, g_active_box);
         return REGISTER_GATEWAY_STATUS_ERROR_BOX_ID;
     }
 
@@ -82,7 +82,7 @@ static int register_gateway_check(TRegisterGateway const * const register_gatewa
     if (((address & VMPU_PERIPH_FULL_MASK) != VMPU_PERIPH_START) &&
         ((address & VMPU_ROMTABLE_MASK) != VMPU_ROMTABLE_START)) {
         DPRINTF("Register gateways can only target the peripheral or ROM Table memory regions. "
-                "Address 0x%08X not allowed.\r\n", address);
+                "Address 0x%08X not allowed.\n", address);
         return REGISTER_GATEWAY_STATUS_ERROR_ADDRESS;
     }
 

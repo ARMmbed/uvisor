@@ -24,7 +24,7 @@ void unused_v8m_ignore(void)
 
 void unused_v8m_halt(void)
 {
-    HALT_ERROR(NOT_IMPLEMENTED, "You called a function that is not implemented for ARMv8-M targets.\r\n");
+    HALT_ERROR(NOT_IMPLEMENTED, "You called a function that is not implemented for ARMv8-M targets.\n");
 }
 
 void     UVISOR_ALIAS(unused_v8m_ignore) boxes_init(void);

@@ -184,11 +184,11 @@ void context_switch_in(TContextSwitchType context_type, uint8_t dst_id, uint32_t
         if (context_type == CONTEXT_SWITCH_UNBOUND_FIRST) {
             src_id = dst_id;
         } else {
-            HALT_ERROR(SANITY_CHECK_FAILED, "Context switch: The source box ID is out of range (%u).\r\n", src_id);
+            HALT_ERROR(SANITY_CHECK_FAILED, "Context switch: The source box ID is out of range (%u).\n", src_id);
         }
     }
     if (!vmpu_is_box_id_valid(dst_id)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "Context switch: The destination box ID is out of range (%u).\r\n", dst_id);
+        HALT_ERROR(SANITY_CHECK_FAILED, "Context switch: The destination box ID is out of range (%u).\n", dst_id);
     }
 
     /* The source/destination box IDs can be the same (for example, in IRQs). */
