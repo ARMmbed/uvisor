@@ -26,53 +26,46 @@ static void debug_fault_mpu(void)
     uint32_t edr, ear, eacd;
     int s, r, i, found;
 
-    if(sperr)
-    {
-        for(s = 4; s >= 0; s--)
-        {
-            if(sperr & (1 << s))
-            {
+    if (sperr) {
+        for (s = 4; s >= 0; s--) {
+            if (sperr & (1 << s)) {
                 edr = MPU->SP[4 - s].EDR;
                 ear = MPU->SP[4 - s].EAR;
                 eacd = edr >> 20;
 
-                dprintf("* MPU FAULT:\n\r");
-                dprintf("  Slave port:       %d\n\r", 4 - s);
-                dprintf("  Address:          0x%08X\n\r", ear);
+                dprintf("* MPU FAULT:\n");
+                dprintf("  Slave port:       %d\n", 4 - s);
+                dprintf("  Address:          0x%08X\n", ear);
                 dprintf("  Faulting regions: ");
                 found = 0;
-                for(r = 11; r >= 0; r--)
-                {
-                    if(eacd & (1 << r))
-                    {
-                        if(!found)
-                        {
-                            dprintf("\n\r");
+                for (r = 11; r >= 0; r--) {
+                    if (eacd & (1 << r)) {
+                        if (!found) {
+                            dprintf("\n");
                             found = 1;
                         }
                         dprintf("    R%02d:", 11 - r);
                         for (i = 0; i < 4; i++) {
                             dprintf(" 0x%08X", MPU->WORD[11 - r][i]);
                         }
-                        dprintf("\n\r");
+                        dprintf("\n");
                     }
                 }
-                if(!found)
-                    dprintf("[none]\n\r");
-                dprintf("  Master port:      %d\n\r", (edr >> 4) & 0xF);
-                dprintf("  Error attribute:  %s %s (%s mode)\n\r",
+                if (!found) {
+                    dprintf("[none]\n");
+                }
+                dprintf("  Master port:      %d\n", (edr >> 4) & 0xF);
+                dprintf("  Error attribute:  %s %s (%s mode)\n",
                         edr & 0x2 ? "Data" : "Instruction",
                         edr & 0x1 ? "WRITE" : "READ",
                         edr & 0x4 ? "supervisor" : "user");
                 break;
             }
         }
+    } else {
+        dprintf("* No MPU violation found\n");
     }
-    else
-    {
-        dprintf("* No MPU violation found\n\r");
-    }
-    dprintf("\n\r");
+    dprintf("\n");
 }
 
 void debug_mpu_config(void)

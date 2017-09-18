@@ -34,7 +34,7 @@ UVISOR_EXTERN const uint32_t jump_table_priv_end;
 /* default function for not implemented handlers */
 void __svc_not_implemented(void)
 {
-    HALT_ERROR(NOT_IMPLEMENTED, "function not implemented\n\r");
+    HALT_ERROR(NOT_IMPLEMENTED, "function not implemented\n");
 }
 
 /* SVC handlers */

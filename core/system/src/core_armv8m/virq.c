@@ -62,13 +62,13 @@ static void virq_check_acls(uint32_t irqn, uint8_t box_id)
 {
     /* IRQn goes from 0 to (NVIC_VECTORS - 1) */
     if (irqn >= NVIC_VECTORS) {
-        HALT_ERROR(NOT_ALLOWED, "Not allowed: IRQ %d is out of range\n\r", irqn);
+        HALT_ERROR(NOT_ALLOWED, "Not allowed: IRQ %d is out of range\n", irqn);
     }
 
     /* Note: IRQs ownership is determined on a first come first served basis. */
     if (g_virq_states[irqn].box_id != UVISOR_BOX_ID_INVALID &&
         g_virq_states[irqn].box_id != box_id) {
-        HALT_ERROR(PERMISSION_DENIED, "IRQ %d is owned by box %d.\r\n",
+        HALT_ERROR(PERMISSION_DENIED, "IRQ %d is owned by box %d.\n",
                    irqn, box_id);
     }
 }

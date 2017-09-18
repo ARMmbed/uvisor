@@ -22,12 +22,12 @@
 static void debug_fault_mpu(void)
 {
     if (VMPU_SCB_MMFSR & 0x80) {
-        dprintf("* MPU FAULT\n\r");
+        dprintf("* MPU FAULT\n");
     }
     else {
-        dprintf("* No MPU violation found\n\r");
+        dprintf("* No MPU violation found\n");
     }
-    dprintf("\n\r");
+    dprintf("\n");
 }
 
 void debug_mpu_config(void)
@@ -36,22 +36,22 @@ void debug_mpu_config(void)
     char dim[][3] = {"B ", "KB", "MB", "GB"};
     int i;
 
-    dprintf("* MPU CONFIGURATION\n\r");
+    dprintf("* MPU CONFIGURATION\n");
 
     /* CTRL */
     ctrl = MPU->CTRL;
-    dprintf("\n\r");
-    dprintf("  Background region %s\n\r", ctrl & MPU_CTRL_PRIVDEFENA_Msk ?
+    dprintf("\n");
+    dprintf("  Background region %s\n", ctrl & MPU_CTRL_PRIVDEFENA_Msk ?
                                           "enabled" : "disabled");
-    dprintf("  MPU %s @NMI, @HardFault\n\r", ctrl & MPU_CTRL_HFNMIENA_Msk ?
+    dprintf("  MPU %s @NMI, @HardFault\n", ctrl & MPU_CTRL_HFNMIENA_Msk ?
                                              "enabled" : "bypassed");
-    dprintf("  MPU %s\n\r", ctrl & MPU_CTRL_PRIVDEFENA_Msk ?
+    dprintf("  MPU %s\n", ctrl & MPU_CTRL_PRIVDEFENA_Msk ?
                                   "enabled" : "disabled");
-    dprintf("\n\r");
+    dprintf("\n");
 
     /* information for each region (RBAR, RASR) */
     dregion = (MPU->TYPE & MPU_TYPE_DREGION_Msk) >> MPU_TYPE_DREGION_Pos;
-    dprintf("  Region Start      Size  XN AP  TEX S C B SRD      Valid\n\r");
+    dprintf("  Region Start      Size  XN AP  TEX S C B SRD      Valid\n");
     for(i = 0; i < dregion; ++i)
     {
         /* select region */
@@ -80,14 +80,14 @@ void debug_mpu_config(void)
                 (rasr & MPU_RASR_C_Msk)   >> MPU_RASR_C_Pos,
                 (rasr & MPU_RASR_B_Msk)   >> MPU_RASR_B_Pos,
                 (rasr & MPU_RASR_SRD_Msk) >> MPU_RASR_B_Pos);
-        dprintf("%d%d%d%d%d%d%d%d %d\n\r",
+        dprintf("%d%d%d%d%d%d%d%d %d\n",
                 (srd & 0x80) >> 0x7, (srd & 0x40) >> 0x6,
                 (srd & 0x20) >> 0x5, (srd & 0x10) >> 0x4,
                 (srd & 0x08) >> 0x3, (srd & 0x04) >> 0x2,
                 (srd & 0x02) >> 0x1, (srd & 0x01) >> 0x0,
                 rasr & MPU_RASR_ENABLE_Msk ? 1 : 0);
     }
-    dprintf("\n\r");
+    dprintf("\n");
 }
 
 void debug_fault_memmanage_hw(void)

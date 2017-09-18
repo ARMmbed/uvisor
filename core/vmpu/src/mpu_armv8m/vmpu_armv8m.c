@@ -199,7 +199,7 @@ void vmpu_switch(uint8_t src_box, uint8_t dst_box)
     uint32_t dst_count = 0;
     const MpuRegion * region;
 
-    /* DPRINTF("switching from %i to %i\n\r", src_box, dst_box); */
+    /* DPRINTF("switching from %i to %i\n", src_box, dst_box); */
 
     vmpu_mpu_invalidate();
 

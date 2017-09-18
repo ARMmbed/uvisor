@@ -53,14 +53,14 @@ static void virq_default_check(uint32_t irqn)
     if(irqn >= NVIC_VECTORS)
     {
         HALT_ERROR(NOT_ALLOWED,
-                   "Not allowed: IRQ %d is out of range\n\r", irqn);
+                   "Not allowed: IRQ %d is out of range\n", irqn);
     }
 
     /* check if uvisor does not already own the IRQn slot */
     if(g_isr_vector[NVIC_OFFSET + irqn] != &isr_default_handler)
     {
         HALT_ERROR(PERMISSION_DENIED,
-                   "Permission denied: IRQ %d is owned by uVisor\n\r", irqn);
+                   "Permission denied: IRQ %d is owned by uVisor\n", irqn);
     }
 }
 
@@ -89,13 +89,13 @@ static void virq_isr_register(uint32_t irqn)
     {
         case VIRQ_ISR_OWNER_NONE:
             g_virq_vector[irqn].id = g_active_box;
-            DPRINTF("IRQ %d registered to box %d\n\r", irqn, g_active_box);
+            DPRINTF("IRQ %d registered to box %d\n", irqn, g_active_box);
         case VIRQ_ISR_OWNER_SELF:
             return;
         default:
             break;
     }
-    HALT_ERROR(PERMISSION_DENIED, "Permission denied: IRQ %d is owned by another box!\r\n", irqn);
+    HALT_ERROR(PERMISSION_DENIED, "Permission denied: IRQ %d is owned by another box!\n", irqn);
 }
 
 void virq_acl_add(uint8_t box_id, uint32_t irqn)
@@ -103,7 +103,7 @@ void virq_acl_add(uint8_t box_id, uint32_t irqn)
     /* Only save the IRQ if it's not owned by anybody else. */
     int owner = virq_acl_check(irqn);
     if (owner == VIRQ_ISR_OWNER_OTHER) {
-        HALT_ERROR(PERMISSION_DENIED, "vIRQ: IRQ %d is already owned by box %u.\r\n", irqn, g_virq_vector[irqn].id);
+        HALT_ERROR(PERMISSION_DENIED, "vIRQ: IRQ %d is already owned by box %u.\n", irqn, g_virq_vector[irqn].id);
     }
     g_virq_vector[irqn].id = box_id;
 }
@@ -133,7 +133,7 @@ void virq_irq_enable(uint32_t irqn)
     /* If the counter of nested disable-all IRQs is set to 0, it means that
      * IRQs are not globally disabled for the current box. */
     if (!g_irq_disable_all_counter[g_active_box]) {
-        DPRINTF("IRQ %d enabled\n\r", irqn);
+        DPRINTF("IRQ %d enabled\n", irqn);
         NVIC_EnableIRQ(irqn);
     } else {
         /* We do not enable the IRQ directly, but notify uVisor to enable it
@@ -148,7 +148,7 @@ void virq_irq_disable(uint32_t irqn)
     /* This function halts if the IRQ is owned by another box or by uVisor. */
     virq_isr_register(irqn);
 
-    DPRINTF("IRQ %d disabled, but still owned by box %d\n\r", irqn, g_virq_vector[irqn].id);
+    DPRINTF("IRQ %d disabled, but still owned by box %d\n", irqn, g_virq_vector[irqn].id);
     NVIC_DisableIRQ(irqn);
     return;
 }
@@ -191,9 +191,9 @@ void virq_irq_disable_all(void)
     }
 
     if (g_irq_disable_all_counter[g_active_box] == 1) {
-        DPRINTF("All IRQs for box %d have been disabled.\r\n", g_active_box);
+        DPRINTF("All IRQs for box %d have been disabled.\n", g_active_box);
     } else {
-        DPRINTF("IRQs still disabled for box %d. Counter: %d.\r\n",
+        DPRINTF("IRQs still disabled for box %d. Counter: %d.\n",
                 g_active_box, g_irq_disable_all_counter[g_active_box]);
     }
 }
@@ -240,9 +240,9 @@ void virq_irq_enable_all(void)
     }
 
     if (!g_irq_disable_all_counter[g_active_box]) {
-        DPRINTF("All IRQs for box %d have been re-enabled.\r\n", g_active_box);
+        DPRINTF("All IRQs for box %d have been re-enabled.\n", g_active_box);
     } else {
-        DPRINTF("IRQs still disabled for box %d. Counter: %d.\r\n",
+        DPRINTF("IRQs still disabled for box %d. Counter: %d.\n",
                 g_active_box, g_irq_disable_all_counter[g_active_box]);
     }
 }
@@ -253,7 +253,7 @@ void virq_irq_pending_clr(uint32_t irqn)
     virq_isr_register(irqn);
 
     /* Clear pending IRQ. */
-    DPRINTF("IRQ %d pending status cleared\n\r", irqn);
+    DPRINTF("IRQ %d pending status cleared\n", irqn);
     NVIC_ClearPendingIRQ(irqn);
 }
 
@@ -263,7 +263,7 @@ void virq_irq_pending_set(uint32_t irqn)
     virq_isr_register(irqn);
 
     /* Set pending IRQ. */
-    DPRINTF("IRQ %d pending status set (will be served as soon as possible)\n\r", irqn);
+    DPRINTF("IRQ %d pending status set (will be served as soon as possible)\n", irqn);
     NVIC_SetPendingIRQ(irqn);
 }
 
@@ -283,11 +283,11 @@ void virq_irq_priority_set(uint32_t irqn, uint32_t priority)
 
     /* Check for maximum priority. */
     if (priority > UVISOR_VIRQ_MAX_PRIORITY) {
-        HALT_ERROR(NOT_ALLOWED, "NVIC priority overflow; max priority allowed: %d\n\r", UVISOR_VIRQ_MAX_PRIORITY);
+        HALT_ERROR(NOT_ALLOWED, "NVIC priority overflow; max priority allowed: %d\n", UVISOR_VIRQ_MAX_PRIORITY);
     }
 
     /* Set priority for device specific interrupts. */
-    DPRINTF("IRQ %d priority set to %d (NVIC), %d (virtual)\n\r", irqn, __UVISOR_NVIC_MIN_PRIORITY + priority,
+    DPRINTF("IRQ %d priority set to %d (NVIC), %d (virtual)\n", irqn, __UVISOR_NVIC_MIN_PRIORITY + priority,
                                                                         priority);
     NVIC_SetPriority(irqn, __UVISOR_NVIC_MIN_PRIORITY + priority);
 }
@@ -397,7 +397,7 @@ uint32_t virq_gateway_context_switch_in(uint32_t svc_sp, uint32_t svc_pc)
 
     /* Check if the ISR is registered. */
     if(!dst_fn) {
-        HALT_ERROR(NOT_ALLOWED, "Unprivileged handler for IRQ %i not found\n\r", irqn);
+        HALT_ERROR(NOT_ALLOWED, "Unprivileged handler for IRQ %i not found\n", irqn);
     }
 
     /* Source box: Get the current stack pointer. */

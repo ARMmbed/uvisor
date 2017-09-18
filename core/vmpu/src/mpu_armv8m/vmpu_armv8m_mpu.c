@@ -188,7 +188,7 @@ bool vmpu_region_get_for_box(uint8_t box_id, const MpuRegion * * const region, u
     if (!g_mpu_region_count) {
         *count = 0;
         return false;
-        // HALT_ERROR(SANITY_CHECK_FAILED, "No available SAU regions.\r\n");
+        // HALT_ERROR(SANITY_CHECK_FAILED, "No available SAU regions.\n");
     }
 
     if (box_id < UVISOR_MAX_BOXES) {
@@ -305,7 +305,7 @@ void vmpu_mpu_init(void)
     SAU->CTRL = 0;
 
     if (ARMv8M_SAU_REGIONS != ((SAU->TYPE >> SAU_TYPE_SREGION_Pos) & 0xFF)) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "ARMv8M_SAU_REGIONS is inconsistent with actual region count.\n\r");
+        HALT_ERROR(SANITY_CHECK_FAILED, "ARMv8M_SAU_REGIONS is inconsistent with actual region count.\n");
     }
 }
 

@@ -336,7 +336,7 @@ void ipc_drain_queue(void)
 #ifndef NDEBUG
         uvisor_ipc_desc_t * recv_desc = recv_io->desc;
 #endif
-        DPRINTF("Delivered [b%d:s%d].t0x%08x to [b%d:s%d].t0x%08x\r\n", send_box_id, send_slot, send_desc->token, recv_box_id, recv_slot, recv_desc->token);
+        DPRINTF("Delivered [b%d:s%d].t0x%08x to [b%d:s%d].t0x%08x\n", send_box_id, send_slot, send_desc->token, recv_box_id, recv_slot, recv_desc->token);
 
         /* Free the slots, as we have consumed the IOs. */
         send_slot = uvisor_pool_queue_try_free(send_queue, send_slot);

@@ -32,7 +32,7 @@
 #define UVISOR_FLASH_LENGTH_MAX 0x4000
 #else
 /* Debug builds can be up to this big. */
-#define UVISOR_FLASH_LENGTH_MAX 0xC0A0
+#define UVISOR_FLASH_LENGTH_MAX 0xC2A0
 #endif
 
 /** Size of the SRAM space protected by uVisor for its own SRAM sections

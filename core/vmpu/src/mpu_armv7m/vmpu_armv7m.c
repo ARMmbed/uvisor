@@ -273,7 +273,7 @@ void vmpu_switch(uint8_t src_box, uint8_t dst_box)
     uint32_t dst_count;
     const MpuRegion * region;
 
-    /* DPRINTF("switching from %i to %i\n\r", src_box, dst_box); */
+    /* DPRINTF("switching from %i to %i\n", src_box, dst_box); */
 
     vmpu_mpu_invalidate();
 
@@ -358,10 +358,10 @@ void vmpu_acl_sram(uint8_t box_id, uint32_t bss_size, uint32_t stack_size, uint3
 
     /* Final sanity checks */
     if ((slots_for_bss * subregion_size) < bss_size) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "slots_ctx underrun\n\r");
+        HALT_ERROR(SANITY_CHECK_FAILED, "slots_ctx underrun\n");
     }
     if ((slots_for_stack * subregion_size) < stack_size) {
-        HALT_ERROR(SANITY_CHECK_FAILED, "slots_stack underrun\n\r");
+        HALT_ERROR(SANITY_CHECK_FAILED, "slots_stack underrun\n");
     }
 
     /* Set the pointers to the BSS sections and to the stack. */
@@ -379,22 +379,22 @@ void vmpu_acl_sram(uint8_t box_id, uint32_t bss_size, uint32_t stack_size, uint3
         UVISOR_TACLDEF_STACK,
         slots_for_bss ? 1UL << slots_for_bss : 0
     );
-    DPRINTF("  - SRAM:       0x%08X - 0x%08X (permissions: 0x%04X, subregions: 0x%02X)\r\n",
+    DPRINTF("  - SRAM:       0x%08X - 0x%08X (permissions: 0x%04X, subregions: 0x%02X)\n",
             box_mem_pos, box_mem_pos + region_size, UVISOR_TACLDEF_STACK, slots_for_bss ? 1UL << slots_for_bss : 0);
 
     /* Move on to the next memory block. */
     box_mem_pos += region_size;
 
-    DPRINTF("    - BSS:      0x%08X - 0x%08X (original size: %uB, rounded size: %uB)\r\n",
+    DPRINTF("    - BSS:      0x%08X - 0x%08X (original size: %uB, rounded size: %uB)\n",
             *bss_start, *bss_start + bss_size, bss_size, slots_for_bss * subregion_size);
-    DPRINTF("    - Stack:    0x%08X - 0x%08X (original size: %uB, rounded size: %uB)\r\n",
+    DPRINTF("    - Stack:    0x%08X - 0x%08X (original size: %uB, rounded size: %uB)\n",
             *bss_start + (slots_for_bss + 1) * subregion_size, box_mem_pos, stack_size, slots_for_stack * subregion_size);
 }
 
 void vmpu_arch_init(void)
 {
     /* Init protected box memory enumeration pointer. */
-    DPRINTF("\n\rbox stack segment start=0x%08X end=0x%08X (length=%i)\n\r",
+    DPRINTF("\nbox stack segment start=0x%08X end=0x%08X (length=%i)\n",
         __uvisor_config.bss_boxes_start, __uvisor_config.bss_boxes_end,
         ((uint32_t) __uvisor_config.bss_boxes_end) - ((uint32_t) __uvisor_config.bss_boxes_start));
 
@@ -597,10 +597,10 @@ void vmpu_order_boxes(int * const best_order, int box_count)
      * at link time. */
     uint32_t available_sram_size = (uint32_t) __uvisor_config.bss_boxes_end - (uint32_t) __uvisor_config.bss_boxes_start;
     if (available_sram_size < total_sram_size) {
-        DPRINTF("Not enough memory allocated for the secure boxes. This is a known limitation of the ARMv7-M MPU.\r\n");
-        DPRINTF("Please insert the following snippet in your public box file (usually main.cpp):\r\n");
-        DPRINTF("uint8_t __attribute__((section(\".keep.uvisor.bss.boxes\"), aligned(32))) __boxes_overhead[%d];\r\n",
+        DPRINTF("Not enough memory allocated for the secure boxes. This is a known limitation of the ARMv7-M MPU.\n");
+        DPRINTF("Please insert the following snippet in your public box file (usually main.cpp):\n");
+        DPRINTF("uint8_t __attribute__((section(\".keep.uvisor.bss.boxes\"), aligned(32))) __boxes_overhead[%d];\n",
                 total_sram_size - available_sram_size);
-        HALT_ERROR(SANITY_CHECK_FAILED, "Secure boxes memory overflow. See message above to fix it.\r\n");
+        HALT_ERROR(SANITY_CHECK_FAILED, "Secure boxes memory overflow. See message above to fix it.\n");
     }
 }
