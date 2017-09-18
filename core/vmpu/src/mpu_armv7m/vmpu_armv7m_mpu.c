@@ -42,26 +42,28 @@
 
 /* The ARMv7-M MPU has 8 MPU regions plus one background region.
  * Region 0 and 1 are used to unlock Application RAM and Flash.
- * When switching into a secure box, region 2 is used to protect the boxes
+ * In ARMv7-M MPU, region 2 is used to protect uVisor's own stack.
+ * When switching into a secure box, region 3 is used to protect the boxes
  * stack and context.
  * If a box uses the page heap, the next region is used to protect it.
- * This leaves 4 to 6 MPU regions for round robin scheduling:
+ * This leaves 3 to 5 MPU regions for round robin scheduling:
  *
  *      8      <-- End of MPU regions, ARMv7M_MPU_REGIONS_MAX
  * +---------+
  * |    7    |
  * |   ...   |
- * |  2/3/4  | <-- Start of round robin
+ * |  3/4/5  | <-- Start of round robin
  * +---------+
- * |   2/3   | <-- Optional Box Pages
+ * |   3/4   | <-- Optional Box Pages
  * +---------+
- * |    2    | <-- Secure Box Stack + Context, ARMv7M_MPU_REGIONS_STATIC
+ * |    3    | <-- Secure Box Stack + Context, ARMv7M_MPU_REGIONS_STATIC
  * +---------+
+ * |    2    | <-- uVisor's stack protection
  * |    1    | <-- Application SRAM unlock
  * |    0    | <-- Application Flash unlock
  * +---------+
  */
-#define ARMv7M_MPU_REGIONS_STATIC 2
+#define ARMv7M_MPU_REGIONS_STATIC 3
 #define ARMv7M_MPU_REGIONS_MAX (ARMv7M_MPU_REGIONS)
 
 /* MPU helper macros */
