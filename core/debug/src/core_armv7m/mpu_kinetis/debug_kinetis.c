@@ -26,12 +26,9 @@ static void debug_fault_mpu(void)
     uint32_t edr, ear, eacd;
     int s, r, i, found;
 
-    if(sperr)
-    {
-        for(s = 4; s >= 0; s--)
-        {
-            if(sperr & (1 << s))
-            {
+    if (sperr) {
+        for (s = 4; s >= 0; s--) {
+            if (sperr & (1 << s)) {
                 edr = MPU->SP[4 - s].EDR;
                 ear = MPU->SP[4 - s].EAR;
                 eacd = edr >> 20;
@@ -41,12 +38,9 @@ static void debug_fault_mpu(void)
                 dprintf("  Address:          0x%08X\n\r", ear);
                 dprintf("  Faulting regions: ");
                 found = 0;
-                for(r = 11; r >= 0; r--)
-                {
-                    if(eacd & (1 << r))
-                    {
-                        if(!found)
-                        {
+                for (r = 11; r >= 0; r--) {
+                    if (eacd & (1 << r)) {
+                        if (!found) {
                             dprintf("\n\r");
                             found = 1;
                         }
@@ -57,8 +51,9 @@ static void debug_fault_mpu(void)
                         dprintf("\n\r");
                     }
                 }
-                if(!found)
+                if (!found) {
                     dprintf("[none]\n\r");
+                }
                 dprintf("  Master port:      %d\n\r", (edr >> 4) & 0xF);
                 dprintf("  Error attribute:  %s %s (%s mode)\n\r",
                         edr & 0x2 ? "Data" : "Instruction",
@@ -67,9 +62,7 @@ static void debug_fault_mpu(void)
                 break;
             }
         }
-    }
-    else
-    {
+    } else {
         dprintf("* No MPU violation found\n\r");
     }
     dprintf("\n\r");
