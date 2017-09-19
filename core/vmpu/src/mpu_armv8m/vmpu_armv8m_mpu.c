@@ -222,7 +222,7 @@ static bool vmpu_region_is_ns(uint32_t rlar)
            (rlar & SAU_RLAR_ENABLE_Msk) == SAU_RLAR_ENABLE_Msk;
 }
 
-static bool vmpu_buffer_access_is_ok_static(uint32_t start_addr, uint32_t end_addr)
+static bool vmpu_buffer_access_is_ok_static(uint32_t start_addr, uint32_t end_addr, UvisorBoxAcl acl)
 {
     /* NOTE: Buffers are not allowed to span more than 1 region. If they do
      * span more than one region, access will be denied. */
@@ -244,6 +244,8 @@ static bool vmpu_buffer_access_is_ok_static(uint32_t start_addr, uint32_t end_ad
 
         /* Test that the buffer is fully contained in the region. */
         if (vmpu_value_in_range(start, end, start_addr) && vmpu_value_in_range(start, end, end_addr)) {
+            /* FIXME: Check ACL.
+             * Original ACL is not stored here, but here needs a check */
             return true;
         }
     }
@@ -251,7 +253,7 @@ static bool vmpu_buffer_access_is_ok_static(uint32_t start_addr, uint32_t end_ad
     return false;
 }
 
-bool vmpu_buffer_access_is_ok(int box_id, const void * addr, size_t size)
+bool vmpu_buffer_access_is_ok(int box_id, const void * addr, size_t size, UvisorBoxAcl acl)
 {
     uint32_t start_addr = (uint32_t) UVISOR_GET_NS_ALIAS(addr);
     uint32_t end_addr = start_addr + size - 1;
@@ -268,12 +270,12 @@ bool vmpu_buffer_access_is_ok(int box_id, const void * addr, size_t size)
     if (box_id != 0) {
         /* Check the public box as well as the specified box, since public box
          * memories are accessible by all boxes. */
-        if (vmpu_buffer_access_is_ok(0, addr, size)) {
+        if (vmpu_buffer_access_is_ok(0, addr, size, acl)) {
             return true;
         }
     } else {
         /* Check static regions. */
-        if (vmpu_buffer_access_is_ok_static(start_addr, end_addr)) {
+        if (vmpu_buffer_access_is_ok_static(start_addr, end_addr, acl)) {
             return true;
         }
     }
@@ -281,7 +283,8 @@ bool vmpu_buffer_access_is_ok(int box_id, const void * addr, size_t size)
     /* Check if addr range lies in page heap. */
     int error = page_allocator_check_range_for_box(box_id, start_addr, end_addr);
     if (error == UVISOR_ERROR_PAGE_OK) {
-        return true;
+        /* Check heap ACL */
+        return (acl & UVISOR_TACLDEF_STACK) == acl;
     } else if (error != UVISOR_ERROR_PAGE_INVALID_PAGE_ORIGIN) {
         return false;
     }
@@ -295,7 +298,7 @@ bool vmpu_buffer_access_is_ok(int box_id, const void * addr, size_t size)
     /* If the end address is also within the region, and the region is NS
      * accessible, then access to the buffer is OK. */
     return vmpu_value_in_range(region->start, region->end, end_addr) &&
-           vmpu_region_is_ns(region->config);
+           vmpu_region_is_ns(region->config) && (region->acl) == acl;
 }
 
 /* SAU access */
