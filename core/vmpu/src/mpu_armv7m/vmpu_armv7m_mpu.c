@@ -330,7 +330,7 @@ MpuRegion * vmpu_region_find_for_address(uint8_t box_id, uint32_t address)
 
 /* Region management */
 
-static bool vmpu_buffer_access_is_ok_static(uint32_t start_addr, uint32_t end_addr)
+static bool vmpu_buffer_access_is_ok_static(uint32_t start_addr, uint32_t end_addr, UvisorBoxAcl acl)
 {
     /* NOTE: Buffers are not allowed to span more than 1 region. If they do
      * span more than one region, access will be denied. */
@@ -350,11 +350,12 @@ static bool vmpu_buffer_access_is_ok_static(uint32_t start_addr, uint32_t end_ad
         uint32_t size = (1UL << (((rasr & MPU_RASR_SIZE_Msk) >> MPU_RASR_SIZE_Pos) + 1UL));
         uint32_t start = rbar & ~(size - 1);
         uint32_t end = start + size;
+        uint32_t config = vmpu_map_acl(acl);
         /* Check entire region if no subregion is disabled. */
         if (!(rasr & MPU_RASR_SRD_Msk)) {
             /* Test that the buffer is fully contained in the region. */
             if (vmpu_value_in_range(start, end, start_addr) && vmpu_value_in_range(start, end, end_addr)) {
-                return true;
+                return (config & rasr) == config;
             }
         } else {
             /* Check each subregion separately. */
@@ -366,7 +367,7 @@ static bool vmpu_buffer_access_is_ok_static(uint32_t start_addr, uint32_t end_ad
                     uint32_t sub_end = sub_start + sub_size;
                     /* Test that the buffer is fully contained in the region. */
                     if (vmpu_value_in_range(sub_start, sub_end, start_addr) && vmpu_value_in_range(sub_start, sub_end, end_addr)) {
-                        return true;
+                        return (config & rasr) == config;
                     }
                 }
             }
@@ -376,7 +377,7 @@ static bool vmpu_buffer_access_is_ok_static(uint32_t start_addr, uint32_t end_ad
     return false;
 }
 
-bool vmpu_buffer_access_is_ok(int box_id, const void * addr, size_t size)
+bool vmpu_buffer_access_is_ok(int box_id, const void * addr, size_t size, UvisorBoxAcl acl)
 {
     uint32_t start_addr = (uint32_t) addr;
     uint32_t end_addr = start_addr + size - 1;
@@ -393,12 +394,12 @@ bool vmpu_buffer_access_is_ok(int box_id, const void * addr, size_t size)
     if (box_id != 0) {
         /* Check the public box as well as the specified box, since public box
          * memories are accessible by all boxes. */
-        if (vmpu_buffer_access_is_ok(0, addr, size)) {
+        if (vmpu_buffer_access_is_ok(0, addr, size, acl)) {
             return true;
         }
     } else {
         /* Check static regions. */
-        if (vmpu_buffer_access_is_ok_static(start_addr, end_addr)) {
+        if (vmpu_buffer_access_is_ok_static(start_addr, end_addr, acl)) {
             return true;
         }
     }
@@ -406,7 +407,8 @@ bool vmpu_buffer_access_is_ok(int box_id, const void * addr, size_t size)
     /* Check if addr range lies in page heap. */
     int error = page_allocator_check_range_for_box(box_id, start_addr, end_addr);
     if (error == UVISOR_ERROR_PAGE_OK) {
-        return true;
+        /* Check heap ACL */
+        return (acl & UVISOR_TACLDEF_STACK) == acl;
     } else if (error != UVISOR_ERROR_PAGE_INVALID_PAGE_ORIGIN) {
         return false;
     }
@@ -419,7 +421,7 @@ bool vmpu_buffer_access_is_ok(int box_id, const void * addr, size_t size)
 
     /* If the end address is also within the region, and the region is NS
      * accessible, then access to the buffer is OK. */
-    return vmpu_value_in_range(region->start, region->end, end_addr);
+    return vmpu_value_in_range(region->start, region->end, end_addr) && (region->acl) == acl;
 }
 
 /* MPU access */
