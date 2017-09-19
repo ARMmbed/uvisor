@@ -164,30 +164,31 @@ done:
 
 static bool ipc_is_ok(int box_id, const uvisor_ipc_t * ipc) {
     return ipc &&
-           vmpu_buffer_access_is_ok(box_id, ipc, sizeof(*ipc));
+           vmpu_buffer_access_is_ok(box_id, ipc, sizeof(*ipc), UVISOR_TACL_UREAD | UVISOR_TACL_UWRITE);
 }
 
 static bool ipc_io_array_is_ok(int box_id, const uvisor_ipc_io_t * array) {
     UVISOR_STATIC_ASSERT(UVISOR_IPC_SEND_SLOTS == UVISOR_IPC_RECV_SLOTS, UVISOR_IPC_SEND_SLOTS_should_be_equal_to_UVISOR_IPC_RECV_SLOTS);
 
     return array &&
-           vmpu_buffer_access_is_ok(box_id, array, sizeof(*array) * UVISOR_IPC_SEND_SLOTS);
+           vmpu_buffer_access_is_ok(box_id, array, sizeof(*array) * UVISOR_IPC_SEND_SLOTS, UVISOR_TACL_UREAD | UVISOR_TACL_UWRITE);
 }
 
 static bool pool_queue_is_ok(int box_id, const uvisor_pool_queue_t * queue) {
     return queue &&
-           vmpu_buffer_access_is_ok(box_id, queue, sizeof(*queue)) &&
+           vmpu_buffer_access_is_ok(box_id, queue, sizeof(*queue), UVISOR_TACL_UREAD | UVISOR_TACL_UWRITE) &&
            queue->pool &&
-           vmpu_buffer_access_is_ok(box_id, queue->pool, sizeof(*queue->pool)) &&
-           vmpu_buffer_access_is_ok(box_id, queue->pool->array, queue->pool->stride * queue->pool->num);
+           vmpu_buffer_access_is_ok(box_id, queue->pool, sizeof(*queue->pool), UVISOR_TACL_UREAD | UVISOR_TACL_UWRITE) &&
+           vmpu_buffer_access_is_ok(box_id, queue->pool->array, queue->pool->stride * queue->pool->num, UVISOR_TACL_UREAD | UVISOR_TACL_UWRITE);
 }
 
 static bool ipc_io_is_ok(int box_id, const uvisor_ipc_io_t * io) {
     return io &&
-           vmpu_buffer_access_is_ok(box_id, io, sizeof(*io)) &&
+           vmpu_buffer_access_is_ok(box_id, io, sizeof(*io), UVISOR_TACL_UREAD | UVISOR_TACL_UWRITE) &&
            io->desc &&
-           vmpu_buffer_access_is_ok(box_id, io->desc, sizeof(*(io->desc))) &&
-           vmpu_buffer_access_is_ok(box_id, io->msg, io->desc->len);
+           vmpu_buffer_access_is_ok(box_id, io->desc, sizeof(*(io->desc)), UVISOR_TACL_UREAD | UVISOR_TACL_UWRITE) &&
+           /* FIXME: Split check for send/recv */
+           vmpu_buffer_access_is_ok(box_id, io->msg, io->desc->len, UVISOR_TACL_UREAD | UVISOR_TACL_UWRITE);
 }
 
 void ipc_drain_queue(void)
