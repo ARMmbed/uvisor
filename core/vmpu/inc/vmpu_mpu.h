@@ -81,11 +81,12 @@ MpuRegion * vmpu_region_find_for_address(uint8_t box_id, uint32_t address);
  * @param box_id     the box id to look up the buffer in
  * @param addr       the buffer start address
  * @param size       the size of the buffer in bytes
+ * @param acl        the ACL of access required
  * @returns          true if the buffer is contained within the set of memory a
  *                   box could access, even if a fault and recovery is required
  *                   to access the buffer; false otherwise.
  * */
-bool vmpu_buffer_access_is_ok(int box_id, const void * addr, size_t size);
+bool vmpu_buffer_access_is_ok(int box_id, const void * addr, size_t size, UvisorBoxAcl acl);
 
 /* Region management */
 
