@@ -115,9 +115,9 @@ static void virq_load_systick_ns(uint8_t box_id)
     SysTick_NS->VAL = 0;
     SysTick_NS->CTRL = g_virq_system_exception_state[box_id].systick.periph.CTRL;
     if (g_virq_system_exception_state[box_id].systick.pending) {
-        SCB_NS->ICSR |= SCB_ICSR_PENDSTSET_Msk;
+        SCB_NS->ICSR = SCB_ICSR_PENDSTSET_Msk;
     } else {
-        SCB_NS->ICSR |= SCB_ICSR_PENDSTCLR_Msk;
+        SCB_NS->ICSR = SCB_ICSR_PENDSTCLR_Msk;
     }
     if (g_virq_system_exception_state[box_id].systick.active) {
         SCB_NS->SHCSR |= SCB_SHCSR_SYSTICKACT_Msk;
