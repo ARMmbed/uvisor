@@ -26,7 +26,7 @@ For detailed usage guides and best practices, look [here](https://github.com/ARM
 
 [API](https://github.com/ARMmbed/uvisor/blob/master/docs/lib/API.md)
 
-[![View code](https://www.mbed.com/embed/?type=library)](https://github.com/ARMmbed/uvisor/blob/master/docs/lib/API.md)
+[https://github.com/ARMmbed/uvisor/blob/master/docs/lib/API.md](https://github.com/ARMmbed/uvisor/blob/master/docs/lib/API.md)
 
 ##### Example
 
