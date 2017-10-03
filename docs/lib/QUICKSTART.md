@@ -482,5 +482,6 @@ Repeat the process multiple times until all ACLs have been added to the list. Wh
 
 - [uVisor API documentation](API.md).
 - [Debugging uVisor on mbed OS](DEBUGGING.md).
+- [Using nonvolatile storage from uVisor on mbed OS](manual/Flash.md).
 
 If you found any bug or inconsistency in this guide, please [raise an issue](https://github.com/ARMmbed/uvisor/issues/new).
