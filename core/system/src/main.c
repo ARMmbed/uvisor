@@ -76,11 +76,15 @@ UVISOR_NAKED void main_entry(uint32_t caller)
         "it    eq\n"
         "popeq {pc}\n"
 
-        /* Set the MSP. Since we are changing stacks we need to pop and re-push
+        /* Set the MSP and MSPLIM. Since we are changing stacks we need to pop and re-push
          * the lr value. */
         "pop   {r0}\n"
         "ldr   r1, =__uvisor_stack_top__\n"
         "msr   MSP, r1\n"
+#if defined(ARCH_CORE_ARMv8M)
+        "ldr   r1, =__uvisor_stack_start__\n"
+        "msr   MSPLIM, r1\n"
+#endif 
         "push  {r0}\n"
 
         /* First initialization stage. */
