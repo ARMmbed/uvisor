@@ -114,6 +114,9 @@ uvisor_config:
     /* Debug driver pointer */
     .long __uvisor_debug_driver
 
+    /* Stack limit for public box MSPLIM_NS, accessed by public_box_stack_limit */
+    .long __StackLimit
+
 /* uVisor mode of operation
  * Modes available: UVISOR_ENABLED, UVISOR_DISABLED, UVISOR_PERMISSIVE. */
 __uvisor_mode:

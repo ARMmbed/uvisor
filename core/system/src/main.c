@@ -161,6 +161,9 @@ void main_init(void)
     /* NS P stack pointer, for the RTOS and the uVisor-ns. */
     __TZ_set_MSP_NS(original_sp);
 
+    /* NS P limit, for the RTOS and the uVisor-ns. */
+    __TZ_set_MSPLIM_NS(__uvisor_config.public_box_stack_limit);
+
     /* S NP stack pointer, for the SDSs and the transition gateways. */
     __set_PSP((uint32_t) &__uvisor_stack_top_np__);
 #else /* defined(ARCH_CORE_ARMv8M) */
