@@ -1,6 +1,6 @@
 ## uVisor
 
-The uVisor is a self-contained software hypervisor that creates independent secure domains on ARM Cortex&reg;-M3 and Cortex&reg;-M4 microcontrollers. It increases resilience against malware and protects secrets from leaking even among different modules of the same application. You can find a [high-level overview here](http://www.slideshare.net/FoolsDelight/practical-realtime-operating-system-security-for-the-masses) ([Download PDF](https://github.com/ARMmbed/uvisor/raw/docs/uVisorSecurity-TechCon2016.pdf)).
+The uVisor is a self-contained software hypervisor that creates independent secure domains on ARM Cortex&reg;-M3 and Cortex&reg;-M4 microcontrollers. It increases resilience against malware and protects secrets from leaking even among different modules of the same application. For more information, download the [high-level overview](http://www.slideshare.net/FoolsDelight/practical-realtime-operating-system-security-for-the-masses) ([Download PDF](https://github.com/ARMmbed/uvisor/raw/docs/uVisorSecurity-TechCon2016.pdf)).
 
 *Note about interrupts:*
 When the uVisor is enabled, all NVIC APIs are rerouted to the corresponding uVisor vIRQ APIs, which virtualize interrupts. The uVisor interrupt model has the following features:
@@ -20,7 +20,7 @@ Although this behavior is different from that of the original NVIC, it is backwa
 1. Create public entry points for your secure boxes.
 1. Compile your application with uVisor enabled.
 
-For detailed usage guides and best practices, look [here](https://github.com/ARMmbed/uvisor/blob/master/docs/README.md)
+For detailed usage guides and best practices, see [the README](https://github.com/ARMmbed/uvisor/blob/master/docs/README.md)
 
 ### API
 
