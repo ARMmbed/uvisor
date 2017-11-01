@@ -88,7 +88,11 @@ ENTRY(main_entry)
  *       by the platform-specific configurations. */
 #define STACK_GUARD_BAND 32
 
+#ifdef ARCH_MPU_KINETIS
+#define STACK_SIZE (TOTAL_STACK_SIZE - STACK_GUARD_BAND - STACK_GUARD_BAND)
+#else
 #define STACK_SIZE (TOTAL_STACK_SIZE - STACK_GUARD_BAND)
+#endif
 
 #endif  /* ARCH_MPU_ARMv7M */
 
@@ -196,6 +200,12 @@ SECTIONS
         . = ALIGN(TOTAL_STACK_SIZE);
         __uvisor_stack_start_boundary__ = .;
         . += STACK_GUARD_BAND;
+#endif
+#ifdef ARCH_MPU_KINETIS
+    /* Kinetis MPU regions must be 32 byte aligned. */
+    . = ALIGN(32);
+    __uvisor_stack_start_boundary__ = .;
+    . += STACK_GUARD_BAND;
 #endif
         __uvisor_stack_start__ = .;
         . += STACK_SIZE;

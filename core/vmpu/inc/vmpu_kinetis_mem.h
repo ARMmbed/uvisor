@@ -31,7 +31,16 @@
  *    | 4 | usb        | NA         | -     |
  *    | 5 | core       | NA         | -     |
  */
-#define UVISOR_TACL_BACKGROUND 0x000007D0U
+
+#define MPU_RGDn_WORD2_MxUM_NONE    0x00
+#define MPU_RGDn_WORD2_MxUM_EXECUTE 0x01
+#define MPU_RGDn_WORD2_MxUM_WRITE   0x02
+#define MPU_RGDn_WORD2_MxUM_READ    0x04
+#define MPU_RGDn_WORD2_MxSM_RWX     0X00
+#define MPU_RGDn_WORD2_MxSM_RX      0X01
+#define MPU_RGDn_WORD2_MxSM_RW      0X02
+#define MPU_RGDn_WORD2_MxSM_AS_UM   0X03
+
 
 extern int vmpu_mem_add(uint8_t box_id, void* start, uint32_t size, UvisorBoxAcl acl);
 extern void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box);

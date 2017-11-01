@@ -63,30 +63,24 @@ void vmpu_mem_switch(uint8_t src_box, uint8_t dst_box)
 
 void vmpu_mem_init(void)
 {
-    /* Generic DMA (UART, I2C, etc.) is bus master 2 (configured through M2UM).
-     * ENET DMA is bus master 3 (configured through M3UM). */
-    static const uint32_t MPU_RGDn_WORD2_M3UM_READ = (1 << 20);
-    static const uint32_t MPU_RGDn_WORD2_M3UM_WRITE = (1 << 19);
-    static const uint32_t MPU_RGDn_WORD2_M2UM_READ = (1 << 14);
-    static const uint32_t MPU_RGDn_WORD2_M2UM_WRITE = (1 << 13);
-
     /* enable read access to unsecure flash regions
      * - allow execution
      * - give read access to ENET DMA bus master and generic (UART, I2C, etc.)
      *   DMA bus master */
-    vmpu_mpu_set_static_acl(1, FLASH_ORIGIN, (uint32_t) __uvisor_config.secure_end - FLASH_ORIGIN,
+    vmpu_mpu_set_static_acl(3, FLASH_ORIGIN, (uint32_t) __uvisor_config.secure_end - FLASH_ORIGIN,
         UVISOR_TACL_SREAD |
         UVISOR_TACL_SEXECUTE |
         UVISOR_TACL_UREAD |
         UVISOR_TACL_UEXECUTE |
         UVISOR_TACL_USER,
-        MPU_RGDn_WORD2_M3UM_READ | MPU_RGDn_WORD2_M2UM_READ);
+        MPU_WORD_M2UM(MPU_RGDn_WORD2_MxUM_READ) | MPU_WORD_M3UM(MPU_RGDn_WORD2_MxUM_READ)
+    );
 
     /* rest of SRAM, accessible to mbed
      * - non-executable for uvisor
      * - give read/write access to ENET DMA bus master and generic (UART, I2C, etc.)
      *   DMA bus master */
-    vmpu_mpu_set_static_acl(2, (uint32_t) __uvisor_config.page_end,
+    vmpu_mpu_set_static_acl(4, (uint32_t) __uvisor_config.page_end,
         (uint32_t) __uvisor_config.sram_end - (uint32_t) __uvisor_config.page_end,
         UVISOR_TACL_SREAD |
         UVISOR_TACL_SWRITE |
@@ -94,6 +88,7 @@ void vmpu_mem_init(void)
         UVISOR_TACL_UWRITE |
         UVISOR_TACL_UEXECUTE |
         UVISOR_TACL_USER,
-        MPU_RGDn_WORD2_M3UM_READ | MPU_RGDn_WORD2_M2UM_READ |
-        MPU_RGDn_WORD2_M3UM_WRITE | MPU_RGDn_WORD2_M2UM_WRITE);
+        MPU_WORD_M2UM(MPU_RGDn_WORD2_MxUM_READ | MPU_RGDn_WORD2_MxUM_WRITE) |
+        MPU_WORD_M3UM(MPU_RGDn_WORD2_MxUM_READ | MPU_RGDn_WORD2_MxUM_WRITE)
+    );
 }

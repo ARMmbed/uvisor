@@ -28,28 +28,31 @@
 #include "configurations.h"
 
 /* The K64F has 12 MPU regions, however, we use region 0 as the background
- * region with `UVISOR_TACL_BACKGROUND` as permissions.
- * Region 1 and 2 are used to unlock Application SRAM and Flash.
- * Therefore 9 MPU regions are available for user ACLs.
- * Region 3 and 4 are used to protect the current box stack and context.
- * This leaves 6 MPU regions for round robin scheduling:
+ * region for debugging purposes only.
+ * Regions 1 and 2 are used to create a stack guard for uVisor's own stack
+ * Region 3 and 4 are used to unlock Application SRAM and Flash.
+ * Therefore 7 MPU regions are available for user ACLs.
+ * Region 5 and 6 are used to protect the current box stack and context.
+ * This leaves 5 MPU regions for round robin scheduling:
  *
  *     12      <-- End of MPU regions, K64F_MPU_REGIONS_MAX
  * .---------.
  * |   11    |
  * |   ...   |
- * |    5    | <-- Box Pages, K64F_MPU_REGIONS_USER
+ * |    7    | <-- Box Pages, K64F_MPU_REGIONS_USER
  * +---------+
- * |    4    | <-- Box Context
- * |    3    | <-- Box Stack, K64F_MPU_REGIONS_STATIC
+ * |    6    | <-- Box Context
+ * |    5    | <-- Box Stack, K64F_MPU_REGIONS_STATIC
  * +---------+
- * |    2    | <-- Application SRAM unlock
- * |    1    | <-- Application Flash unlock
- * |    0    | <-- Background region
+ * |    4    | <-- Application SRAM unlock
+ * |    3    | <-- Application Flash unlock
+ * |    2    | <-- Background region (stack start to 0xFFFFFFFF)
+ * |    1    | <-- Background region (0 to stack guard)
+ * |    0    | <-- Background region (for debugger)
  * '---------'
  */
-#define K64F_MPU_REGIONS_STATIC 3
-#define K64F_MPU_REGIONS_USER 5
+#define K64F_MPU_REGIONS_STATIC 5
+#define K64F_MPU_REGIONS_USER 7
 #define K64F_MPU_REGIONS_MAX 12
 
 typedef struct
@@ -387,15 +390,40 @@ void vmpu_mpu_init(void)
                   (SCB_SHCSR_MEMFAULTENA_Msk);
 }
 
+
+// Creates the stack guard using MPU regions 1 & 2
+static void vmpu_mpu_set_background_region()
+{
+    MPU_Region * mpu_region = NULL;
+
+    mpu_region = (MPU_Region *) MPU->WORD[1];
+    mpu_region->STARTADDR = 0x00000000;
+    // the region ends at __uvisor_stack_start_boundary__ not including
+    mpu_region->ENDADDR = (((uint32_t) &__uvisor_stack_start_boundary__) - 1);
+    mpu_region->PERMISSIONS = (MPU_WORD_M0UM(MPU_RGDn_WORD2_MxUM_NONE) | MPU_WORD_M0SM(MPU_RGDn_WORD2_MxSM_RW));
+    mpu_region->CONTROL = 1;
+
+    mpu_region = (MPU_Region *) MPU->WORD[2];
+    mpu_region->STARTADDR = ((uint32_t) &__uvisor_stack_start__);
+    mpu_region->ENDADDR = 0xFFFFFFFF;
+    mpu_region->PERMISSIONS = (MPU_WORD_M0UM(MPU_RGDn_WORD2_MxUM_NONE) | MPU_WORD_M0SM(MPU_RGDn_WORD2_MxSM_RW));
+    mpu_region->CONTROL = 1;
+}
 void vmpu_mpu_lock(void)
 {
+    vmpu_mpu_set_background_region();
     /* DMB to ensure MPU update after all transfer to memory completed */
     __DMB();
 
     /* MPU background region permission mask
      *   this mask must be set as last one, since the background region gives no
      *   executable privileges to neither user nor supervisor modes */
-    MPU->RGDAAC[0] = UVISOR_TACL_BACKGROUND;
+    MPU->RGDAAC[0] = MPU_WORD_M0UM(MPU_RGDn_WORD2_MxUM_NONE)  |
+        MPU_WORD_M0SM(MPU_RGDn_WORD2_MxSM_AS_UM)              |
+        MPU_WORD_M1UM(MPU_RGDn_WORD2_MxUM_READ |
+            MPU_RGDn_WORD2_MxUM_WRITE |
+            MPU_RGDn_WORD2_MxUM_EXECUTE)                      |
+        MPU_WORD_M1SM(MPU_RGDn_WORD2_MxSM_RWX);
 
     /* DSB & ISB to ensure subsequent data & instruction transfers are using updated MPU settings */
     __DSB();
