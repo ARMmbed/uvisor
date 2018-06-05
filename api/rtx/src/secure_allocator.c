@@ -76,12 +76,12 @@ SecureAllocator secure_allocator_create_with_pool(
 
     /* Align page_origin to a multiple of 8 (because RTX requries 8-byte
      * alignment of the origin). */
-    page_origin = (page_origin + (0x8 - 1)) & -0x8;
+    page_origin = (page_origin + 7U) & ~((uint32_t)7U);
     offset = page_origin - (uintptr_t) mem;
     size_t size = bytes - offset;
     /* Align size to a multiple of 8 (because RTX requires 8-byte alignment of
      * the size) */
-    size &= -0x8;
+    size &= ~((uint32_t)7U);
 
     /* Create pool allocator structure inside the memory. */
     if (!osRtxMemoryInit((void *) page_origin, size)) {
@@ -102,7 +102,7 @@ SecureAllocator secure_allocator_create_with_pages(
     const uint32_t page_size = uvisor_get_page_size();
     /* The rtx_Memory allocator puts one pool allocator structure at both the
      * beginning and end of the memory pool. */
-    const size_t block_overhead = 2 * sizeof(mem_block_t);
+    const size_t block_overhead = (2 * sizeof(mem_block_t)) + sizeof(mem_head_t);
     const size_t page_size_with_overhead = page_size + block_overhead;
     /* Calculate the integer part of required the page count. */
     size_t page_count = size / page_size_with_overhead;
@@ -146,7 +146,7 @@ SecureAllocator secure_allocator_create_with_pages(
     for(size_t ii = 0; ii < page_count; ii++) {
         /* Add each page as a pool. */
         osStatus_t status = osRtxMemoryInit(allocator->table.page_origins[ii], page_size);
-        if (status == osOK) {
+        if (status == 1) {
           DPRINTF("secure_allocator_create_with_pages: Created memory pool allocator %p with offset %d page %u\n", allocator->table.page_origins[ii], 0, ii);
         } else {
           DPRINTF("secure_allocator_create_with_pages: Failed creating memory pool allocator %p with offset %d page %u\n", allocator->table.page_origins[ii], 0, ii);
