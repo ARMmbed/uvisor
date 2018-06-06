@@ -38,7 +38,7 @@ UVISOR_NOINLINE void uvisor_init_pre(uint32_t const * const user_vtor)
     virq_init(user_vtor);
 
     /* Initialize the debugging features. */
-    DEBUG_INIT();
+    debug_init();
 }
 
 UVISOR_NOINLINE void uvisor_init_post(void)
