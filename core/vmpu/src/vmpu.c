@@ -380,7 +380,7 @@ static void vmpu_configure_box_sram(uint8_t box_id, UvisorBoxConfig const * box_
          *       architectures allow us to setup a background region somehow. */
         bss_start = (uint32_t) __uvisor_config.heap_start;
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-        stack_pointer = __TZ_get_PSP_NS();
+        stack_pointer = __TZ_get_SP_NS();
 #else
         stack_pointer = __get_PSP();
 #endif
